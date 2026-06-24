@@ -69,8 +69,10 @@ export class WorldView {
   }
 
   _buildRoomBack() {
-    if (!worldMap.room) return;
-    this.scene.add.image(worldMap.room.x, worldMap.room.y, worldMap.room.key).setDepth(1);
+    const r = worldMap.room;
+    if (!r) return;
+    const img = this.scene.add.image(r.x, r.y, r.key).setDepth(1);
+    if (r.w && r.h) img.setDisplaySize(r.w, r.h);
   }
 
   _buildWalls() {

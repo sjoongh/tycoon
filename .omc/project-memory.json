@@ -130,8 +130,8 @@
   "hotPaths": [
     {
       "path": "src/world/WorldView.js",
-      "accessCount": 16,
-      "lastAccessed": 1782320482483,
+      "accessCount": 17,
+      "lastAccessed": 1782321885822,
       "type": "file"
     },
     {
@@ -166,14 +166,14 @@
     },
     {
       "path": "src/world/worldMap.js",
-      "accessCount": 6,
-      "lastAccessed": 1782320350023,
+      "accessCount": 8,
+      "lastAccessed": 1782321871290,
       "type": "file"
     },
     {
       "path": "src/world/WorkerManager.js",
-      "accessCount": 6,
-      "lastAccessed": 1782320503761,
+      "accessCount": 7,
+      "lastAccessed": 1782321897963,
       "type": "file"
     },
     {

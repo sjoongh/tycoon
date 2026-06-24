@@ -18,9 +18,9 @@ export class WorkerManager {
   sync() {
     const staff = this.gameState.data.staff || {};
     const staffTotal = Object.values(staff).reduce((a, b) => a + b, 0);
-    const facTotal = this.gameState.facilityTotal ? this.gameState.facilityTotal() : 0;
-    const hasActive = this._activeNodes().length > 0;
-    const target = hasActive ? Math.min(6, Math.max(1, Math.floor(staffTotal / 2) + Math.ceil(facTotal / 8))) : 0;
+    const activeCount = this._activeNodes().length;
+    // 활성 시설마다 1명 + 직원 보너스(겹침 방지). 활성 시설 수를 넘지 않게 하되 직원 많으면 소폭 증가.
+    const target = activeCount ? Math.min(6, Math.max(1, activeCount + Math.floor(staffTotal / 3))) : 0;
 
     while (this.workers.length < target) this._spawn();
     while (this.workers.length > target) this.workers.pop().destroy();
