@@ -1,5 +1,8 @@
 import { shortNumber } from "../utils/format.js";
 import { facilities } from "../data/facilities.js";
+import { staffDefinitions, rarityColors } from "../data/staff.js";
+import { officeEvents } from "../data/events.js";
+import { prestigeUpgrades } from "../data/prestige.js";
 
 const TABS = [
   ["facilities", "시설"],
@@ -9,32 +12,15 @@ const TABS = [
   ["prestige", "감사"],
 ];
 
+const hex = (c) => "#" + Number(c).toString(16).padStart(6, "0");
+
 export class DOMBottomPanel {
   constructor(gameState) {
     this.gameState = gameState;
+    this.currentEvent = null;
     this.root = document.createElement("div");
     this.root.className = "gp-bottom";
-    this.root.innerHTML = `
-      <div class="gp-card">
-        <div class="gp-card__icon" data-k="icon"></div>
-        <div class="gp-card__body">
-          <div class="gp-card__title" data-k="title"></div>
-          <div class="gp-card__sub" data-k="sub"></div>
-        </div>
-        <button class="gp-btn" data-k="upgrade">업그레이드</button>
-      </div>
-      <div class="gp-facsel" data-k="facsel"></div>
-      <div class="gp-tabs" data-k="tabs"></div>`;
-
-    const facEl = this.root.querySelector('[data-k="facsel"]');
-    facilities.forEach((f) => {
-      const b = document.createElement("button");
-      b.className = "gp-fac";
-      b.dataset.fac = f.id;
-      b.innerHTML = `<span class="gp-fac__role">${f.role}</span><span class="gp-fac__lv" data-k="lv-${f.id}"></span>`;
-      b.addEventListener("click", () => this.gameState.select(f.id));
-      facEl.appendChild(b);
-    });
+    this.root.innerHTML = `<div class="gp-panel" data-k="panel"></div><div class="gp-tabs" data-k="tabs"></div>`;
 
     const tabsEl = this.root.querySelector('[data-k="tabs"]');
     TABS.forEach(([id, label]) => {
@@ -46,10 +32,8 @@ export class DOMBottomPanel {
       tabsEl.appendChild(b);
     });
 
-    this.root.querySelector('[data-k="upgrade"]').addEventListener("click", () => {
-      this.gameState.upgrade(this.gameState.data.selected);
-    });
-
+    this.panel = this.root.querySelector('[data-k="panel"]');
+    this.panel.addEventListener("click", (e) => this._onClick(e));
     this._refresh = () => this.refresh();
   }
 
@@ -59,40 +43,133 @@ export class DOMBottomPanel {
     this.refresh();
   }
 
+  destroy() {
+    this.gameState.off("changed", this._refresh);
+    this.root.remove();
+  }
+
+  _onClick(e) {
+    const el = e.target.closest("[data-action]");
+    if (!el) return;
+    const gs = this.gameState;
+    const id = el.dataset.id;
+    switch (el.dataset.action) {
+      case "selectFac": gs.select(id); break;
+      case "upgradeFac": gs.upgrade(gs.data.selected); break;
+      case "advanceStage": gs.advanceStage(); break;
+      case "hire": gs.hireStaff(id); break;
+      case "getEvent": this.currentEvent = this._pickEvent(); this.refresh(); break;
+      case "eventChoice": {
+        const ev = officeEvents.find((v) => v.id === id);
+        if (ev) gs.applyEffect((el.dataset.side === "left" ? ev.left : ev.right)[1]);
+        this.currentEvent = null;
+        this.refresh();
+        break;
+      }
+      case "buyPrestige": gs.buyPrestigeUpgrade(id); break;
+      case "prestigeReset": gs.prestigeReset(); break;
+    }
+  }
+
+  _pickEvent() {
+    const avail = officeEvents.filter((ev) => this.gameState.data.stage.area >= (ev.minStage || 1));
+    return avail.length ? avail[Math.floor(Math.random() * avail.length)] : null;
+  }
+
   refresh() {
+    const tab = this.gameState.data.activeTab || "facilities";
+    ({
+      facilities: () => this._renderFacilities(),
+      crew: () => this._renderCrew(),
+      events: () => this._renderEvents(),
+      goals: () => this._renderGoals(),
+      prestige: () => this._renderPrestige(),
+    }[tab] || (() => this._renderFacilities()))();
+    this.root.querySelectorAll(".gp-tab").forEach((el) => el.classList.toggle("gp-tab--active", el.dataset.tab === tab));
+  }
+
+  _renderFacilities() {
     const gs = this.gameState;
     const sel = gs.facility(gs.data.selected) ? gs.data.selected : "desk";
     const f = gs.facility(sel);
     const unlocked = gs.isUnlocked(sel);
     const cost = gs.cost(sel);
-    const explainCost = gs.explainCost(sel);
-    const canBuy = unlocked && gs.data.votes >= cost && gs.data.explain >= explainCost;
-
-    this.root.querySelector('[data-k="title"]').textContent = `${f.name} Lv.${gs.level(sel)}`;
-    this.root.querySelector('[data-k="sub"]').textContent = unlocked
-      ? `${shortNumber(cost)}표 · 해명 ${explainCost}`
-      : `${f.unlock}구역에서 해금`;
-    this.root.querySelector('[data-k="icon"]').style.background = "#" + f.color.toString(16).padStart(6, "0");
-    const btn = this.root.querySelector('[data-k="upgrade"]');
-    btn.classList.toggle("gp-btn--disabled", !canBuy);
-    btn.textContent = unlocked ? "업그레이드" : "잠김";
-
-    facilities.forEach((ff) => {
-      const b = this.root.querySelector(`[data-fac="${ff.id}"]`);
-      const u = gs.isUnlocked(ff.id);
-      b.classList.toggle("gp-fac--active", ff.id === sel);
-      b.classList.toggle("gp-fac--locked", !u);
-      b.style.borderColor = "#" + ff.color.toString(16).padStart(6, "0");
-      this.root.querySelector(`[data-k="lv-${ff.id}"]`).textContent = u ? `Lv.${gs.level(ff.id)}` : `${ff.unlock}구`;
-    });
-
-    this.root.querySelectorAll(".gp-tab").forEach((el) => {
-      el.classList.toggle("gp-tab--active", el.dataset.tab === gs.data.activeTab);
-    });
+    const ex = gs.explainCost(sel);
+    const canBuy = unlocked && gs.data.votes >= cost && gs.data.explain >= ex;
+    const stageDone = gs.data.stage.progress >= gs.data.stage.target;
+    this.panel.innerHTML = `
+      <div class="gp-card">
+        <div class="gp-card__icon" style="background:${hex(f.color)}"></div>
+        <div class="gp-card__body">
+          <div class="gp-card__title">${f.name} Lv.${gs.level(sel)}</div>
+          <div class="gp-card__sub">${unlocked ? `${shortNumber(cost)}표 · 해명 ${ex}` : `${f.unlock}구역에서 해금`}</div>
+        </div>
+        <button class="gp-btn ${canBuy ? "" : "gp-btn--disabled"}" data-action="upgradeFac">${unlocked ? "업그레이드" : "잠김"}</button>
+      </div>
+      <div class="gp-facsel">${facilities.map((ff) => {
+        const u = gs.isUnlocked(ff.id);
+        return `<button class="gp-fac ${ff.id === sel ? "gp-fac--active" : ""} ${u ? "" : "gp-fac--locked"}" style="border-color:${hex(ff.color)}" data-action="selectFac" data-id="${ff.id}"><span class="gp-fac__role">${ff.role}</span><span class="gp-fac__lv">${u ? `Lv.${gs.level(ff.id)}` : `${ff.unlock}구`}</span></button>`;
+      }).join("")}</div>
+      <div class="gp-region"><span>${gs.data.stage.area}구역 · ${shortNumber(gs.data.stage.progress)} / ${shortNumber(gs.data.stage.target)}</span><button class="gp-btn gp-btn--sm ${stageDone ? "" : "gp-btn--disabled"}" data-action="advanceStage">지역완료</button></div>`;
   }
 
-  destroy() {
-    this.gameState.off("changed", this._refresh);
-    this.root.remove();
+  _renderCrew() {
+    const gs = this.gameState;
+    const cards = staffDefinitions.map((s) => {
+      const lv = gs.staffLevel(s.id);
+      const cost = gs.staffCost(s.id);
+      const ex = gs.staffExplainCost(s.id);
+      const can = gs.data.votes >= cost && gs.data.explain >= ex;
+      const skill = gs.staffSkillActive(s.id) ? s.skill.name : `스킬 Lv.${s.skill.unlockLevel}`;
+      return `<div class="gp-staff">
+        <div class="gp-staff__dot" style="background:${hex(s.color)};border-color:${hex(rarityColors[s.rarity] || 0xd8c4a0)}"></div>
+        <div class="gp-staff__body"><div class="gp-staff__name">${s.name} <span class="gp-staff__rar">${s.rarityName}</span></div><div class="gp-staff__sub">Lv.${lv} · ${skill}</div></div>
+        <button class="gp-btn gp-btn--sm ${can ? "" : "gp-btn--disabled"}" data-action="hire" data-id="${s.id}">${shortNumber(cost)}표</button></div>`;
+    }).join("");
+    this.panel.innerHTML = `<div class="gp-paneltitle">직원 채용 · 생산 x${gs.staffMultiplierFor(gs.data).toFixed(2)}</div><div class="gp-stafflist">${cards}</div>`;
+  }
+
+  _renderEvents() {
+    const gs = this.gameState;
+    const ev = this.currentEvent;
+    if (ev) {
+      this.panel.innerHTML = `<div class="gp-event"><div class="gp-event__title">${ev.title}</div><div class="gp-event__body">${ev.body}</div>
+        <div class="gp-event__choices">
+          <button class="gp-btn gp-event__c" data-action="eventChoice" data-id="${ev.id}" data-side="left">${ev.left[0]}<small>${ev.left[2]}</small></button>
+          <button class="gp-btn gp-event__c" data-action="eventChoice" data-id="${ev.id}" data-side="right">${ev.right[0]}<small>${ev.right[2]}</small></button>
+        </div></div>`;
+    } else {
+      const log = (gs.data.log || []).slice(0, 3).map((l) => `<div class="gp-logline">${l}</div>`).join("");
+      this.panel.innerHTML = `<div class="gp-paneltitle">사건 대응실 · 처리 ${gs.data.stats.totalEvents}건</div><button class="gp-btn" data-action="getEvent">사건 받기</button><div class="gp-log">${log}</div>`;
+    }
+  }
+
+  _renderGoals() {
+    const gs = this.gameState;
+    const q = gs.nextQuest();
+    if (!q) {
+      this.panel.innerHTML = `<div class="gp-paneltitle">운영 목표</div><div class="gp-card__sub">현재 목표를 모두 완료했습니다.</div>`;
+      return;
+    }
+    const p = gs.questProgress(q);
+    const ratio = Math.max(0, Math.min(1, p / q.target));
+    this.panel.innerHTML = `<div class="gp-paneltitle">${q.title}</div><div class="gp-card__sub">${q.desc}</div>
+      <div class="gp-progress" style="margin-top:10px"><div class="gp-progress__fill" style="width:${ratio * 100}%"></div></div>
+      <div class="gp-card__sub" style="text-align:center;margin-top:4px">${shortNumber(p)} / ${shortNumber(q.target)}</div>`;
+  }
+
+  _renderPrestige() {
+    const gs = this.gameState;
+    const preview = gs.prestigePreview();
+    const can = preview > 0;
+    const ups = prestigeUpgrades.map((u) => {
+      const lv = gs.prestigeUpgradeLevel(u.id);
+      const cost = gs.prestigeUpgradeCost(u.id);
+      const cb = gs.data.prestige.seals >= cost && lv < u.maxLevel;
+      return `<button class="gp-fac ${cb ? "" : "gp-fac--locked"}" data-action="buyPrestige" data-id="${u.id}"><span class="gp-fac__role">${u.shortName}</span><span class="gp-fac__lv">Lv.${lv} · ${cost}</span></button>`;
+    }).join("");
+    this.panel.innerHTML = `<div class="gp-paneltitle">감사 재정비 · 인장 ${gs.data.prestige.seals} · 영구 x${gs.prestigeMultiplierFor(gs.data).toFixed(2)}</div>
+      <div class="gp-facsel">${ups}</div>
+      <div class="gp-region"><span>예상 획득 +${preview}</span><button class="gp-btn gp-btn--sm ${can ? "" : "gp-btn--disabled"}" data-action="prestigeReset">감사실행</button></div>`;
   }
 }

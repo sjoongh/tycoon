@@ -16,6 +16,25 @@ export class WorkerActor {
     if (this.scene.anims.exists(key)) this.sprite.play(key, true);
   }
 
+  _startBob() {
+    if (this._bob) return;
+    this._bob = this.scene.tweens.add({
+      targets: this.sprite,
+      scaleY: { from: 1, to: 0.9 },
+      duration: 150,
+      yoyo: true,
+      repeat: -1,
+      ease: "Sine.easeInOut",
+    });
+  }
+
+  _stopBob() {
+    if (!this._bob) return;
+    this._bob.stop();
+    this._bob = null;
+    this.sprite.scaleY = 1;
+  }
+
   goTo(goalNode, then) {
     const path = findPath(worldMap.nav, this.node, goalNode);
     if (!path || path.length < 2) {
@@ -28,12 +47,14 @@ export class WorkerActor {
 
   _walkPath(remaining, then) {
     if (remaining.length === 0) {
+      this._stopBob();
       this._anim("worker-work");
       if (then) then();
       return;
     }
     const next = worldMap.nav.nodes[remaining[0]];
     this._anim("worker-walk");
+    this._startBob();
     this.sprite.setFlipX(next.x < this.sprite.x);
     this.scene.tweens.add({
       targets: this.sprite,
@@ -50,6 +71,7 @@ export class WorkerActor {
   }
 
   destroy() {
+    this._stopBob();
     this.sprite.destroy();
   }
 }

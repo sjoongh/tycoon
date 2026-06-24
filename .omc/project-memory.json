@@ -159,6 +159,12 @@
       "type": "file"
     },
     {
+      "path": "src/world/WorkerActor.js",
+      "accessCount": 8,
+      "lastAccessed": 1782321661696,
+      "type": "file"
+    },
+    {
       "path": "src/world/worldMap.js",
       "accessCount": 6,
       "lastAccessed": 1782320350023,
@@ -180,12 +186,6 @@
       "path": "src/assets/assetManifest.js",
       "accessCount": 5,
       "lastAccessed": 1782313978128,
-      "type": "file"
-    },
-    {
-      "path": "src/world/WorkerActor.js",
-      "accessCount": 5,
-      "lastAccessed": 1782319870522,
       "type": "file"
     },
     {
