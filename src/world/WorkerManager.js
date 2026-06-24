@@ -2,7 +2,8 @@ import { WorkerActor } from "./WorkerActor.js";
 import { worldMap } from "./worldMap.js";
 import { facilities } from "../data/facilities.js";
 
-// 직원 색 다양화(틴트) — 복제 인형처럼 안 보이게
+// 직원 다양화: 실제 캐릭터 변형이 있으면 그걸, 없으면 틴트로
+const WORKER_TEXTURES = ["worker/clerk", "worker/clerk-2", "worker/clerk-3"];
 const WORKER_TINTS = [0xffffff, 0xffd4dc, 0xd6d2ff, 0xcdeedd, 0xfff0c4, 0xffe0b8];
 
 export class WorkerManager {
@@ -33,7 +34,10 @@ export class WorkerManager {
 
   _spawn() {
     const idx = this.workers.length;
-    const worker = new WorkerActor(this.scene, "entrance", WORKER_TINTS[idx % WORKER_TINTS.length]);
+    const texes = WORKER_TEXTURES.filter((k) => this.scene.textures.exists(k));
+    const tex = texes.length ? texes[idx % texes.length] : null;
+    const tint = texes.length > 1 ? null : WORKER_TINTS[idx % WORKER_TINTS.length];
+    const worker = new WorkerActor(this.scene, "entrance", tint, tex);
     this.workers.push(worker);
     const alive = () => this.workers.includes(worker);
 

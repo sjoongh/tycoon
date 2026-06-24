@@ -142,8 +142,8 @@
     },
     {
       "path": "src/world/WorkerActor.js",
-      "accessCount": 12,
-      "lastAccessed": 1782323213472,
+      "accessCount": 14,
+      "lastAccessed": 1782324963941,
       "type": "file"
     },
     {
@@ -159,15 +159,15 @@
       "type": "file"
     },
     {
-      "path": "src/scenes/PreloadScene.js",
-      "accessCount": 11,
-      "lastAccessed": 1782324712242,
+      "path": "src/world/WorkerManager.js",
+      "accessCount": 12,
+      "lastAccessed": 1782324985318,
       "type": "file"
     },
     {
-      "path": "src/world/WorkerManager.js",
-      "accessCount": 10,
-      "lastAccessed": 1782323242468,
+      "path": "src/scenes/PreloadScene.js",
+      "accessCount": 11,
+      "lastAccessed": 1782324712242,
       "type": "file"
     },
     {

@@ -3,14 +3,16 @@ import { workerDepth } from "./depth.js";
 import { findPath } from "./pathGraph.js";
 
 export class WorkerActor {
-  constructor(scene, startNode = "entrance", tint = null) {
+  constructor(scene, startNode = "entrance", tint = null, textureKey = null) {
     this.scene = scene;
     this.node = startNode;
     this._pendingNode = startNode;
     const p = worldMap.nav.nodes[startNode];
-    const textureKey = scene.textures.exists("worker/clerk/sheet") ? "worker/clerk/sheet" : "worker/clerk";
+    const key = textureKey && scene.textures.exists(textureKey)
+      ? textureKey
+      : scene.textures.exists("worker/clerk/sheet") ? "worker/clerk/sheet" : "worker/clerk";
     this.shadow = scene.add.ellipse(p.x, p.y - 2, 26, 10, 0x6a4a32, 0.2);
-    this.sprite = scene.add.sprite(p.x, p.y, textureKey, 0).setOrigin(0.5, 1);
+    this.sprite = scene.add.sprite(p.x, p.y, key, 0).setOrigin(0.5, 1);
     if (tint != null) this.sprite.setTint(tint);
     if (scene.anims.exists("worker-idle")) this.sprite.play("worker-idle");
     this._startBreath();
