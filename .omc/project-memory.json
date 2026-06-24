@@ -130,8 +130,8 @@
   "hotPaths": [
     {
       "path": "src/world/WorldView.js",
-      "accessCount": 10,
-      "lastAccessed": 1782319878580,
+      "accessCount": 16,
+      "lastAccessed": 1782320482483,
       "type": "file"
     },
     {
@@ -141,21 +141,33 @@
       "type": "file"
     },
     {
+      "path": "src/textures/devPlaceholders.js",
+      "accessCount": 9,
+      "lastAccessed": 1782320374829,
+      "type": "file"
+    },
+    {
       "path": "src/scenes/PreloadScene.js",
       "accessCount": 8,
       "lastAccessed": 1782319844892,
       "type": "file"
     },
     {
-      "path": "src/textures/devPlaceholders.js",
-      "accessCount": 7,
-      "lastAccessed": 1782316887554,
+      "path": "src/world/FacilityStationView.js",
+      "accessCount": 8,
+      "lastAccessed": 1782320436874,
+      "type": "file"
+    },
+    {
+      "path": "src/world/worldMap.js",
+      "accessCount": 6,
+      "lastAccessed": 1782320350023,
       "type": "file"
     },
     {
       "path": "src/world/WorkerManager.js",
-      "accessCount": 5,
-      "lastAccessed": 1782313752712,
+      "accessCount": 6,
+      "lastAccessed": 1782320503761,
       "type": "file"
     },
     {
@@ -168,18 +180,6 @@
       "path": "src/assets/assetManifest.js",
       "accessCount": 5,
       "lastAccessed": 1782313978128,
-      "type": "file"
-    },
-    {
-      "path": "src/world/FacilityStationView.js",
-      "accessCount": 5,
-      "lastAccessed": 1782313995619,
-      "type": "file"
-    },
-    {
-      "path": "src/world/worldMap.js",
-      "accessCount": 5,
-      "lastAccessed": 1782316899827,
       "type": "file"
     },
     {

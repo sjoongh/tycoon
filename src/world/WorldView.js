@@ -1,5 +1,6 @@
 import { worldMap } from "./worldMap.js";
 import { ASSET_KEYS } from "../assets/assetManifest.js";
+import { facilities } from "../data/facilities.js";
 import { FacilityStationView } from "./FacilityStationView.js";
 import { WorkerManager } from "./WorkerManager.js";
 import { WorldEffects } from "./WorldEffects.js";
@@ -15,14 +16,20 @@ export class WorldView {
     this._buildWalls();
     this._buildDecor();
 
-    this.desk = new FacilityStationView(scene, "desk", worldMap.facilities.desk.anchor);
-    this.desk.onSelect(() => gameState.select("desk"));
+    this.stations = {};
+    facilities.forEach((f) => {
+      const fm = worldMap.facilities[f.id];
+      if (!fm) return;
+      const view = new FacilityStationView(scene, f.id, fm.anchor);
+      view.onSelect(() => gameState.select(f.id));
+      this.stations[f.id] = view;
+    });
 
     this.workers = new WorkerManager(scene, gameState);
     this.effects = new WorldEffects(scene);
 
     this._onChanged = () => this._refresh();
-    this._onUpgraded = (facility) => { if (facility.id === "desk") this.desk.playUpgrade(); };
+    this._onUpgraded = (facility) => this.stations[facility.id]?.playUpgrade();
     this._onFloat = (p) => this.effects.float(p);
     this._onBallots = (p) => this.effects.ballots(p);
     gameState.on("changed", this._onChanged);
@@ -38,13 +45,14 @@ export class WorldView {
 
     this._refresh();
     this._workTimer = scene.time.addEvent({
-      delay: 700,
+      delay: 600,
       loop: true,
       callback: () => {
-        if (this.gameState.level("desk") > 0) {
-          const spot = worldMap.facilities.desk.workSpots[0];
-          this.effects.deskPop(spot.x, spot.y);
-        }
+        const active = facilities.filter((f) => this.gameState.isUnlocked(f.id) && this.gameState.level(f.id) > 0);
+        if (active.length === 0) return;
+        const f = active[Math.floor(this.scene.time.now / 600) % active.length];
+        const spot = worldMap.facilities[f.id]?.workSpots[0];
+        if (spot) this.effects.deskPop(spot.x, spot.y);
       },
     });
   }
@@ -78,13 +86,14 @@ export class WorldView {
   }
 
   _refresh() {
-    const level = this.gameState.level("desk");
-    const unlocked = this.gameState.isUnlocked("desk");
-    const selected = this.gameState.data.selected === "desk";
-    const canUpgrade = unlocked
-      && this.gameState.data.votes >= this.gameState.cost("desk")
-      && this.gameState.data.explain >= this.gameState.explainCost("desk");
-    this.desk.refresh({ level, unlocked, selected, canUpgrade });
+    const gs = this.gameState;
+    facilities.forEach((f) => {
+      const view = this.stations[f.id];
+      if (!view) return;
+      const unlocked = gs.isUnlocked(f.id);
+      const canUpgrade = unlocked && gs.data.votes >= gs.cost(f.id) && gs.data.explain >= gs.explainCost(f.id);
+      view.refresh({ level: gs.level(f.id), unlocked, selected: gs.data.selected === f.id, canUpgrade });
+    });
     this.workers.sync();
   }
 
@@ -99,7 +108,7 @@ export class WorldView {
     this.gameState.off("ballots", this._onBallots);
     this.scene.input.off("pointerdown", this._onPointer);
     this._workTimer?.remove();
-    this.desk.destroy();
+    Object.values(this.stations).forEach((v) => v.destroy());
     this.workers.destroy();
     this.effects.destroy();
   }

@@ -1,6 +1,9 @@
 import { tierForLevel, stationSpriteKey } from "./facilityTiers.js";
 import { stationDepth } from "./depth.js";
 
+// 티어별 화면 표시 폭(성장은 보이되 6개 시설이 한 방에 들어가게 제한)
+const TIER_DISPLAY_W = { t1: 78, t2: 92, t3: 106, t4: 120, t5: 134 };
+
 export class FacilityStationView {
   constructor(scene, facilityId, anchor) {
     this.scene = scene;
@@ -28,6 +31,8 @@ export class FacilityStationView {
       const changing = this.tier !== null;
       this.tier = tier;
       this.sprite.setTexture(stationSpriteKey(this.facilityId, tier));
+      this.sprite.displayWidth = TIER_DISPLAY_W[tier] || 90;
+      this.sprite.scaleY = this.sprite.scaleX;
       this.sprite.setVisible(true);
       if (changing) this.playUpgrade();
     }
@@ -38,9 +43,11 @@ export class FacilityStationView {
   }
 
   playUpgrade() {
+    const s = this.sprite.scaleX || 1;
     this.scene.tweens.add({
       targets: this.sprite,
-      scale: { from: 0.86, to: 1 },
+      scaleX: { from: s * 0.86, to: s },
+      scaleY: { from: s * 0.86, to: s },
       duration: 220,
       ease: "Back.easeOut",
     });

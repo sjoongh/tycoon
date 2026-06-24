@@ -1,5 +1,6 @@
 import { WorkerActor } from "./WorkerActor.js";
 import { worldMap } from "./worldMap.js";
+import { facilities } from "../data/facilities.js";
 
 export class WorkerManager {
   constructor(scene, gameState) {
@@ -8,10 +9,18 @@ export class WorkerManager {
     this.workers = [];
   }
 
+  _activeNodes() {
+    return facilities
+      .filter((f) => this.gameState.isUnlocked(f.id) && this.gameState.level(f.id) > 0 && worldMap.facilities[f.id])
+      .map((f) => worldMap.facilities[f.id].navNode);
+  }
+
   sync() {
-    const level = this.gameState.level("desk");
-    const unlocked = this.gameState.isUnlocked("desk");
-    const target = unlocked ? Math.min(2, Math.max(1, Math.ceil(level / 3))) : 0;
+    const staff = this.gameState.data.staff || {};
+    const staffTotal = Object.values(staff).reduce((a, b) => a + b, 0);
+    const facTotal = this.gameState.facilityTotal ? this.gameState.facilityTotal() : 0;
+    const hasActive = this._activeNodes().length > 0;
+    const target = hasActive ? Math.min(6, Math.max(1, Math.floor(staffTotal / 2) + Math.ceil(facTotal / 8))) : 0;
 
     while (this.workers.length < target) this._spawn();
     while (this.workers.length > target) this.workers.pop().destroy();
@@ -23,14 +32,12 @@ export class WorkerManager {
     const alive = () => this.workers.includes(worker);
     const loop = () => {
       if (!alive()) return;
-      worker.goTo("desk_front", () => {
+      const nodes = this._activeNodes();
+      const target = nodes.length ? nodes[Math.floor(Math.random() * nodes.length)] : "mid";
+      worker.goTo(target, () => {
         if (!alive()) return;
-        this.scene.time.delayedCall(1400, () => {
-          if (!alive()) return;
-          worker.goTo("entrance", () => {
-            if (!alive()) return;
-            this.scene.time.delayedCall(600, loop);
-          });
+        this.scene.time.delayedCall(1200 + Math.random() * 1400, () => {
+          if (alive()) loop();
         });
       });
     };

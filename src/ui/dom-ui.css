@@ -20,3 +20,10 @@
 .gp-tabs { display: flex; gap: 6px; margin-top: 10px; }
 .gp-tab { flex: 1; pointer-events: auto; border: none; border-radius: 10px; padding: 8px; font-size: 11px; background: #efe5d6; color: #7a6a58; cursor: pointer; }
 .gp-tab--active { background: #ffd28a; color: #5a463a; font-weight: 700; }
+
+.gp-facsel { display: flex; gap: 5px; margin-top: 10px; }
+.gp-fac { flex: 1; pointer-events: auto; border: 2px solid #d8c4a0; border-radius: 10px; padding: 6px 2px; background: #fff; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.gp-fac__role { font-size: 11px; font-weight: 700; color: #5a463a; }
+.gp-fac__lv { font-size: 9px; color: #9a8472; }
+.gp-fac--active { background: #fff3da; box-shadow: 0 0 0 2px #ffd28a inset; }
+.gp-fac--locked { opacity: 0.5; filter: grayscale(0.6); }

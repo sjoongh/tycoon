@@ -1,4 +1,28 @@
 import { PALETTE, ASSET_KEYS, DESK_TIERS } from "../assets/assetManifest.js";
+import { facilities } from "../data/facilities.js";
+
+const FAC_TIER_W = { t1: 58, t2: 70, t3: 82, t4: 92, t5: 100 };
+
+// 비-desk 시설의 임시 스프라이트(시설색 블록, 티어별 크기). 실제 아트가 같은 키로 로드되면 자동으로 안 만들어짐.
+function makeFacilityTier(scene, facilityId, color, tier) {
+  const key = `facility/${facilityId}/${tier}/idle`;
+  if (scene.textures.exists(key)) return;
+  const w = FAC_TIER_W[tier];
+  const h = Math.round(w * 0.72);
+  const W = 112;
+  const H = 96;
+  const g = scene.make.graphics({ x: 0, y: 0, add: false });
+  g.fillStyle(PALETTE.shadow, 0.15);
+  g.fillEllipse(W / 2, H - 8, w + 12, 13);
+  g.fillStyle(color, 1);
+  g.fillRoundedRect((W - w) / 2, H - h - 8, w, h, 8);
+  g.fillStyle(0xffffff, 0.3);
+  g.fillRoundedRect((W - w) / 2 + 4, H - h - 4, w - 8, 6, 3);
+  g.fillStyle(0x000000, 0.12);
+  g.fillRoundedRect((W - w) / 2, H - 16, w, 8, 3);
+  g.generateTexture(key, W, H);
+  g.destroy();
+}
 
 function isoDiamond(g, cx, cy, w, h, color) {
   g.fillStyle(color, 1);
@@ -169,6 +193,9 @@ export function generatePlaceholders(scene) {
   ASSET_KEYS.walls.forEach((key) => makeWindow(scene, key));
   makePlant(scene);
   DESK_TIERS.forEach((tier) => makeDeskTier(scene, tier));
+  facilities
+    .filter((f) => f.id !== "desk")
+    .forEach((f) => ["t1", "t2", "t3", "t4", "t5"].forEach((tier) => makeFacilityTier(scene, f.id, f.color, tier)));
   makeWorkerSheet(scene);
   makeBallot(scene);
 }
