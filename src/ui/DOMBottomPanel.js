@@ -97,20 +97,25 @@ export class DOMBottomPanel {
     const ex = gs.explainCost(sel);
     const canBuy = unlocked && gs.data.votes >= cost && gs.data.explain >= ex;
     const stageDone = gs.data.stage.progress >= gs.data.stage.target;
+    const costLabel = unlocked ? `업그레이드 (${shortNumber(cost)})` : "잠김";
     this.panel.innerHTML = `
       <div class="gp-card">
-        <div class="gp-card__icon" style="background:${hex(f.color)}"></div>
+        <div class="gp-card__icon" style="background-image:url('/art/${sel}-t1.png');background-color:${hex(f.color)}"></div>
         <div class="gp-card__body">
           <div class="gp-card__title">${f.name} Lv.${gs.level(sel)}</div>
-          <div class="gp-card__sub">${unlocked ? `${shortNumber(cost)}표 · 해명 ${ex}` : `${f.unlock}구역에서 해금`}</div>
+          <div class="gp-card__sub">${unlocked ? `${shortNumber(cost)}표 · 해명 ${shortNumber(ex)}` : `${f.unlock}구역에서 해금`}</div>
         </div>
-        <button class="gp-btn ${canBuy ? "" : "gp-btn--disabled"}" data-action="upgradeFac">${unlocked ? "업그레이드" : "잠김"}</button>
+        <button class="gp-btn ${canBuy ? "" : "gp-btn--disabled"}" data-action="upgradeFac">${costLabel}</button>
       </div>
       <div class="gp-facsel">${facilities.map((ff) => {
         const u = gs.isUnlocked(ff.id);
-        return `<button class="gp-fac ${ff.id === sel ? "gp-fac--active" : ""} ${u ? "" : "gp-fac--locked"}" style="border-color:${hex(ff.color)}" data-action="selectFac" data-id="${ff.id}"><span class="gp-fac__role">${ff.role}</span><span class="gp-fac__lv">${u ? `Lv.${gs.level(ff.id)}` : `${ff.unlock}구`}</span></button>`;
+        return `<button class="gp-fac ${ff.id === sel ? "gp-fac--active" : ""} ${u ? "" : "gp-fac--locked"}" data-action="selectFac" data-id="${ff.id}"><span class="gp-fac__icon" style="background:${hex(ff.color)}"></span><span class="gp-fac__role">${ff.role}</span><span class="gp-fac__lv">${u ? `Lv.${gs.level(ff.id)}` : `${ff.unlock}구`}</span></button>`;
       }).join("")}</div>
-      <div class="gp-region"><span>${gs.data.stage.area}구역 · ${shortNumber(gs.data.stage.progress)} / ${shortNumber(gs.data.stage.target)}</span><button class="gp-btn gp-btn--sm ${stageDone ? "" : "gp-btn--disabled"}" data-action="advanceStage">지역완료</button></div>`;
+      <div class="gp-region"><span>${gs.data.stage.area}구역 · ${shortNumber(gs.data.stage.progress)} / ${shortNumber(gs.data.stage.target)}</span>${
+        stageDone
+          ? `<button class="gp-btn gp-btn--sm" data-action="advanceStage">지역완료 ✓</button>`
+          : `<span class="gp-stage-frac">${Math.floor((gs.data.stage.progress / gs.data.stage.target) * 100)}%</span>`
+      }</div>`;
   }
 
   _renderCrew() {
@@ -121,9 +126,9 @@ export class DOMBottomPanel {
       const ex = gs.staffExplainCost(s.id);
       const can = gs.data.votes >= cost && gs.data.explain >= ex;
       const skill = gs.staffSkillActive(s.id) ? s.skill.name : `스킬 Lv.${s.skill.unlockLevel}`;
-      return `<div class="gp-staff">
-        <div class="gp-staff__dot" style="background:${hex(s.color)};border-color:${hex(rarityColors[s.rarity] || 0xd8c4a0)}"></div>
-        <div class="gp-staff__body"><div class="gp-staff__name">${s.name} <span class="gp-staff__rar">${s.rarityName}</span></div><div class="gp-staff__sub">Lv.${lv} · ${skill}</div></div>
+      return `<div class="gp-staff" style="--rarity-color:${hex(rarityColors[s.rarity] || 0xd8c4a0)}">
+        <div class="gp-staff__dot" style="background:${hex(s.color)}"></div>
+        <div class="gp-staff__body"><div class="gp-staff__name">${s.name}<span class="gp-staff__rar">${s.rarityName}</span></div><div class="gp-staff__sub">Lv.${lv} · ${skill}</div></div>
         <button class="gp-btn gp-btn--sm ${can ? "" : "gp-btn--disabled"}" data-action="hire" data-id="${s.id}">${shortNumber(cost)}표</button></div>`;
     }).join("");
     this.panel.innerHTML = `<div class="gp-paneltitle">직원 채용 · 생산 x${gs.staffMultiplierFor(gs.data).toFixed(2)}</div><div class="gp-stafflist">${cards}</div>`;
@@ -140,7 +145,7 @@ export class DOMBottomPanel {
         </div></div>`;
     } else {
       const log = (gs.data.log || []).slice(0, 3).map((l) => `<div class="gp-logline">${l}</div>`).join("");
-      this.panel.innerHTML = `<div class="gp-paneltitle">사건 대응실 · 처리 ${gs.data.stats.totalEvents}건</div><button class="gp-btn" data-action="getEvent">사건 받기</button><div class="gp-log">${log}</div>`;
+      this.panel.innerHTML = `<div class="gp-paneltitle">📋 사건 대응실 · 처리 ${gs.data.stats.totalEvents}건</div><div class="gp-card__sub">무작위 사건에 대응해 표·믿음을 얻으세요</div><button class="gp-btn gp-btn--event" data-action="getEvent">사건 받기</button><div class="gp-log">${log}</div>`;
     }
   }
 

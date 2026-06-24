@@ -249,6 +249,12 @@
       "type": "file"
     },
     {
+      "path": "index.html",
+      "accessCount": 2,
+      "lastAccessed": 1782323437917,
+      "type": "file"
+    },
+    {
       "path": "README.md",
       "accessCount": 1,
       "lastAccessed": 1782281669550,
@@ -288,12 +294,6 @@
       "path": "public/art/world-office.png",
       "accessCount": 1,
       "lastAccessed": 1782281694452,
-      "type": "file"
-    },
-    {
-      "path": "index.html",
-      "accessCount": 1,
-      "lastAccessed": 1782312051419,
       "type": "file"
     },
     {

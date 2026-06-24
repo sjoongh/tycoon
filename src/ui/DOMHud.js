@@ -30,7 +30,7 @@ export class DOMHud {
     const ratio = Math.max(0, Math.min(1, d.stage.progress / d.stage.target));
     this.root.querySelector('[data-k="progress"]').style.width = `${ratio * 100}%`;
     const cps = this.gameState.cps ? this.gameState.cps() : 0;
-    this.root.querySelector('[data-k="stage"]').textContent = `${d.stage.area}구역 · 초당 ${cps.toFixed(1)}표 · 인장 ${d.prestige.seals}`;
+    this.root.querySelector('[data-k="stage"]').textContent = `${d.stage.area}구역 · D-${d.days} · 초당 ${cps.toFixed(1)}표`;
   }
 
   destroy() {
