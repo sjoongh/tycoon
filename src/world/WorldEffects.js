@@ -6,7 +6,7 @@ export class WorldEffects {
   constructor(scene) {
     this.scene = scene;
     this.floatTexts = new FloatTextPool(scene);
-    this.ballots = new BallotPool(scene);
+    this.ballotPool = new BallotPool(scene);
   }
 
   float(payload) {
@@ -14,7 +14,7 @@ export class WorldEffects {
   }
 
   ballots(payload) {
-    this.ballots.spawn(payload.x, payload.y, payload.count);
+    this.ballotPool.spawn(payload.x, payload.y, payload.count);
   }
 
   deskPop(x, y) {
