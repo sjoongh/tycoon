@@ -15,6 +15,5 @@ export class PreloadScene extends Phaser.Scene {
     generatePlaceholders(this);
     createAnimations(this);
     this.scene.start("GameScene");
-    this.scene.launch("UIScene");
   }
 }
