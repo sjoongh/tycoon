@@ -200,3 +200,5 @@
 {"t":0,"agent":"a45155f","agent_type":"unknown","event":"agent_stop","success":true}
 {"t":0,"agent":"a514cbf","agent_type":"unknown","event":"agent_stop","success":true}
 {"t":0,"agent":"acda8d7","agent_type":"unknown","event":"agent_stop","success":true}
+{"t":0,"agent":"system","event":"skill_invoked","skill_name":"oh-my-claudecode:mcp-setup"}
+{"t":0,"agent":"a70a914","agent_type":"unknown","event":"agent_stop","success":true}

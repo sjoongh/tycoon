@@ -7,8 +7,13 @@ export class WorkerActor {
     this.scene = scene;
     this.node = startNode;
     const p = worldMap.nav.nodes[startNode];
-    this.sprite = scene.add.sprite(p.x, p.y, "worker/clerk/sheet", 0).setOrigin(0.5, 1);
-    this.sprite.play("worker-idle");
+    const textureKey = scene.textures.exists("worker/clerk/sheet") ? "worker/clerk/sheet" : "worker/clerk";
+    this.sprite = scene.add.sprite(p.x, p.y, textureKey, 0).setOrigin(0.5, 1);
+    if (scene.anims.exists("worker-idle")) this.sprite.play("worker-idle");
+  }
+
+  _anim(key) {
+    if (this.scene.anims.exists(key)) this.sprite.play(key, true);
   }
 
   goTo(goalNode, then) {
@@ -23,12 +28,12 @@ export class WorkerActor {
 
   _walkPath(remaining, then) {
     if (remaining.length === 0) {
-      this.sprite.play("worker-work");
+      this._anim("worker-work");
       if (then) then();
       return;
     }
     const next = worldMap.nav.nodes[remaining[0]];
-    this.sprite.play("worker-walk", true);
+    this._anim("worker-walk");
     this.sprite.setFlipX(next.x < this.sprite.x);
     this.scene.tweens.add({
       targets: this.sprite,

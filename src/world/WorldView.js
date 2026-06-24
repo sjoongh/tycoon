@@ -55,7 +55,7 @@ export class WorldView {
       for (let c = 0; c < f.cols; c++) {
         const x = f.originX + (c - r) * (f.tileW / 2);
         const y = f.originY + (c + r) * (f.tileH / 2);
-        this.scene.add.image(x, y, ASSET_KEYS.floor).setDepth(DEPTH_BASE.floor + y);
+        this.scene.add.image(x, y, ASSET_KEYS.floor).setDisplaySize(f.tileW, f.tileH).setDepth(DEPTH_BASE.floor + y);
       }
     }
   }

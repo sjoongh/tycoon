@@ -11,6 +11,10 @@ export function registerWorkerSheet(scene) {
 }
 
 export function createAnimations(scene) {
+  // 실제 아트(단일 클럭 이미지)면 시트 슬라이싱/애니 생성을 건너뛴다. 플레이스홀더(작은 4프레임 스트립)만 시트화.
+  // 플레이스홀더는 96x32 가로 4프레임 스트립(높이 32). 실제 단일 클럭은 세로로 김(높이 큼) → 시트화 건너뜀.
+  const src = scene.textures.get(ASSET_KEYS.workerSheet).getSourceImage();
+  if (src && src.height > 48) return;
   const sheetKey = registerWorkerSheet(scene);
   const def = (key, frames, frameRate, repeat) => {
     if (scene.anims.exists(key)) return;

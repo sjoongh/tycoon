@@ -130,20 +130,20 @@
   "hotPaths": [
     {
       "path": "src/world/WorldView.js",
-      "accessCount": 9,
-      "lastAccessed": 1782316921908,
+      "accessCount": 10,
+      "lastAccessed": 1782319878580,
       "type": "file"
     },
     {
       "path": "src/main.js",
-      "accessCount": 8,
-      "lastAccessed": 1782316836727,
+      "accessCount": 9,
+      "lastAccessed": 1782319883304,
       "type": "file"
     },
     {
       "path": "src/scenes/PreloadScene.js",
-      "accessCount": 7,
-      "lastAccessed": 1782313743623,
+      "accessCount": 8,
+      "lastAccessed": 1782319844892,
       "type": "file"
     },
     {
@@ -183,6 +183,18 @@
       "type": "file"
     },
     {
+      "path": "src/world/WorkerActor.js",
+      "accessCount": 5,
+      "lastAccessed": 1782319870522,
+      "type": "file"
+    },
+    {
+      "path": "src/animations/createAnimations.js",
+      "accessCount": 5,
+      "lastAccessed": 1782319914674,
+      "type": "file"
+    },
+    {
       "path": "src/scenes/GameScene.js",
       "accessCount": 4,
       "lastAccessed": 1782313744202,
@@ -210,18 +222,6 @@
       "path": "src/world/depth.js",
       "accessCount": 2,
       "lastAccessed": 1782313227864,
-      "type": "file"
-    },
-    {
-      "path": "src/world/WorkerActor.js",
-      "accessCount": 2,
-      "lastAccessed": 1782313753230,
-      "type": "file"
-    },
-    {
-      "path": "src/animations/createAnimations.js",
-      "accessCount": 2,
-      "lastAccessed": 1782313755601,
       "type": "file"
     },
     {
