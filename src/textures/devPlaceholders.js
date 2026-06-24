@@ -35,6 +35,8 @@ const DESK_SHAPE = {
   t1: { w: 46, h: 30, color: PALETTE.deskT1, posts: 0 },
   t2: { w: 66, h: 40, color: PALETTE.deskT2, posts: 1 },
   t3: { w: 84, h: 52, color: PALETTE.deskT3, posts: 2 },
+  t4: { w: 92, h: 60, color: PALETTE.deskT4, posts: 3 },
+  t5: { w: 96, h: 68, color: PALETTE.deskT5, posts: 4 },
 };
 
 function makeDeskTier(scene, tier) {

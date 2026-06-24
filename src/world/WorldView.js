@@ -28,8 +28,8 @@ export class WorldView {
     gameState.on("float", this._onFloat);
     gameState.on("ballots", this._onBallots);
 
+    // 하단 DOM 패널은 pointer-events:auto로 자체 탭을 가로채므로, 캔버스에 도달한 탭만 처리한다
     this._onPointer = (pointer) => {
-      if (pointer.y > 600) return; // 하단 DOM UI 영역 보호
       gameState.processClick(pointer.x, pointer.y);
     };
     scene.input.on("pointerdown", this._onPointer);

@@ -32,9 +32,9 @@ export class FacilityStationView {
       if (changing) this.playUpgrade();
     }
     this.sprite.setVisible(unlocked && level > 0);
-    this.ring.setStrokeStyle(3, 0x8ec6a0, selected ? 0.9 : 0);
-    this.sprite.setTint(canUpgrade ? 0xffffff : 0xffffff);
-    // 작업 애니 강도(틴트 펄스 등)는 WorldView의 틱에서 별도 처리
+    // 선택 시 진한 링, 업그레이드 가능 시 옅은 링으로 "업그레이드 준비" 어포던스
+    const ringAlpha = selected ? 0.9 : canUpgrade ? 0.4 : 0;
+    this.ring.setStrokeStyle(3, 0x8ec6a0, ringAlpha);
   }
 
   playUpgrade() {

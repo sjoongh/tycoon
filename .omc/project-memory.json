@@ -129,15 +129,111 @@
   },
   "hotPaths": [
     {
+      "path": "src/scenes/PreloadScene.js",
+      "accessCount": 7,
+      "lastAccessed": 1782313743623,
+      "type": "file"
+    },
+    {
+      "path": "src/main.js",
+      "accessCount": 6,
+      "lastAccessed": 1782313744221,
+      "type": "file"
+    },
+    {
+      "path": "src/world/WorldView.js",
+      "accessCount": 6,
+      "lastAccessed": 1782314002720,
+      "type": "file"
+    },
+    {
+      "path": "src/world/WorkerManager.js",
+      "accessCount": 5,
+      "lastAccessed": 1782313752712,
+      "type": "file"
+    },
+    {
+      "path": "src/world/WorldEffects.js",
+      "accessCount": 5,
+      "lastAccessed": 1782313753701,
+      "type": "file"
+    },
+    {
+      "path": "src/assets/assetManifest.js",
+      "accessCount": 5,
+      "lastAccessed": 1782313978128,
+      "type": "file"
+    },
+    {
+      "path": "src/textures/devPlaceholders.js",
+      "accessCount": 5,
+      "lastAccessed": 1782313984552,
+      "type": "file"
+    },
+    {
+      "path": "src/world/FacilityStationView.js",
+      "accessCount": 5,
+      "lastAccessed": 1782313995619,
+      "type": "file"
+    },
+    {
+      "path": "src/world/worldMap.js",
+      "accessCount": 4,
+      "lastAccessed": 1782313645203,
+      "type": "file"
+    },
+    {
+      "path": "src/scenes/GameScene.js",
+      "accessCount": 4,
+      "lastAccessed": 1782313744202,
+      "type": "file"
+    },
+    {
+      "path": "package.json",
+      "accessCount": 3,
+      "lastAccessed": 1782312675323,
+      "type": "file"
+    },
+    {
       "path": "docs/superpowers/plans/2026-06-24-gaepyo-vertical-slice-desk.md",
       "accessCount": 2,
       "lastAccessed": 1782312381754,
       "type": "file"
     },
     {
-      "path": "package.json",
-      "accessCount": 1,
-      "lastAccessed": 1782281669059,
+      "path": "src/world/facilityTiers.js",
+      "accessCount": 2,
+      "lastAccessed": 1782312892808,
+      "type": "file"
+    },
+    {
+      "path": "src/world/depth.js",
+      "accessCount": 2,
+      "lastAccessed": 1782313227864,
+      "type": "file"
+    },
+    {
+      "path": "src/world/WorkerActor.js",
+      "accessCount": 2,
+      "lastAccessed": 1782313753230,
+      "type": "file"
+    },
+    {
+      "path": "src/animations/createAnimations.js",
+      "accessCount": 2,
+      "lastAccessed": 1782313755601,
+      "type": "file"
+    },
+    {
+      "path": "src/scenes/BootScene.js",
+      "accessCount": 2,
+      "lastAccessed": 1782313761755,
+      "type": "file"
+    },
+    {
+      "path": "src/data/facilities.js",
+      "accessCount": 2,
+      "lastAccessed": 1782313769011,
       "type": "file"
     },
     {
@@ -189,39 +285,147 @@
       "type": "file"
     },
     {
-      "path": "src/scenes/GameScene.js",
-      "accessCount": 1,
-      "lastAccessed": 1782281694505,
-      "type": "file"
-    },
-    {
-      "path": "src/main.js",
-      "accessCount": 1,
-      "lastAccessed": 1782312049638,
-      "type": "file"
-    },
-    {
-      "path": "src/scenes/PreloadScene.js",
-      "accessCount": 1,
-      "lastAccessed": 1782312049961,
-      "type": "file"
-    },
-    {
-      "path": "src/scenes/BootScene.js",
-      "accessCount": 1,
-      "lastAccessed": 1782312050486,
-      "type": "file"
-    },
-    {
-      "path": "src/data/facilities.js",
-      "accessCount": 1,
-      "lastAccessed": 1782312050944,
-      "type": "file"
-    },
-    {
       "path": "index.html",
       "accessCount": 1,
       "lastAccessed": 1782312051419,
+      "type": "file"
+    },
+    {
+      "path": ".superpowers/sdd/task-1-brief.md",
+      "accessCount": 1,
+      "lastAccessed": 1782312669190,
+      "type": "file"
+    },
+    {
+      "path": "vitest.config.js",
+      "accessCount": 1,
+      "lastAccessed": 1782312677557,
+      "type": "file"
+    },
+    {
+      "path": "test/smoke.test.js",
+      "accessCount": 1,
+      "lastAccessed": 1782312680719,
+      "type": "file"
+    },
+    {
+      "path": ".superpowers/sdd/task-1-report.md",
+      "accessCount": 1,
+      "lastAccessed": 1782312697254,
+      "type": "file"
+    },
+    {
+      "path": ".superpowers/sdd/task-2-brief.md",
+      "accessCount": 1,
+      "lastAccessed": 1782312771979,
+      "type": "file"
+    },
+    {
+      "path": ".superpowers/sdd/task-3-brief.md",
+      "accessCount": 1,
+      "lastAccessed": 1782312772172,
+      "type": "file"
+    },
+    {
+      "path": ".superpowers/sdd/task-4-brief.md",
+      "accessCount": 1,
+      "lastAccessed": 1782312772373,
+      "type": "file"
+    },
+    {
+      "path": ".superpowers/sdd/task-5-brief.md",
+      "accessCount": 1,
+      "lastAccessed": 1782312772446,
+      "type": "file"
+    },
+    {
+      "path": "test/facilityTiers.test.js",
+      "accessCount": 1,
+      "lastAccessed": 1782312777353,
+      "type": "file"
+    },
+    {
+      "path": "test/depth.test.js",
+      "accessCount": 1,
+      "lastAccessed": 1782312779058,
+      "type": "file"
+    },
+    {
+      "path": "test/pathGraph.test.js",
+      "accessCount": 1,
+      "lastAccessed": 1782312780943,
+      "type": "file"
+    },
+    {
+      "path": "test/worldMap.test.js",
+      "accessCount": 1,
+      "lastAccessed": 1782312782420,
+      "type": "file"
+    },
+    {
+      "path": "src/world/pathGraph.js",
+      "accessCount": 1,
+      "lastAccessed": 1782312790996,
+      "type": "file"
+    },
+    {
+      "path": ".superpowers/sdd/task-2-5-report.md",
+      "accessCount": 1,
+      "lastAccessed": 1782312821194,
+      "type": "file"
+    },
+    {
+      "path": ".superpowers/sdd/task-6-brief.md",
+      "accessCount": 1,
+      "lastAccessed": 1782312883767,
+      "type": "file"
+    },
+    {
+      "path": ".superpowers/sdd/task-7-brief.md",
+      "accessCount": 1,
+      "lastAccessed": 1782312883837,
+      "type": "file"
+    },
+    {
+      "path": "test/assetManifest.test.js",
+      "accessCount": 1,
+      "lastAccessed": 1782312933323,
+      "type": "file"
+    },
+    {
+      "path": ".superpowers/sdd/task-6-7-report.md",
+      "accessCount": 1,
+      "lastAccessed": 1782312965925,
+      "type": "file"
+    },
+    {
+      "path": ".superpowers/sdd/task-8-brief.md",
+      "accessCount": 1,
+      "lastAccessed": 1782313048636,
+      "type": "file"
+    },
+    {
+      "path": ".superpowers/sdd/task-9-brief.md",
+      "accessCount": 1,
+      "lastAccessed": 1782313048745,
+      "type": "file"
+    },
+    {
+      "path": ".superpowers/sdd/task-10-brief.md",
+      "accessCount": 1,
+      "lastAccessed": 1782313048851,
+      "type": "file"
+    },
+    {
+      "path": ".superpowers/sdd/task-8-10-report.md",
+      "accessCount": 1,
+      "lastAccessed": 1782313114386,
+      "type": "file"
+    },
+    {
+      "path": ".superpowers/sdd/task-11-brief.md",
+      "accessCount": 1,
+      "lastAccessed": 1782313218364,
       "type": "file"
     }
   ],
