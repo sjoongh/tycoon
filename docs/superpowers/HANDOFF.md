@@ -26,3 +26,26 @@
 - 2026-06-24T18:08 C5 gain delta (d546182), BUG-11 prestige mult (c2a8065). 목표/감사/사건 탭 회귀검증 OK. C4/C6/C7/C9는 codex UI아트(bej3uauil) 생성 대기중.
 - 2026-06-24T18:13 C4/C6/C7 wired (2e97c9c): HUD icons, wall clock/poster, ballotbox prop, tutorial hand. C8 partial (BUG-11 done). 신규유저 휑함 해소.
 - 2026-06-24T18:14 C3 milestone toast verified via playwright drive(ms.png). 직원 변형 2종 codex 생성중(b10s9wx4y). C9 walk-sheet 보류(현 bob/breath 충분).
+
+---
+## 🌅 아침 요약 (밤샘 자율 작업 결과)
+
+5관점 리뷰(사용자/시니어개발/QA/기획자/디자이너) → 종합 → 적용 → Playwright 자가검증. 모두 커밋됨.
+
+### 완료
+- **월드/게임필**: 직원 시설별 분산(뭉침 해소)·그림자·캐릭터 다양화·걷기/호흡 모션·nav 메시·시설 탭팝
+- **UI 디자인시스템**: Nunito 폰트, 패널 그라데이션+블러, 또렷한 진행바, 시설칩 아이콘, 카드 썸네일, 직원 희귀도 스트라이프, 흰 활성탭, 버튼/커서 상태
+- **HUD**: 실제 자원 아이콘(투표함/말풍선/하트), D-카운트, 구역/초당표
+- **신규 온보딩**: 첫 탭 유도 힌트 + 튜토리얼 손
+- **오프라인 보상 모달**(회귀 복구) · **마일스톤 토스트+플래시**(Lv5/10/25/45, 검증됨)
+- **방 비주얼**: 벽 시계+포스터, 바닥 투표함 프롭(휑함 해소)
+- **탭 전부 작동**: 시설(델타 표기)·직원·사건·목표·감사
+- **버그 수정**: 해명 shortNumber, 시설 Lv0 깜빡, 프레스티지 배율 표시, 커서 상태
+
+### 보류/미적용 (의도)
+- C9 직원 걷기 스프라이트시트: 현 bob/breath/그림자/틴트로 충분, 일관 프레임 생성 리스크로 보류
+- BUG-01(퀘스트 자동완료), BUG-05(탭 강제전환): GameState 로직이라 보류(게임 로직 불변 원칙)
+- 직원 캐릭터 변형 2종: codex 생성분 도착 시 자동 배선 예정
+
+### 검증 방법
+`npm run dev` → http://localhost:5178 · 또는 `node scripts/shot.mjs <out> <seeded|fresh|offline> <tab>` / `node scripts/verify-milestone.mjs <out>`
