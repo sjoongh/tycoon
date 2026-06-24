@@ -1,10 +1,11 @@
 import Phaser from "phaser";
 import "./style.css";
+import "./ui/dom-ui.css";
 import { GAME_HEIGHT, GAME_WIDTH } from "./config.js";
 import { BootScene } from "./scenes/BootScene.js";
 import { GameScene } from "./scenes/GameScene.js";
 import { PreloadScene } from "./scenes/PreloadScene.js";
-import { UIScene } from "./scenes/UIScene.js";
+import { DOMHud } from "./ui/DOMHud.js";
 
 if ("serviceWorker" in navigator && import.meta.env.PROD) {
   window.addEventListener("load", () => {
@@ -24,7 +25,20 @@ const config = {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
   },
-  scene: [BootScene, PreloadScene, GameScene, UIScene],
+  scene: [BootScene, PreloadScene, GameScene],
 };
 
-new Phaser.Game(config);
+const game = new Phaser.Game(config);
+
+const uiLayer = document.createElement("div");
+uiLayer.className = "gp-ui";
+document.getElementById("game").appendChild(uiLayer);
+
+game.events.once("ready", () => {
+  const tryMount = () => {
+    const gameState = game.registry.get("gameState");
+    if (!gameState) return setTimeout(tryMount, 50);
+    new DOMHud(gameState).mount(uiLayer);
+  };
+  tryMount();
+});
