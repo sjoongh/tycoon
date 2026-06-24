@@ -40,7 +40,8 @@ const browser = await chromium.launch({
   ],
 });
 const page = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 });
-if (mode === "seeded") {
+if (mode === "offline") seed.lastSeenAt = now - 2 * 3600 * 1000; // 2h ago -> offline reward
+if (mode === "seeded" || mode === "offline") {
   await page.addInitScript(([k, v]) => { localStorage.setItem(k, v); }, [SAVE_KEY, JSON.stringify(seed)]);
 }
 const errors = [];

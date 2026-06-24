@@ -259,3 +259,4 @@
 {"t":0,"agent":"ab0faa2","agent_type":"general-purpose","event":"agent_stop","success":true,"duration_ms":587351}
 {"t":0,"agent":"ab0faa2","agent_type":"general-purpose","event":"agent_stop","success":true,"duration_ms":593809}
 {"t":0,"agent":"ab0faa2","agent_type":"general-purpose","event":"agent_stop","success":true,"duration_ms":598458}
+{"t":0,"agent":"a63abf8","agent_type":"unknown","event":"agent_stop","success":true}

@@ -7,6 +7,7 @@ import { GameScene } from "./scenes/GameScene.js";
 import { PreloadScene } from "./scenes/PreloadScene.js";
 import { DOMHud } from "./ui/DOMHud.js";
 import { DOMBottomPanel } from "./ui/DOMBottomPanel.js";
+import { DOMModalLayer } from "./ui/DOMModalLayer.js";
 
 if ("serviceWorker" in navigator && import.meta.env.PROD) {
   window.addEventListener("load", () => {
@@ -42,6 +43,7 @@ game.events.once("ready", () => {
     if (!gameState) return setTimeout(tryMount, 50);
     new DOMHud(gameState).mount(uiLayer);
     new DOMBottomPanel(gameState).mount(uiLayer);
+    new DOMModalLayer(gameState).mount(uiLayer);
   };
   tryMount();
 });

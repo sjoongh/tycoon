@@ -153,15 +153,15 @@
       "type": "file"
     },
     {
-      "path": "src/scenes/PreloadScene.js",
-      "accessCount": 10,
-      "lastAccessed": 1782322670069,
+      "path": "src/main.js",
+      "accessCount": 12,
+      "lastAccessed": 1782324246310,
       "type": "file"
     },
     {
-      "path": "src/main.js",
+      "path": "src/scenes/PreloadScene.js",
       "accessCount": 10,
-      "lastAccessed": 1782322670218,
+      "lastAccessed": 1782322670069,
       "type": "file"
     },
     {
