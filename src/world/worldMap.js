@@ -18,12 +18,14 @@ export const worldMap = {
     nodes: {
       entrance: { x: 195, y: 560 },
       mid: { x: 195, y: 480 },
+      desk_back: { x: 150, y: 396 },
       desk_front: { x: 150, y: 462 },
     },
     edges: {
       entrance: ["mid"],
-      mid: ["entrance", "desk_front"],
-      desk_front: ["mid"],
+      mid: ["entrance", "desk_back"],
+      desk_back: ["mid", "desk_front"],
+      desk_front: ["desk_back"],
     },
   },
 };

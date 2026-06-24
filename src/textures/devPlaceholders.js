@@ -12,6 +12,7 @@ function isoDiamond(g, cx, cy, w, h, color) {
 }
 
 function makeFloorTile(scene) {
+  if (scene.textures.exists(ASSET_KEYS.floor)) return;
   const g = scene.make.graphics({ x: 0, y: 0, add: false });
   isoDiamond(g, 32, 16, 64, 32, PALETTE.floorA);
   g.lineStyle(2, PALETTE.floorB, 1);
@@ -21,6 +22,7 @@ function makeFloorTile(scene) {
 }
 
 function makeWall(scene, key, color) {
+  if (scene.textures.exists(key)) return;
   const g = scene.make.graphics({ x: 0, y: 0, add: false });
   g.fillStyle(color, 1);
   g.fillRoundedRect(0, 0, 60, 70, 6);
@@ -36,6 +38,7 @@ const DESK_SHAPE = {
 };
 
 function makeDeskTier(scene, tier) {
+  if (scene.textures.exists(ASSET_KEYS.deskStation(tier))) return;
   const s = DESK_SHAPE[tier];
   const W = 96;
   const H = 80;
@@ -52,7 +55,7 @@ function makeDeskTier(scene, tier) {
   // 대기줄 기둥(티어 상승 표시)
   g.fillStyle(PALETTE.accent, 1);
   for (let i = 0; i < s.posts; i++) {
-    g.fillCircle((W - s.w) / 2 - 6 + i * 0, H - 14 - i * 12, 4);
+    g.fillCircle((W - s.w) / 2 - 6, H - 14 - i * 12, 4);
   }
   g.generateTexture(ASSET_KEYS.deskStation(tier), W, H);
   g.destroy();
@@ -60,6 +63,7 @@ function makeDeskTier(scene, tier) {
 
 // 워커: 4프레임 가로 스프라이트시트(walk 2 + idle 1 + work 1)
 function makeWorkerSheet(scene) {
+  if (scene.textures.exists(ASSET_KEYS.workerSheet)) return;
   const FW = 24;
   const FH = 32;
   const frames = 4;
@@ -89,9 +93,24 @@ function makeWorkerSheet(scene) {
   g.destroy();
 }
 
+// 투표용지: BallotPool이 "ballot" 키를 참조한다 (createPixelTextures 은퇴 후 필요)
+function makeBallot(scene) {
+  if (scene.textures.exists("ballot")) return;
+  const g = scene.make.graphics({ x: 0, y: 0, add: false });
+  g.fillStyle(0xfff9ef, 1);
+  g.fillRoundedRect(0, 0, 22, 14, 3);
+  g.lineStyle(2, PALETTE.deskT3, 1);
+  g.strokeRoundedRect(1, 1, 20, 12, 3);
+  g.fillStyle(PALETTE.accent, 1);
+  g.fillRect(5, 6, 12, 2);
+  g.generateTexture("ballot", 22, 14);
+  g.destroy();
+}
+
 export function generatePlaceholders(scene) {
   makeFloorTile(scene);
   ASSET_KEYS.walls.forEach((key) => makeWall(scene, key, PALETTE.wall));
   DESK_TIERS.forEach((tier) => makeDeskTier(scene, tier));
   makeWorkerSheet(scene);
+  makeBallot(scene);
 }

@@ -20,11 +20,18 @@ export class WorkerManager {
   _spawn() {
     const worker = new WorkerActor(this.scene, "entrance");
     this.workers.push(worker);
+    const alive = () => this.workers.includes(worker);
     const loop = () => {
+      if (!alive()) return;
       worker.goTo("desk_front", () => {
-        this.scene.time.delayedCall(1400, () => worker.goTo("entrance", () => {
-          this.scene.time.delayedCall(600, loop);
-        }));
+        if (!alive()) return;
+        this.scene.time.delayedCall(1400, () => {
+          if (!alive()) return;
+          worker.goTo("entrance", () => {
+            if (!alive()) return;
+            this.scene.time.delayedCall(600, loop);
+          });
+        });
       });
     };
     loop();

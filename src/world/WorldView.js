@@ -28,10 +28,11 @@ export class WorldView {
     gameState.on("float", this._onFloat);
     gameState.on("ballots", this._onBallots);
 
-    scene.input.on("pointerdown", (pointer) => {
+    this._onPointer = (pointer) => {
       if (pointer.y > 600) return; // 하단 DOM UI 영역 보호
       gameState.processClick(pointer.x, pointer.y);
-    });
+    };
+    scene.input.on("pointerdown", this._onPointer);
 
     this._refresh();
     this._workTimer = scene.time.addEvent({
@@ -83,6 +84,7 @@ export class WorldView {
     this.gameState.off("upgraded", this._onUpgraded);
     this.gameState.off("float", this._onFloat);
     this.gameState.off("ballots", this._onBallots);
+    this.scene.input.off("pointerdown", this._onPointer);
     this._workTimer?.remove();
     this.desk.destroy();
     this.workers.destroy();
