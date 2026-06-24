@@ -1,9 +1,10 @@
 export const worldMap = {
   floor: { tileKey: "floor/pastel", originX: 195, originY: 410, cols: 6, rows: 6, tileW: 70, tileH: 35 },
-  room: { key: "room/back", x: 195, y: 250, w: 400, h: 250 },
+  // 벽 band를 아래로 내려 바닥 뒤쪽과 겹치게(바닥 depth가 위라 벽 하단을 덮어 틈 없이 이어짐)
+  room: { key: "room/back", x: 195, y: 300, w: 412, h: 350 },
   walls: [
-    { key: "wall/back-left", x: 116, y: 232 },
-    { key: "wall/back-right", x: 274, y: 232 },
+    { key: "wall/back-left", x: 116, y: 245 },
+    { key: "wall/back-right", x: 274, y: 245 },
   ],
   decor: [
     { key: "decor/plant", x: 36, y: 582 },
