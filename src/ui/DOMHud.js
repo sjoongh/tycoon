@@ -7,9 +7,9 @@ export class DOMHud {
     this.root.className = "gp-hud";
     this.root.innerHTML = `
       <div class="gp-hud__row">
-        <div class="gp-chip"><span class="gp-chip__dot" style="background:#ffc857"></span><span><div class="gp-chip__label">표</div><div class="gp-chip__val" data-k="votes">0</div></span></div>
-        <div class="gp-chip"><span class="gp-chip__dot" style="background:#7fc8ff"></span><span><div class="gp-chip__label">해명</div><div class="gp-chip__val" data-k="explain">0</div></span></div>
-        <div class="gp-chip"><span class="gp-chip__dot" style="background:#89d98b"></span><span><div class="gp-chip__label">믿음</div><div class="gp-chip__val" data-k="trust">0%</div></span></div>
+        <div class="gp-chip"><span class="gp-chip__ic" style="background-image:url('/art/icons/votes.png')"></span><span><div class="gp-chip__label">표</div><div class="gp-chip__val" data-k="votes">0</div></span></div>
+        <div class="gp-chip"><span class="gp-chip__ic" style="background-image:url('/art/icons/explain.png')"></span><span><div class="gp-chip__label">해명</div><div class="gp-chip__val" data-k="explain">0</div></span></div>
+        <div class="gp-chip"><span class="gp-chip__ic" style="background-image:url('/art/icons/trust.png')"></span><span><div class="gp-chip__label">믿음</div><div class="gp-chip__val" data-k="trust">0%</div></span></div>
       </div>
       <div class="gp-progress"><div class="gp-progress__fill" data-k="progress"></div></div>
       <div class="gp-stage" data-k="stage"></div>`;

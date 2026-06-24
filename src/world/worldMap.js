@@ -3,12 +3,15 @@ export const worldMap = {
   // 벽 band를 아래로 내려 바닥 뒤쪽과 겹치게(바닥 depth가 위라 벽 하단을 덮어 틈 없이 이어짐)
   room: { key: "room/back", x: 195, y: 296, w: 420, h: 350 },
   walls: [
-    { key: "wall/back-left", x: 116, y: 240 },
-    { key: "wall/back-right", x: 274, y: 240 },
+    { key: "wall/back-left", x: 96, y: 250 },
+    { key: "wall/back-right", x: 294, y: 250 },
+    { key: "wall/clock", x: 195, y: 232 },
+    { key: "wall/poster", x: 250, y: 312 },
   ],
   decor: [
-    { key: "decor/plant", x: 26, y: 600 },
-    { key: "decor/plant", x: 364, y: 600 },
+    { key: "decor/plant", x: 24, y: 602 },
+    { key: "decor/plant", x: 366, y: 602 },
+    { key: "decor/ballotbox", x: 196, y: 614, scale: 0.66 },
   ],
   facilities: {
     // 뒤(작은 y) -> 앞(큰 y). 좌우로 넓게 펴 겹침 최소화.

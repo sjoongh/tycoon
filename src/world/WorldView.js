@@ -83,7 +83,8 @@ export class WorldView {
 
   _buildDecor() {
     (worldMap.decor || []).forEach((d) => {
-      this.scene.add.image(d.x, d.y, d.key).setOrigin(0.5, 1).setDepth(stationDepth(d.y));
+      const img = this.scene.add.image(d.x, d.y, d.key).setOrigin(0.5, 1).setDepth(stationDepth(d.y));
+      if (d.scale) img.setScale(d.scale);
     });
   }
 
