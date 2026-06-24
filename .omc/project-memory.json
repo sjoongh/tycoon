@@ -129,21 +129,27 @@
   },
   "hotPaths": [
     {
+      "path": "src/world/WorldView.js",
+      "accessCount": 9,
+      "lastAccessed": 1782316921908,
+      "type": "file"
+    },
+    {
+      "path": "src/main.js",
+      "accessCount": 8,
+      "lastAccessed": 1782316836727,
+      "type": "file"
+    },
+    {
       "path": "src/scenes/PreloadScene.js",
       "accessCount": 7,
       "lastAccessed": 1782313743623,
       "type": "file"
     },
     {
-      "path": "src/main.js",
-      "accessCount": 6,
-      "lastAccessed": 1782313744221,
-      "type": "file"
-    },
-    {
-      "path": "src/world/WorldView.js",
-      "accessCount": 6,
-      "lastAccessed": 1782314002720,
+      "path": "src/textures/devPlaceholders.js",
+      "accessCount": 7,
+      "lastAccessed": 1782316887554,
       "type": "file"
     },
     {
@@ -165,12 +171,6 @@
       "type": "file"
     },
     {
-      "path": "src/textures/devPlaceholders.js",
-      "accessCount": 5,
-      "lastAccessed": 1782313984552,
-      "type": "file"
-    },
-    {
       "path": "src/world/FacilityStationView.js",
       "accessCount": 5,
       "lastAccessed": 1782313995619,
@@ -178,8 +178,8 @@
     },
     {
       "path": "src/world/worldMap.js",
-      "accessCount": 4,
-      "lastAccessed": 1782313645203,
+      "accessCount": 5,
+      "lastAccessed": 1782316899827,
       "type": "file"
     },
     {
@@ -237,15 +237,15 @@
       "type": "file"
     },
     {
-      "path": "README.md",
-      "accessCount": 1,
-      "lastAccessed": 1782281669550,
+      "path": "src/style.css",
+      "accessCount": 2,
+      "lastAccessed": 1782316842978,
       "type": "file"
     },
     {
-      "path": "src/style.css",
+      "path": "README.md",
       "accessCount": 1,
-      "lastAccessed": 1782281670018,
+      "lastAccessed": 1782281669550,
       "type": "file"
     },
     {

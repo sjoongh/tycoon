@@ -3,15 +3,17 @@ import { ASSET_KEYS } from "../assets/assetManifest.js";
 import { FacilityStationView } from "./FacilityStationView.js";
 import { WorkerManager } from "./WorkerManager.js";
 import { WorldEffects } from "./WorldEffects.js";
-import { DEPTH_BASE } from "./depth.js";
+import { DEPTH_BASE, stationDepth } from "./depth.js";
 
 export class WorldView {
   constructor(scene, gameState) {
     this.scene = scene;
     this.gameState = gameState;
 
+    this._buildRoomBack();
     this._buildFloor();
     this._buildWalls();
+    this._buildDecor();
 
     this.desk = new FacilityStationView(scene, "desk", worldMap.facilities.desk.anchor);
     this.desk.onSelect(() => gameState.select("desk"));
@@ -58,9 +60,20 @@ export class WorldView {
     }
   }
 
+  _buildRoomBack() {
+    if (!worldMap.room) return;
+    this.scene.add.image(worldMap.room.x, worldMap.room.y, worldMap.room.key).setDepth(1);
+  }
+
   _buildWalls() {
     worldMap.walls.forEach((w) => {
-      this.scene.add.image(w.x, w.y, w.key).setDepth(10);
+      this.scene.add.image(w.x, w.y, w.key).setDepth(5);
+    });
+  }
+
+  _buildDecor() {
+    (worldMap.decor || []).forEach((d) => {
+      this.scene.add.image(d.x, d.y, d.key).setOrigin(0.5, 1).setDepth(stationDepth(d.y));
     });
   }
 

@@ -21,12 +21,66 @@ function makeFloorTile(scene) {
   g.destroy();
 }
 
-function makeWall(scene, key, color) {
-  if (scene.textures.exists(key)) return;
+// 방 뒤 벽 패널: 다크 보이드를 없애고 따뜻한 실내 느낌을 준다
+function makeRoomBack(scene) {
+  if (scene.textures.exists("room/back")) return;
+  const W = 400;
+  const H = 320;
   const g = scene.make.graphics({ x: 0, y: 0, add: false });
-  g.fillStyle(color, 1);
-  g.fillRoundedRect(0, 0, 60, 70, 6);
-  g.generateTexture(key, 60, 70);
+  // 벽
+  g.fillStyle(0xf3e3bf, 1);
+  g.fillRoundedRect(0, 0, W, H, 24);
+  // 윗쪽 부드러운 하이라이트
+  g.fillStyle(0xfff3d6, 0.5);
+  g.fillRoundedRect(0, 0, W, 70, 24);
+  // 걸레받이(벽-바닥 경계)
+  g.fillStyle(0xe6cf9f, 1);
+  g.fillRect(0, H - 26, W, 26);
+  g.generateTexture("room/back", W, H);
+  g.destroy();
+}
+
+// 벽 장식 = 창문 (떠 있던 카드 대체)
+function makeWindow(scene, key) {
+  if (scene.textures.exists(key)) return;
+  const W = 64;
+  const H = 76;
+  const g = scene.make.graphics({ x: 0, y: 0, add: false });
+  // 창틀
+  g.fillStyle(0xfff7e6, 1);
+  g.fillRoundedRect(0, 0, W, H, 8);
+  // 하늘
+  g.fillStyle(0xbfe3ff, 1);
+  g.fillRoundedRect(6, 6, W - 12, H - 12, 5);
+  // 구름
+  g.fillStyle(0xffffff, 0.85);
+  g.fillCircle(22, 28, 7);
+  g.fillCircle(32, 28, 9);
+  // 창살
+  g.fillStyle(0xfff7e6, 1);
+  g.fillRect(W / 2 - 2, 6, 4, H - 12);
+  g.fillRect(6, H / 2 - 2, W - 12, 4);
+  g.generateTexture(key, W, H);
+  g.destroy();
+}
+
+// 화분 데코
+function makePlant(scene) {
+  if (scene.textures.exists("decor/plant")) return;
+  const g = scene.make.graphics({ x: 0, y: 0, add: false });
+  g.fillStyle(PALETTE.shadow, 0.15);
+  g.fillEllipse(20, 50, 30, 8);
+  // 화분
+  g.fillStyle(0xe89f6b, 1);
+  g.fillRoundedRect(10, 36, 20, 16, 4);
+  // 잎
+  g.fillStyle(0x8ec6a0, 1);
+  g.fillCircle(20, 24, 11);
+  g.fillCircle(12, 30, 8);
+  g.fillCircle(28, 30, 8);
+  g.fillStyle(0xa9d9b8, 0.7);
+  g.fillCircle(20, 20, 6);
+  g.generateTexture("decor/plant", 40, 54);
   g.destroy();
 }
 
@@ -110,8 +164,10 @@ function makeBallot(scene) {
 }
 
 export function generatePlaceholders(scene) {
+  makeRoomBack(scene);
   makeFloorTile(scene);
-  ASSET_KEYS.walls.forEach((key) => makeWall(scene, key, PALETTE.wall));
+  ASSET_KEYS.walls.forEach((key) => makeWindow(scene, key));
+  makePlant(scene);
   DESK_TIERS.forEach((tier) => makeDeskTier(scene, tier));
   makeWorkerSheet(scene);
   makeBallot(scene);

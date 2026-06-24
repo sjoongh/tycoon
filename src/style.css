@@ -4,9 +4,8 @@ body {
   height: 100%;
   margin: 0;
   background:
-    radial-gradient(circle at 20% 10%, rgba(255, 201, 77, 0.16), transparent 18rem),
-    radial-gradient(circle at 80% 20%, rgba(121, 200, 255, 0.18), transparent 18rem),
-    #171322;
+    radial-gradient(circle at 50% 0%, #fff4dc, transparent 22rem),
+    linear-gradient(180deg, #f7ecd2 0%, #f1dfba 100%);
   overflow: hidden;
 }
 
