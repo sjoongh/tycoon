@@ -104,6 +104,7 @@ export class DOMBottomPanel {
         <div class="gp-card__body">
           <div class="gp-card__title">${f.name} Lv.${gs.level(sel)}</div>
           <div class="gp-card__sub">${unlocked ? `${shortNumber(cost)}표 · 해명 ${shortNumber(ex)}` : `${f.unlock}구역에서 해금`}</div>
+          ${unlocked ? `<div class="gp-card__gain">▲ 업그레이드 시 초당 +${f.cps}표</div>` : ""}
         </div>
         <button class="gp-btn ${canBuy ? "" : "gp-btn--disabled"}" data-action="upgradeFac">${costLabel}</button>
       </div>

@@ -93,3 +93,4 @@
 @keyframes gpPop { from { transform: scale(.85); opacity: 0; } }
 @keyframes gpTap { 0%,100% { transform: scale(1) translateY(0); } 50% { transform: scale(.86) translateY(4px); } }
 @keyframes gpFlash { from { opacity: 1; } to { opacity: 0; } }
+.gp-card__gain { font-size: 11px; font-weight: 700; color: #5fa564; margin-top: 2px; }
