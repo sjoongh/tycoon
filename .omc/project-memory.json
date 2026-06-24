@@ -1,0 +1,229 @@
+{
+  "version": "1.0.0",
+  "lastScanned": 1782281583825,
+  "projectRoot": "/Users/manager/aidp/gaepyo-master",
+  "techStack": {
+    "languages": [
+      {
+        "name": "JavaScript/TypeScript",
+        "version": null,
+        "confidence": "high",
+        "markers": [
+          "package.json"
+        ]
+      }
+    ],
+    "frameworks": [
+      {
+        "name": "vite",
+        "version": "7.0.0",
+        "category": "build"
+      }
+    ],
+    "packageManager": "npm",
+    "runtime": null
+  },
+  "build": {
+    "buildCommand": "npm run build",
+    "testCommand": null,
+    "lintCommand": null,
+    "devCommand": "npm run dev",
+    "scripts": {
+      "dev": "vite --host 0.0.0.0 --port 5178",
+      "build": "vite build",
+      "preview": "vite preview --host 0.0.0.0 --port 4178"
+    }
+  },
+  "conventions": {
+    "namingStyle": null,
+    "importStyle": "ES modules",
+    "testPattern": null,
+    "fileOrganization": null
+  },
+  "structure": {
+    "isMonorepo": false,
+    "workspaces": [],
+    "mainDirectories": [
+      "assets",
+      "public",
+      "src"
+    ],
+    "gitBranches": null
+  },
+  "customNotes": [],
+  "directoryMap": {
+    "assets": {
+      "path": "assets",
+      "purpose": "Static assets",
+      "fileCount": 1,
+      "lastAccessed": 1782281583814,
+      "keyFiles": [
+        "office-map.png"
+      ]
+    },
+    "dist": {
+      "path": "dist",
+      "purpose": "Distribution/build output",
+      "fileCount": 4,
+      "lastAccessed": 1782281583815,
+      "keyFiles": [
+        "icon.svg",
+        "index.html",
+        "manifest.webmanifest",
+        "sw.js"
+      ]
+    },
+    "public": {
+      "path": "public",
+      "purpose": "Public files",
+      "fileCount": 3,
+      "lastAccessed": 1782281583819,
+      "keyFiles": [
+        "icon.svg",
+        "manifest.webmanifest",
+        "sw.js"
+      ]
+    },
+    "src": {
+      "path": "src",
+      "purpose": "Source code",
+      "fileCount": 3,
+      "lastAccessed": 1782281583819,
+      "keyFiles": [
+        "config.js",
+        "main.js",
+        "style.css"
+      ]
+    },
+    "dist/assets": {
+      "path": "dist/assets",
+      "purpose": "Static assets",
+      "fileCount": 3,
+      "lastAccessed": 1782281583819,
+      "keyFiles": [
+        "index-CuG6n8A8.js",
+        "index-Dq3_CwQV.css",
+        "phaser-DFK5Ua9d.js"
+      ]
+    },
+    "src/data": {
+      "path": "src/data",
+      "purpose": "Data files",
+      "fileCount": 5,
+      "lastAccessed": 1782281583819,
+      "keyFiles": [
+        "events.js",
+        "facilities.js",
+        "prestige.js"
+      ]
+    },
+    "src/utils": {
+      "path": "src/utils",
+      "purpose": "Utility functions",
+      "fileCount": 1,
+      "lastAccessed": 1782281583820,
+      "keyFiles": [
+        "format.js"
+      ]
+    }
+  },
+  "hotPaths": [
+    {
+      "path": "docs/superpowers/plans/2026-06-24-gaepyo-vertical-slice-desk.md",
+      "accessCount": 2,
+      "lastAccessed": 1782312381754,
+      "type": "file"
+    },
+    {
+      "path": "package.json",
+      "accessCount": 1,
+      "lastAccessed": 1782281669059,
+      "type": "file"
+    },
+    {
+      "path": "README.md",
+      "accessCount": 1,
+      "lastAccessed": 1782281669550,
+      "type": "file"
+    },
+    {
+      "path": "src/style.css",
+      "accessCount": 1,
+      "lastAccessed": 1782281670018,
+      "type": "file"
+    },
+    {
+      "path": "src/config.js",
+      "accessCount": 1,
+      "lastAccessed": 1782281670379,
+      "type": "file"
+    },
+    {
+      "path": "src/scenes/UIScene.js",
+      "accessCount": 1,
+      "lastAccessed": 1782281679914,
+      "type": "file"
+    },
+    {
+      "path": "src/textures/createPixelTextures.js",
+      "accessCount": 1,
+      "lastAccessed": 1782281679977,
+      "type": "file"
+    },
+    {
+      "path": "assets/design/service-ui-target.png",
+      "accessCount": 1,
+      "lastAccessed": 1782281685259,
+      "type": "file"
+    },
+    {
+      "path": "assets/office-map.png",
+      "accessCount": 1,
+      "lastAccessed": 1782281685382,
+      "type": "file"
+    },
+    {
+      "path": "public/art/world-office.png",
+      "accessCount": 1,
+      "lastAccessed": 1782281694452,
+      "type": "file"
+    },
+    {
+      "path": "src/scenes/GameScene.js",
+      "accessCount": 1,
+      "lastAccessed": 1782281694505,
+      "type": "file"
+    },
+    {
+      "path": "src/main.js",
+      "accessCount": 1,
+      "lastAccessed": 1782312049638,
+      "type": "file"
+    },
+    {
+      "path": "src/scenes/PreloadScene.js",
+      "accessCount": 1,
+      "lastAccessed": 1782312049961,
+      "type": "file"
+    },
+    {
+      "path": "src/scenes/BootScene.js",
+      "accessCount": 1,
+      "lastAccessed": 1782312050486,
+      "type": "file"
+    },
+    {
+      "path": "src/data/facilities.js",
+      "accessCount": 1,
+      "lastAccessed": 1782312050944,
+      "type": "file"
+    },
+    {
+      "path": "index.html",
+      "accessCount": 1,
+      "lastAccessed": 1782312051419,
+      "type": "file"
+    }
+  ],
+  "userDirectives": []
+}

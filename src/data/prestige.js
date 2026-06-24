@@ -1,0 +1,38 @@
+export const prestigeUpgrades = [
+  {
+    id: "procedure",
+    name: "표준 절차서",
+    shortName: "절차서",
+    baseCost: 2,
+    maxLevel: 20,
+    desc: "시설 생산량 증가",
+    effect: { cpsPct: 0.06 },
+  },
+  {
+    id: "manual",
+    name: "친절 매뉴얼",
+    shortName: "매뉴얼",
+    baseCost: 2,
+    maxLevel: 15,
+    desc: "클릭 처리량 증가",
+    effect: { clickPct: 0.08 },
+  },
+  {
+    id: "briefing",
+    name: "공개 브리핑",
+    shortName: "브리핑",
+    baseCost: 3,
+    maxLevel: 15,
+    desc: "해명 생산량 증가",
+    effect: { explainPct: 0.07 },
+  },
+  {
+    id: "night",
+    name: "야간 정산반",
+    shortName: "정산반",
+    baseCost: 4,
+    maxLevel: 12,
+    desc: "오프라인 보상 증가",
+    effect: { offlinePct: 0.05 },
+  },
+];
