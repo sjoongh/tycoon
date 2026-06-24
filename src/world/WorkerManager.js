@@ -2,6 +2,9 @@ import { WorkerActor } from "./WorkerActor.js";
 import { worldMap } from "./worldMap.js";
 import { facilities } from "../data/facilities.js";
 
+// 직원 색 다양화(틴트) — 복제 인형처럼 안 보이게
+const WORKER_TINTS = [0xffffff, 0xffd4dc, 0xd6d2ff, 0xcdeedd, 0xfff0c4, 0xffe0b8];
+
 export class WorkerManager {
   constructor(scene, gameState) {
     this.scene = scene;
@@ -19,29 +22,38 @@ export class WorkerManager {
     const staff = this.gameState.data.staff || {};
     const staffTotal = Object.values(staff).reduce((a, b) => a + b, 0);
     const activeCount = this._activeNodes().length;
-    // 활성 시설마다 1명 + 직원 보너스(겹침 방지). 활성 시설 수를 넘지 않게 하되 직원 많으면 소폭 증가.
     const target = activeCount ? Math.min(6, Math.max(1, activeCount + Math.floor(staffTotal / 3))) : 0;
 
     while (this.workers.length < target) this._spawn();
-    while (this.workers.length > target) this.workers.pop().destroy();
+    while (this.workers.length > target) {
+      const w = this.workers.pop();
+      this.scene.tweens.add({ targets: [w.sprite, w.shadow], alpha: 0, duration: 350, onComplete: () => w.destroy() });
+    }
   }
 
   _spawn() {
-    const worker = new WorkerActor(this.scene, "entrance");
+    const idx = this.workers.length;
+    const worker = new WorkerActor(this.scene, "entrance", WORKER_TINTS[idx % WORKER_TINTS.length]);
     this.workers.push(worker);
     const alive = () => this.workers.includes(worker);
+
     const loop = () => {
       if (!alive()) return;
       const nodes = this._activeNodes();
-      const target = nodes.length ? nodes[Math.floor(Math.random() * nodes.length)] : "mid";
+      if (!nodes.length) {
+        this.scene.time.delayedCall(1500, () => { if (alive()) loop(); });
+        return;
+      }
+      // 70% 자기 담당 시설(affinity), 30% 다른 곳 — 한 점에 몰리지 않게
+      const home = nodes[idx % nodes.length];
+      const target = Math.random() < 0.7 ? home : nodes[Math.floor(Math.random() * nodes.length)];
       worker.goTo(target, () => {
         if (!alive()) return;
-        this.scene.time.delayedCall(1200 + Math.random() * 1400, () => {
-          if (alive()) loop();
-        });
+        this.scene.time.delayedCall(1800 + Math.random() * 2200, () => { if (alive()) loop(); });
       });
     };
-    loop();
+    // 동시 출발 방지 스태거
+    this.scene.time.delayedCall(idx * 350 + Math.random() * 300, loop);
   }
 
   update() {

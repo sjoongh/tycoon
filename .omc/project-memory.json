@@ -130,14 +130,44 @@
   "hotPaths": [
     {
       "path": "src/world/WorldView.js",
-      "accessCount": 17,
-      "lastAccessed": 1782321885822,
+      "accessCount": 19,
+      "lastAccessed": 1782322725101,
+      "type": "file"
+    },
+    {
+      "path": "src/world/worldMap.js",
+      "accessCount": 13,
+      "lastAccessed": 1782323257955,
+      "type": "file"
+    },
+    {
+      "path": "src/world/WorkerActor.js",
+      "accessCount": 12,
+      "lastAccessed": 1782323213472,
+      "type": "file"
+    },
+    {
+      "path": "src/world/FacilityStationView.js",
+      "accessCount": 12,
+      "lastAccessed": 1782323313251,
+      "type": "file"
+    },
+    {
+      "path": "src/scenes/PreloadScene.js",
+      "accessCount": 10,
+      "lastAccessed": 1782322670069,
       "type": "file"
     },
     {
       "path": "src/main.js",
-      "accessCount": 9,
-      "lastAccessed": 1782319883304,
+      "accessCount": 10,
+      "lastAccessed": 1782322670218,
+      "type": "file"
+    },
+    {
+      "path": "src/world/WorkerManager.js",
+      "accessCount": 10,
+      "lastAccessed": 1782323242468,
       "type": "file"
     },
     {
@@ -147,39 +177,21 @@
       "type": "file"
     },
     {
-      "path": "src/scenes/PreloadScene.js",
-      "accessCount": 9,
-      "lastAccessed": 1782321091050,
-      "type": "file"
-    },
-    {
-      "path": "src/world/worldMap.js",
-      "accessCount": 9,
-      "lastAccessed": 1782322232672,
-      "type": "file"
-    },
-    {
-      "path": "src/world/FacilityStationView.js",
-      "accessCount": 8,
-      "lastAccessed": 1782320436874,
-      "type": "file"
-    },
-    {
-      "path": "src/world/WorkerActor.js",
-      "accessCount": 8,
-      "lastAccessed": 1782321661696,
-      "type": "file"
-    },
-    {
-      "path": "src/world/WorkerManager.js",
-      "accessCount": 7,
-      "lastAccessed": 1782321897963,
-      "type": "file"
-    },
-    {
       "path": "src/world/WorldEffects.js",
-      "accessCount": 5,
-      "lastAccessed": 1782313753701,
+      "accessCount": 6,
+      "lastAccessed": 1782322674722,
+      "type": "file"
+    },
+    {
+      "path": "src/animations/createAnimations.js",
+      "accessCount": 6,
+      "lastAccessed": 1782322675459,
+      "type": "file"
+    },
+    {
+      "path": "src/scenes/GameScene.js",
+      "accessCount": 6,
+      "lastAccessed": 1782322723685,
       "type": "file"
     },
     {
@@ -189,15 +201,15 @@
       "type": "file"
     },
     {
-      "path": "src/animations/createAnimations.js",
-      "accessCount": 5,
-      "lastAccessed": 1782319914674,
+      "path": "src/world/facilityTiers.js",
+      "accessCount": 4,
+      "lastAccessed": 1782322742890,
       "type": "file"
     },
     {
-      "path": "src/scenes/GameScene.js",
+      "path": "src/world/depth.js",
       "accessCount": 4,
-      "lastAccessed": 1782313744202,
+      "lastAccessed": 1782323140145,
       "type": "file"
     },
     {
@@ -207,33 +219,27 @@
       "type": "file"
     },
     {
-      "path": "docs/superpowers/plans/2026-06-24-gaepyo-vertical-slice-desk.md",
-      "accessCount": 2,
-      "lastAccessed": 1782312381754,
+      "path": "src/data/facilities.js",
+      "accessCount": 3,
+      "lastAccessed": 1782322718054,
       "type": "file"
     },
     {
-      "path": "src/world/facilityTiers.js",
-      "accessCount": 2,
-      "lastAccessed": 1782312892808,
-      "type": "file"
-    },
-    {
-      "path": "src/world/depth.js",
-      "accessCount": 2,
-      "lastAccessed": 1782313227864,
+      "path": "src/world/pathGraph.js",
+      "accessCount": 3,
+      "lastAccessed": 1782323101448,
       "type": "file"
     },
     {
       "path": "src/scenes/BootScene.js",
-      "accessCount": 2,
-      "lastAccessed": 1782313761755,
+      "accessCount": 3,
+      "lastAccessed": 1782323101488,
       "type": "file"
     },
     {
-      "path": "src/data/facilities.js",
+      "path": "docs/superpowers/plans/2026-06-24-gaepyo-vertical-slice-desk.md",
       "accessCount": 2,
-      "lastAccessed": 1782313769011,
+      "lastAccessed": 1782312381754,
       "type": "file"
     },
     {
@@ -360,12 +366,6 @@
       "path": "test/worldMap.test.js",
       "accessCount": 1,
       "lastAccessed": 1782312782420,
-      "type": "file"
-    },
-    {
-      "path": "src/world/pathGraph.js",
-      "accessCount": 1,
-      "lastAccessed": 1782312790996,
       "type": "file"
     },
     {

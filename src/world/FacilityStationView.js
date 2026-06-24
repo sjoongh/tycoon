@@ -14,7 +14,8 @@ export class FacilityStationView {
     this.sprite = scene.add.sprite(anchor.x, anchor.y, stationSpriteKey(facilityId, "t1"))
       .setOrigin(0.5, 1)
       .setDepth(stationDepth(anchor.y))
-      .setInteractive({ useHandCursor: true });
+      .setInteractive({ useHandCursor: true })
+      .setVisible(false);
 
     this.ring = scene.add.ellipse(anchor.x, anchor.y, 70, 26, 0x8ec6a0, 0)
       .setStrokeStyle(3, 0x8ec6a0, 0)
@@ -22,7 +23,21 @@ export class FacilityStationView {
   }
 
   onSelect(callback) {
-    this.sprite.on("pointerdown", callback);
+    this.sprite.on("pointerdown", () => {
+      callback();
+      this._tapPop();
+    });
+  }
+
+  _tapPop() {
+    const s = this.sprite.scaleX || 1;
+    this.scene.tweens.add({
+      targets: this.sprite,
+      scaleX: { from: s * 1.1, to: s },
+      scaleY: { from: s * 1.1, to: s },
+      duration: 170,
+      ease: "Back.easeOut",
+    });
   }
 
   refresh({ level, unlocked, selected, canUpgrade }) {
