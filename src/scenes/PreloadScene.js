@@ -1,5 +1,6 @@
 import Phaser from "phaser";
-import { createPixelTextures } from "../textures/createPixelTextures.js";
+import { generatePlaceholders } from "../textures/devPlaceholders.js";
+import { createAnimations } from "../animations/createAnimations.js";
 
 export class PreloadScene extends Phaser.Scene {
   constructor() {
@@ -7,11 +8,12 @@ export class PreloadScene extends Phaser.Scene {
   }
 
   preload() {
-    this.load.image("world-office", "/art/world-office.png");
+    // 실제 아트 파일이 생기면 여기서 this.load.image/spritesheet 로 동일 키를 로드해 교체.
   }
 
   create() {
-    createPixelTextures(this);
+    generatePlaceholders(this);
+    createAnimations(this);
     this.scene.start("GameScene");
     this.scene.launch("UIScene");
   }
