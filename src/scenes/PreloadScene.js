@@ -19,6 +19,8 @@ export class PreloadScene extends Phaser.Scene {
     this.load.image("wall/poster", "/art/wall-poster.png");
     this.load.image("ballot", "/art/ballot.png");
     this.load.image("worker/clerk", "/art/worker-clerk.png");
+    this.load.image("worker/clerk-2", "/art/worker-clerk-2.png");
+    this.load.image("worker/clerk-3", "/art/worker-clerk-3.png");
     this.load.image("facility/desk/t1/idle", "/art/desk-t1.png");
     this.load.image("facility/desk/t2/idle", "/art/desk-t2.png");
     this.load.image("facility/desk/t3/idle", "/art/desk-t3.png");
