@@ -24,12 +24,18 @@ export class DOMHud {
     this._muteBtn.addEventListener("click", () => document.dispatchEvent(new CustomEvent("gp:toggle-mute")));
     this._onMute = (e) => { this._muteBtn.textContent = e.detail ? "🔇" : "🔊"; };
     document.addEventListener("gp:mute-changed", this._onMute);
+
+    // 긴급 개표(러시) 부스트 FAB — 액티브 플레이 비트
+    this._rushBtn = document.createElement("button");
+    this._rushBtn.className = "gp-rush";
+    this._rushBtn.addEventListener("click", () => { if (this.gameState.activateRush) this.gameState.activateRush(); });
   }
 
   mount(parent) {
     parent.appendChild(this.root);
     // Attach mute to the .gp-ui container (parent), not inside the HUD flex row
     parent.appendChild(this._muteBtn);
+    parent.appendChild(this._rushBtn);
     this.gameState.on("changed", this._refresh);
     this.refresh();
   }
@@ -63,12 +69,34 @@ export class DOMHud {
       : "";
     stageEl.innerHTML =
       `${d.stage.area}구역 · D-${d.days} · 초당 <span class="gp-cps${jumped ? " gp-cps--up" : ""}">${cps.toFixed(1)}</span>표${stateSuffix}`;
+
+    this._refreshRush();
+  }
+
+  _refreshRush() {
+    const gs = this.gameState;
+    if (!gs.rushReady) return;
+    const btn = this._rushBtn;
+    if (gs.rushActive()) {
+      btn.className = "gp-rush gp-rush--active";
+      btn.disabled = true;
+      btn.innerHTML = `<b>개표 폭주!</b><small>×5 · ${Math.ceil(gs.rushRemainingMs() / 1000)}초</small>`;
+    } else if (gs.rushReady()) {
+      btn.className = "gp-rush gp-rush--ready";
+      btn.disabled = false;
+      btn.innerHTML = `<b>⚡ 긴급 개표</b><small>20초 ×5</small>`;
+    } else {
+      btn.className = "gp-rush gp-rush--cd";
+      btn.disabled = true;
+      btn.innerHTML = `<b>충전 중</b><small>${Math.ceil(gs.rushCooldownRemainingMs() / 1000)}초</small>`;
+    }
   }
 
   destroy() {
     this.gameState.off("changed", this._refresh);
     document.removeEventListener("gp:mute-changed", this._onMute);
     this._muteBtn.remove();
+    this._rushBtn.remove();
     this.root.remove();
   }
 }

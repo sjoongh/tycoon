@@ -12,6 +12,9 @@ const TRUST_CRISIS = 20; // 이 미만이면 불신 위기(생산 페널티)
 const TRUST_BONUS = 90; // 이 이상이면 신뢰 보너스(생산 서지)
 const EVENT_COOLDOWN_MS = 45000; // 사건 대응 후 재대기 시간(스팸 방지 + 주기적 참여 비트)
 const FACILITY_MILESTONES = [25, 50, 100]; // 시설 레벨 마일스톤: 도달 시 해당 시설 생산 ×2(영구, 누적). Lv25 미만은 영향 0 → 초반 곡선 보존
+const RUSH_DURATION_MS = 20000; // 긴급 개표(러시) 지속 20초
+const RUSH_COOLDOWN_MS = 180000; // 재사용 대기 3분
+const RUSH_MULT = 5; // 러시 중 초당 생산 ×5(액티브 플레이 비트)
 
 const SAVE_VERSION = 3;
 
@@ -76,6 +79,8 @@ const fallbackState = {
   endless: 0,
   daily: { day: 0, streak: 0 },
   eventReadyAt: 0,
+  rushReadyAt: 0,
+  rushEndsAt: 0,
   log: ["개표국 개국"],
 };
 
@@ -126,6 +131,8 @@ export class GameState extends Phaser.Events.EventEmitter {
     data.days = Math.max(0, Number(data.days) || fallbackState.days);
     data.endless = Math.max(0, Math.floor(Number(data.endless) || 0));
     data.eventReadyAt = Math.max(0, Number(data.eventReadyAt) || 0);
+    data.rushReadyAt = Math.max(0, Number(data.rushReadyAt) || 0);
+    data.rushEndsAt = Math.max(0, Number(data.rushEndsAt) || 0);
     data.stage.area = Math.max(1, Number(data.stage.area) || 1);
     data.stage.target = this.stageTarget(data.stage.area);
     data.stage.progress = Phaser.Math.Clamp(Number(data.stage.progress) || 0, 0, data.stage.target);
@@ -619,7 +626,31 @@ export class GameState extends Phaser.Events.EventEmitter {
   }
 
   cps() {
-    return this.cpsFor(this.data);
+    // 러시는 실시간 생산에만 적용(오프라인 정산엔 미적용 — cpsFor를 직접 쓰는 경로)
+    return this.cpsFor(this.data) * (this.rushActive() ? RUSH_MULT : 1);
+  }
+
+  // ----- 긴급 개표(러시) 부스트 -----
+  rushActive() {
+    return Date.now() < (this.data.rushEndsAt || 0);
+  }
+  rushReady() {
+    return !this.rushActive() && Date.now() >= (this.data.rushReadyAt || 0);
+  }
+  rushRemainingMs() {
+    return Math.max(0, (this.data.rushEndsAt || 0) - Date.now());
+  }
+  rushCooldownRemainingMs() {
+    return Math.max(0, (this.data.rushReadyAt || 0) - Date.now());
+  }
+  activateRush() {
+    if (!this.rushReady()) return false;
+    const now = Date.now();
+    this.data.rushEndsAt = now + RUSH_DURATION_MS;
+    this.data.rushReadyAt = now + RUSH_COOLDOWN_MS;
+    this.emit("float", { text: "긴급 개표! ×5", x: 195, y: 300, color: "#ffd34d" });
+    this.emit("changed");
+    return true;
   }
 
   cpsFor(data) {
