@@ -112,3 +112,8 @@
 @keyframes gpPop { from { transform: scale(.85); opacity: 0; } }
 @keyframes gpTap { 0%,100% { transform: scale(1) translateY(0); } 50% { transform: scale(.86) translateY(4px); } }
 @keyframes gpFlash { from { opacity: 1; } to { opacity: 0; } }
+
+.gp-banner { position: absolute; left: 0; right: 0; top: 150px; pointer-events: none; text-align: center; font-family: "Black Han Sans", sans-serif; font-size: 26px; color: var(--gold-hi); padding: 12px 0; background: linear-gradient(90deg, transparent, rgba(20,12,28,0.92) 15%, rgba(20,12,28,0.92) 85%, transparent); box-shadow: inset 0 2px 0 var(--gold), inset 0 -2px 0 var(--gold); opacity: 0; transform: translateY(-20px) scale(0.9); transition: all .35s cubic-bezier(.2,1.4,.4,1); text-shadow: 0 2px 0 var(--gold-deep); }
+.gp-banner--in { opacity: 1; transform: translateY(0) scale(1); }
+.gp-confirm-row { display: flex; gap: 10px; }
+.gp-confirm-row .gp-btn { flex: 1; }

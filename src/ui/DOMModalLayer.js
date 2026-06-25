@@ -9,16 +9,50 @@ export class DOMModalLayer {
     this.root = document.createElement("div");
     this.root.className = "gp-modal-layer";
     this._hint = null;
+    this._prevArea = gameState.data.stage.area;
     this._onUpgraded = (f) => this._checkMilestone(f);
-    this._onChanged = () => this._maybeHint();
+    this._onChanged = () => { this._maybeHint(); this._checkStage(); };
+    this._onPrestigeConfirm = () => this._confirmPrestige();
   }
 
   mount(parent) {
     parent.appendChild(this.root);
     this.gameState.on("upgraded", this._onUpgraded);
     this.gameState.on("changed", this._onChanged);
+    document.addEventListener("gp:prestige-confirm", this._onPrestigeConfirm);
     this._showOfflineReward();
     this._maybeHint();
+  }
+
+  _checkStage() {
+    const a = this.gameState.data.stage.area;
+    if (a > this._prevArea) {
+      this._prevArea = a;
+      this._banner(`${a}구역 진입!`);
+      this._flash();
+    } else if (a < this._prevArea) {
+      this._prevArea = a; // prestige reset
+    }
+  }
+
+  _confirmPrestige() {
+    this._openModal(`
+      <div class="gp-modal__badge">🔨</div>
+      <div class="gp-mtitle">감사 실행</div>
+      <div class="gp-msub">모든 진행도가 초기화되고 제도인장을 얻습니다. 계속할까요?</div>
+      <div class="gp-confirm-row">
+        <button class="gp-btn gp-btn--disabled" data-close>취소</button>
+        <button class="gp-btn gp-btn--gold" data-confirm>감사 실행</button>
+      </div>`, () => this.gameState.prestigeReset());
+  }
+
+  _banner(text) {
+    const b = document.createElement("div");
+    b.className = "gp-banner";
+    b.textContent = text;
+    this.root.appendChild(b);
+    requestAnimationFrame(() => b.classList.add("gp-banner--in"));
+    setTimeout(() => { b.classList.remove("gp-banner--in"); setTimeout(() => b.remove(), 400); }, 2200);
   }
 
   _showOfflineReward() {
@@ -57,12 +91,17 @@ export class DOMModalLayer {
     }
   }
 
-  _openModal(html) {
+  _openModal(html, onConfirm) {
     const ov = document.createElement("div");
     ov.className = "gp-modal-ov";
     ov.innerHTML = `<div class="gp-modal">${html}</div>`;
     ov.addEventListener("click", (e) => {
-      if (e.target.closest("[data-close]") || e.target === ov) ov.remove();
+      if (e.target.closest("[data-confirm]")) {
+        if (onConfirm) onConfirm();
+        ov.remove();
+      } else if (e.target.closest("[data-close]") || e.target === ov) {
+        ov.remove();
+      }
     });
     this.root.appendChild(ov);
   }
@@ -89,6 +128,7 @@ export class DOMModalLayer {
   destroy() {
     this.gameState.off("upgraded", this._onUpgraded);
     this.gameState.off("changed", this._onChanged);
+    document.removeEventListener("gp:prestige-confirm", this._onPrestigeConfirm);
     this.root.remove();
   }
 }

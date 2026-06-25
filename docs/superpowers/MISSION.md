@@ -34,3 +34,4 @@
 - 2026-06-25T13:49 P1: 로딩스크린(ec4fd19) + UI 거지키우기 재스타일(commit). UI리서치 반영. 월드 스프라이트 재생성은 art리서치(ref-art) 대기.
 - 2026-06-25T13:59 P1 아트피벗: 거지키우기 톤 테스트(접수대 t1) 승인→desk-t1 확정. regenA(desk t2-5)+regenB(환경8) codex 생성중. 아트리서치 2갈래 incremental-save 재가동. ref-art.md 스타일가이드 self-authored.
 - 2026-06-25T14:42 P1 아트피벗 완료(578a5b1): 데스크/환경/워커/시설 전부 거지키우기 톤 재생성+커밋, UI 다크/골드 피벗, 캔버스 다크, 일관성 확인(phone+desktop). 코어루프 회귀없음(playtest). 7역할: QA/알파/베타 통과(초반밸런스 느림 메모), 개발/기획/UIUX/디자인 리뷰 진행중.
+- 2026-06-25T14:52 7역할 리뷰(개발/기획/디자인 에이전트 + 내 QA/알파/베타). 픽스배치1 적용(commit): preBoot 레이스·시설탭 이중클릭·deskPop가드·BallotPool캡·크루스크롤 / UI 파치먼트+다크HUD+이벤트배지. off-style 에셋5종(server-t3/studio-t3/notice-t3/plant/archive-t3) 거친톤 재생성중(regenE). 남은 P0: 시각적 era아크/오프닝/지역완료배너, 사운드, 밸런스.

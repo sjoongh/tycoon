@@ -67,7 +67,7 @@ export class DOMBottomPanel {
         break;
       }
       case "buyPrestige": gs.buyPrestigeUpgrade(id); break;
-      case "prestigeReset": gs.prestigeReset(); break;
+      case "prestigeReset": document.dispatchEvent(new CustomEvent("gp:prestige-confirm")); break;
     }
   }
 
