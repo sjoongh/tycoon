@@ -8,6 +8,20 @@ export class PreloadScene extends Phaser.Scene {
   }
 
   preload() {
+    // 로딩 스크린(진행바) — 무거운 초기 에셋 로드 동안 검은화면/탭유실 방지
+    const W = 390;
+    const H = 844;
+    this.add.rectangle(W / 2, H / 2, W, H, 0x2b2420);
+    this.add.text(W / 2, H / 2 - 46, "믿어주세요 개표국", {
+      fontFamily: "system-ui, sans-serif", fontSize: "22px", fontStyle: "bold", color: "#ffe1a6",
+    }).setOrigin(0.5);
+    const pct = this.add.text(W / 2, H / 2 + 40, "0%", {
+      fontFamily: "system-ui, sans-serif", fontSize: "13px", color: "#c9b9a8",
+    }).setOrigin(0.5);
+    this.add.rectangle(W / 2, H / 2, 248, 18, 0x000000, 0.35).setStrokeStyle(2, 0xffffff, 0.25);
+    const bar = this.add.rectangle(W / 2 - 121, H / 2, 0, 11, 0xffc14d).setOrigin(0, 0.5);
+    this.load.on("progress", (v) => { bar.width = 242 * v; pct.setText(`${Math.round(v * 100)}%`); });
+
     // 실제 아트(codex 생성, public/art). 로드된 키는 devPlaceholders가 "이미 존재하면 건너뜀".
     this.load.image("floor/pastel", "/art/floor-pastel.png");
     this.load.image("room/back", "/art/room-back.png");

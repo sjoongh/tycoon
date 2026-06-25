@@ -153,9 +153,15 @@
       "type": "file"
     },
     {
+      "path": "src/scenes/PreloadScene.js",
+      "accessCount": 14,
+      "lastAccessed": 1782395095850,
+      "type": "file"
+    },
+    {
       "path": "src/main.js",
-      "accessCount": 12,
-      "lastAccessed": 1782324246310,
+      "accessCount": 13,
+      "lastAccessed": 1782394369471,
       "type": "file"
     },
     {
@@ -165,15 +171,15 @@
       "type": "file"
     },
     {
-      "path": "src/scenes/PreloadScene.js",
-      "accessCount": 12,
-      "lastAccessed": 1782325177588,
-      "type": "file"
-    },
-    {
       "path": "src/textures/devPlaceholders.js",
       "accessCount": 9,
       "lastAccessed": 1782320374829,
+      "type": "file"
+    },
+    {
+      "path": "src/scenes/GameScene.js",
+      "accessCount": 7,
+      "lastAccessed": 1782394497160,
       "type": "file"
     },
     {
@@ -189,21 +195,15 @@
       "type": "file"
     },
     {
-      "path": "src/scenes/GameScene.js",
+      "path": "src/style.css",
       "accessCount": 6,
-      "lastAccessed": 1782322723685,
+      "lastAccessed": 1782394863160,
       "type": "file"
     },
     {
       "path": "src/assets/assetManifest.js",
       "accessCount": 5,
       "lastAccessed": 1782313978128,
-      "type": "file"
-    },
-    {
-      "path": "src/style.css",
-      "accessCount": 5,
-      "lastAccessed": 1782348746339,
       "type": "file"
     },
     {
