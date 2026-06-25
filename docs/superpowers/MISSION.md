@@ -31,3 +31,5 @@
 ## 진행 로그
 (append per iteration)
 - init: 미션 시작. 코어루프 정상 확인. art/ui 레퍼런스 리서치 가동.
+- 2026-06-25T13:49 P1: 로딩스크린(ec4fd19) + UI 거지키우기 재스타일(commit). UI리서치 반영. 월드 스프라이트 재생성은 art리서치(ref-art) 대기.
+- 2026-06-25T13:59 P1 아트피벗: 거지키우기 톤 테스트(접수대 t1) 승인→desk-t1 확정. regenA(desk t2-5)+regenB(환경8) codex 생성중. 아트리서치 2갈래 incremental-save 재가동. ref-art.md 스타일가이드 self-authored.
