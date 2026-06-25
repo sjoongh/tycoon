@@ -480,7 +480,7 @@ export class GameState extends Phaser.Events.EventEmitter {
 
   cpsFor(data) {
     const raw = facilities.reduce((sum, item) => sum + (data.facilities[item.id] || 0) * item.cps, 0);
-    return raw * (0.78 + data.trust / 230) * this.staffMultiplierFor(data) * this.prestigeMultiplierFor(data) * (1 + this.permanentEffectFor(data, "cpsPct"));
+    return raw * (0.9 + data.trust / 230) * this.staffMultiplierFor(data) * this.prestigeMultiplierFor(data) * (1 + this.permanentEffectFor(data, "cpsPct"));
   }
 
   staffMultiplierFor(data) {
@@ -585,6 +585,7 @@ export class GameState extends Phaser.Events.EventEmitter {
   }
 
   stageTarget(area) {
-    return Math.floor(2200 * area ** 1.42);
+    // 초반 가속: base/지수 완화로 1구역을 빠르게 클리어(후반은 지수로 난도 유지)
+    return Math.floor(1100 * area ** 1.38);
   }
 }
