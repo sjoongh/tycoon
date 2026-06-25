@@ -167,3 +167,9 @@
 - **15C 무한 인장 소비처**(f01fb3c): 9번째 감사 업글 '황금 개표기'(cpsPct+0.04/lvl, maxLevel999). 8종 캡 후 인장 쓸 곳 없던 장기 갭 해소. e2e: 반복구매·비용 8→12 escalate·cps 975→1403·9버튼 그리드.
 - 전부 build✓ test13/13✓ 회귀(_regression cps599 0에러)✓.
 - **기획 종합평가**: early/mid 진행·세션 참여는 경쟁력 확보. 95% 미달 잔여는 구조적 2가지 — (1)재방문 훅 부재(로컬 알림/푸시), (2)장기 경제 평탄(황금개표로 일부 해소; 추가로 트러스트 슬로프·시즌 콘텐츠). **다음 루프**: 로컬 알림(Notification API+SW, 첫 프레스티지 후 권한요청→일일/오프라인캡/유휴 핑), 또는 한정 시즌 목표(date-seeded 주간). 각 신중 검증.
+
+## 루프16 완료 (재방문 훅 P0, 밤샘 자율)
+- **로컬 재방문 알림 인프라**(f944de8): `src/notifications.js` — requestPermission(첫 감사 후 1회, asked 플래그로 재요청 차단), schedule(오프라인캡·다음 자정·6h 유휴 3종). main.js가 pagehide/visibilitychange:hidden에 schedule 배선. DOMModalLayer `_maybeNotifPrompt`(runs>=1 && permission==='default' && !asked → 1회 모달).
+- **정직한 플랫폼 한계**: 웹은 푸시 서버 없이 닫힌앱 알림 신뢰성 불가. 유일 클라이언트-only 경로 Notification Triggers API(TimestampTrigger)는 대부분 미탑재 → **지원 시에만 예약, 미지원/거부는 0에러 안전 무동작**. 완전한 닫힌앱 알림은 향후 푸시 서버 필요(클라 빌드 범위 밖). 오버클레임 안 함.
+- e2e: denied 무동작 0에러·default(mock)+runs>=1 프롬프트 렌더·'켜기'→requestPermission+askedFlag. build✓ test13/13✓ 회귀 cps599 0에러.
+- **남은(다음 루프)**: 한정 시즌 목표(date-seeded 주간 '특별 개표 주간', 기존 quest/claim 재사용+카운트다운 배지), 트러스트 슬로프 미세확대, 액션 완료 연출, 알림 토글 UI. 밸런스 보존·회귀 0에러.
