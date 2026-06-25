@@ -35,7 +35,7 @@ export class DOMBottomPanel {
       const b = document.createElement("button");
       b.className = "gp-tab";
       b.dataset.tab = id;
-      b.textContent = label;
+      b.innerHTML = `${label}<span class="gp-tab__dot" data-dot="${id}" hidden></span>`;
       b.addEventListener("click", () => this.gameState.setTab(id));
       tabsEl.appendChild(b);
     });
@@ -78,7 +78,7 @@ export class DOMBottomPanel {
       case "upgradeFac": gs.upgrade(gs.data.selected); break;
       case "advanceStage": gs.advanceStage(); break;
       case "hire": gs.hireStaff(id); break;
-      case "getEvent": this.currentEvent = this._pickEvent(); this.refresh(); break;
+      case "getEvent": if (gs.eventReady()) { this.currentEvent = this._pickEvent(); this.refresh(); } break;
       case "eventChoice": {
         const ev = officeEvents.find((v) => v.id === id);
         if (ev) gs.applyEffect((el.dataset.side === "left" ? ev.left : ev.right)[1]);
@@ -118,6 +118,13 @@ export class DOMBottomPanel {
     const list = this.panel.querySelector(".gp-stafflist");
     if (list && prevScroll) list.scrollTop = prevScroll;
     this.root.querySelectorAll(".gp-tab").forEach((el) => el.classList.toggle("gp-tab--active", el.dataset.tab === tab));
+    this._updateBadges(tab);
+  }
+
+  // 탭 알림 점: 사건 대응 가능 시 사건 탭에 표시(해당 탭을 보고 있으면 숨김)
+  _updateBadges(activeTab) {
+    const eventDot = this.root.querySelector('[data-dot="events"]');
+    if (eventDot) eventDot.hidden = !(this.gameState.eventReady() && activeTab !== "events");
   }
 
   _renderFacilities() {
@@ -182,7 +189,12 @@ export class DOMBottomPanel {
         </div></div>`;
     } else {
       const log = (gs.data.log || []).slice(0, 3).map((l) => `<div class="gp-logline">${l}</div>`).join("");
-      this.panel.innerHTML = `<div class="gp-paneltitle">📋 사건 대응실 · 처리 ${gs.data.stats.totalEvents}건</div><div class="gp-card__sub">무작위 사건에 대응해 표·믿음을 얻으세요</div><button class="gp-btn gp-btn--event" data-action="getEvent">사건 받기</button><div class="gp-log">${log}</div>`;
+      const ready = gs.eventReady();
+      const sec = Math.ceil(gs.eventCooldownRemainingMs() / 1000);
+      const btn = ready
+        ? `<button class="gp-btn gp-btn--event" data-action="getEvent">사건 받기</button>`
+        : `<button class="gp-btn gp-btn--event gp-btn--disabled" data-action="getEvent">다음 사건까지 ${sec}초</button>`;
+      this.panel.innerHTML = `<div class="gp-paneltitle">📋 사건 대응실 · 처리 ${gs.data.stats.totalEvents}건</div><div class="gp-card__sub">사건 대응으로 표·믿음을 얻으세요 · 보상 x${gs.eventRewardScale().toFixed(1)}</div>${btn}<div class="gp-log">${log}</div>`;
     }
   }
 

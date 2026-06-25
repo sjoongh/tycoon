@@ -103,7 +103,9 @@
 /* ---------- tabs ---------- */
 /* FIX #3: tabs pinned to bottom via flex-none; no margin-top (spacing from panel is handled by gap) */
 .gp-tabs { display: flex; gap: 6px; flex: none; margin-top: 8px; }
-.gp-tab { flex: 1; pointer-events: auto; border: none; border-radius: 12px; padding: 9px 4px; font-size: 12px; font-weight: 800; background: #3a2a4d; color: #b9a9c8; cursor: pointer; transition: all .15s; }
+.gp-tab { position: relative; flex: 1; pointer-events: auto; border: none; border-radius: 12px; padding: 9px 4px; font-size: 12px; font-weight: 800; background: #3a2a4d; color: #b9a9c8; cursor: pointer; transition: all .15s; }
+.gp-tab__dot { position: absolute; top: 5px; right: 8px; width: 9px; height: 9px; border-radius: 50%; background: #ff5a5a; box-shadow: 0 0 6px rgba(255,90,90,0.8); animation: gp-dot-pulse 1.1s ease-in-out infinite; }
+@keyframes gp-dot-pulse { 0%,100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.35); opacity: 0.7; } }
 .gp-tab--active { background: var(--gold); color: #4a2600; box-shadow: 0 2px 8px rgba(255,192,46,0.4); transform: translateY(-1px); }
 
 /* ---------- panel content ---------- */

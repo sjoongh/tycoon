@@ -10,6 +10,7 @@ const DAY_MS = 86400000;
 const DAILY_STREAK_CAP = 7;
 const TRUST_CRISIS = 20; // 이 미만이면 불신 위기(생산 페널티)
 const TRUST_BONUS = 90; // 이 이상이면 신뢰 보너스(생산 서지)
+const EVENT_COOLDOWN_MS = 45000; // 사건 대응 후 재대기 시간(스팸 방지 + 주기적 참여 비트)
 
 const SAVE_VERSION = 3;
 const OFFLINE_CAP_MS = 1000 * 60 * 60 * 8;
@@ -72,6 +73,7 @@ const fallbackState = {
   quests: {},
   endless: 0,
   daily: { day: 0, streak: 0 },
+  eventReadyAt: 0,
   log: ["개표국 개국"],
 };
 
@@ -121,6 +123,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     data.trust = Phaser.Math.Clamp(Number(data.trust) || fallbackState.trust, 0, 100);
     data.days = Math.max(0, Number(data.days) || fallbackState.days);
     data.endless = Math.max(0, Math.floor(Number(data.endless) || 0));
+    data.eventReadyAt = Math.max(0, Number(data.eventReadyAt) || 0);
     data.stage.area = Math.max(1, Number(data.stage.area) || 1);
     data.stage.target = this.stageTarget(data.stage.area);
     data.stage.progress = Phaser.Math.Clamp(Number(data.stage.progress) || 0, 0, data.stage.target);
@@ -264,23 +267,43 @@ export class GameState extends Phaser.Events.EventEmitter {
     this.data.stats.totalVotes += value;
   }
 
+  // 사건 보상의 양수 votes/explain은 현재 구역 규모에 맞춰 스케일(후반에도 의미있게). 비용(음수)은 그대로.
+  eventRewardScale() {
+    return Math.min(50, this.stageTarget(this.data.stage.area) / this.stageTarget(1));
+  }
+
   applyEffect(effect) {
-    this.data.votes = Math.max(0, this.data.votes + (effect.votes || 0));
-    if ((effect.votes || 0) > 0) {
-      this.data.stage.progress = Phaser.Math.Clamp(this.data.stage.progress + effect.votes, 0, this.data.stage.target);
-      this.data.stats.totalVotes += effect.votes;
+    const scale = this.eventRewardScale();
+    const rawVotes = effect.votes || 0;
+    const votes = rawVotes > 0 ? Math.round(rawVotes * scale) : rawVotes;
+    const rawExplain = effect.explain || 0;
+    const explain = rawExplain > 0 ? Math.round(rawExplain * scale) : rawExplain;
+
+    this.data.votes = Math.max(0, this.data.votes + votes);
+    if (votes > 0) {
+      this.data.stage.progress = Phaser.Math.Clamp(this.data.stage.progress + votes, 0, this.data.stage.target);
+      this.data.stats.totalVotes += votes;
     }
-    this.data.explain = Math.max(0, this.data.explain + (effect.explain || 0));
+    this.data.explain = Math.max(0, this.data.explain + explain);
     this.data.trust = Phaser.Math.Clamp(this.data.trust + (effect.trust || 0), 0, 100);
     if ((effect.trust || 0) > 0) {
       this.data.trust = Phaser.Math.Clamp(this.data.trust + this.staffLevel("speaker") * 0.3, 0, 100);
     }
     this.data.stats.totalEvents += 1;
+    this.data.eventReadyAt = Date.now() + EVENT_COOLDOWN_MS;
     this.advanceTutorial("event");
     this.addLog(`사건 대응: 믿음 ${Math.round(this.data.trust)}%`);
     this.emit("float", { text: "대응완료", x: 195, y: 540, color: "#89d98b" });
     this.checkProgression();
     this.emit("changed");
+  }
+
+  eventReady() {
+    return Date.now() >= (this.data.eventReadyAt || 0);
+  }
+
+  eventCooldownRemainingMs() {
+    return Math.max(0, (this.data.eventReadyAt || 0) - Date.now());
   }
 
   upgrade(id = this.data.selected) {
