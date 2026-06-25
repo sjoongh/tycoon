@@ -13,7 +13,6 @@ const TRUST_BONUS = 90; // 이 이상이면 신뢰 보너스(생산 서지)
 const EVENT_COOLDOWN_MS = 45000; // 사건 대응 후 재대기 시간(스팸 방지 + 주기적 참여 비트)
 
 const SAVE_VERSION = 3;
-const OFFLINE_CAP_MS = 1000 * 60 * 60 * 8;
 
 const fallbackState = {
   version: SAVE_VERSION,
@@ -308,6 +307,20 @@ export class GameState extends Phaser.Events.EventEmitter {
     return Math.max(0, (this.data.eventReadyAt || 0) - Date.now());
   }
 
+  eventCooldownTotalMs() {
+    return EVENT_COOLDOWN_MS;
+  }
+
+  // 감사(프레스티지) 실행 시 영구 생산 배율이 어떻게 오르는지 미리보기(초기화 공포 완화)
+  prestigeProjection() {
+    const earned = this.prestigePreview();
+    const p = this.data.prestige;
+    const cpsFactor = 1 + this.permanentEffectFor(this.data, "cpsPct");
+    const current = this.prestigeMultiplierFor(this.data) * cpsFactor;
+    const projectedSeal = 1 + (p.totalSeals + earned) * 0.025 + (p.runs + 1) * 0.05;
+    return { earned, current, projected: projectedSeal * cpsFactor };
+  }
+
   upgrade(id = this.data.selected) {
     const facility = this.facility(id);
     if (!facility || !this.isUnlocked(id)) return false;
@@ -548,13 +561,12 @@ export class GameState extends Phaser.Events.EventEmitter {
       grant(quest);
     });
     // 정의된 목표를 모두 끝낸 뒤로는 끝없는 누적-표 목표가 계속 이어진다(후반 목표 고갈 방지)
+    // 큰 점프(오프라인 복귀 등)에 한 프레임에 여러 티어가 몰려 보상·토스트가 폭주하지 않도록 호출당 1티어만 지급(틱마다 따라잡음)
     if (this.allDefinedQuestsDone()) {
-      let guard = 0;
-      let eq = this.endlessQuest(this.data.endless);
-      while (this.questProgress(eq) >= eq.target && guard++ < 50) {
+      const eq = this.endlessQuest(this.data.endless);
+      if (this.questProgress(eq) >= eq.target) {
         grant(eq);
         this.data.endless += 1;
-        eq = this.endlessQuest(this.data.endless);
       }
     }
   }

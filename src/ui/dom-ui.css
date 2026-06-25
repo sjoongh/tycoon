@@ -82,8 +82,11 @@
 /* P2 fix: danger variant for destructive actions (prestige reset) */
 .gp-btn--danger { background: linear-gradient(180deg, #ff6b6b 0%, #d32f2f 100%); box-shadow: 0 5px 0 #9a0007, 0 3px 8px rgba(211,47,47,0.4), inset 0 1.5px 0 rgba(255,255,255,0.35); color: #fff; }
 .gp-btn--danger:active { transform: translateY(4px); box-shadow: 0 1px 0 #9a0007, inset 0 1.5px 0 rgba(255,255,255,0.35); }
-.gp-btn--event { width: 100%; padding: 14px; font-size: 16px; border-radius: 16px; color: #fff; margin-top: 8px;
+/* P1 fix: event button needs position:relative + overflow:hidden for cooldown sweep pseudo-element */
+.gp-btn--event { position: relative; overflow: hidden; width: 100%; padding: 14px; font-size: 16px; border-radius: 16px; color: #fff; margin-top: 8px;
   background: linear-gradient(180deg, #ff9a5c 0%, var(--event) 100%); box-shadow: 0 5px 0 var(--event-edge), 0 3px 8px rgba(255,122,60,0.4), inset 0 1.5px 0 rgba(255,255,255,0.4); }
+/* Cooldown sweep fill — JS writes --cd-pct each second */
+.gp-btn--event.gp-btn--disabled::before { content: ''; position: absolute; inset: 0; border-radius: inherit; background: rgba(255,160,80,0.3); width: var(--cd-pct, 0%); transition: width 1s linear; pointer-events: none; }
 
 /* FIX #4: upgrade button in card — two-line layout, no truncation */
 .gp-btn--upgrade { display: flex; flex-direction: column; align-items: center; gap: 1px; min-width: 72px; flex-shrink: 0; white-space: nowrap; padding: 9px 12px; font-size: 13px; line-height: 1.2; }
@@ -105,9 +108,10 @@
 /* 감사 업그레이드가 8종으로 늘어 4열 그리드(2행)로 배치 */
 .gp-sealgrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-top: 10px; }
 .gp-seal { pointer-events: auto; border: none; border-radius: 12px; padding: 7px 3px 6px; background: #1c0d2e; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 3px; min-height: 54px; transition: transform .1s; box-shadow: inset 0 0 0 1.5px var(--gem); }
-.gp-seal__role { font-size: 11px; font-weight: 800; color: #d0f0ff; }
-.gp-seal__lv  { font-size: 9px; font-weight: 700; color: #7ec8e3; }
-.gp-seal--active { background: #0d2240; box-shadow: 0 0 0 2px var(--gem) inset, 0 2px 8px rgba(78,197,255,0.4); transform: translateY(-2px); }
+/* P1 fix: larger text in 4-col grid; outer ring on active for glance-speed legibility */
+.gp-seal__role { font-size: 12px; font-weight: 800; color: #d0f0ff; }
+.gp-seal__lv  { font-size: 10px; font-weight: 700; color: #7ec8e3; }
+.gp-seal--active { background: #0d2240; box-shadow: 0 0 0 2.5px var(--gem), 0 0 0 2px var(--gem) inset, 0 2px 8px rgba(78,197,255,0.4); transform: translateY(-3px); }
 .gp-seal--locked { cursor: not-allowed; opacity: 0.45; }
 
 /* ---------- tabs ---------- */
@@ -120,7 +124,9 @@
 
 /* ---------- panel content ---------- */
 /* FIX #3: panel scrolls within flex container */
+/* P2 fix: taller max-height on phones >= 750px viewport height */
 .gp-panel { flex: 1; overflow-y: auto; min-height: 98px; max-height: 210px; }
+@media (min-height: 750px) { .gp-panel { max-height: 240px; } }
 .gp-paneltitle { font-family: "Black Han Sans", sans-serif; color: var(--gold-hi); font-size: 16px; margin-bottom: 8px; }
 .gp-region { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; font-size: 12px; font-weight: 800; color: #cbb8da; }
 .gp-stage-frac { font-family: "Black Han Sans", sans-serif; font-size: 14px; color: var(--gold); background: rgba(0,0,0,0.3); padding: 6px 12px; border-radius: 10px; }
@@ -130,12 +136,21 @@
 .gp-stafflist { display: flex; flex-direction: column; gap: 7px; max-height: 186px; overflow-y: auto; }
 .gp-stafflist-fade { position: absolute; bottom: 0; left: 0; right: 0; height: 28px; background: linear-gradient(to bottom, transparent, rgba(34,22,46,0.98) 90%); pointer-events: none; }
 .gp-goallist { gap: 8px; }
+/* P2 fix: goals tab scroll fade — same pattern as crew stafflist-wrap */
+.gp-goallist-wrap { position: relative; }
+.gp-goallist-fade { position: absolute; bottom: 0; left: 0; right: 0; height: 28px; background: linear-gradient(to bottom, transparent, rgba(34,22,46,0.98) 90%); pointer-events: none; }
 
-/* FIX #5: goal hierarchy — active goal pops with gold ring; done goals recede; locked stay dim */
+/* FIX #5: goal hierarchy — active goal pops with gold ring; done/locked use color shifts not opacity (contrast fix) */
 .gp-goal { padding: 9px 11px; border-radius: 13px; background: var(--panel); box-shadow: 0 2px 0 rgba(0,0,0,0.2); border-left: 5px solid var(--ink-soft); }
 .gp-goal--active { border-left-color: var(--gold); box-shadow: 0 0 0 2px var(--gold), 0 4px 12px rgba(255,192,46,0.35); }
-.gp-goal--done { border-left-color: #4caf50; opacity: 0.6; filter: saturate(0.5); }
-.gp-goal--locked { opacity: 0.4; }
+/* P0 fix: remove whole-card opacity dimming — use explicit color shifts to maintain WCAG AA contrast */
+.gp-goal--done { border-left-color: #4caf50; }
+.gp-goal--done .gp-goal__title { color: #5a9a62; text-decoration: line-through; text-decoration-color: rgba(76,175,80,0.5); }
+.gp-goal--done .gp-goal__desc, .gp-goal--done .gp-goal__foot { color: #8aaa8e; }
+.gp-goal--done .gp-goal__badge { opacity: 0.7; }
+.gp-goal--locked .gp-goal__title { color: var(--ink-soft); }
+.gp-goal--locked .gp-goal__desc, .gp-goal--locked .gp-goal__foot { color: #a8988a; }
+.gp-goal--locked .gp-progress__fill { background: linear-gradient(90deg, var(--ink-soft) 0%, #9a8a7a 100%); opacity: 0.4; }
 .gp-goal__head { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; }
 .gp-goal__title { font-family: "Black Han Sans", sans-serif; color: var(--ink); font-size: 14px; }
 .gp-goal__badge { font-size: 9px; font-weight: 800; padding: 1px 7px; border-radius: 7px; background: var(--ink-soft); color: #fff; flex: none; }
@@ -150,7 +165,9 @@
 .gp-goal__section { font-family: "Black Han Sans", sans-serif; color: var(--gold-hi); font-size: 13px; margin: 6px 2px 0; }
 .gp-ach { display: flex; align-items: center; gap: 9px; padding: 8px 11px; border-radius: 12px; background: var(--panel-sunk); opacity: 0.62; }
 .gp-ach--got { opacity: 1; background: var(--panel); box-shadow: 0 0 0 1.5px rgba(255,192,46,0.55) inset; }
-.gp-ach__medal { font-size: 20px; flex: none; }
+/* P2 fix: replace emoji medals with reliable monochrome unicode — no WebView font-fallback risk */
+.gp-ach__medal { font-size: 18px; flex: none; color: var(--ink-soft); line-height: 1; }
+.gp-ach--got .gp-ach__medal { color: var(--gold-deep); }
 .gp-ach__body { display: flex; flex-direction: column; min-width: 0; }
 .gp-ach__name { font-weight: 800; color: var(--ink); font-size: 13px; }
 .gp-ach__desc { font-size: 10px; font-weight: 700; color: var(--ink-soft); }
@@ -158,7 +175,9 @@
 .gp-staff__dot { width: 40px; height: 40px; border-radius: 12px; border: 3px solid var(--rarity-color, #9aa0a6); flex: none; }
 .gp-staff__body { flex: 1; min-width: 0; }
 .gp-staff__name { font-weight: 800; color: var(--ink); font-size: 13px; }
+/* P2 fix: rarity badge — dark ink for light-luminance rarity colors (grey/common tier) */
 .gp-staff__rar { font-size: 9px; font-weight: 800; padding: 1px 6px; border-radius: 6px; background: var(--rarity-color, #9aa0a6); color: #fff; margin-left: 4px; }
+.gp-staff--light-rarity .gp-staff__rar { color: var(--ink); }
 .gp-staff__sub { font-size: 11px; font-weight: 700; color: var(--ink-soft); }
 
 .gp-event { background: linear-gradient(135deg, #fff3d6 0%, #ffe8b8 100%); border-radius: 16px; padding: 13px; border-left: 5px solid var(--event); box-shadow: inset 0 0 0 1.5px var(--event), 0 3px 8px rgba(255,122,60,0.25); }
@@ -167,7 +186,8 @@
 .gp-event__body { font-size: 12px; font-weight: 700; color: #8a6a4d; margin: 6px 0 10px; }
 .gp-event__choices { display: flex; gap: 8px; }
 .gp-event__c { flex: 1; display: flex; flex-direction: column; align-items: center; font-size: 14px; color: #5a3a00; background: linear-gradient(180deg, var(--gold-hi), var(--gold)); box-shadow: 0 4px 0 var(--gold-deep); }
-.gp-event__c small { display: block; font-weight: 600; font-size: 9px; opacity: 0.85; margin-top: 3px; }
+/* P1 fix: raise hint text to 10px/700 to pass contrast AA; clamp to 2 lines to prevent height jank */
+.gp-event__c small { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-weight: 700; font-size: 10px; color: #3a2200; margin-top: 3px; max-width: 100%; }
 .gp-log { margin-top: 8px; max-height: 84px; overflow-y: auto; }
 .gp-logline { font-size: 11px; font-weight: 700; color: #b9a9c8; padding: 2px 0; }
 
@@ -177,6 +197,9 @@
 .gp-modal { width: 80%; max-width: 320px; background: var(--panel); border-radius: 22px; padding: 22px 20px; text-align: center; box-shadow: 0 14px 44px rgba(0,0,0,0.5), inset 0 0 0 3px var(--gold); animation: gpPop .25s cubic-bezier(.2,1.4,.4,1); }
 /* FIX #9: onboarding badge larger for celebratory feel */
 .gp-modal__badge { font-size: 52px; }
+/* P0 fix: modal art larger and centered; modal scrollable so bottom button is never clipped */
+.gp-modal__art { width: 128px; height: 128px; margin: 0 auto 6px; background-size: contain; background-repeat: no-repeat; background-position: center; }
+.gp-modal { max-height: 90vh; overflow-y: auto; }
 .gp-mtitle { font-family: "Black Han Sans", sans-serif; font-size: 21px; color: var(--ink); margin-top: 4px; }
 /* FIX #9: modal body text — contrast raised to pass WCAG AA; line-height improved */
 .gp-msub { font-size: 13px; font-weight: 700; color: #4a3828; line-height: 1.55; margin: 4px 0 12px; }
@@ -202,7 +225,6 @@
 .gp-banner--in { opacity: 1; transform: translateY(0) scale(1); }
 .gp-confirm-row { display: flex; gap: 10px; }
 .gp-confirm-row .gp-btn { flex: 1; }
-.gp-modal__art { width: 96px; height: 96px; margin: 0 auto 6px; background-size: contain; background-repeat: no-repeat; background-position: center; }
 
 /* FIX #7: world scene — vignette overlay at world/panel boundary; scanlines for ambient depth */
 .gp-world-vignette { position: absolute; left: 0; right: 0; pointer-events: none; }
@@ -212,3 +234,11 @@
 
 /* FIX #10: desktop gutters — fine gold crosshatch on bg-deep so side gutters feel thematic, not just empty */
 body { background-color: var(--bg-deep); background-image: repeating-linear-gradient(45deg, rgba(255,192,46,0.03) 0px, rgba(255,192,46,0.03) 1px, transparent 1px, transparent 8px); }
+
+/* P0+P2 fix: desktop — lock to phone height so bottom sheet is never clipped; halo grounds the strip */
+@media (min-width: 430px) {
+  .gp-ui { height: 844px; overflow: hidden; box-shadow: 0 0 0 1px rgba(255,192,46,0.15), 0 24px 80px rgba(0,0,0,0.7); }
+}
+
+/* P1 fix: prestige region — breathing room between seal grid and danger button */
+.gp-sealgrid + .gp-region { margin-top: 12px; }

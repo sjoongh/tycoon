@@ -152,7 +152,8 @@ export class DOMBottomPanel {
       </div>
       <div class="gp-facsel">${facilities.map((ff) => {
         const u = gs.isUnlocked(ff.id);
-        return `<button class="gp-fac ${ff.id === sel ? "gp-fac--active" : ""} ${u ? "" : "gp-fac--locked"}" data-action="selectFac" data-id="${ff.id}"><span class="gp-fac__icon" style="background:${hex(ff.color)}"></span><span class="gp-fac__role">${ff.role}</span><span class="gp-fac__lv">${u ? `Lv.${gs.level(ff.id)}` : `${ff.unlock}구`}</span></button>`;
+        // P1 fix: facility picker icon — use webp asset as background-image, color as fallback
+      return `<button class="gp-fac ${ff.id === sel ? "gp-fac--active" : ""} ${u ? "" : "gp-fac--locked"}" data-action="selectFac" data-id="${ff.id}"><span class="gp-fac__icon" style="background-color:${hex(ff.color)};background-image:url('/art/${ff.id}-t1.webp')"></span><span class="gp-fac__role">${ff.role}</span><span class="gp-fac__lv">${u ? `Lv.${gs.level(ff.id)}` : `${ff.unlock}구`}</span></button>`;
       }).join("")}</div>
       <div class="gp-region"><span>${gs.data.stage.area}구역 · ${shortNumber(gs.data.stage.progress)} / ${shortNumber(gs.data.stage.target)}</span>${
         stageDone
@@ -163,16 +164,24 @@ export class DOMBottomPanel {
 
   _renderCrew() {
     const gs = this.gameState;
+    // P2 fix: detect light-luminance rarity colors for badge contrast swap
+    const isLightColor = (hex6) => {
+      const r = (hex6 >> 16) & 0xff, g = (hex6 >> 8) & 0xff, b = hex6 & 0xff;
+      return (0.299 * r + 0.587 * g + 0.114 * b) > 153; // > 60% luminance
+    };
     const cards = staffDefinitions.map((s) => {
       const lv = gs.staffLevel(s.id);
       const cost = gs.staffCost(s.id);
       const ex = gs.staffExplainCost(s.id);
       const can = gs.data.votes >= cost && gs.data.explain >= ex;
       const skill = s.skill ? (gs.staffSkillActive(s.id) ? s.skill.name : `스킬 Lv.${s.skill.unlockLevel}`) : "";
-      return `<div class="gp-staff" style="--rarity-color:${hex(rarityColors[s.rarity] || 0xd8c4a0)}">
+      const rarityHex = rarityColors[s.rarity] || 0xd8c4a0;
+      const lightRarity = isLightColor(rarityHex) ? " gp-staff--light-rarity" : "";
+      // P0 fix: show 해명 cost in hire button (two-line pattern); add gp-btn--ready glow when affordable
+      return `<div class="gp-staff${lightRarity}" style="--rarity-color:${hex(rarityHex)}">
         <div class="gp-staff__dot" style="background:${hex(s.color)}"></div>
         <div class="gp-staff__body"><div class="gp-staff__name">${s.name}<span class="gp-staff__rar">${s.rarityName}</span></div><div class="gp-staff__sub">Lv.${lv} · ${skill}</div></div>
-        <button class="gp-btn gp-btn--sm ${can ? "" : "gp-btn--disabled"}" data-action="hire" data-id="${s.id}">${shortNumber(cost)}표</button></div>`;
+        <button class="gp-btn gp-btn--sm gp-btn--upgrade ${can ? "gp-btn--ready" : "gp-btn--disabled"}" data-action="hire" data-id="${s.id}">${shortNumber(cost)}표<small>${shortNumber(ex)}해명</small></button></div>`;
     }).join("");
     // Scroll fade is a real div (not ::after) for reliable WebView support
     this.panel.innerHTML = `<div class="gp-paneltitle">직원 채용 · 생산 x${gs.staffMultiplierFor(gs.data).toFixed(2)}</div><div class="gp-stafflist-wrap"><div class="gp-stafflist">${cards}</div><div class="gp-stafflist-fade" aria-hidden="true"></div></div>`;
@@ -190,11 +199,21 @@ export class DOMBottomPanel {
     } else {
       const log = (gs.data.log || []).slice(0, 3).map((l) => `<div class="gp-logline">${l}</div>`).join("");
       const ready = gs.eventReady();
-      const sec = Math.ceil(gs.eventCooldownRemainingMs() / 1000);
+      const remainMs = gs.eventCooldownRemainingMs ? gs.eventCooldownRemainingMs() : 0;
+      const totalMs = gs.eventCooldownTotalMs ? gs.eventCooldownTotalMs() : remainMs;
+      const sec = Math.ceil(remainMs / 1000);
       const btn = ready
         ? `<button class="gp-btn gp-btn--event" data-action="getEvent">사건 받기</button>`
         : `<button class="gp-btn gp-btn--event gp-btn--disabled" data-action="getEvent">다음 사건까지 ${sec}초</button>`;
       this.panel.innerHTML = `<div class="gp-paneltitle">📋 사건 대응실 · 처리 ${gs.data.stats.totalEvents}건</div><div class="gp-card__sub">사건 대응으로 표·믿음을 얻으세요 · 보상 x${gs.eventRewardScale().toFixed(1)}</div>${btn}<div class="gp-log">${log}</div>`;
+      // P1 fix: drive cooldown sweep --cd-pct on the disabled button each second
+      if (!ready && totalMs > 0) {
+        const btnEl = this.panel.querySelector(".gp-btn--event");
+        if (btnEl) {
+          const pct = Math.round((1 - remainMs / totalMs) * 100);
+          btnEl.style.setProperty("--cd-pct", `${pct}%`);
+        }
+      }
     }
   }
 
@@ -227,8 +246,10 @@ export class DOMBottomPanel {
       const got = !!gs.data.achievements[a.id];
       const cur = gs.achievementProgress(a.metric);
       const ratio = Math.max(0, Math.min(1, cur / a.target));
+      // P2 fix: replace emoji medals with reliable monochrome unicode (no WebView font-fallback risk)
+      const medal = got ? "◆" : "◇";
       return `<div class="gp-ach ${got ? "gp-ach--got" : ""}">
-        <span class="gp-ach__medal">${got ? "🏅" : "🔒"}</span>
+        <span class="gp-ach__medal">${medal}</span>
         <span class="gp-ach__body"><span class="gp-ach__name">${a.name}</span><span class="gp-ach__desc">${got ? a.desc : `${a.desc} (${Math.floor(ratio * 100)}%)`}</span></span>
       </div>`;
     }).join("");
@@ -237,9 +258,10 @@ export class DOMBottomPanel {
     const titleProgress = active && active.generated
       ? `정규 완료 · 끝없는 목표 ${gs.data.endless + 1}단계`
       : `${doneCount}/${questDefinitions.length} 완료`;
+    // P2 fix: wrap goallist in stafflist-wrap pattern so the fade gradient works
     this.panel.innerHTML = `<div class="gp-paneltitle">운영 목표 · ${titleProgress}</div>
-      <div class="gp-stafflist gp-goallist">${questRows}
-      <div class="gp-goal__section">업적 · ${gotCount}/${achievementDefinitions.length}</div>${achRows}</div>`;
+      <div class="gp-goallist-wrap"><div class="gp-stafflist gp-goallist">${questRows}
+      <div class="gp-goal__section">업적 · ${gotCount}/${achievementDefinitions.length}</div>${achRows}</div><div class="gp-goallist-fade" aria-hidden="true"></div></div>`;
   }
 
   _renderPrestige() {

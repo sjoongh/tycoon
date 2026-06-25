@@ -16,6 +16,8 @@ export class Sfx {
         if (AC) this.ctx = new AC();
       }
       if (this.ctx && this.ctx.state === "suspended") this.ctx.resume();
+      // 컨텍스트가 실행되면 더 이상 필요 없으므로 리스너 자진 제거(누수 방지)
+      if (this.ctx && this.ctx.state === "running") document.removeEventListener("pointerdown", resume);
     };
     document.addEventListener("pointerdown", resume);
 
