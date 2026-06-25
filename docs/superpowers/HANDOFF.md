@@ -160,3 +160,10 @@
 - **14B 로테이팅 일일 퀘스트**(9d80682): `src/data/dailyQuests.js` 3종(오늘의 접수=clicks100, 대응=events3, 증설=upgrades5). `data.daily`에 qday/clicks/events/upgrades/claimed, `_bumpDaily`를 processClick/applyEffect/upgrade에 배선, `_ensureDailyQuests`로 자정(qday≠today) 리셋. 목표 탭 상단 섹션에 노출, 완료 시 '받기' 수동 클레임(보상 해명/인장, celebrate 토스트). 목표 탭 알림 점(anyDailyQuestClaimable). 데이터-only(경제 무변). e2e: prog5·done·claim seals+1·중복 null·리셋0·badge true. 테스터의 '목표 클레임 연출'+'탭 배지' 항목도 동시 충족.
 - 둘 다 build✓ test13/13✓ 회귀(_regression cps599 0에러)✓. 밸런스/초반곡선 보존.
 - **다음 루프**: ⑦테스터 잔여(오프닝 3점 진행/스킵 버튼, 다음 해금 티저 카드 — '3구역에서 서버실 해금' 등 lockedFacilities 활용). 큰 아이들 깊이 항목 대부분 소진 → 그 뒤 **종합 7역할 재검증 패스**(이전 리뷰 이후 8개+ 기능 추가됨)로 95% 재점검.
+
+## 루프15 완료 (폴리시 + 2차 종합 7역할 검증, 밤샘 자율)
+- **15A 온보딩 폴리시**(579f3a9): 오프닝 3카드 진행 점(●○○)+건너뛰기 버튼, 시설 탭 '🔒 다음 해금: X · N구역' 티저(lockedFacilities). e2e: dots/skip present, 티저 '조용한서버실·3구역'.
+- **15B 4에이전트 재리뷰 + 픽스**(bfe0999): 개발+QA·기획·UIUX+디자이너·알파/베타 병렬. 더블플래그(개발 P1 + 기획 P0): **믿음이 100%에 고정**(홍보 패시브 회복>감쇠)→보너스 상시·위기 소멸. 수정: 회복항에 ×(1-trust/100) → 투자의존 평형점(no-trust스탭 ~71, trust스탭 ~94)에 수렴, cps 배율(trustModifier)은 불변이라 밸런스 보존. 개발: **오프닝 openingSeen 영구플래그**(첫 탭 전 새로고침 매번 재표시 버그), **감사 시 daily 출석연속 유지**(kept에 daily 추가), clickPower floor→round(작은 raw clickPct 절삭), rushTotalMs() 추가. 디자이너 에이전트: mute 위치(right:54), FAB bottom:310+짧은화면 미디어쿼리(scale .85), 러시 conic 카운트다운 링(--rush-pct), 오프라인 2배 프리미엄 골드 CTA. e2e: 평형 수렴(100→97↓·10→17↑)·prestige daily 유지·rushTotal20000.
+- **15C 무한 인장 소비처**(f01fb3c): 9번째 감사 업글 '황금 개표기'(cpsPct+0.04/lvl, maxLevel999). 8종 캡 후 인장 쓸 곳 없던 장기 갭 해소. e2e: 반복구매·비용 8→12 escalate·cps 975→1403·9버튼 그리드.
+- 전부 build✓ test13/13✓ 회귀(_regression cps599 0에러)✓.
+- **기획 종합평가**: early/mid 진행·세션 참여는 경쟁력 확보. 95% 미달 잔여는 구조적 2가지 — (1)재방문 훅 부재(로컬 알림/푸시), (2)장기 경제 평탄(황금개표로 일부 해소; 추가로 트러스트 슬로프·시즌 콘텐츠). **다음 루프**: 로컬 알림(Notification API+SW, 첫 프레스티지 후 권한요청→일일/오프라인캡/유휴 핑), 또는 한정 시즌 목표(date-seeded 주간). 각 신중 검증.
