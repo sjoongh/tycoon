@@ -173,12 +173,13 @@ export class DOMBottomPanel {
   }
 
   // 다음 해금 티저: 아직 잠긴 시설 중 가장 먼저 열리는 것을 한 줄 안내(진행 동기 부여)
+  // FIX P1: emoji 🔒 replaced with CSS-safe unicode square to avoid Android WebView glyph fallback failure
   _nextUnlockTeaser() {
     const gs = this.gameState;
     const locked = gs.lockedFacilities ? gs.lockedFacilities() : [];
     if (!locked.length) return "";
     const next = locked.reduce((a, b) => ((b.unlock || 1) < (a.unlock || 1) ? b : a));
-    return `<div class="gp-nextunlock">🔒 다음 해금: <b>${next.name}</b> · ${next.unlock}구역 도달 시</div>`;
+    return `<div class="gp-nextunlock"><span style="font-size:9px;color:var(--ink-soft);vertical-align:middle">&#9632;</span> 다음 해금: <b>${next.name}</b> · ${next.unlock}구역 도달 시</div>`;
   }
 
   _renderCrew() {
@@ -202,8 +203,13 @@ export class DOMBottomPanel {
         <div class="gp-staff__body"><div class="gp-staff__name">${s.name}<span class="gp-staff__rar">${s.rarityName}</span></div><div class="gp-staff__sub">Lv.${lv} · ${skill}</div></div>
         <button class="gp-btn gp-btn--sm gp-btn--upgrade ${can ? "gp-btn--ready" : "gp-btn--disabled"}" data-action="hire" data-id="${s.id}">${shortNumber(cost)}표<small>${shortNumber(ex)}해명</small></button></div>`;
     }).join("");
+    // FIX P2: multiplier shown as "+69% 생산 보너스" sub-label (not "x1.69" debug-looking number in title)
+    const mult = gs.staffMultiplierFor(gs.data);
+    const multLabel = mult < 10
+      ? `<span class="gp-card__gain">+${((mult - 1) * 100).toFixed(0)}% 생산 보너스</span>`
+      : `<span class="gp-card__gain">x${mult.toFixed(1)} 생산</span>`;
     // Scroll fade is a real div (not ::after) for reliable WebView support
-    this.panel.innerHTML = `<div class="gp-paneltitle">직원 채용 · 생산 x${gs.staffMultiplierFor(gs.data).toFixed(2)}</div><div class="gp-stafflist-wrap"><div class="gp-stafflist">${cards}</div><div class="gp-stafflist-fade" aria-hidden="true"></div></div>`;
+    this.panel.innerHTML = `<div class="gp-paneltitle">직원 채용 ${multLabel}</div><div class="gp-stafflist-wrap"><div class="gp-stafflist">${cards}</div><div class="gp-stafflist-fade" aria-hidden="true"></div></div>`;
   }
 
   _renderEvents() {
@@ -267,7 +273,8 @@ export class DOMBottomPanel {
         : claimable
           ? `<button class="gp-btn gp-btn--sm gp-btn--ready" data-action="claimDaily" data-id="${q.id}">받기</button>`
           : `<span class="gp-goal__badge">오늘</span>`;
-      return `<div class="gp-goal ${claimed ? "gp-goal--done" : claimable ? "gp-goal--active" : ""}">
+      // FIX P1: gp-goal--daily adds green tint to distinguish daily rows from neutral quest cards
+      return `<div class="gp-goal gp-goal--daily ${claimed ? "gp-goal--done" : claimable ? "gp-goal--active" : ""}">
         <div class="gp-goal__head"><span class="gp-goal__title">${q.title}</span>${right}</div>
         <div class="gp-goal__desc">${q.desc}</div>
         <div class="gp-progress gp-goal__bar"><div class="gp-progress__fill" style="width:${(done ? 1 : ratio) * 100}%"></div></div>
@@ -298,9 +305,10 @@ export class DOMBottomPanel {
       ? `정규 완료 · 끝없는 목표 ${gs.data.endless + 1}단계`
       : `${doneCount}/${questDefinitions.length} 완료`;
     // P2 fix: wrap goallist in stafflist-wrap pattern so the fade gradient works
+    // FIX P1: 📅 emoji replaced with unicode diamond to avoid Android WebView glyph fallback
     this.panel.innerHTML = `<div class="gp-paneltitle">운영 목표 · ${titleProgress}</div>
       <div class="gp-goallist-wrap"><div class="gp-stafflist gp-goallist">
-      <div class="gp-goal__section">📅 일일 퀘스트 · 자정 초기화</div>${dailyRows}
+      <div class="gp-goal__section">&#9670; 일일 퀘스트 · 자정 초기화</div>${dailyRows}
       <div class="gp-goal__section">운영 목표</div>${questRows}
       <div class="gp-goal__section">업적 · ${gotCount}/${achievementDefinitions.length}</div>${achRows}</div><div class="gp-goallist-fade" aria-hidden="true"></div></div>`;
   }
@@ -310,15 +318,49 @@ export class DOMBottomPanel {
     const preview = gs.prestigePreview();
     const can = preview > 0;
     // FIX #8: prestige upgrades use .gp-seal (gem-blue) not .gp-fac (gold) — distinct economy, distinct look
+    // FIX P1: track _selectedSeal — default to first affordable, or first upgradeable; apply gp-seal--active
+    const firstAffordable = prestigeUpgrades.find((u) => {
+      const lv = gs.prestigeUpgradeLevel(u.id);
+      const cost = gs.prestigeUpgradeCost(u.id);
+      return gs.data.prestige.seals >= cost && lv < u.maxLevel;
+    });
+    if (!this._selectedSeal) this._selectedSeal = firstAffordable?.id || prestigeUpgrades[0]?.id;
+    const sel = this._selectedSeal;
+    const selDef = prestigeUpgrades.find((u) => u.id === sel);
+    const selLv = selDef ? gs.prestigeUpgradeLevel(sel) : 0;
+    const selCost = selDef ? gs.prestigeUpgradeCost(sel) : 0;
+    const selCanBuy = selDef && gs.data.prestige.seals >= selCost && selLv < selDef.maxLevel;
+
     const ups = prestigeUpgrades.map((u) => {
       const lv = gs.prestigeUpgradeLevel(u.id);
       const cost = gs.prestigeUpgradeCost(u.id);
       const cb = gs.data.prestige.seals >= cost && lv < u.maxLevel;
-      return `<button class="gp-seal ${cb ? "" : "gp-seal--locked"}" data-action="buyPrestige" data-id="${u.id}"><span class="gp-seal__role">${u.shortName}</span><span class="gp-seal__lv">Lv.${lv} · ${cost}</span></button>`;
+      const isActive = u.id === sel;
+      return `<button class="gp-seal ${isActive ? "gp-seal--active" : ""} ${cb || isActive ? "" : "gp-seal--locked"}" data-action="buyPrestige" data-id="${u.id}"><span class="gp-seal__role">${u.shortName}</span><span class="gp-seal__lv">Lv.${lv} · ${cost}</span></button>`;
     }).join("");
+
     const fullMult = gs.prestigeMultiplierFor(gs.data) * (1 + (gs.permanentEffectFor ? gs.permanentEffectFor(gs.data, "cpsPct") : 0));
+    // Selected seal detail card shown below grid for context before buying
+    const detailCard = selDef ? `<div class="gp-card" style="margin-top:8px">
+      <div class="gp-card__body">
+        <div class="gp-card__title">${selDef.shortName} Lv.${selLv}</div>
+        <div class="gp-card__sub">${selDef.desc || ""}</div>
+        <div class="gp-card__gain">비용: 인장 ${selCost}</div>
+      </div>
+      <button class="gp-btn gp-btn--sm gp-btn--gold ${selCanBuy ? "gp-btn--ready" : "gp-btn--disabled"}" data-action="buyPrestige" data-id="${sel}">구매</button>
+    </div>` : "";
     this.panel.innerHTML = `<div class="gp-paneltitle">감사 재정비 · 인장 ${gs.data.prestige.seals} · 영구 x${fullMult.toFixed(2)}</div>
       <div class="gp-sealgrid">${ups}</div>
+      ${detailCard}
       <div class="gp-region"><span>예상 획득 +${preview}</span><button class="gp-btn gp-btn--sm gp-btn--danger ${can ? "" : "gp-btn--disabled"}" data-action="prestigeReset">감사실행</button></div>`;
+
+    // Wire seal selection clicks (re-render with new selection, don't buy immediately)
+    this.panel.querySelectorAll(".gp-seal").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        this._selectedSeal = btn.dataset.id;
+        this._renderPrestige();
+      });
+    });
   }
 }

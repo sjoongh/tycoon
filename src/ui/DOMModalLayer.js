@@ -48,8 +48,11 @@ export class DOMModalLayer {
   // 신규 첫 세션 오프닝(3카드). 보여줬으면 true 반환(오프라인 보상은 다음 세션부터).
   _maybeOpening() {
     const d = this.gameState.data;
-    const fresh = !d.tutorial?.done && (d.stats.totalClicks || 0) === 0 && d.stage.area === 1 && d.stage.progress === 0;
+    // openingSeen 영구 플래그로 한 번만 노출(첫 탭 전 새로고침 시 매번 재표시되던 버그 수정)
+    const fresh = !d.tutorial?.done && !d.tutorial?.openingSeen && (d.stats.totalClicks || 0) === 0 && d.stage.area === 1 && d.stage.progress === 0;
     if (!fresh) return false;
+    if (d.tutorial) d.tutorial.openingSeen = true;
+    this.gameState.save && this.gameState.save(false);
     const cards = [
       { art: "/art/worker-clerk.webp", t: "믿어주세요, 개표국", s: "오늘부터 당신이 개표국장입니다. 믿음도 바닥, 서류도 엉망. 밑바닥에서 시작합니다." },
       { art: "/art/desk-t1.webp", t: "표를 처리하라", s: "화면을 탭해 표를 처리하고, 시설을 키우고, 직원을 채용하세요." },
@@ -124,10 +127,12 @@ export class DOMModalLayer {
     if (!r) return;
     const mins = Math.max(1, Math.floor(r.elapsed / 60000));
     const can2x = this.gameState.offline2xAvailable && this.gameState.offline2xAvailable();
+    // FIX P0: 2× button uses gold+ready theme (premium CTA), physically larger than plain claim
+    // Plain claim uses gp-btn--disabled style so gold 2× is the obvious choice
     const footer = can2x
-      ? `<div class="gp-confirm-row">
-           <button class="gp-btn gp-btn--disabled" data-close>그냥 수령</button>
-           <button class="gp-btn gp-btn--gold" data-confirm>🎁 2배로 받기</button>
+      ? `<div class="gp-confirm-row" style="align-items:stretch">
+           <button class="gp-btn gp-btn--disabled" data-close style="flex:1">그냥 수령</button>
+           <button class="gp-btn gp-btn--gold gp-btn--ready gp-btn--upgrade" data-confirm style="flex:1.4;font-size:15px">2배로 받기<small>광고 보기</small></button>
          </div>`
       : `<button class="gp-btn" data-close>수령하기</button>`;
     this._openModal(`

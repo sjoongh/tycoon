@@ -47,28 +47,34 @@
 .gp-truststate--bonus { background: rgba(20,90,50,0.9); color: #d6ffe6; box-shadow: inset 0 0 0 1px rgba(76,214,128,0.6); }
 
 /* FIX #1: mute button lives on .gp-ui root, not inside .gp-hud */
-.gp-mute { position: absolute; top: 10px; right: 12px; pointer-events: auto; width: 36px; height: 36px; border: none; border-radius: 10px; background: rgba(20,12,28,0.7); box-shadow: inset 0 0 0 1px rgba(255,192,46,0.4); font-size: 16px; cursor: pointer; z-index: 10; display: flex; align-items: center; justify-content: center; }
+/* FIX P0: shifted right so it doesn't ghost behind the trust chip (was right:12px, now right:54px) */
+.gp-mute { position: absolute; top: 10px; right: 54px; pointer-events: auto; width: 36px; height: 36px; border: none; border-radius: 10px; background: rgba(20,12,28,0.7); box-shadow: inset 0 0 0 1px rgba(255,192,46,0.4); font-size: 16px; cursor: pointer; z-index: 10; display: flex; align-items: center; justify-content: center; }
 
 /* 긴급 개표(러시) FAB — 바텀시트 위 우측에 떠 있는 액티브 부스트 버튼 */
-.gp-rush { position: absolute; right: 12px; bottom: 270px; z-index: 9; pointer-events: auto; border: none; border-radius: 16px; padding: 9px 14px; cursor: pointer;
+/* FIX P0+P1: raised to bottom:310px for safety margin above bottom sheet; unified typography with brief */
+.gp-rush { position: absolute; right: 12px; bottom: 310px; z-index: 9; pointer-events: auto; border: none; border-radius: 16px; padding: 9px 14px; cursor: pointer;
   display: flex; flex-direction: column; align-items: center; gap: 1px; min-width: 96px; font-family: "Black Han Sans", "Noto Sans KR", sans-serif; line-height: 1.15; }
 .gp-rush b { font-size: 14px; }
 .gp-rush small { font-family: "Noto Sans KR", sans-serif; font-size: 10px; font-weight: 700; opacity: 0.9; }
 .gp-rush--ready { background: linear-gradient(180deg, #ffe07a 0%, #ff9f1a 100%); color: #5a2e00; box-shadow: 0 5px 0 #c96f00, 0 0 14px rgba(255,180,40,0.6); animation: gp-rush-pulse 1s ease-in-out infinite; }
 .gp-rush--ready:active { transform: translateY(4px); box-shadow: 0 1px 0 #c96f00; }
-.gp-rush--active { background: linear-gradient(180deg, #ff7a3c 0%, #d32f2f 100%); color: #fff; box-shadow: 0 5px 0 #9a0007, 0 0 18px rgba(255,90,40,0.8); }
+/* FIX P1: rush-active uses conic-gradient countdown ring driven by --rush-pct CSS var (set by JS each second) */
+.gp-rush--active { background: conic-gradient(rgba(255,255,255,0.22) var(--rush-pct,100%), transparent var(--rush-pct,100%)), linear-gradient(180deg, #ff7a3c 0%, #d32f2f 100%); color: #fff; box-shadow: 0 5px 0 #9a0007, 0 0 18px rgba(255,90,40,0.8); }
 .gp-rush--cd { background: #4a3a52; color: #b9a9c8; box-shadow: 0 4px 0 #2e2438; cursor: not-allowed; opacity: 0.85; }
 @keyframes gp-rush-pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.06); } }
+@media (max-height: 700px) { .gp-rush { bottom: 250px; transform: scale(0.85); transform-origin: bottom right; } }
 
-/* 긴급 브리핑 FAB(좌측) — 믿음(초록) 테마, 러시와 대칭 */
-.gp-brief { position: absolute; left: 12px; bottom: 270px; z-index: 9; pointer-events: auto; border: none; border-radius: 16px; padding: 9px 12px; cursor: pointer;
+/* 긴급 브리핑 FAB(좌측) — 믿음(초록) 테마, 러시와 완전 대칭 */
+/* FIX P1: padding, font-size, small font-size now identical to .gp-rush for true mirror symmetry */
+.gp-brief { position: absolute; left: 12px; bottom: 310px; z-index: 9; pointer-events: auto; border: none; border-radius: 16px; padding: 9px 14px; cursor: pointer;
   display: flex; flex-direction: column; align-items: center; gap: 1px; min-width: 96px; font-family: "Black Han Sans", "Noto Sans KR", sans-serif; line-height: 1.15; }
-.gp-brief b { font-size: 13px; }
-.gp-brief small { font-family: "Noto Sans KR", sans-serif; font-size: 9px; font-weight: 700; opacity: 0.92; }
+.gp-brief b { font-size: 14px; }
+.gp-brief small { font-family: "Noto Sans KR", sans-serif; font-size: 10px; font-weight: 700; opacity: 0.9; }
 .gp-brief--ready { background: linear-gradient(180deg, #6fe89a 0%, #2fae5e 100%); color: #073a1c; box-shadow: 0 5px 0 #1c7a40, 0 0 12px rgba(60,210,120,0.5); }
 .gp-brief--ready:active { transform: translateY(4px); box-shadow: 0 1px 0 #1c7a40; }
 .gp-brief--active { background: linear-gradient(180deg, #4cd680 0%, #1f9e49 100%); color: #fff; box-shadow: 0 5px 0 #145e2c, 0 0 16px rgba(76,214,128,0.7); }
 .gp-brief--cd, .gp-brief--poor { background: #3a4a40; color: #b9c8bd; box-shadow: 0 4px 0 #26342c; cursor: not-allowed; opacity: 0.85; }
+@media (max-height: 700px) { .gp-brief { bottom: 250px; transform: scale(0.85); transform-origin: bottom left; } }
 
 /* ---------- bottom sheet ---------- */
 /* FIX #3: flex-column layout — panel scrolls, tabs pin to bottom */
@@ -148,21 +154,22 @@
 
 /* ---------- panel content ---------- */
 /* FIX #3: panel scrolls within flex container */
-/* P2 fix: taller max-height on phones >= 750px viewport height */
-.gp-panel { flex: 1; overflow-y: auto; min-height: 98px; max-height: 210px; }
-@media (min-height: 750px) { .gp-panel { max-height: 240px; } }
+/* FIX P2: taller max-height — was 210/240px, now 248/280px to show content without truncation */
+.gp-panel { flex: 1; overflow-y: auto; min-height: 98px; max-height: 248px; }
+@media (min-height: 750px) { .gp-panel { max-height: 280px; } }
 .gp-paneltitle { font-family: "Black Han Sans", sans-serif; color: var(--gold-hi); font-size: 16px; margin-bottom: 8px; }
 .gp-region { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; font-size: 12px; font-weight: 800; color: #cbb8da; }
 .gp-stage-frac { font-family: "Black Han Sans", sans-serif; font-size: 14px; color: var(--gold); background: rgba(0,0,0,0.3); padding: 6px 12px; border-radius: 10px; }
 
 /* FIX #6: staff list — wrap + real div fade for reliable WebView scroll affordance */
+/* FIX P2: fade height raised to 36px, gradient goes to full opaque — unambiguous scroll affordance */
 .gp-stafflist-wrap { position: relative; }
-.gp-stafflist { display: flex; flex-direction: column; gap: 7px; max-height: 186px; overflow-y: auto; }
-.gp-stafflist-fade { position: absolute; bottom: 0; left: 0; right: 0; height: 28px; background: linear-gradient(to bottom, transparent, rgba(34,22,46,0.98) 90%); pointer-events: none; }
+.gp-stafflist { display: flex; flex-direction: column; gap: 7px; max-height: 220px; overflow-y: auto; }
+.gp-stafflist-fade { position: absolute; bottom: 0; left: 0; right: 0; height: 36px; background: linear-gradient(to bottom, transparent, rgba(34,22,46,1) 100%); pointer-events: none; }
 .gp-goallist { gap: 8px; }
-/* P2 fix: goals tab scroll fade — same pattern as crew stafflist-wrap */
+/* FIX P2: goals tab scroll fade — deeper fade height matches stafflist pattern */
 .gp-goallist-wrap { position: relative; }
-.gp-goallist-fade { position: absolute; bottom: 0; left: 0; right: 0; height: 28px; background: linear-gradient(to bottom, transparent, rgba(34,22,46,0.98) 90%); pointer-events: none; }
+.gp-goallist-fade { position: absolute; bottom: 0; left: 0; right: 0; height: 36px; background: linear-gradient(to bottom, transparent, rgba(34,22,46,1) 100%); pointer-events: none; }
 
 /* FIX #5: goal hierarchy — active goal pops with gold ring; done/locked use color shifts not opacity (contrast fix) */
 .gp-goal { padding: 9px 11px; border-radius: 13px; background: var(--panel); box-shadow: 0 2px 0 rgba(0,0,0,0.2); border-left: 5px solid var(--ink-soft); }
@@ -186,7 +193,11 @@
 .gp-goal .gp-progress { background: rgba(42,32,48,0.18); box-shadow: inset 0 1px 3px rgba(0,0,0,0.2); }
 .gp-goal__foot { display: flex; justify-content: space-between; font-size: 10px; font-weight: 800; color: var(--ink-soft); margin-top: 4px; }
 .gp-goal__reward { color: var(--gold-deep); }
-.gp-goal__section { font-family: "Black Han Sans", sans-serif; color: var(--gold-hi); font-size: 13px; margin: 6px 2px 0; }
+/* FIX P1: section headers get a top border + padding so they stand out from goal cards at scroll speed */
+.gp-goal__section { font-family: "Black Han Sans", sans-serif; color: var(--gold-hi); font-size: 13px; margin: 10px 2px 0; padding-top: 8px; border-top: 1.5px solid rgba(255,192,46,0.2); }
+.gp-goal__section:first-child { margin-top: 4px; padding-top: 0; border-top: none; }
+/* FIX P1: daily quest rows get a green tint to distinguish from neutral quest cards */
+.gp-goal--daily { background: rgba(34,180,90,0.07); border-left-color: #34d36b; }
 .gp-ach { display: flex; align-items: center; gap: 9px; padding: 8px 11px; border-radius: 12px; background: var(--panel-sunk); opacity: 0.62; }
 .gp-ach--got { opacity: 1; background: var(--panel); box-shadow: 0 0 0 1.5px rgba(255,192,46,0.55) inset; }
 /* P2 fix: replace emoji medals with reliable monochrome unicode — no WebView font-fallback risk */
@@ -231,7 +242,8 @@
 .gp-dots { display: flex; justify-content: center; gap: 6px; margin: 2px 0 10px; }
 .gp-dot { width: 7px; height: 7px; border-radius: 50%; background: rgba(42,32,48,0.25); }
 .gp-dot--on { background: var(--gold-deep); transform: scale(1.15); }
-.gp-skip { display: block; margin: 8px auto 0; background: none; border: none; pointer-events: auto; cursor: pointer; font-size: 12px; font-weight: 700; color: var(--ink-soft); text-decoration: underline; }
+/* FIX P0: skip button — contrast raised to var(--ink) (~8:1 on parchment), min tap-target 44px, pill bg */
+.gp-skip { display: inline-flex; align-items: center; justify-content: center; margin: 8px auto 0; background: rgba(42,32,48,0.08); border: none; border-radius: 20px; padding: 10px 16px; min-height: 44px; pointer-events: auto; cursor: pointer; font-size: 13px; font-weight: 700; color: var(--ink); text-decoration: underline; text-decoration-thickness: 1.5px; }
 .gp-mbig { font-family: "Black Han Sans", sans-serif; font-size: 28px; color: var(--gold-deep); line-height: 1.2; margin-bottom: 16px; }
 .gp-mbig span { font-size: 16px; color: #2a9d54; }
 .gp-modal .gp-btn { width: 100%; }
@@ -264,9 +276,9 @@
 /* FIX #10: desktop gutters — fine gold crosshatch on bg-deep so side gutters feel thematic, not just empty */
 body { background-color: var(--bg-deep); background-image: repeating-linear-gradient(45deg, rgba(255,192,46,0.03) 0px, rgba(255,192,46,0.03) 1px, transparent 1px, transparent 8px); }
 
-/* P0+P2 fix: desktop — lock to phone height so bottom sheet is never clipped; halo grounds the strip */
+/* FIX P2: desktop — lock to phone height and CENTER the strip horizontally (was left-aligned) */
 @media (min-width: 430px) {
-  .gp-ui { height: 844px; overflow: hidden; box-shadow: 0 0 0 1px rgba(255,192,46,0.15), 0 24px 80px rgba(0,0,0,0.7); }
+  .gp-ui { width: 390px; height: 844px; overflow: hidden; position: relative; left: 50%; transform: translateX(-50%); box-shadow: 0 0 0 1px rgba(255,192,46,0.15), 0 24px 80px rgba(0,0,0,0.7); }
 }
 
 /* P1 fix: prestige region — breathing room between seal grid and danger button */

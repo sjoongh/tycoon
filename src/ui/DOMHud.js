@@ -110,14 +110,21 @@ export class DOMHud {
     if (gs.rushActive()) {
       btn.className = "gp-rush gp-rush--active";
       btn.disabled = true;
-      btn.innerHTML = `<b>개표 폭주!</b><small>×5 · ${Math.ceil(gs.rushRemainingMs() / 1000)}초</small>`;
+      const remMs = gs.rushRemainingMs();
+      const totalMs = gs.rushTotalMs ? gs.rushTotalMs() : 20000;
+      // FIX P1: drive conic-gradient countdown ring via --rush-pct (100% = full, 0% = expired)
+      const rushPct = Math.round(Math.max(0, Math.min(100, (remMs / totalMs) * 100)));
+      btn.style.setProperty("--rush-pct", `${rushPct}%`);
+      btn.innerHTML = `<b>개표 폭주!</b><small>×5 · ${Math.ceil(remMs / 1000)}초</small>`;
     } else if (gs.rushReady()) {
       btn.className = "gp-rush gp-rush--ready";
       btn.disabled = false;
-      btn.innerHTML = `<b>⚡ 긴급 개표</b><small>20초 ×5</small>`;
+      btn.style.removeProperty("--rush-pct");
+      btn.innerHTML = `<b>&#9889; 긴급 개표</b><small>20초 ×5</small>`;
     } else {
       btn.className = "gp-rush gp-rush--cd";
       btn.disabled = true;
+      btn.style.removeProperty("--rush-pct");
       btn.innerHTML = `<b>충전 중</b><small>${Math.ceil(gs.rushCooldownRemainingMs() / 1000)}초</small>`;
     }
   }

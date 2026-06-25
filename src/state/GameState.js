@@ -292,7 +292,8 @@ export class GameState extends Phaser.Events.EventEmitter {
     if (this.data.paused) return;
     this.addVotes(this.cps());
     this.data.explain += this.explainPerSecond();
-    this.data.trust = Phaser.Math.Clamp(this.data.trust - this.trustDecay() + this.level("notice") * 0.035, 0, 100);
+    // 홍보(notice) 패시브 회복은 믿음이 높을수록 둔화 → 100%에 고정되지 않고 평형점에 수렴(위기/보너스 긴장 유지, 보너스는 능동 브리핑으로 진입).
+    this.data.trust = Phaser.Math.Clamp(this.data.trust - this.trustDecay() + this.level("notice") * 0.035 * (1 - this.data.trust / 100), 0, 100);
     this.reduceDays();
     this.checkProgression();
     this.emit("changed");
@@ -476,6 +477,7 @@ export class GameState extends Phaser.Events.EventEmitter {
       },
       achievements: this.data.achievements,
       tutorial: this.data.tutorial, // 베테랑이 감사(프레스티지) 후 신규 오프닝/튜토리얼을 다시 보지 않도록 유지
+      daily: this.data.daily, // 감사(프레스티지)는 진행이지 새 세이브가 아님 — 출석 연속/일일 진행 유지
     };
 
     this.data = this.normalize({
@@ -761,6 +763,9 @@ export class GameState extends Phaser.Events.EventEmitter {
   rushCooldownRemainingMs() {
     return Math.max(0, (this.data.rushReadyAt || 0) - Date.now());
   }
+  rushTotalMs() {
+    return RUSH_DURATION_MS;
+  }
   activateRush() {
     if (!this.rushReady()) return false;
     const now = Date.now();
@@ -851,7 +856,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     }, 0);
     const clerkSkill = Math.floor(this.staffLevel("clerk") / 5);
     const raw = 1 + facilityPower + staffPower + clerkSkill;
-    return Math.floor(raw * (1 + this.permanentEffectFor(this.data, "clickPct")));
+    return Math.round(raw * (1 + this.permanentEffectFor(this.data, "clickPct"))); // round: 작은 raw에서 clickPct 보너스가 floor로 0이 되던 문제 보정
   }
 
   trustDecay() {
