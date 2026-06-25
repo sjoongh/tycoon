@@ -106,3 +106,10 @@
 ## 종합 회귀검증 (루프3~7 통합 capstone)
 - `scripts/_regression.mjs`: 중반 세이브로 로드 → 코어루프 10탭=10클릭 ✓ · 전 5탭 렌더 무throw ✓ · upgrade/hireStaff/checkProgression/nextQuest(끝없는)/dailyStatus/trustState 전부 정상 ✓ · **0 콘솔에러**. 누적 변경(목표·업적·era·끝없는목표·일일보상·프레스티지깊이·트러스트위기)이 서로 충돌 없이 동작 확인. build✓ test13/13✓.
 - 잔여 P1 백로그(다음 자율 루프): 사건/직원 증량+보상 area 스케일, 가이드형 첫 업그레이드 온보딩(튜토리얼 강화), CPS 상승 연출·탭 배지(클레임 가능 표시)·목표 클레임 연출. + WebP 압축, 후반 밸런스 실인간 검증.
+
+## 루프8 완료 (P1 백로그 3종, 밤샘 자율)
+- **8A 사건 시스템 업그레이드**(f1bfebf): 보상 area 스케일(eventRewardScale=stageTarget(area)/stageTarget(1), 캡 50x, 양수 votes/explain만 — 후반에도 의미; e2e area5에서 9.22x·170→1567 검증). 45s 쿨다운(eventReadyAt; 스팸방지+주기적 비트, "다음 사건까지 N초" 카운트다운, 버튼 비활성). 사건 탭 알림 점(eventReady & 비활성탭일 때).
+- **8B 단계형 온보딩 코치**(a7050a5): DOMModalLayer _maybeHint를 stats 기반 다단계로 — 첫 ~5탭(탭 핸드) → 업그레이드 → 채용 → 첫 사건(하단 화살표 코치, 탭 가리킴). tutorial.done이면 자동 종료. e2e로 4단계 전이 전부 검증.
+- **8C 완료 토스트**(07bb19f): GameState가 목표/업적 완료 시 `celebrate` 이벤트 발행 → DOMModalLayer 토스트+플래시(마일스톤과 동일 연출). 동시 완료 시 기존 토스트 수만큼 세로 오프셋(겹침 방지). e2e 3토스트 스택 검증.
+- 전부 build✓ test13/13✓ 통합회귀(_regression: 코어루프·전탭·시스템 0에러)✓. GameState 변경은 트러스트 중립구간·밸런스 보존 원칙 유지.
+- **다음 루프 잔여 P1**: CPS 상승 연출(초당 수치 강조), 직원 로스터 증량(rarity 스캐폴딩 활용), WebP 에셋 압축, 후반 밸런스 실인간 검증, 목표 수동 클레임(선택).
