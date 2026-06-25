@@ -7,6 +7,7 @@ import { staffDefinitions } from "../data/staff.js";
 import { achievementDefinitions } from "../data/achievements.js";
 import { dailyQuestDefinitions } from "../data/dailyQuests.js";
 import { weeklyGoalDefinitions } from "../data/weeklyGoals.js";
+import { shortNumber } from "../utils/format.js";
 
 const DAY_MS = 86400000;
 const DAILY_STREAK_CAP = 7;
@@ -651,6 +652,15 @@ export class GameState extends Phaser.Events.EventEmitter {
     this.emit("changed");
     this.save(false);
     return r;
+  }
+
+  // 필드 황금 투표함 수령: 약 90초치 생산을 즉시 지급(액티브 손맛). 기존 addVotes 경유(주간/업적/구역 진행에 자연 반영).
+  collectGoldenBallot() {
+    const reward = Math.max(50, Math.round(this.cps() * 90));
+    this.addVotes(reward);
+    this.emit("celebrate", { text: `🌟 황금 투표함! +${shortNumber(reward)}표` });
+    this.emit("changed");
+    return reward;
   }
 
   // ----- 한정 시즌(주간) 목표 (date-seeded, 주차 변경 시 자동 교체) -----

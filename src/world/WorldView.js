@@ -71,6 +71,53 @@ export class WorldView {
         }
       },
     });
+
+    // 필드 황금 투표함: 가끔 등장 → 탭하면 CPS스케일 보상(액티브 손맛). 첫 등장 45~75초.
+    this._scheduleGolden(45000 + Math.random() * 30000);
+  }
+
+  _scheduleGolden(delay) {
+    this._goldenTimer = this.scene.time.delayedCall(delay, () => this._spawnGolden());
+  }
+
+  _spawnGolden() {
+    if (this._golden) return;
+    const x = 70 + Math.random() * 250;
+    const y = 180 + Math.random() * 260;
+    // 사전 로드된 투표함 아트를 금색으로 — "황금 투표함" 테마 + 안정적 렌더(생성텍스처/셰이프는 일부 환경 미렌더)
+    const key = "decor/ballotbox";
+    const halo = this.scene.add.image(x, y, key).setDepth(4999).setTint(0xffe9a8).setAlpha(0.3).setScale(1.5);
+    this._goldenHalo = halo;
+    this._goldenHaloPulse = this.scene.tweens.add({ targets: halo, scale: 1.9, alpha: 0.1, yoyo: true, repeat: -1, duration: 850, ease: "Sine.easeInOut" });
+
+    const disc = this.scene.add.image(x, y, key).setDepth(5000).setTint(0xffd000).setInteractive({ useHandCursor: true });
+    this._golden = disc;
+    disc.setScale(0.3).setAlpha(0);
+    this.scene.tweens.add({ targets: disc, scale: 0.95, alpha: 1, duration: 280, ease: "Back.easeOut" });
+    // 펄스는 등장 완료 후 시작(스케일 트윈 충돌 방지)
+    this._goldenPulse = this.scene.tweens.add({ targets: disc, scale: 1.08, yoyo: true, repeat: -1, duration: 560, ease: "Sine.easeInOut", delay: 290 });
+    disc.on("pointerdown", () => {
+      if (!this._golden) return;
+      const reward = this.gameState.collectGoldenBallot();
+      this.effects.float({ text: `+${shortNumber(reward)}`, x, y: y - 28, color: "#ffd34d" });
+      this.effects.deskPop(x, y);
+      this._despawnGolden();
+      this._scheduleGolden(60000 + Math.random() * 60000); // 다음 등장 60~120초
+    });
+    // 미수령 시 9초 후 자동 소멸 후 재예약
+    this._goldenLife = this.scene.time.delayedCall(9000, () => {
+      this._despawnGolden();
+      this._scheduleGolden(60000 + Math.random() * 60000);
+    });
+  }
+
+  _despawnGolden() {
+    if (this._goldenPulse) { this._goldenPulse.stop(); this._goldenPulse = null; }
+    if (this._goldenHaloPulse) { this._goldenHaloPulse.stop(); this._goldenHaloPulse = null; }
+    if (this._goldenLife) { this._goldenLife.remove(); this._goldenLife = null; }
+    for (const k of ["_golden", "_goldenStar", "_goldenHalo"]) {
+      if (this[k]) { this.scene.tweens.killTweensOf(this[k]); this[k].destroy(); this[k] = null; }
+    }
   }
 
   _buildFloor() {
@@ -166,6 +213,8 @@ export class WorldView {
     this.gameState.off("ballots", this._onBallots);
     this.scene.input.off("pointerdown", this._onPointer);
     this._workTimer?.remove();
+    this._goldenTimer?.remove();
+    this._despawnGolden();
     Object.values(this.stations).forEach((v) => v.destroy());
     this.workers.destroy();
     this.effects.destroy();
