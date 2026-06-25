@@ -60,6 +60,16 @@
 .gp-rush--cd { background: #4a3a52; color: #b9a9c8; box-shadow: 0 4px 0 #2e2438; cursor: not-allowed; opacity: 0.85; }
 @keyframes gp-rush-pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.06); } }
 
+/* 긴급 브리핑 FAB(좌측) — 믿음(초록) 테마, 러시와 대칭 */
+.gp-brief { position: absolute; left: 12px; bottom: 270px; z-index: 9; pointer-events: auto; border: none; border-radius: 16px; padding: 9px 12px; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; gap: 1px; min-width: 96px; font-family: "Black Han Sans", "Noto Sans KR", sans-serif; line-height: 1.15; }
+.gp-brief b { font-size: 13px; }
+.gp-brief small { font-family: "Noto Sans KR", sans-serif; font-size: 9px; font-weight: 700; opacity: 0.92; }
+.gp-brief--ready { background: linear-gradient(180deg, #6fe89a 0%, #2fae5e 100%); color: #073a1c; box-shadow: 0 5px 0 #1c7a40, 0 0 12px rgba(60,210,120,0.5); }
+.gp-brief--ready:active { transform: translateY(4px); box-shadow: 0 1px 0 #1c7a40; }
+.gp-brief--active { background: linear-gradient(180deg, #4cd680 0%, #1f9e49 100%); color: #fff; box-shadow: 0 5px 0 #145e2c, 0 0 16px rgba(76,214,128,0.7); }
+.gp-brief--cd, .gp-brief--poor { background: #3a4a40; color: #b9c8bd; box-shadow: 0 4px 0 #26342c; cursor: not-allowed; opacity: 0.85; }
+
 /* ---------- bottom sheet ---------- */
 /* FIX #3: flex-column layout — panel scrolls, tabs pin to bottom */
 .gp-bottom { position: absolute; left: 0; right: 0; bottom: 0; pointer-events: auto;

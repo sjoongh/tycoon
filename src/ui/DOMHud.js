@@ -29,6 +29,11 @@ export class DOMHud {
     this._rushBtn = document.createElement("button");
     this._rushBtn.className = "gp-rush";
     this._rushBtn.addEventListener("click", () => { if (this.gameState.activateRush) this.gameState.activateRush(); });
+
+    // 긴급 브리핑 FAB(좌측) — 해명 소비 → 믿음 회복 + 생산 버프(액티브 트러스트 관리)
+    this._briefBtn = document.createElement("button");
+    this._briefBtn.className = "gp-brief";
+    this._briefBtn.addEventListener("click", () => { if (this.gameState.activateBrief) this.gameState.activateBrief(); });
   }
 
   mount(parent) {
@@ -36,6 +41,7 @@ export class DOMHud {
     // Attach mute to the .gp-ui container (parent), not inside the HUD flex row
     parent.appendChild(this._muteBtn);
     parent.appendChild(this._rushBtn);
+    parent.appendChild(this._briefBtn);
     this.gameState.on("changed", this._refresh);
     this.refresh();
   }
@@ -71,6 +77,30 @@ export class DOMHud {
       `${d.stage.area}구역 · D-${d.days} · 초당 <span class="gp-cps${jumped ? " gp-cps--up" : ""}">${cps.toFixed(1)}</span>표${stateSuffix}`;
 
     this._refreshRush();
+    this._refreshBrief();
+  }
+
+  _refreshBrief() {
+    const gs = this.gameState;
+    if (!gs.briefReady) return;
+    const btn = this._briefBtn;
+    if (gs.briefActive()) {
+      btn.className = "gp-brief gp-brief--active";
+      btn.disabled = true;
+      btn.innerHTML = `<b>브리핑 효과</b><small>×1.5 · ${Math.ceil(gs.briefRemainingMs() / 1000)}초</small>`;
+    } else if (!gs.briefReady()) {
+      btn.className = "gp-brief gp-brief--cd";
+      btn.disabled = true;
+      btn.innerHTML = `<b>재정비 중</b><small>${Math.ceil(gs.briefCooldownRemainingMs() / 1000)}초</small>`;
+    } else if (!gs.briefAffordable()) {
+      btn.className = "gp-brief gp-brief--poor";
+      btn.disabled = true;
+      btn.innerHTML = `<b>긴급 브리핑</b><small>해명 ${shortNumber(gs.briefCost())} 필요</small>`;
+    } else {
+      btn.className = "gp-brief gp-brief--ready";
+      btn.disabled = false;
+      btn.innerHTML = `<b>📢 긴급 브리핑</b><small>해명 ${shortNumber(gs.briefCost())} · 믿음+12</small>`;
+    }
   }
 
   _refreshRush() {
@@ -97,6 +127,7 @@ export class DOMHud {
     document.removeEventListener("gp:mute-changed", this._onMute);
     this._muteBtn.remove();
     this._rushBtn.remove();
+    this._briefBtn.remove();
     this.root.remove();
   }
 }

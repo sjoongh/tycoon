@@ -15,6 +15,10 @@ const FACILITY_MILESTONES = [25, 50, 100]; // 시설 레벨 마일스톤: 도달
 const RUSH_DURATION_MS = 20000; // 긴급 개표(러시) 지속 20초
 const RUSH_COOLDOWN_MS = 180000; // 재사용 대기 3분
 const RUSH_MULT = 5; // 러시 중 초당 생산 ×5(액티브 플레이 비트)
+const BRIEF_COOLDOWN_MS = 90000; // 긴급 브리핑 재사용 90초
+const BRIEF_BUFF_MS = 15000; // 브리핑 생산 버프 15초
+const BRIEF_TRUST = 12; // 브리핑 시 믿음 +12(능동적 트러스트 관리 — 위기 탈출/보너스 진입)
+const BRIEF_BUFF_MULT = 1.5; // 브리핑 버프 중 초당 생산 ×1.5
 
 const SAVE_VERSION = 3;
 
@@ -81,6 +85,8 @@ const fallbackState = {
   eventReadyAt: 0,
   rushReadyAt: 0,
   rushEndsAt: 0,
+  briefReadyAt: 0,
+  briefEndsAt: 0,
   offline2xDay: 0,
   log: ["개표국 개국"],
 };
@@ -134,6 +140,8 @@ export class GameState extends Phaser.Events.EventEmitter {
     data.eventReadyAt = Math.max(0, Number(data.eventReadyAt) || 0);
     data.rushReadyAt = Math.max(0, Number(data.rushReadyAt) || 0);
     data.rushEndsAt = Math.max(0, Number(data.rushEndsAt) || 0);
+    data.briefReadyAt = Math.max(0, Number(data.briefReadyAt) || 0);
+    data.briefEndsAt = Math.max(0, Number(data.briefEndsAt) || 0);
     data.offline2xDay = Math.max(0, Math.floor(Number(data.offline2xDay) || 0));
     data.stage.area = Math.max(1, Number(data.stage.area) || 1);
     data.stage.target = this.stageTarget(data.stage.area);
@@ -647,8 +655,39 @@ export class GameState extends Phaser.Events.EventEmitter {
   }
 
   cps() {
-    // 러시는 실시간 생산에만 적용(오프라인 정산엔 미적용 — cpsFor를 직접 쓰는 경로)
-    return this.cpsFor(this.data) * (this.rushActive() ? RUSH_MULT : 1);
+    // 러시·브리핑 버프는 실시간 생산에만 적용(오프라인 정산엔 미적용 — cpsFor를 직접 쓰는 경로)
+    return this.cpsFor(this.data) * (this.rushActive() ? RUSH_MULT : 1) * (this.briefActive() ? BRIEF_BUFF_MULT : 1);
+  }
+
+  // ----- 긴급 브리핑(액티브 트러스트 액션): 해명 소비 → 믿음 회복 + 짧은 생산 버프 -----
+  briefCost() {
+    return Math.max(15, Math.round(this.explainPerSecond() * 20)); // 약 20초치 해명(스테이지 무관하게 의미 유지)
+  }
+  briefActive() {
+    return Date.now() < (this.data.briefEndsAt || 0);
+  }
+  briefReady() {
+    return !this.briefActive() && Date.now() >= (this.data.briefReadyAt || 0);
+  }
+  briefAffordable() {
+    return this.data.explain >= this.briefCost();
+  }
+  briefCooldownRemainingMs() {
+    return Math.max(0, (this.data.briefReadyAt || 0) - Date.now());
+  }
+  briefRemainingMs() {
+    return Math.max(0, (this.data.briefEndsAt || 0) - Date.now());
+  }
+  activateBrief() {
+    if (!this.briefReady() || !this.briefAffordable()) return false;
+    const now = Date.now();
+    this.data.explain -= this.briefCost();
+    this.data.trust = Phaser.Math.Clamp(this.data.trust + BRIEF_TRUST, 0, 100);
+    this.data.briefEndsAt = now + BRIEF_BUFF_MS;
+    this.data.briefReadyAt = now + BRIEF_COOLDOWN_MS;
+    this.emit("float", { text: `긴급 브리핑! 믿음 +${BRIEF_TRUST}`, x: 195, y: 330, color: "#8df0b0" });
+    this.emit("changed");
+    return true;
   }
 
   // ----- 긴급 개표(러시) 부스트 -----
