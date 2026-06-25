@@ -4,6 +4,10 @@ import { facilities } from "../data/facilities.js";
 import { prestigeUpgrades } from "../data/prestige.js";
 import { questDefinitions } from "../data/quests.js";
 import { staffDefinitions } from "../data/staff.js";
+import { achievementDefinitions } from "../data/achievements.js";
+
+const DAY_MS = 86400000;
+const DAILY_STREAK_CAP = 7;
 
 const SAVE_VERSION = 3;
 const OFFLINE_CAP_MS = 1000 * 60 * 60 * 8;
@@ -65,6 +69,7 @@ const fallbackState = {
   achievements: {},
   quests: {},
   endless: 0,
+  daily: { day: 0, streak: 0 },
   log: ["개표국 개국"],
 };
 
@@ -104,7 +109,10 @@ export class GameState extends Phaser.Events.EventEmitter {
       stage: { ...fallbackState.stage, ...(parsed?.stage || {}) },
       prestige: { ...fallbackState.prestige, ...(parsed?.prestige || {}) },
       tutorial: { ...fallbackState.tutorial, ...(parsed?.tutorial || {}) },
+      daily: { ...fallbackState.daily, ...(parsed?.daily || {}) },
     };
+    data.daily.day = Math.max(0, Math.floor(Number(data.daily.day) || 0));
+    data.daily.streak = Math.max(0, Math.floor(Number(data.daily.streak) || 0));
 
     data.votes = Math.max(0, Number(data.votes) || 0);
     data.explain = Math.max(0, Number(data.explain) || 0);
@@ -425,19 +433,69 @@ export class GameState extends Phaser.Events.EventEmitter {
   }
 
   checkAchievements() {
-    const list = [
-      ["v100", this.data.stats.totalVotes >= 100, "100표"],
-      ["v1000", this.data.stats.totalVotes >= 1000, "1000표"],
-      ["cps20", this.cps() >= 20, "초당20"],
-      ["trust90", this.data.trust >= 90, "믿음90"],
-    ];
-    list.forEach(([id, ok, name]) => {
-      if (ok && !this.data.achievements[id]) {
-        this.data.achievements[id] = true;
-        this.data.explain += 12;
-        this.emit("float", { text: `업적 ${name}`, x: 195, y: 210, color: "#bba2ff" });
-      }
+    achievementDefinitions.forEach((a) => {
+      if (this.data.achievements[a.id]) return;
+      if (this.achievementProgress(a.metric) < a.target) return;
+      this.data.achievements[a.id] = true;
+      const r = a.reward || {};
+      this.data.explain += r.explain || 0;
+      this.data.votes += r.votes || 0;
+      if (r.trust) this.data.trust = Phaser.Math.Clamp(this.data.trust + r.trust, 0, 100);
+      if (r.seals) this.data.prestige.seals += r.seals;
+      this.emit("float", { text: `업적 ${a.name}`, x: 195, y: 210, color: "#bba2ff" });
     });
+  }
+
+  achievementProgress(metric) {
+    switch (metric) {
+      case "totalVotes": return this.data.stats.totalVotes;
+      case "cps": return this.cps();
+      case "trust": return this.data.trust;
+      case "facilityTotal": return this.facilityTotal();
+      case "area": return this.data.stage.area;
+      case "prestigeRuns": return this.data.prestige.runs;
+      case "totalEvents": return this.data.stats.totalEvents;
+      default: return 0;
+    }
+  }
+
+  // ----- 일일 출석 보상 -----
+  _todayIndex() {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0); // 로컬 자정 기준 일자 인덱스
+    return Math.floor(d.getTime() / DAY_MS);
+  }
+
+  dailyStatus() {
+    const today = this._todayIndex();
+    const last = this.data.daily.day;
+    const available = today > last;
+    // 어제 받았으면 연속, 아니면 1일차로 리셋
+    const pendingStreak = available ? (today === last + 1 ? Math.min(this.data.daily.streak + 1, DAILY_STREAK_CAP) : 1) : this.data.daily.streak;
+    return { available, streak: pendingStreak, reward: this.dailyReward(pendingStreak) };
+  }
+
+  dailyReward(streak) {
+    const s = Phaser.Math.Clamp(Math.floor(streak || 1), 1, DAILY_STREAK_CAP);
+    const explain = 25 * s;
+    const votes = Math.max(150, Math.round(this.cps() * 120)) * s;
+    const seals = s >= DAILY_STREAK_CAP ? 1 : 0;
+    return { explain, votes, seals, streak: s };
+  }
+
+  claimDaily() {
+    const status = this.dailyStatus();
+    if (!status.available) return null;
+    const today = this._todayIndex();
+    this.data.daily.streak = status.streak;
+    this.data.daily.day = today;
+    const r = status.reward;
+    this.data.explain += r.explain;
+    this.data.votes += r.votes;
+    if (r.seals) this.data.prestige.seals += r.seals;
+    this.save(false);
+    this.emit("changed");
+    return r;
   }
 
   checkQuests() {

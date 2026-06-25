@@ -77,3 +77,11 @@
 - QA툴 추가: `scripts/_endlesstest.mjs`(끝없는목표 e2e), `scripts/_shotseed.mjs`(area/탭 시드 스샷).
 - **기획 종합평가: 라이브게임 대비 ~60-65%** — 정규 루프/톤은 단단하나 중후반 리텐션 갭이 핵심. 다음 루프 우선순위(P0): ①일일 로그인 보상(streak) ②프레스티지 깊이(언락형 업그레이드+신규 콘텐츠 해금) ③트러스트 위기 메커닉(저신뢰 시 생산정지 사건/고신뢰 보너스). P1: 업적·직원·사건 증량 및 보상 area 스케일, 가이드형 첫 업그레이드 온보딩, CPS/통화 가독성·클레임 연출, 탭 배지.
 - 미적용(의도, P2 latent): WorldEffects 풀 destroy(단일씬이라 실누수 없음), 오프라인캡 업글, 탭버스트.
+
+## 루프5 완료 (리텐션 P0, 밤샘 자율)
+- **일일 출석 보상**: GameState `daily{day,streak}` + `dailyStatus()/dailyReward()/claimDaily()`(로컬자정 일자 인덱스, 연속 streak 최대7, 7일차 인장 보너스), DOMModalLayer `_maybeDaily()` 📅 모달(재방문부터, 신규 첫세션은 건너뜀).
+- **티어 업적 데이터화**: `src/data/achievements.js`(16종 — 기존 v100/v1000/cps20/trust90 id 유지 + v100k/v10m/v1b/cps200/cps2k/fac30/fac80/area5/area10/prestige1/prestige5/events25). 보상 explain/votes/trust/seals가 후반까지 스케일. `GameState.checkAchievements` 데이터구동 + `achievementProgress(metric)`. DOMBottomPanel은 `achievementDefinitions` 공유(중복 const 제거).
+- **회귀 검출**: 리팩터 후 `ACHIEVEMENTS` 잔존참조 1건 → 인브라우저 pl4 테스트로 즉시 검출·수정(vite 빌드는 템플릿리터럴 런타임 참조라 미검출). 교훈: UI 상수 리네임 시 인브라우저 렌더 검증 필수.
+- 검증: build✓ test13/13✓ · 일일 claim(+25해명/+표·일자기록·중복불가·streak 리셋/연속 e2e) · 업적(20만표/area6/prestige1/events30 → 8종 지급 +680해명, 무중복) · 0콘솔에러 · 📅모달+16업적 리스트 렌더 정상. DOMHud mute 루트이동(루프4 디자이너 누락분) 포함.
+- QA툴 추가: `scripts/_dailytest.mjs`, `scripts/_achtest.mjs`(per-evaluate try/catch로 인브라우저 런타임에러 핀포인트). 주의: playwright `networkidle`이 swiftshader+vite에서 불안정 → `domcontentloaded`+활성폴링 사용.
+- **다음 루프 P0**: 프레스티지 깊이(언락형 업그레이드, 신규 콘텐츠 해금), 트러스트 위기 메커닉(저신뢰 생산정지 사건/고신뢰 보너스). P1: 사건·직원 증량 및 보상 area 스케일, 가이드형 첫 업그레이드 온보딩, CPS 연출·탭 배지·목표 클레임 연출.

@@ -20,8 +20,27 @@ export class DOMModalLayer {
     this.gameState.on("upgraded", this._onUpgraded);
     this.gameState.on("changed", this._onChanged);
     document.addEventListener("gp:prestige-confirm", this._onPrestigeConfirm);
-    if (!this._maybeOpening()) this._showOfflineReward();
+    if (!this._maybeOpening()) {
+      this._showOfflineReward();
+      this._maybeDaily();
+    }
     this._maybeHint();
+  }
+
+  // 일일 출석 보상: 신규 첫 세션(오프닝)에는 건너뛰고 재방문부터 노출
+  _maybeDaily() {
+    const gs = this.gameState;
+    if (!gs.dailyStatus) return;
+    const st = gs.dailyStatus();
+    if (!st.available) return;
+    const r = st.reward;
+    const sealLine = r.seals ? `<br><span>+${r.seals} 제도인장</span>` : "";
+    this._openModal(`
+      <div class="gp-modal__badge">📅</div>
+      <div class="gp-mtitle">출석 보상 · ${st.streak}일 연속</div>
+      <div class="gp-msub">매일 들러 개표국을 챙기세요${st.streak >= 7 ? " (최대 연속!)" : ""}</div>
+      <div class="gp-mbig">+${shortNumber(r.votes)}표<br><span>+${shortNumber(r.explain)} 해명</span>${sealLine}</div>
+      <button class="gp-btn gp-btn--gold" data-confirm>받기</button>`, () => gs.claimDaily());
   }
 
   // 신규 첫 세션 오프닝(3카드). 보여줬으면 true 반환(오프라인 보상은 다음 세션부터).

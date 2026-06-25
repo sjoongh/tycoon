@@ -31,6 +31,7 @@
 ## 진행 로그
 (append per iteration)
 - init: 미션 시작. 코어루프 정상 확인. art/ui 레퍼런스 리서치 가동.
+- 2026-06-26T01:30 루프5 (리텐션 P0): 기획 종합평가의 최대 갭 2건 해소. ①**일일 출석 보상**(GameState daily{day,streak} + dailyStatus/dailyReward/claimDaily, 로컬자정 일자 인덱스, 연속 streak 최대7·7일차 인장1, DOMModalLayer _maybeDaily 📅모달 — 재방문부터 노출). ②**티어 업적 데이터화**(src/data/achievements.js 16종, 기존 4 id 유지+상위 티어 votes/cps/area/prestige/events, 보상 explain/votes/trust/seals 스케일; GameState.checkAchievements 데이터구동+achievementProgress; DOMBottomPanel은 achievementDefinitions 공유로 중복 제거). 리팩터 중 ACHIEVEMENTS 잔존참조 1건을 **인브라우저 테스트로 검출·수정**(빌드는 템플릿리터럴 런타임참조라 못잡음). 검증: build✓ test13/13✓ · 일일 claim e2e(+25해명/+표, 일자기록, 중복불가, streak 리셋/연속) · 업적 e2e(20만표/area6/prestige1/events30→8종 지급 +680해명 무중복) · 0콘솔에러 · 📅모달·16업적 리스트 렌더 정상. +DOMHud mute 루트이동(루프4 디자이너분 누락커밋 포함). 남은 P0: 프레스티지 깊이(언락형), 트러스트 위기 메커닉. P1: 사건/직원 증량+area스케일 보상, 가이드 온보딩, CPS 연출·탭 배지.
 - 2026-06-25T13:49 P1: 로딩스크린(ec4fd19) + UI 거지키우기 재스타일(commit). UI리서치 반영. 월드 스프라이트 재생성은 art리서치(ref-art) 대기.
 - 2026-06-25T13:59 P1 아트피벗: 거지키우기 톤 테스트(접수대 t1) 승인→desk-t1 확정. regenA(desk t2-5)+regenB(환경8) codex 생성중. 아트리서치 2갈래 incremental-save 재가동. ref-art.md 스타일가이드 self-authored.
 - 2026-06-25T14:42 P1 아트피벗 완료(578a5b1): 데스크/환경/워커/시설 전부 거지키우기 톤 재생성+커밋, UI 다크/골드 피벗, 캔버스 다크, 일관성 확인(phone+desktop). 코어루프 회귀없음(playtest). 7역할: QA/알파/베타 통과(초반밸런스 느림 메모), 개발/기획/UIUX/디자인 리뷰 진행중.

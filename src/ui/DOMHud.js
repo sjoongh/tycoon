@@ -7,22 +7,28 @@ export class DOMHud {
     this.root.className = "gp-hud";
     this.root.innerHTML = `
       <div class="gp-hud__row">
-        <div class="gp-chip"><span class="gp-chip__ic" style="background-image:url('/art/icons/votes.png')"></span><span><div class="gp-chip__label">표</div><div class="gp-chip__val" data-k="votes">0</div></span></div>
-        <div class="gp-chip"><span class="gp-chip__ic" style="background-image:url('/art/icons/explain.png')"></span><span><div class="gp-chip__label">해명</div><div class="gp-chip__val" data-k="explain">0</div></span></div>
-        <div class="gp-chip"><span class="gp-chip__ic" style="background-image:url('/art/icons/trust.png')"></span><span><div class="gp-chip__label">믿음</div><div class="gp-chip__val" data-k="trust">0%</div></span></div>
+        <div class="gp-chip gp-chip--votes"><span class="gp-chip__ic" style="background-image:url('/art/icons/votes.png')"></span><span><div class="gp-chip__label">표</div><div class="gp-chip__val" data-k="votes">0</div></span></div>
+        <div class="gp-chip gp-chip--explain"><span class="gp-chip__ic" style="background-image:url('/art/icons/explain.png')"></span><span><div class="gp-chip__label">해명</div><div class="gp-chip__val" data-k="explain">0</div></span></div>
+        <div class="gp-chip gp-chip--trust"><span class="gp-chip__ic" style="background-image:url('/art/icons/trust.png')"></span><span><div class="gp-chip__label">믿음</div><div class="gp-chip__val" data-k="trust">0%</div></span></div>
       </div>
       <div class="gp-progress"><div class="gp-progress__fill" data-k="progress"></div></div>
-      <div class="gp-stage" data-k="stage"></div>
-      <button class="gp-mute" data-k="mute" aria-label="소리">🔊</button>`;
+      <div class="gp-stage" data-k="stage"></div>`;
     this._refresh = () => this.refresh();
-    this._mute = this.root.querySelector('[data-k="mute"]');
-    this._mute.addEventListener("click", () => document.dispatchEvent(new CustomEvent("gp:toggle-mute")));
-    this._onMute = (e) => { this._mute.textContent = e.detail ? "🔇" : "🔊"; };
+    // FIX #1: mute button created separately so it mounts on .gp-ui root (above HUD),
+    // preventing overlap with the 믿음 chip on the right side.
+    this._muteBtn = document.createElement("button");
+    this._muteBtn.className = "gp-mute";
+    this._muteBtn.setAttribute("aria-label", "소리");
+    this._muteBtn.textContent = "🔊";
+    this._muteBtn.addEventListener("click", () => document.dispatchEvent(new CustomEvent("gp:toggle-mute")));
+    this._onMute = (e) => { this._muteBtn.textContent = e.detail ? "🔇" : "🔊"; };
     document.addEventListener("gp:mute-changed", this._onMute);
   }
 
   mount(parent) {
     parent.appendChild(this.root);
+    // Attach mute to the .gp-ui container (parent), not inside the HUD flex row
+    parent.appendChild(this._muteBtn);
     this.gameState.on("changed", this._refresh);
     this.refresh();
   }
@@ -41,6 +47,7 @@ export class DOMHud {
   destroy() {
     this.gameState.off("changed", this._refresh);
     document.removeEventListener("gp:mute-changed", this._onMute);
+    this._muteBtn.remove();
     this.root.remove();
   }
 }

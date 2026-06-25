@@ -4,20 +4,7 @@ import { staffDefinitions, rarityColors } from "../data/staff.js";
 import { officeEvents } from "../data/events.js";
 import { prestigeUpgrades } from "../data/prestige.js";
 import { questDefinitions } from "../data/quests.js";
-
-// GameState.checkAchievements와 동일한 정의(표시용). id는 data.achievements 키와 일치.
-const ACHIEVEMENTS = [
-  { id: "v100", name: "첫 백 표", desc: "누적 100표 처리", metric: "totalVotes", target: 100 },
-  { id: "v1000", name: "천 표 개표", desc: "누적 1,000표 처리", metric: "totalVotes", target: 1000 },
-  { id: "cps20", name: "자동화 라인", desc: "초당 20표 생산", metric: "cps", target: 20 },
-  { id: "trust90", name: "신뢰의 국장", desc: "믿음 90% 도달", metric: "trust", target: 90 },
-];
-
-const ACH_METRIC = {
-  totalVotes: (gs) => gs.data.stats.totalVotes,
-  cps: (gs) => gs.cps(),
-  trust: (gs) => gs.data.trust,
-};
+import { achievementDefinitions } from "../data/achievements.js";
 
 const rewardLabel = (r) => [
   r.votes ? `표 +${shortNumber(r.votes)}` : null,
@@ -224,23 +211,23 @@ export class DOMBottomPanel {
     // 정의된 목표를 모두 완료하면 끝없는 누적-표 목표를 현재 진행 목표로 노출
     if (active && active.generated) questRows += goalRow(active, "active");
 
-    const achRows = ACHIEVEMENTS.map((a) => {
+    const achRows = achievementDefinitions.map((a) => {
       const got = !!gs.data.achievements[a.id];
-      const cur = ACH_METRIC[a.metric] ? ACH_METRIC[a.metric](gs) : 0;
+      const cur = gs.achievementProgress(a.metric);
       const ratio = Math.max(0, Math.min(1, cur / a.target));
       return `<div class="gp-ach ${got ? "gp-ach--got" : ""}">
         <span class="gp-ach__medal">${got ? "🏅" : "🔒"}</span>
         <span class="gp-ach__body"><span class="gp-ach__name">${a.name}</span><span class="gp-ach__desc">${got ? a.desc : `${a.desc} (${Math.floor(ratio * 100)}%)`}</span></span>
       </div>`;
     }).join("");
-    const gotCount = ACHIEVEMENTS.filter((a) => gs.data.achievements[a.id]).length;
+    const gotCount = achievementDefinitions.filter((a) => gs.data.achievements[a.id]).length;
 
     const titleProgress = active && active.generated
       ? `정규 완료 · 끝없는 목표 ${gs.data.endless + 1}단계`
       : `${doneCount}/${questDefinitions.length} 완료`;
     this.panel.innerHTML = `<div class="gp-paneltitle">운영 목표 · ${titleProgress}</div>
       <div class="gp-stafflist gp-goallist">${questRows}
-      <div class="gp-goal__section">업적 · ${gotCount}/${ACHIEVEMENTS.length}</div>${achRows}</div>`;
+      <div class="gp-goal__section">업적 · ${gotCount}/${achievementDefinitions.length}</div>${achRows}</div>`;
   }
 
   _renderPrestige() {
