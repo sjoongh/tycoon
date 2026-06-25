@@ -71,4 +71,13 @@ export const prestigeUpgrades = [
     desc: "감사 후 시작 믿음 +2%/레벨",
     effect: { startTrust: 2 },
   },
+  {
+    id: "golden",
+    name: "황금 개표기",
+    shortName: "황금개표",
+    baseCost: 8,
+    maxLevel: 999, // 사실상 무한 — 후반 인장의 영구 소비처(비용이 1.55^lvl로 폭증해 자연 한계)
+    desc: "생산량을 영구 증가 (무한 강화)",
+    effect: { cpsPct: 0.04 },
+  },
 ];
