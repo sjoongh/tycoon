@@ -41,7 +41,9 @@ const fallbackState = {
   staff: {
     clerk: 0,
     auditor: 0,
+    runner: 0,
     engineer: 0,
+    analyst: 0,
     speaker: 0,
   },
   stage: {
@@ -627,7 +629,13 @@ export class GameState extends Phaser.Events.EventEmitter {
   }
 
   staffMultiplierFor(data) {
-    const base = 1 + staffDefinitions.reduce((sum, staff) => sum + (data.staff?.[staff.id] || 0) * (staff.cpsBonus || 0), 0);
+    const base = 1 + staffDefinitions.reduce((sum, staff) => {
+      const lv = data.staff?.[staff.id] || 0;
+      let s = lv * (staff.cpsBonus || 0);
+      // 데이터 구동 스킬: skill.cpsBonus가 정의된 직원은 언락 레벨 이상에서 추가 생산
+      if (staff.skill?.cpsBonus && lv >= staff.skill.unlockLevel) s += lv * staff.skill.cpsBonus;
+      return sum + s;
+    }, 0);
     const engineerSkill = (data.staff?.engineer || 0) >= 4 ? (data.facilities?.server || 0) * 0.006 : 0;
     return base + engineerSkill;
   }
@@ -647,7 +655,13 @@ export class GameState extends Phaser.Events.EventEmitter {
 
   clickPower() {
     const facilityPower = facilities.reduce((sum, item) => sum + this.level(item.id) * item.click, 0);
-    const staffPower = staffDefinitions.reduce((sum, staff) => sum + this.staffLevel(staff.id) * (staff.clickBonus || 0), 0);
+    const staffPower = staffDefinitions.reduce((sum, staff) => {
+      const lv = this.staffLevel(staff.id);
+      let s = lv * (staff.clickBonus || 0);
+      // 데이터 구동 스킬: skill.clickBonus가 정의된 직원은 언락 레벨 이상에서 추가 클릭 처리
+      if (staff.skill?.clickBonus && lv >= staff.skill.unlockLevel) s += lv * staff.skill.clickBonus;
+      return sum + s;
+    }, 0);
     const clerkSkill = Math.floor(this.staffLevel("clerk") / 5);
     const raw = 1 + facilityPower + staffPower + clerkSkill;
     return Math.floor(raw * (1 + this.permanentEffectFor(this.data, "clickPct")));

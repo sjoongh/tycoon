@@ -171,11 +171,14 @@ export class DOMModalLayer {
   }
 
   _toast(text) {
+    // 대량 동시 완료(오프라인 복귀·첫 감사 등)에 토스트가 화면을 덮지 않도록 최대 4개로 제한
+    const existing = this.root.querySelectorAll(".gp-toast");
+    if (existing.length >= 4) return;
     const t = document.createElement("div");
     t.className = "gp-toast";
     t.textContent = text;
     // 동시에 여러 완료가 떠도 겹치지 않도록 기존 토스트 수만큼 아래로 띄운다
-    const offset = this.root.querySelectorAll(".gp-toast").length * 46;
+    const offset = existing.length * 46;
     if (offset) t.style.top = `${120 + offset}px`;
     this.root.appendChild(t);
     requestAnimationFrame(() => t.classList.add("gp-toast--in"));
