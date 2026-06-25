@@ -123,19 +123,34 @@ export class DOMModalLayer {
     }
   }
 
+  // 단계형 온보딩 코치: 탭 → 업그레이드 → 채용 → 사건. stats 기반이라 진행과 항상 일치.
   _maybeHint() {
-    const done = this.gameState.data.tutorial && this.gameState.data.tutorial.done;
-    const tapped = (this.gameState.data.stats.totalClicks || 0) >= 3;
-    const shouldShow = !done && !tapped;
-    if (shouldShow && !this._hint) {
+    const gs = this.gameState;
+    const d = gs.data;
+    if (d.tutorial && d.tutorial.done) { this._clearHint(); return; }
+
+    const clicks = d.stats.totalClicks || 0;
+    const upgrades = d.stats.totalUpgrades || 0;
+    const staffHired = Object.values(d.staff || {}).some((lv) => lv > 0);
+    const events = d.stats.totalEvents || 0;
+
+    let step; // { txt, hand, arrow }
+    if (clicks < 5) step = { txt: "화면을 탭해 표를 처리하세요!", hand: true };
+    else if (upgrades === 0) step = { txt: "↓ 시설 탭에서 접수창구를 업그레이드하세요", arrow: true };
+    else if (!staffHired) step = { txt: "↓ 직원 탭에서 직원을 채용하세요", arrow: true };
+    else if (events === 0) step = { txt: "↓ 사건 탭에서 첫 사건에 대응하세요", arrow: true };
+    else { this._clearHint(); return; }
+
+    if (!this._hint) {
       this._hint = document.createElement("div");
-      this._hint.className = "gp-hint";
-      this._hint.innerHTML = `<div class="gp-hint__hand"></div><div class="gp-hint__txt">화면을 탭해 표를 처리하세요!</div>`;
       this.root.appendChild(this._hint);
-    } else if (!shouldShow && this._hint) {
-      this._hint.remove();
-      this._hint = null;
     }
+    this._hint.className = step.arrow ? "gp-hint gp-hint--bottom" : "gp-hint";
+    this._hint.innerHTML = `${step.hand ? '<div class="gp-hint__hand"></div>' : ""}<div class="gp-hint__txt">${step.txt}</div>`;
+  }
+
+  _clearHint() {
+    if (this._hint) { this._hint.remove(); this._hint = null; }
   }
 
   _openModal(html, onConfirm) {
