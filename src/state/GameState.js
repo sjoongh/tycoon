@@ -5,6 +5,7 @@ import { prestigeUpgrades } from "../data/prestige.js";
 import { questDefinitions } from "../data/quests.js";
 import { staffDefinitions } from "../data/staff.js";
 import { achievementDefinitions } from "../data/achievements.js";
+import { dailyQuestDefinitions } from "../data/dailyQuests.js";
 
 const DAY_MS = 86400000;
 const DAILY_STREAK_CAP = 7;
@@ -81,7 +82,7 @@ const fallbackState = {
   achievements: {},
   quests: {},
   endless: 0,
-  daily: { day: 0, streak: 0 },
+  daily: { day: 0, streak: 0, qday: 0, clicks: 0, events: 0, upgrades: 0, claimed: {} },
   eventReadyAt: 0,
   rushReadyAt: 0,
   rushEndsAt: 0,
@@ -131,6 +132,11 @@ export class GameState extends Phaser.Events.EventEmitter {
     };
     data.daily.day = Math.max(0, Math.floor(Number(data.daily.day) || 0));
     data.daily.streak = Math.max(0, Math.floor(Number(data.daily.streak) || 0));
+    data.daily.qday = Math.max(0, Math.floor(Number(data.daily.qday) || 0));
+    data.daily.clicks = Math.max(0, Math.floor(Number(data.daily.clicks) || 0));
+    data.daily.events = Math.max(0, Math.floor(Number(data.daily.events) || 0));
+    data.daily.upgrades = Math.max(0, Math.floor(Number(data.daily.upgrades) || 0));
+    data.daily.claimed = (data.daily.claimed && typeof data.daily.claimed === "object") ? data.daily.claimed : {};
 
     data.votes = Math.max(0, Number(data.votes) || 0);
     data.explain = Math.max(0, Number(data.explain) || 0);
@@ -274,6 +280,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     const amount = this.clickPower();
     this.addVotes(amount);
     this.data.stats.totalClicks += 1;
+    this._bumpDaily("clicks");
     this.advanceTutorial("click");
     this.emit("ballots", { x, y, count: 6 });
     this.emit("float", { text: `+${amount}`, x, y: y - 26, color: "#ffc857" });
@@ -328,6 +335,7 @@ export class GameState extends Phaser.Events.EventEmitter {
       this.data.trust = Phaser.Math.Clamp(this.data.trust + this.staffLevel("speaker") * 0.3, 0, 100);
     }
     this.data.stats.totalEvents += 1;
+    this._bumpDaily("events");
     this.data.eventReadyAt = Date.now() + EVENT_COOLDOWN_MS;
     this.advanceTutorial("event");
     this.addLog(`사건 대응: 믿음 ${Math.round(this.data.trust)}%`);
@@ -378,6 +386,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     this.data.explain -= explainCost;
     this.data.facilities[id] = currentLevel + 1;
     this.data.stats.totalUpgrades += 1;
+    this._bumpDaily("upgrades");
     this.advanceTutorial("upgrade");
     this.addLog(`${facility.name} Lv.${this.level(id)}`);
     this.data.trust = Phaser.Math.Clamp(this.data.trust + (facility.trust || 0), 0, 100);
@@ -580,6 +589,55 @@ export class GameState extends Phaser.Events.EventEmitter {
     if (r.seals) this.data.prestige.seals += r.seals;
     this.save(false);
     this.emit("changed");
+    return r;
+  }
+
+  // ----- 로테이팅 일일 퀘스트 (자정 리셋) -----
+  _ensureDailyQuests() {
+    const today = this._todayIndex();
+    if (this.data.daily.qday !== today) {
+      this.data.daily.qday = today;
+      this.data.daily.clicks = 0;
+      this.data.daily.events = 0;
+      this.data.daily.upgrades = 0;
+      this.data.daily.claimed = {};
+    }
+  }
+  _bumpDaily(field) {
+    this._ensureDailyQuests();
+    this.data.daily[field] = (this.data.daily[field] || 0) + 1;
+  }
+  dailyQuestProgress(id) {
+    this._ensureDailyQuests();
+    const q = dailyQuestDefinitions.find((d) => d.id === id);
+    return q ? (this.data.daily[q.metric] || 0) : 0;
+  }
+  dailyQuestDone(id) {
+    const q = dailyQuestDefinitions.find((d) => d.id === id);
+    return q ? this.dailyQuestProgress(id) >= q.target : false;
+  }
+  dailyQuestClaimed(id) {
+    this._ensureDailyQuests();
+    return !!this.data.daily.claimed[id];
+  }
+  dailyQuestClaimable(id) {
+    return this.dailyQuestDone(id) && !this.dailyQuestClaimed(id);
+  }
+  anyDailyQuestClaimable() {
+    return dailyQuestDefinitions.some((q) => this.dailyQuestClaimable(q.id));
+  }
+  claimDailyQuest(id) {
+    if (!this.dailyQuestClaimable(id)) return null;
+    const q = dailyQuestDefinitions.find((d) => d.id === id);
+    const r = q.reward || {};
+    this.data.explain += r.explain || 0;
+    this.data.votes += r.votes || 0;
+    if (r.trust) this.data.trust = Phaser.Math.Clamp(this.data.trust + r.trust, 0, 100);
+    if (r.seals) this.data.prestige.seals += r.seals;
+    this.data.daily.claimed[id] = true;
+    this.emit("celebrate", { text: `📅 일일 완료 · ${q.title}` });
+    this.emit("changed");
+    this.save(false);
     return r;
   }
 

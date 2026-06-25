@@ -5,6 +5,7 @@ import { officeEvents } from "../data/events.js";
 import { prestigeUpgrades } from "../data/prestige.js";
 import { questDefinitions } from "../data/quests.js";
 import { achievementDefinitions } from "../data/achievements.js";
+import { dailyQuestDefinitions } from "../data/dailyQuests.js";
 
 const rewardLabel = (r) => [
   r.votes ? `표 +${shortNumber(r.votes)}` : null,
@@ -89,6 +90,7 @@ export class DOMBottomPanel {
       }
       case "buyPrestige": gs.buyPrestigeUpgrade(id); break;
       case "prestigeReset": document.dispatchEvent(new CustomEvent("gp:prestige-confirm")); break;
+      case "claimDaily": gs.claimDailyQuest(id); this.refresh(); break;
     }
   }
 
@@ -123,8 +125,12 @@ export class DOMBottomPanel {
 
   // 탭 알림 점: 사건 대응 가능 시 사건 탭에 표시(해당 탭을 보고 있으면 숨김)
   _updateBadges(activeTab) {
+    const gs = this.gameState;
     const eventDot = this.root.querySelector('[data-dot="events"]');
-    if (eventDot) eventDot.hidden = !(this.gameState.eventReady() && activeTab !== "events");
+    if (eventDot) eventDot.hidden = !(gs.eventReady() && activeTab !== "events");
+    // 목표 탭: 일일 퀘스트 수령 가능 시 알림 점
+    const goalDot = this.root.querySelector('[data-dot="goals"]');
+    if (goalDot) goalDot.hidden = !(gs.anyDailyQuestClaimable && gs.anyDailyQuestClaimable() && activeTab !== "goals");
   }
 
   _renderFacilities() {
@@ -239,6 +245,26 @@ export class DOMBottomPanel {
       </div>`;
     };
 
+    // 로테이팅 일일 퀘스트(자정 리셋, 완료 시 '받기' 수동 클레임)
+    const dailyRows = dailyQuestDefinitions.map((q) => {
+      const p = gs.dailyQuestProgress(q.id);
+      const done = gs.dailyQuestDone(q.id);
+      const claimed = gs.dailyQuestClaimed(q.id);
+      const claimable = done && !claimed;
+      const ratio = Math.max(0, Math.min(1, p / q.target));
+      const right = claimed
+        ? `<span class="gp-goal__badge">완료</span>`
+        : claimable
+          ? `<button class="gp-btn gp-btn--sm gp-btn--ready" data-action="claimDaily" data-id="${q.id}">받기</button>`
+          : `<span class="gp-goal__badge">오늘</span>`;
+      return `<div class="gp-goal ${claimed ? "gp-goal--done" : claimable ? "gp-goal--active" : ""}">
+        <div class="gp-goal__head"><span class="gp-goal__title">${q.title}</span>${right}</div>
+        <div class="gp-goal__desc">${q.desc}</div>
+        <div class="gp-progress gp-goal__bar"><div class="gp-progress__fill" style="width:${(done ? 1 : ratio) * 100}%"></div></div>
+        <div class="gp-goal__foot"><span>${shortNumber(Math.min(p, q.target))} / ${shortNumber(q.target)}</span><span class="gp-goal__reward">${rewardLabel(q.reward)}</span></div>
+      </div>`;
+    }).join("");
+
     let questRows = questDefinitions.map((q) =>
       goalRow(q, gs.data.quests[q.id] ? "done" : (active && q.id === active.id ? "active" : "locked"))
     ).join("");
@@ -263,7 +289,9 @@ export class DOMBottomPanel {
       : `${doneCount}/${questDefinitions.length} 완료`;
     // P2 fix: wrap goallist in stafflist-wrap pattern so the fade gradient works
     this.panel.innerHTML = `<div class="gp-paneltitle">운영 목표 · ${titleProgress}</div>
-      <div class="gp-goallist-wrap"><div class="gp-stafflist gp-goallist">${questRows}
+      <div class="gp-goallist-wrap"><div class="gp-stafflist gp-goallist">
+      <div class="gp-goal__section">📅 일일 퀘스트 · 자정 초기화</div>${dailyRows}
+      <div class="gp-goal__section">운영 목표</div>${questRows}
       <div class="gp-goal__section">업적 · ${gotCount}/${achievementDefinitions.length}</div>${achRows}</div><div class="gp-goallist-fade" aria-hidden="true"></div></div>`;
   }
 
