@@ -485,6 +485,7 @@ export class GameState extends Phaser.Events.EventEmitter {
       achievements: this.data.achievements,
       tutorial: this.data.tutorial, // 베테랑이 감사(프레스티지) 후 신규 오프닝/튜토리얼을 다시 보지 않도록 유지
       daily: this.data.daily, // 감사(프레스티지)는 진행이지 새 세이브가 아님 — 출석 연속/일일 진행 유지
+      weekly: this.data.weekly, // 주간 한정 목표(주차/목표/수령여부) 유지 — 안 그러면 재청구 악용 + 목표 리셋
     };
 
     this.data = this.normalize({
@@ -495,6 +496,8 @@ export class GameState extends Phaser.Events.EventEmitter {
       trust: Math.min(90, fallbackState.trust + kept.prestige.runs),
       log: [`감사 완료: 제도인장 +${earned}`, "개표국 재정비"],
     }, Date.now());
+    // 감사로 stats.totalVotes가 0으로 리셋되므로 주간 기준점도 재정렬(안 하면 progress가 음수→0에 영구 고정)
+    this.data.weekly.baseVotes = this.data.stats.totalVotes;
     // 상비 인력: 접수창구 시작 레벨 / 여론전: 시작 믿음 상향(감사 영구 업그레이드 효과)
     const startDesk = Math.round(this.permanentEffectFor(this.data, "startDesk"));
     if (startDesk > 0) this.data.facilities.desk = Math.max(this.data.facilities.desk, 1 + startDesk);

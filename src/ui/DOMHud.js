@@ -80,10 +80,18 @@ export class DOMHud {
     this._refreshBrief();
   }
 
+  // 탭 학습 단계(첫 업그레이드 전)에는 액티브 FAB 숨김 — 첫 60초 CTA 과부하 방지
+  _fabsHidden() {
+    const d = this.gameState.data;
+    return !d.tutorial?.done && (d.stats?.totalUpgrades || 0) < 1;
+  }
+
   _refreshBrief() {
     const gs = this.gameState;
     if (!gs.briefReady) return;
     const btn = this._briefBtn;
+    btn.style.display = this._fabsHidden() ? "none" : "flex";
+    if (this._fabsHidden()) return;
     if (gs.briefActive()) {
       btn.className = "gp-brief gp-brief--active";
       btn.disabled = true;
@@ -107,6 +115,8 @@ export class DOMHud {
     const gs = this.gameState;
     if (!gs.rushReady) return;
     const btn = this._rushBtn;
+    btn.style.display = this._fabsHidden() ? "none" : "flex";
+    if (this._fabsHidden()) return;
     if (gs.rushActive()) {
       btn.className = "gp-rush gp-rush--active";
       btn.disabled = true;

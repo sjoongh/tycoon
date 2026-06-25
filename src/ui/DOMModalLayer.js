@@ -133,7 +133,7 @@ export class DOMModalLayer {
     const footer = can2x
       ? `<div class="gp-confirm-row" style="align-items:stretch">
            <button class="gp-btn gp-btn--disabled" data-close style="flex:1">그냥 수령</button>
-           <button class="gp-btn gp-btn--gold gp-btn--ready gp-btn--upgrade" data-confirm style="flex:1.4;font-size:15px">2배로 받기<small>광고 보기</small></button>
+           <button class="gp-btn gp-btn--gold gp-btn--ready gp-btn--upgrade" data-confirm style="flex:1.4;font-size:15px">2배로 받기<small>하루 1회</small></button>
          </div>`
       : `<button class="gp-btn" data-close>수령하기</button>`;
     this._openModal(`

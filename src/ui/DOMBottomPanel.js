@@ -279,7 +279,7 @@ export class DOMBottomPanel {
           ? `<button class="gp-btn gp-btn--sm gp-btn--ready" data-action="claimWeekly">받기</button>`
           : `<span class="gp-goal__badge gp-goal__badge--week">D-${gs.weeklyDaysLeft()}</span>`;
       weeklyRow = `<div class="gp-goal gp-goal--weekly ${wclaimed ? "gp-goal--done" : wclaimable ? "gp-goal--active" : ""}">
-        <div class="gp-goal__head"><span class="gp-goal__title">🏆 ${wDef.title}</span>${wright}</div>
+        <div class="gp-goal__head"><span class="gp-goal__title">&#9733; ${wDef.title}</span>${wright}</div>
         <div class="gp-goal__desc">이번 주 표 ${shortNumber(wt)}장 처리</div>
         <div class="gp-progress gp-goal__bar"><div class="gp-progress__fill" style="width:${(wdone ? 1 : wratio) * 100}%"></div></div>
         <div class="gp-goal__foot"><span>${shortNumber(Math.min(wp, wt))} / ${shortNumber(wt)}</span><span class="gp-goal__reward">인장 +${wDef.seals}</span></div>
@@ -362,7 +362,9 @@ export class DOMBottomPanel {
       const cost = gs.prestigeUpgradeCost(u.id);
       const cb = gs.data.prestige.seals >= cost && lv < u.maxLevel;
       const isActive = u.id === sel;
-      return `<button class="gp-seal ${isActive ? "gp-seal--active" : ""} ${cb || isActive ? "" : "gp-seal--locked"}" data-action="buyPrestige" data-id="${u.id}"><span class="gp-seal__role">${u.shortName}</span><span class="gp-seal__lv">Lv.${lv} · ${cost}</span></button>`;
+      // FIX P1: gp-seal--locked only for max-level seals; unaffordable seals stay visible (not dimmed)
+      const maxed = lv >= u.maxLevel;
+      return `<button class="gp-seal ${isActive ? "gp-seal--active" : ""} ${maxed ? "gp-seal--locked" : ""}" data-action="buyPrestige" data-id="${u.id}"><span class="gp-seal__role">${u.shortName}</span><span class="gp-seal__lv">${maxed ? `완료` : `Lv.${lv} · ${cost}`}</span></button>`;
     }).join("");
 
     const fullMult = gs.prestigeMultiplierFor(gs.data) * (1 + (gs.permanentEffectFor ? gs.permanentEffectFor(gs.data, "cpsPct") : 0));
