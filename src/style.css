@@ -9,12 +9,21 @@ body {
   overflow: hidden;
 }
 
+body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 게임을 폰 비율(390:844) 프레임으로 고정 — 캔버스와 DOM UI가 항상 정렬되게 */
 #game {
-  width: 100vw;
-  height: 100vh;
+  position: relative;
+  width: min(100vw, calc(100vh * 390 / 844));
+  height: min(100vh, calc(100vw * 844 / 390));
+  overflow: hidden;
+  box-shadow: 0 0 40px rgba(120, 90, 60, 0.18);
 }
 
 canvas {
   display: block;
-  image-rendering: pixelated;
 }

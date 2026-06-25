@@ -135,6 +135,12 @@
       "type": "file"
     },
     {
+      "path": "src/world/FacilityStationView.js",
+      "accessCount": 17,
+      "lastAccessed": 1782348662634,
+      "type": "file"
+    },
+    {
       "path": "src/world/worldMap.js",
       "accessCount": 14,
       "lastAccessed": 1782324692114,
@@ -144,12 +150,6 @@
       "path": "src/world/WorkerActor.js",
       "accessCount": 14,
       "lastAccessed": 1782324963941,
-      "type": "file"
-    },
-    {
-      "path": "src/world/FacilityStationView.js",
-      "accessCount": 12,
-      "lastAccessed": 1782323313251,
       "type": "file"
     },
     {
@@ -201,6 +201,12 @@
       "type": "file"
     },
     {
+      "path": "src/style.css",
+      "accessCount": 5,
+      "lastAccessed": 1782348746339,
+      "type": "file"
+    },
+    {
       "path": "src/world/facilityTiers.js",
       "accessCount": 4,
       "lastAccessed": 1782322742890,
@@ -240,12 +246,6 @@
       "path": "docs/superpowers/plans/2026-06-24-gaepyo-vertical-slice-desk.md",
       "accessCount": 2,
       "lastAccessed": 1782312381754,
-      "type": "file"
-    },
-    {
-      "path": "src/style.css",
-      "accessCount": 2,
-      "lastAccessed": 1782316842978,
       "type": "file"
     },
     {

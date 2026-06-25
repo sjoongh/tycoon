@@ -1,0 +1,10 @@
+import { chromium } from "playwright";
+const out = process.argv[2] || "/tmp/d.png";
+const W = +(process.argv[3] || 1280), H = +(process.argv[4] || 800);
+const browser = await chromium.launch({ args: ["--use-gl=angle","--use-angle=swiftshader","--enable-unsafe-swiftshader","--ignore-gpu-blocklist","--enable-webgl"] });
+const page = await browser.newPage({ viewport: { width: W, height: H }, deviceScaleFactor: 1 });
+await page.goto("http://localhost:5178/", { waitUntil: "networkidle" });
+await page.waitForTimeout(3500);
+await page.screenshot({ path: out });
+await browser.close();
+console.log("shot:", out, W + "x" + H);
