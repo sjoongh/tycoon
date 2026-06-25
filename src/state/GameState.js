@@ -803,6 +803,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     this.data.briefEndsAt = now + BRIEF_BUFF_MS;
     this.data.briefReadyAt = now + BRIEF_COOLDOWN_MS;
     this.emit("float", { text: `긴급 브리핑! 믿음 +${BRIEF_TRUST}`, x: 195, y: 330, color: "#8df0b0" });
+    this.emit("celebrate", { text: `📢 긴급 브리핑! 믿음 +${BRIEF_TRUST}` }); // 토스트+플래시 스파이크
     this.emit("changed");
     return true;
   }
@@ -829,6 +830,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     this.data.rushEndsAt = now + RUSH_DURATION_MS;
     this.data.rushReadyAt = now + RUSH_COOLDOWN_MS;
     this.emit("float", { text: "긴급 개표! ×5", x: 195, y: 300, color: "#ffd34d" });
+    this.emit("celebrate", { text: "⚡ 개표 폭주 시작! ×5" }); // 토스트+플래시 페이오프 스파이크
     this.emit("changed");
     return true;
   }
