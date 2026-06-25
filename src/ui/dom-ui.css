@@ -117,3 +117,4 @@
 .gp-banner--in { opacity: 1; transform: translateY(0) scale(1); }
 .gp-confirm-row { display: flex; gap: 10px; }
 .gp-confirm-row .gp-btn { flex: 1; }
+.gp-modal__art { width: 96px; height: 96px; margin: 0 auto 6px; background-size: contain; background-repeat: no-repeat; background-position: center; }

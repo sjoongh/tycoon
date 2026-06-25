@@ -20,8 +20,36 @@ export class DOMModalLayer {
     this.gameState.on("upgraded", this._onUpgraded);
     this.gameState.on("changed", this._onChanged);
     document.addEventListener("gp:prestige-confirm", this._onPrestigeConfirm);
-    this._showOfflineReward();
+    if (!this._maybeOpening()) this._showOfflineReward();
     this._maybeHint();
+  }
+
+  // 신규 첫 세션 오프닝(3카드). 보여줬으면 true 반환(오프라인 보상은 다음 세션부터).
+  _maybeOpening() {
+    const d = this.gameState.data;
+    const fresh = !d.tutorial?.done && (d.stats.totalClicks || 0) === 0 && d.stage.area === 1 && d.stage.progress === 0;
+    if (!fresh) return false;
+    const cards = [
+      { art: "/art/worker-clerk.png", t: "믿어주세요, 개표국", s: "오늘부터 당신이 개표국장입니다. 믿음도 바닥, 서류도 엉망. 밑바닥에서 시작합니다." },
+      { art: "/art/desk-t1.png", t: "표를 처리하라", s: "화면을 탭해 표를 처리하고, 시설을 키우고, 직원을 채용하세요." },
+      { art: "/art/ballotbox.png", t: "사건에 대응하라", s: "터지는 사건마다 믿음이 걸려 있습니다. 전국이 지켜봅니다. 자, 분류 시작!" },
+    ];
+    let i = 0;
+    const ov = document.createElement("div");
+    ov.className = "gp-modal-ov";
+    const render = () => {
+      const c = cards[i];
+      ov.innerHTML = `<div class="gp-modal"><div class="gp-modal__art" style="background-image:url('${c.art}')"></div><div class="gp-mtitle">${c.t}</div><div class="gp-msub">${c.s}</div><button class="gp-btn gp-btn--gold" data-next>${i < cards.length - 1 ? "다음" : "분류 시작!"}</button></div>`;
+    };
+    ov.addEventListener("click", (e) => {
+      if (!e.target.closest("[data-next]")) return;
+      i += 1;
+      if (i >= cards.length) ov.remove();
+      else render();
+    });
+    render();
+    this.root.appendChild(ov);
+    return true;
   }
 
   _checkStage() {
