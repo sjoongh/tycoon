@@ -42,7 +42,11 @@ export class DOMHud {
     const ratio = Math.max(0, Math.min(1, d.stage.progress / d.stage.target));
     this.root.querySelector('[data-k="progress"]').style.width = `${ratio * 100}%`;
     const cps = this.gameState.cps ? this.gameState.cps() : 0;
-    this.root.querySelector('[data-k="stage"]').textContent = `${d.stage.area}구역 · D-${d.days} · 초당 ${cps.toFixed(1)}표`;
+    // 초당 생산이 의미있게 뛰면(업그레이드/채용/구역) 수치를 팝 연출. 믿음 드리프트(<2%)는 무시.
+    const jumped = this._lastCps != null && cps >= this._lastCps * 1.02;
+    this._lastCps = cps;
+    this.root.querySelector('[data-k="stage"]').innerHTML =
+      `${d.stage.area}구역 · D-${d.days} · 초당 <span class="gp-cps${jumped ? " gp-cps--up" : ""}">${cps.toFixed(1)}</span>표`;
 
     // 믿음 위기/보너스 상태를 믿음 칩과 상태 배지로 노출(테마 시그니처)
     const state = this.gameState.trustState ? this.gameState.trustState() : "normal";
