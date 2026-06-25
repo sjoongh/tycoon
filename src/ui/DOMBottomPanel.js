@@ -138,7 +138,7 @@ export class DOMBottomPanel {
     const stageDone = gs.data.stage.progress >= gs.data.stage.target;
     // FIX #4: two-line upgrade button — verb on top, cost below — prevents truncation at any number length
     const upgradeBtn = unlocked
-      ? `<button class="gp-btn gp-btn--gold gp-btn--upgrade ${canBuy ? "" : "gp-btn--disabled"}" data-action="upgradeFac">업그레이드<small>${shortNumber(cost)}표</small></button>`
+      ? `<button class="gp-btn gp-btn--gold gp-btn--upgrade ${canBuy ? "gp-btn--ready" : "gp-btn--disabled"}" data-action="upgradeFac">업그레이드<small>${shortNumber(cost)}표</small></button>`
       : `<button class="gp-btn gp-btn--upgrade gp-btn--disabled" data-action="upgradeFac">잠김</button>`;
     this.panel.innerHTML = `
       <div class="gp-card">
