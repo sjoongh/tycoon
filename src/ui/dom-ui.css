@@ -222,6 +222,8 @@
 .gp-staff__rar { font-size: 9px; font-weight: 800; padding: 1px 6px; border-radius: 6px; background: var(--rarity-color, #9aa0a6); color: #fff; margin-left: 4px; }
 .gp-staff--light-rarity .gp-staff__rar { color: var(--ink); }
 .gp-staff__sub { font-size: 11px; font-weight: 700; color: var(--ink-soft); }
+.gp-staff__syn { font-size: 10px; font-weight: 800; color: #9a7cc8; }
+.gp-staff__syn--on { color: #6a3fb0; }
 
 .gp-event { background: linear-gradient(135deg, #fff3d6 0%, #ffe8b8 100%); border-radius: 16px; padding: 13px; border-left: 5px solid var(--event); box-shadow: inset 0 0 0 1.5px var(--event), 0 3px 8px rgba(255,122,60,0.25); }
 .gp-event__title { font-family: "Black Han Sans", sans-serif; color: var(--ink); font-size: 16px; }

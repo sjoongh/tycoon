@@ -197,12 +197,16 @@ export class DOMBottomPanel {
       const ex = gs.staffExplainCost(s.id);
       const can = gs.data.votes >= cost && gs.data.explain >= ex;
       const skill = s.skill ? (gs.staffSkillActive(s.id) ? s.skill.name : `스킬 Lv.${s.skill.unlockLevel}`) : "";
+      // 시너지: 대응 시설과 곱연산 — 빌드 방향 표시(활성 시 강조)
+      const synFac = s.synergy ? facilities.find((f) => f.id === s.synergy.facility) : null;
+      const synActive = synFac && lv > 0 && gs.level(synFac.id) > 0;
+      const synLabel = synFac ? `<span class="gp-staff__syn${synActive ? " gp-staff__syn--on" : ""}">◈ ${synFac.name} 시너지</span>` : "";
       const rarityHex = rarityColors[s.rarity] || 0xd8c4a0;
       const lightRarity = isLightColor(rarityHex) ? " gp-staff--light-rarity" : "";
       // P0 fix: show 해명 cost in hire button (two-line pattern); add gp-btn--ready glow when affordable
       return `<div class="gp-staff${lightRarity}" style="--rarity-color:${hex(rarityHex)}">
         <div class="gp-staff__dot" style="background:${hex(s.color)}"></div>
-        <div class="gp-staff__body"><div class="gp-staff__name">${s.name}<span class="gp-staff__rar">${s.rarityName}</span></div><div class="gp-staff__sub">Lv.${lv} · ${skill}</div></div>
+        <div class="gp-staff__body"><div class="gp-staff__name">${s.name}<span class="gp-staff__rar">${s.rarityName}</span></div><div class="gp-staff__sub">Lv.${lv} · ${skill}</div><div class="gp-staff__sub">${synLabel}</div></div>
         <button class="gp-btn gp-btn--sm gp-btn--upgrade ${can ? "gp-btn--ready" : "gp-btn--disabled"}" data-action="hire" data-id="${s.id}">${shortNumber(cost)}표<small>${shortNumber(ex)}해명</small></button></div>`;
     }).join("");
     // FIX P2: multiplier shown as "+69% 생산 보너스" sub-label (not "x1.69" debug-looking number in title)

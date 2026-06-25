@@ -890,15 +890,24 @@ export class GameState extends Phaser.Events.EventEmitter {
   }
 
   staffMultiplierFor(data) {
-    const base = 1 + staffDefinitions.reduce((sum, staff) => {
+    const bonus = staffDefinitions.reduce((sum, staff) => {
       const lv = data.staff?.[staff.id] || 0;
+      if (!lv) return sum;
       let s = lv * (staff.cpsBonus || 0);
       // 데이터 구동 스킬: skill.cpsBonus가 정의된 직원은 언락 레벨 이상에서 추가 생산
       if (staff.skill?.cpsBonus && lv >= staff.skill.unlockLevel) s += lv * staff.skill.cpsBonus;
+      // 시너지: 대응 시설 레벨 × 직원 레벨 × per (곱연산 — "시설 키운 만큼 직원도 키우자" 빌드 결정)
+      if (staff.synergy) s += lv * (data.facilities?.[staff.synergy.facility] || 0) * staff.synergy.per;
       return sum + s;
     }, 0);
-    const engineerSkill = (data.staff?.engineer || 0) >= 4 ? (data.facilities?.server || 0) * 0.006 : 0;
-    return base + engineerSkill;
+    return 1 + bonus;
+  }
+
+  // 직원의 현재 시너지 기여(표시용)
+  staffSynergyValue(id) {
+    const staff = this.staff(id);
+    if (!staff?.synergy) return 0;
+    return (this.staffLevel(id) || 0) * (this.level(staff.synergy.facility) || 0) * staff.synergy.per;
   }
 
   // 인장은 가산, 감사 횟수는 가산항과 곱해지는 복리식(매 감사가 누적 인장을 증폭 → "다음 감사가 더 빨라진다" 감각).
