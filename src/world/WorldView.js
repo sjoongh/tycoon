@@ -77,6 +77,7 @@ export class WorldView {
   }
 
   _scheduleGolden(delay) {
+    this._goldenTimer?.remove(); // 중복 예약 방지(느린 프레임 레이스에 타이머 중첩 차단)
     this._goldenTimer = this.scene.time.delayedCall(delay, () => this._spawnGolden());
   }
 

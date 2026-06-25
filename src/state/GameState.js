@@ -156,7 +156,8 @@ export class GameState extends Phaser.Events.EventEmitter {
     data.rushEndsAt = Math.max(0, Number(data.rushEndsAt) || 0);
     data.briefReadyAt = Math.max(0, Number(data.briefReadyAt) || 0);
     data.briefEndsAt = Math.max(0, Number(data.briefEndsAt) || 0);
-    data.offline2xDay = Math.max(0, Math.floor(Number(data.offline2xDay) || 0));
+    // 미래값으로 변조되면 2배 보상이 영구 비활성되므로 오늘 인덱스로 상한 클램프
+    data.offline2xDay = Phaser.Math.Clamp(Math.floor(Number(data.offline2xDay) || 0), 0, this._todayIndex());
     data.stage.area = Math.max(1, Number(data.stage.area) || 1);
     data.stage.target = this.stageTarget(data.stage.area);
     data.stage.progress = Phaser.Math.Clamp(Number(data.stage.progress) || 0, 0, data.stage.target);
@@ -499,6 +500,11 @@ export class GameState extends Phaser.Events.EventEmitter {
     }, Date.now());
     // 감사로 stats.totalVotes가 0으로 리셋되므로 주간 기준점도 재정렬(안 하면 progress가 음수→0에 영구 고정)
     this.data.weekly.baseVotes = this.data.stats.totalVotes;
+    // 아직 미수령이면 목표량도 감사 후(낮아진) 생산 기준으로 재계산 — 안 하면 감사 전 높은 cps 기준 목표가 도달 불가해짐(재청구는 claimed 유지로 차단)
+    if (!this.data.weekly.claimed) {
+      const wdef = this.weeklyDef();
+      this.data.weekly.target = Math.max(wdef.minTarget, Math.round(this.cpsFor(this.data) * wdef.hours * 3600));
+    }
     // 상비 인력: 접수창구 시작 레벨 / 여론전: 시작 믿음 상향(감사 영구 업그레이드 효과)
     const startDesk = Math.round(this.permanentEffectFor(this.data, "startDesk"));
     if (startDesk > 0) this.data.facilities.desk = Math.max(this.data.facilities.desk, 1 + startDesk);
@@ -585,7 +591,7 @@ export class GameState extends Phaser.Events.EventEmitter {
   dailyReward(streak) {
     const s = Phaser.Math.Clamp(Math.floor(streak || 1), 1, DAILY_STREAK_CAP);
     const explain = 25 * s;
-    const votes = Math.max(150, Math.round(this.cps() * 120)) * s;
+    const votes = Math.max(150, Math.round(this.cpsFor(this.data) * 120)) * s; // 버프(러시) 제외한 기본 생산 기준 — 러시 중 수령 시 5배 악용 방지
     const seals = s >= DAILY_STREAK_CAP ? 1 : 0;
     return { explain, votes, seals, streak: s };
   }
