@@ -325,7 +325,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     const p = this.data.prestige;
     const cpsFactor = 1 + this.permanentEffectFor(this.data, "cpsPct");
     const current = this.prestigeMultiplierFor(this.data) * cpsFactor;
-    const projectedSeal = 1 + (p.totalSeals + earned) * 0.025 + (p.runs + 1) * 0.05;
+    const projectedSeal = this.prestigeMultiplierRaw(p.totalSeals + earned, p.runs + 1);
     return { earned, current, projected: projectedSeal * cpsFactor };
   }
 
@@ -700,8 +700,17 @@ export class GameState extends Phaser.Events.EventEmitter {
     return base + engineerSkill;
   }
 
+  // 인장은 가산, 감사 횟수는 가산항과 곱해지는 복리식(매 감사가 누적 인장을 증폭 → "다음 감사가 더 빨라진다" 감각).
+  // 감사 횟수 보너스는 소프트캡(runs/40)으로 후반 과인플레 방지. seals=0,runs=0 → 1.0 (기존과 연속).
+  prestigeMultiplierRaw(totalSeals, runs) {
+    const s = Math.max(0, totalSeals || 0);
+    const r = Math.max(0, runs || 0);
+    const runsBonus = (0.06 * r) / (1 + r / 40);
+    return (1 + s * 0.025) * (1 + runsBonus);
+  }
+
   prestigeMultiplierFor(data) {
-    return 1 + (data.prestige?.totalSeals || 0) * 0.025 + (data.prestige?.runs || 0) * 0.05;
+    return this.prestigeMultiplierRaw(data.prestige?.totalSeals || 0, data.prestige?.runs || 0);
   }
 
   explainPerSecond() {
