@@ -85,3 +85,13 @@
 - 검증: build✓ test13/13✓ · 일일 claim(+25해명/+표·일자기록·중복불가·streak 리셋/연속 e2e) · 업적(20만표/area6/prestige1/events30 → 8종 지급 +680해명, 무중복) · 0콘솔에러 · 📅모달+16업적 리스트 렌더 정상. DOMHud mute 루트이동(루프4 디자이너 누락분) 포함.
 - QA툴 추가: `scripts/_dailytest.mjs`, `scripts/_achtest.mjs`(per-evaluate try/catch로 인브라우저 런타임에러 핀포인트). 주의: playwright `networkidle`이 swiftshader+vite에서 불안정 → `domcontentloaded`+활성폴링 사용.
 - **다음 루프 P0**: 프레스티지 깊이(언락형 업그레이드, 신규 콘텐츠 해금), 트러스트 위기 메커닉(저신뢰 생산정지 사건/고신뢰 보너스). P1: 사건·직원 증량 및 보상 area 스케일, 가이드형 첫 업그레이드 온보딩, CPS 연출·탭 배지·목표 클레임 연출.
+
+## 루프6 완료 (프레스티지 깊이 P0, 밤샘 자율)
+- 감사(프레스티지) 업그레이드 4→**8종**. 신규 효과 타입 4종 + 배선:
+  - `audit`(감사반, sealPct +0.08/Lv) → 감사 시 인장 획득량↑ (prestigePreview).
+  - `vault`(보관소, offlineHr +1/Lv, max16) → 오프라인 정산 시간 8h+레벨 (offlineCapMsFor; 기존 OFFLINE_CAP_MS 상수→동적 메서드).
+  - `staffing`(상비인력, startDesk +1/Lv, max8) → 감사 후 접수창구 시작 레벨↑.
+  - `reputation`(여론전, startTrust +2/Lv, max8) → 감사 후 시작 믿음↑.
+- 감사탭 8버튼 → `gp-sealgrid` 4열 그리드(2행). 효과 타입별 선택지 생겨 프레스티지가 "숫자만 오르던" 상태에서 전략적 분기로.
+- 검증 e2e(`scripts/_prestigetest.mjs`): 오프라인캡 8→12h(vault Lv4), sealPct 0.4(audit Lv5)→preview ×1.4, 감사후 desk 시작 4(staffing Lv3), 시작 믿음 85(reputation Lv5), 8버튼 그리드 렌더 정상, 0콘솔에러. build✓ test13/13✓.
+- **다음 루프 P0**: 트러스트 위기 메커닉(저신뢰 생산 페널티/위기 사건, 고신뢰 보너스 — "믿어주세요" 테마의 시그니처). P1: 사건·직원 증량+area스케일 보상, 가이드 온보딩, CPS연출·탭배지·목표 클레임.

@@ -82,7 +82,9 @@
 .gp-fac--locked .gp-fac__role, .gp-fac--locked .gp-fac__lv { opacity: 0.5; }
 
 /* FIX #8: prestige seal buttons use gem-blue accent, distinct from gold facility pickers */
-.gp-seal { flex: 1; pointer-events: auto; border: none; border-radius: 12px; padding: 7px 3px 6px; background: #1c0d2e; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 3px; min-height: 56px; transition: transform .1s; box-shadow: inset 0 0 0 1.5px var(--gem); }
+/* 감사 업그레이드가 8종으로 늘어 4열 그리드(2행)로 배치 */
+.gp-sealgrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-top: 10px; }
+.gp-seal { pointer-events: auto; border: none; border-radius: 12px; padding: 7px 3px 6px; background: #1c0d2e; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 3px; min-height: 54px; transition: transform .1s; box-shadow: inset 0 0 0 1.5px var(--gem); }
 .gp-seal__role { font-size: 11px; font-weight: 800; color: #d0f0ff; }
 .gp-seal__lv  { font-size: 9px; font-weight: 700; color: #7ec8e3; }
 .gp-seal--active { background: #0d2240; box-shadow: 0 0 0 2px var(--gem) inset, 0 2px 8px rgba(78,197,255,0.4); transform: translateY(-2px); }

@@ -243,7 +243,7 @@ export class DOMBottomPanel {
     }).join("");
     const fullMult = gs.prestigeMultiplierFor(gs.data) * (1 + (gs.permanentEffectFor ? gs.permanentEffectFor(gs.data, "cpsPct") : 0));
     this.panel.innerHTML = `<div class="gp-paneltitle">감사 재정비 · 인장 ${gs.data.prestige.seals} · 영구 x${fullMult.toFixed(2)}</div>
-      <div class="gp-facsel">${ups}</div>
+      <div class="gp-sealgrid">${ups}</div>
       <div class="gp-region"><span>예상 획득 +${preview}</span><button class="gp-btn gp-btn--sm gp-btn--danger ${can ? "" : "gp-btn--disabled"}" data-action="prestigeReset">감사실행</button></div>`;
   }
 }

@@ -156,7 +156,7 @@ export class GameState extends Phaser.Events.EventEmitter {
   }
 
   applyOfflineProgress(data, now) {
-    const elapsed = Phaser.Math.Clamp(now - data.lastSeenAt, 0, OFFLINE_CAP_MS);
+    const elapsed = Phaser.Math.Clamp(now - data.lastSeenAt, 0, this.offlineCapMsFor(data));
     if (elapsed < 30000) return null;
 
     const seconds = elapsed / 1000;
@@ -368,7 +368,9 @@ export class GameState extends Phaser.Events.EventEmitter {
     const areaValue = Math.max(0, this.data.stage.area - 3) * 4;
     const facilityValue = Math.floor(this.facilityTotal() / 12);
     const eventValue = Math.floor(this.data.stats.totalEvents / 3);
-    return Math.max(4, areaValue + facilityValue + eventValue);
+    const base = Math.max(4, areaValue + facilityValue + eventValue);
+    // 정밀 감사반: 인장 획득량 증가
+    return Math.floor(base * (1 + this.permanentEffectFor(this.data, "sealPct")));
   }
 
   prestigeReset() {
@@ -398,6 +400,11 @@ export class GameState extends Phaser.Events.EventEmitter {
       trust: Math.min(90, fallbackState.trust + kept.prestige.runs),
       log: [`감사 완료: 제도인장 +${earned}`, "개표국 재정비"],
     }, Date.now());
+    // 상비 인력: 접수창구 시작 레벨 / 여론전: 시작 믿음 상향(감사 영구 업그레이드 효과)
+    const startDesk = Math.round(this.permanentEffectFor(this.data, "startDesk"));
+    if (startDesk > 0) this.data.facilities.desk = Math.max(this.data.facilities.desk, 1 + startDesk);
+    const startTrust = this.permanentEffectFor(this.data, "startTrust");
+    if (startTrust > 0) this.data.trust = Phaser.Math.Clamp(this.data.trust + startTrust, 0, 95);
     this.offlineReward = null;
     this.emit("float", { text: `제도인장 +${earned}`, x: 195, y: 190, color: "#bba2ff" });
     this.emit("changed");
@@ -612,6 +619,12 @@ export class GameState extends Phaser.Events.EventEmitter {
 
   offlineRateFor(data) {
     return 0.72 * (1 + this.permanentEffectFor(data, "offlinePct"));
+  }
+
+  // 기록 보관소: 기본 8시간 + 레벨당 1시간
+  offlineCapMsFor(data) {
+    const hours = 8 + this.permanentEffectFor(data, "offlineHr");
+    return hours * 3600000;
   }
 
   permanentEffectFor(data, key) {
