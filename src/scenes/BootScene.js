@@ -7,7 +7,7 @@ export class BootScene extends Phaser.Scene {
   }
 
   create() {
-    this.registry.set("gameState", new GameState());
+    if (!this.registry.get("gameState")) this.registry.set("gameState", new GameState());
     this.scene.start("PreloadScene");
   }
 }

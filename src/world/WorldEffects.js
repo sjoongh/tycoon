@@ -18,6 +18,7 @@ export class WorldEffects {
   }
 
   deskPop(x, y) {
+    if (this._destroyed) return;
     const dot = this.scene.add.circle(x, y, 4, 0xfff4cf).setDepth(fxDepth(y));
     this.scene.tweens.add({
       targets: dot,
@@ -25,9 +26,11 @@ export class WorldEffects {
       alpha: 0,
       duration: 480,
       ease: "Quad.easeOut",
-      onComplete: () => dot.destroy(),
+      onComplete: () => { if (!this._destroyed) dot.destroy(); },
     });
   }
 
-  destroy() {}
+  destroy() {
+    this._destroyed = true;
+  }
 }

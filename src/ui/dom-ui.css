@@ -1,7 +1,7 @@
 :root {
   --bg-deep: #2b1d3a;
-  --panel: #fffdf7;
-  --panel-sunk: #efe3cf;
+  --panel: #e8d9b8;
+  --panel-sunk: #d4c19a;
   --ink: #2a2030;
   --ink-soft: #6b5d52;
   --gold: #ffc02e;
@@ -20,10 +20,10 @@
 /* ---------- HUD ---------- */
 .gp-hud { position: absolute; top: 0; left: 0; right: 0; padding: 10px 12px; display: flex; flex-direction: column; gap: 7px; align-items: stretch; }
 .gp-hud__row { display: flex; gap: 8px; }
-.gp-chip { flex: 1; display: flex; align-items: center; gap: 7px; padding: 6px 11px; border-radius: 14px; background: #fffdf7; box-shadow: 0 3px 0 rgba(0,0,0,0.25), inset 0 0 0 2px var(--gold); }
+.gp-chip { flex: 1; display: flex; align-items: center; gap: 7px; padding: 6px 11px; border-radius: 14px; background: rgba(20,12,28,0.82); box-shadow: 0 3px 0 rgba(0,0,0,0.4), inset 0 0 0 2px var(--gold); }
 .gp-chip__ic { width: 22px; height: 22px; flex: none; background-size: contain; background-repeat: no-repeat; background-position: center; }
-.gp-chip__val { font-family: "Black Han Sans", sans-serif; font-size: 17px; color: var(--ink); line-height: 1; }
-.gp-chip__label { font-size: 10px; font-weight: 700; color: var(--ink-soft); }
+.gp-chip__val { font-family: "Black Han Sans", sans-serif; font-size: 17px; color: var(--gold-hi); line-height: 1; }
+.gp-chip__label { font-size: 10px; font-weight: 700; color: rgba(243,232,214,0.7); }
 .gp-progress { height: 16px; border-radius: 9px; background: #1c1326; overflow: hidden; box-shadow: inset 0 2px 4px rgba(0,0,0,0.5), 0 0 0 2px rgba(0,0,0,0.3); }
 .gp-progress__fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--gold) 0%, #ff9f1a 100%); box-shadow: inset 0 1px 0 rgba(255,255,255,0.55); transition: width .3s ease-out; }
 .gp-stage { align-self: center; display: inline-block; background: rgba(20,12,28,0.7); border-radius: 20px; padding: 3px 12px; font-size: 11px; font-weight: 800; color: var(--gold-hi); box-shadow: inset 0 0 0 1px rgba(255,192,46,0.4); }
@@ -33,7 +33,7 @@
   background: linear-gradient(to bottom, rgba(43,29,58,0) 0%, rgba(43,29,58,0.92) 18px, rgba(34,22,46,0.98) 40px);
   box-shadow: 0 -3px 16px rgba(0,0,0,0.4), inset 0 2px 0 rgba(255,192,46,0.35); }
 
-.gp-card { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 16px; background: var(--panel); box-shadow: 0 3px 0 rgba(0,0,0,0.25), inset 0 0 0 2px rgba(0,0,0,0.06); }
+.gp-card { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 16px; background: var(--panel); box-shadow: 0 3px 0 rgba(0,0,0,0.3), inset 0 0 0 1.5px rgba(224,138,0,0.4); }
 .gp-card__icon { width: 48px; height: 48px; border-radius: 13px; background-size: cover; background-position: center; flex: none; box-shadow: inset 0 0 0 2px rgba(0,0,0,0.15), inset 0 -2px 4px rgba(0,0,0,0.15); }
 .gp-card__body { flex: 1; min-width: 0; }
 .gp-card__title { font-family: "Black Han Sans", sans-serif; color: var(--ink); font-size: 17px; }
@@ -82,8 +82,9 @@
 .gp-staff__rar { font-size: 9px; font-weight: 800; padding: 1px 6px; border-radius: 6px; background: var(--rarity-color, #9aa0a6); color: #fff; margin-left: 4px; }
 .gp-staff__sub { font-size: 11px; font-weight: 700; color: var(--ink-soft); }
 
-.gp-event { background: #fff7e6; border-radius: 16px; padding: 13px; box-shadow: inset 0 0 0 2px var(--event); }
+.gp-event { background: linear-gradient(135deg, #fff3d6 0%, #ffe8b8 100%); border-radius: 16px; padding: 13px; border-left: 5px solid var(--event); box-shadow: inset 0 0 0 1.5px var(--event), 0 3px 8px rgba(255,122,60,0.25); }
 .gp-event__title { font-family: "Black Han Sans", sans-serif; color: var(--ink); font-size: 16px; }
+.gp-event__title::before { content: "!"; display: inline-block; background: var(--event); color: #fff; font-family: "Black Han Sans", sans-serif; width: 20px; height: 20px; border-radius: 6px; text-align: center; line-height: 20px; font-size: 13px; margin-right: 6px; vertical-align: middle; }
 .gp-event__body { font-size: 12px; font-weight: 700; color: #8a6a4d; margin: 6px 0 10px; }
 .gp-event__choices { display: flex; gap: 8px; }
 .gp-event__c { flex: 1; display: flex; flex-direction: column; align-items: center; font-size: 14px; color: #5a3a00; background: linear-gradient(180deg, var(--gold-hi), var(--gold)); box-shadow: 0 4px 0 var(--gold-deep); }

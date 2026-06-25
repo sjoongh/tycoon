@@ -39,7 +39,9 @@ export class WorldView {
     gameState.on("ballots", this._onBallots);
 
     // 하단 DOM 패널은 pointer-events:auto로 자체 탭을 가로채므로, 캔버스에 도달한 탭만 처리한다
-    this._onPointer = (pointer) => {
+    this._onPointer = (pointer, currentlyOver) => {
+      // 시설 스프라이트 등 인터랙티브 오브젝트 위 탭은 '선택'으로 처리 — 빈 공간/소품 탭만 득표(클릭 중복 방지)
+      if (currentlyOver && currentlyOver.length) return;
       gameState.processClick(pointer.x, pointer.y);
       this._squishBallotbox();
     };

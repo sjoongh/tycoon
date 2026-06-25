@@ -11,10 +11,11 @@ export function registerWorkerSheet(scene) {
 }
 
 export function createAnimations(scene) {
-  // 실제 아트(단일 클럭 이미지)면 시트 슬라이싱/애니 생성을 건너뛴다. 플레이스홀더(작은 4프레임 스트립)만 시트화.
-  // 플레이스홀더는 96x32 가로 4프레임 스트립(높이 32). 실제 단일 클럭은 세로로 김(높이 큼) → 시트화 건너뜀.
   const src = scene.textures.get(ASSET_KEYS.workerSheet).getSourceImage();
+  // 실제 워커는 캐릭터별 단일 이미지(다양성 보존). 공유 프레임 애니를 등록하면 모두 같은 텍스처로 바뀌므로
+  // 애니를 만들지 않는다. WorkerActor는 anims.exists 가드로 no-op 처리하고 이동+bob/breath로 생동감을 준다.
   if (src && src.height > 48) return;
+  // 플레이스홀더(96x32 가로 4프레임 스트립)만 시트화.
   const sheetKey = registerWorkerSheet(scene);
   const def = (key, frames, frameRate, repeat) => {
     if (scene.anims.exists(key)) return;

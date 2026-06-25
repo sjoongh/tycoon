@@ -9,8 +9,9 @@ export class BallotPool {
   }
 
   spawn(x, y, count = 6) {
-    for (let i = 0; i < count; i += 1) {
-      const ballot = this.items.pop() || this.scene.add.sprite(-100, -100, "ballot").setScale(1.5);
+    const actual = Math.min(count, this.items.length);
+    for (let i = 0; i < actual; i += 1) {
+      const ballot = this.items.pop();
       ballot.setPosition(x + Phaser.Math.Between(-12, 12), y + Phaser.Math.Between(-10, 10));
       ballot.setAngle(0);
       ballot.setAlpha(1);

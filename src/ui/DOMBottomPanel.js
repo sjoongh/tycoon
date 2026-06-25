@@ -78,6 +78,7 @@ export class DOMBottomPanel {
 
   refresh() {
     const tab = this.gameState.data.activeTab || "facilities";
+    const prevScroll = this.panel.querySelector(".gp-stafflist")?.scrollTop || 0;
     ({
       facilities: () => this._renderFacilities(),
       crew: () => this._renderCrew(),
@@ -85,6 +86,8 @@ export class DOMBottomPanel {
       goals: () => this._renderGoals(),
       prestige: () => this._renderPrestige(),
     }[tab] || (() => this._renderFacilities()))();
+    const list = this.panel.querySelector(".gp-stafflist");
+    if (list && prevScroll) list.scrollTop = prevScroll;
     this.root.querySelectorAll(".gp-tab").forEach((el) => el.classList.toggle("gp-tab--active", el.dataset.tab === tab));
   }
 
