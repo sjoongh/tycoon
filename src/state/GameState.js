@@ -81,6 +81,7 @@ const fallbackState = {
   eventReadyAt: 0,
   rushReadyAt: 0,
   rushEndsAt: 0,
+  offline2xDay: 0,
   log: ["개표국 개국"],
 };
 
@@ -133,6 +134,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     data.eventReadyAt = Math.max(0, Number(data.eventReadyAt) || 0);
     data.rushReadyAt = Math.max(0, Number(data.rushReadyAt) || 0);
     data.rushEndsAt = Math.max(0, Number(data.rushEndsAt) || 0);
+    data.offline2xDay = Math.max(0, Math.floor(Number(data.offline2xDay) || 0));
     data.stage.area = Math.max(1, Number(data.stage.area) || 1);
     data.stage.target = this.stageTarget(data.stage.area);
     data.stage.progress = Phaser.Math.Clamp(Number(data.stage.progress) || 0, 0, data.stage.target);
@@ -193,6 +195,25 @@ export class GameState extends Phaser.Events.EventEmitter {
     const reward = this.offlineReward;
     this.offlineReward = null;
     return reward;
+  }
+
+  // 오프라인 기본 보상은 로드 시 자동 적용됨(applyOfflineProgress). 2배 받기는 같은 양을 한 번 더(하루 1회).
+  offline2xAvailable() {
+    return this._todayIndex() > (this.data.offline2xDay || 0);
+  }
+
+  claimOfflineBonus() {
+    const r = this.offlineReward;
+    if (!r || !this.offline2xAvailable()) return null;
+    this.data.votes += r.votes;
+    this.data.explain += r.explain;
+    this.data.stage.progress = Phaser.Math.Clamp(this.data.stage.progress + r.votes, 0, this.data.stage.target);
+    this.data.stats.totalVotes += r.votes;
+    this.data.offline2xDay = this._todayIndex();
+    this.offlineReward = null;
+    this.emit("changed");
+    this.save(false);
+    return r;
   }
 
   save(notify = true) {

@@ -109,15 +109,23 @@ export class DOMModalLayer {
   }
 
   _showOfflineReward() {
-    const r = this.gameState.consumeOfflineReward ? this.gameState.consumeOfflineReward() : null;
+    // 기본 보상은 로드 시 이미 적용됨. 모달은 그 양을 보여주고, 하루 1회 '2배 받기'로 같은 양을 한 번 더 받는 선택 제공.
+    const r = this.gameState.offlineReward;
     if (!r) return;
     const mins = Math.max(1, Math.floor(r.elapsed / 60000));
+    const can2x = this.gameState.offline2xAvailable && this.gameState.offline2xAvailable();
+    const footer = can2x
+      ? `<div class="gp-confirm-row">
+           <button class="gp-btn gp-btn--disabled" data-close>그냥 수령</button>
+           <button class="gp-btn gp-btn--gold" data-confirm>🎁 2배로 받기</button>
+         </div>`
+      : `<button class="gp-btn" data-close>수령하기</button>`;
     this._openModal(`
       <div class="gp-modal__badge">💤</div>
       <div class="gp-mtitle">오프라인 정산</div>
       <div class="gp-msub">${mins}분 동안 개표가 계속됐어요</div>
       <div class="gp-mbig">+${shortNumber(r.votes)}표<br><span>+${shortNumber(r.explain)} 해명</span></div>
-      <button class="gp-btn" data-close>수령하기</button>`);
+      ${footer}`, () => this.gameState.claimOfflineBonus());
   }
 
   _checkMilestone(f) {
