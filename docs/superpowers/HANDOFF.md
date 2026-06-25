@@ -173,3 +173,9 @@
 - **정직한 플랫폼 한계**: 웹은 푸시 서버 없이 닫힌앱 알림 신뢰성 불가. 유일 클라이언트-only 경로 Notification Triggers API(TimestampTrigger)는 대부분 미탑재 → **지원 시에만 예약, 미지원/거부는 0에러 안전 무동작**. 완전한 닫힌앱 알림은 향후 푸시 서버 필요(클라 빌드 범위 밖). 오버클레임 안 함.
 - e2e: denied 무동작 0에러·default(mock)+runs>=1 프롬프트 렌더·'켜기'→requestPermission+askedFlag. build✓ test13/13✓ 회귀 cps599 0에러.
 - **남은(다음 루프)**: 한정 시즌 목표(date-seeded 주간 '특별 개표 주간', 기존 quest/claim 재사용+카운트다운 배지), 트러스트 슬로프 미세확대, 액션 완료 연출, 알림 토글 UI. 밸런스 보존·회귀 0에러.
+
+## 루프17 완료 (FOMO + 연출, 밤샘 자율)
+- **17A 주간 한정 목표**(af12037): `src/data/weeklyGoals.js`(4종 풀), `_weekIndex()=floor(todayIndex/7)`로 결정적 선택→매주 자동교체. 목표=이번 주 누적 표(weekly.baseVotes 캡처), 목표량=주시작 cpsFor×def.hours 동적(단계 무관 도전적·달성가능). 목표탭 상단 골드 카드 `gp-goal--weekly` + D-N 카운트다운 배지 + 완료시 1회 인장보상(claimWeekly). `_ensureWeekly`가 주차 변경 감지→리셋. 목표탭 알림점에 weeklyClaimable 포함. e2e: 결정적 def·target>0·D-7·진행·claim 6인장·중복 null·롤오버(claimed false·prog0).
+- **17B 러시/브리핑 발동 연출**(9979892): activateRush/activateBrief가 celebrate 이벤트 발행→DOMModalLayer 토스트+플래시. 액티브 세션 페이오프 스파이크(테스터 P2). e2e: 발동 토스트 노출.
+- 둘 다 build✓ test13/13✓ 회귀(_regression cps599 0에러)✓. 경제 변경 최소·밸런스 보존.
+- **현황**: 기획/테스터 리뷰의 아이들 깊이·리텐션·연출 항목 대부분 구현 완료(시설마일스톤·러시·프레스티지복리·무한인장·오프2배·긴급브리핑·일일/주간퀘스트·알림인프라·온보딩폴리시·발동연출). 잔여 소항목: 알림 토글 UI, 트러스트 슬로프 미세확대(기획 제안이나 20~90 band 1.0 의도유지중), 닫힌앱 알림(푸시서버 필요-범위밖). **다음 루프: 3차 종합 7역할 재검증**(루프15 2차 이후 추가분 점검)으로 95% 최종 확인, 미달 픽스.
