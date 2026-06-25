@@ -91,6 +91,7 @@ export class DOMBottomPanel {
       case "buyPrestige": gs.buyPrestigeUpgrade(id); break;
       case "prestigeReset": document.dispatchEvent(new CustomEvent("gp:prestige-confirm")); break;
       case "claimDaily": gs.claimDailyQuest(id); this.refresh(); break;
+      case "claimWeekly": gs.claimWeekly(); this.refresh(); break;
     }
   }
 
@@ -130,7 +131,8 @@ export class DOMBottomPanel {
     if (eventDot) eventDot.hidden = !(gs.eventReady() && activeTab !== "events");
     // 목표 탭: 일일 퀘스트 수령 가능 시 알림 점
     const goalDot = this.root.querySelector('[data-dot="goals"]');
-    if (goalDot) goalDot.hidden = !(gs.anyDailyQuestClaimable && gs.anyDailyQuestClaimable() && activeTab !== "goals");
+    const goalClaimable = (gs.anyDailyQuestClaimable && gs.anyDailyQuestClaimable()) || (gs.weeklyClaimable && gs.weeklyClaimable());
+    if (goalDot) goalDot.hidden = !(goalClaimable && activeTab !== "goals");
   }
 
   _renderFacilities() {
@@ -261,6 +263,29 @@ export class DOMBottomPanel {
       </div>`;
     };
 
+    // 한정 시즌(주간) 목표 — 카운트다운 + 1회 보상
+    const wDef = gs.weeklyDef ? gs.weeklyDef() : null;
+    let weeklyRow = "";
+    if (wDef) {
+      const wp = gs.weeklyProgress();
+      const wt = gs.weeklyTarget();
+      const wdone = gs.weeklyDone();
+      const wclaimed = gs.weeklyClaimed();
+      const wclaimable = gs.weeklyClaimable();
+      const wratio = Math.max(0, Math.min(1, wp / wt));
+      const wright = wclaimed
+        ? `<span class="gp-goal__badge">완료</span>`
+        : wclaimable
+          ? `<button class="gp-btn gp-btn--sm gp-btn--ready" data-action="claimWeekly">받기</button>`
+          : `<span class="gp-goal__badge gp-goal__badge--week">D-${gs.weeklyDaysLeft()}</span>`;
+      weeklyRow = `<div class="gp-goal gp-goal--weekly ${wclaimed ? "gp-goal--done" : wclaimable ? "gp-goal--active" : ""}">
+        <div class="gp-goal__head"><span class="gp-goal__title">🏆 ${wDef.title}</span>${wright}</div>
+        <div class="gp-goal__desc">이번 주 표 ${shortNumber(wt)}장 처리</div>
+        <div class="gp-progress gp-goal__bar"><div class="gp-progress__fill" style="width:${(wdone ? 1 : wratio) * 100}%"></div></div>
+        <div class="gp-goal__foot"><span>${shortNumber(Math.min(wp, wt))} / ${shortNumber(wt)}</span><span class="gp-goal__reward">인장 +${wDef.seals}</span></div>
+      </div>`;
+    }
+
     // 로테이팅 일일 퀘스트(자정 리셋, 완료 시 '받기' 수동 클레임)
     const dailyRows = dailyQuestDefinitions.map((q) => {
       const p = gs.dailyQuestProgress(q.id);
@@ -308,6 +333,7 @@ export class DOMBottomPanel {
     // FIX P1: 📅 emoji replaced with unicode diamond to avoid Android WebView glyph fallback
     this.panel.innerHTML = `<div class="gp-paneltitle">운영 목표 · ${titleProgress}</div>
       <div class="gp-goallist-wrap"><div class="gp-stafflist gp-goallist">
+      ${weeklyRow ? `<div class="gp-goal__section">&#9733; 주간 한정 · 일요일 종료</div>${weeklyRow}` : ""}
       <div class="gp-goal__section">&#9670; 일일 퀘스트 · 자정 초기화</div>${dailyRows}
       <div class="gp-goal__section">운영 목표</div>${questRows}
       <div class="gp-goal__section">업적 · ${gotCount}/${achievementDefinitions.length}</div>${achRows}</div><div class="gp-goallist-fade" aria-hidden="true"></div></div>`;

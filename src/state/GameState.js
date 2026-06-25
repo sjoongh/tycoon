@@ -6,6 +6,7 @@ import { questDefinitions } from "../data/quests.js";
 import { staffDefinitions } from "../data/staff.js";
 import { achievementDefinitions } from "../data/achievements.js";
 import { dailyQuestDefinitions } from "../data/dailyQuests.js";
+import { weeklyGoalDefinitions } from "../data/weeklyGoals.js";
 
 const DAY_MS = 86400000;
 const DAILY_STREAK_CAP = 7;
@@ -83,6 +84,7 @@ const fallbackState = {
   quests: {},
   endless: 0,
   daily: { day: 0, streak: 0, qday: 0, clicks: 0, events: 0, upgrades: 0, claimed: {} },
+  weekly: { week: 0, baseVotes: 0, target: 0, claimed: false },
   eventReadyAt: 0,
   rushReadyAt: 0,
   rushEndsAt: 0,
@@ -137,6 +139,11 @@ export class GameState extends Phaser.Events.EventEmitter {
     data.daily.events = Math.max(0, Math.floor(Number(data.daily.events) || 0));
     data.daily.upgrades = Math.max(0, Math.floor(Number(data.daily.upgrades) || 0));
     data.daily.claimed = (data.daily.claimed && typeof data.daily.claimed === "object") ? data.daily.claimed : {};
+    data.weekly = { ...fallbackState.weekly, ...(parsed?.weekly || {}) };
+    data.weekly.week = Math.max(0, Math.floor(Number(data.weekly.week) || 0));
+    data.weekly.baseVotes = Math.max(0, Number(data.weekly.baseVotes) || 0);
+    data.weekly.target = Math.max(0, Number(data.weekly.target) || 0);
+    data.weekly.claimed = !!data.weekly.claimed;
 
     data.votes = Math.max(0, Number(data.votes) || 0);
     data.explain = Math.max(0, Number(data.explain) || 0);
@@ -641,6 +648,56 @@ export class GameState extends Phaser.Events.EventEmitter {
     this.emit("changed");
     this.save(false);
     return r;
+  }
+
+  // ----- 한정 시즌(주간) 목표 (date-seeded, 주차 변경 시 자동 교체) -----
+  _weekIndex() {
+    return Math.floor(this._todayIndex() / 7);
+  }
+  weeklyDef() {
+    return weeklyGoalDefinitions[this._weekIndex() % weeklyGoalDefinitions.length];
+  }
+  _ensureWeekly() {
+    const wk = this._weekIndex();
+    if (this.data.weekly.week !== wk) {
+      const def = weeklyGoalDefinitions[wk % weeklyGoalDefinitions.length];
+      this.data.weekly.week = wk;
+      this.data.weekly.baseVotes = this.data.stats.totalVotes;
+      // 목표량은 주 시작 시점의 기본 생산(버프 제외) × hours로 동적 산정
+      this.data.weekly.target = Math.max(def.minTarget, Math.round(this.cpsFor(this.data) * def.hours * 3600));
+      this.data.weekly.claimed = false;
+    }
+  }
+  weeklyProgress() {
+    this._ensureWeekly();
+    return Math.max(0, this.data.stats.totalVotes - this.data.weekly.baseVotes);
+  }
+  weeklyTarget() {
+    this._ensureWeekly();
+    return this.data.weekly.target;
+  }
+  weeklyDone() {
+    return this.weeklyProgress() >= this.weeklyTarget();
+  }
+  weeklyClaimed() {
+    this._ensureWeekly();
+    return this.data.weekly.claimed;
+  }
+  weeklyClaimable() {
+    return this.weeklyDone() && !this.weeklyClaimed();
+  }
+  weeklyDaysLeft() {
+    return Math.max(1, (this._weekIndex() + 1) * 7 - this._todayIndex());
+  }
+  claimWeekly() {
+    if (!this.weeklyClaimable()) return null;
+    const def = this.weeklyDef();
+    this.data.prestige.seals += def.seals || 0;
+    this.data.weekly.claimed = true;
+    this.emit("celebrate", { text: `🏆 ${def.title} 완료 · 인장 +${def.seals}` });
+    this.emit("changed");
+    this.save(false);
+    return { seals: def.seals };
   }
 
   checkQuests() {
