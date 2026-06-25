@@ -5,6 +5,7 @@ import { FacilityStationView } from "./FacilityStationView.js";
 import { WorkerManager } from "./WorkerManager.js";
 import { WorldEffects } from "./WorldEffects.js";
 import { DEPTH_BASE, stationDepth } from "./depth.js";
+import { shortNumber } from "../utils/format.js";
 
 export class WorldView {
   constructor(scene, gameState) {
@@ -40,6 +41,7 @@ export class WorldView {
     // 하단 DOM 패널은 pointer-events:auto로 자체 탭을 가로채므로, 캔버스에 도달한 탭만 처리한다
     this._onPointer = (pointer) => {
       gameState.processClick(pointer.x, pointer.y);
+      this._squishBallotbox();
     };
     scene.input.on("pointerdown", this._onPointer);
 
@@ -53,6 +55,12 @@ export class WorldView {
         const f = active[Math.floor(this.scene.time.now / 600) % active.length];
         const spot = worldMap.facilities[f.id]?.workSpots[0];
         if (spot) this.effects.deskPop(spot.x, spot.y);
+        // 패시브 수입 가시화: 가끔 시설 위로 +표 플로팅
+        this._incomeTick = (this._incomeTick || 0) + 1;
+        if (this._incomeTick % 2 === 0 && spot) {
+          const inc = this.gameState.cps();
+          if (inc > 0) this.effects.float({ text: `+${shortNumber(inc)}`, x: spot.x, y: spot.y - 16, color: "#7fb98a" });
+        }
       },
     });
   }
@@ -85,6 +93,25 @@ export class WorldView {
     (worldMap.decor || []).forEach((d) => {
       const img = this.scene.add.image(d.x, d.y, d.key).setOrigin(0.5, 1).setDepth(stationDepth(d.y));
       if (d.scale) img.setScale(d.scale);
+      if (d.key === "decor/ballotbox") {
+        this.ballotbox = img;
+        this._ballotboxScale = img.scaleX;
+      }
+    });
+  }
+
+  _squishBallotbox() {
+    if (!this.ballotbox) return;
+    const s = this._ballotboxScale;
+    this.scene.tweens.killTweensOf(this.ballotbox);
+    this.ballotbox.setScale(s);
+    this.scene.tweens.add({
+      targets: this.ballotbox,
+      scaleX: s * 1.1,
+      scaleY: s * 0.9,
+      duration: 90,
+      yoyo: true,
+      ease: "Quad.easeOut",
     });
   }
 

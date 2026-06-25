@@ -130,8 +130,8 @@
   "hotPaths": [
     {
       "path": "src/world/WorldView.js",
-      "accessCount": 20,
-      "lastAccessed": 1782324719499,
+      "accessCount": 25,
+      "lastAccessed": 1782374275763,
       "type": "file"
     },
     {
