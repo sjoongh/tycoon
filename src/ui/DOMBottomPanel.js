@@ -142,7 +142,7 @@ export class DOMBottomPanel {
       : `<button class="gp-btn gp-btn--upgrade gp-btn--disabled" data-action="upgradeFac">잠김</button>`;
     this.panel.innerHTML = `
       <div class="gp-card">
-        <div class="gp-card__icon" style="background-image:url('/art/${sel}-t1.png');background-color:${hex(f.color)}"></div>
+        <div class="gp-card__icon" style="background-image:url('/art/${sel}-t1.webp');background-color:${hex(f.color)}"></div>
         <div class="gp-card__body">
           <div class="gp-card__title">${f.name} Lv.${gs.level(sel)}</div>
           <div class="gp-card__sub">${unlocked ? `${shortNumber(cost)}표 · 해명 ${shortNumber(ex)}` : `${f.unlock}구역에서 해금`}</div>

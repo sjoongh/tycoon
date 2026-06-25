@@ -181,7 +181,7 @@
 .gp-hint--bottom { top: auto; bottom: 64px; }
 .gp-hint--bottom .gp-hint__txt { animation: gp-coach-bob 1.1s ease-in-out infinite; }
 @keyframes gp-coach-bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(4px); } }
-.gp-hint__hand { width: 66px; height: 66px; background: url('/art/tutorial-hand.png') center/contain no-repeat; animation: gpTap 1s ease-in-out infinite; }
+.gp-hint__hand { width: 66px; height: 66px; background: url('/art/tutorial-hand.webp') center/contain no-repeat; animation: gpTap 1s ease-in-out infinite; }
 .gp-hint__txt { font-family: "Black Han Sans", sans-serif; background: var(--gold); color: #4a2600; font-size: 14px; padding: 8px 16px; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
 .gp-toast { position: absolute; left: 50%; top: 120px; transform: translate(-50%, -14px); opacity: 0; pointer-events: none; font-family: "Black Han Sans", sans-serif; background: #1c1326; color: var(--gold); font-size: 15px; padding: 10px 20px; border-radius: 18px; box-shadow: 0 6px 18px rgba(0,0,0,0.5), inset 0 0 0 2px var(--gold); transition: all .3s cubic-bezier(.2,1.4,.4,1); white-space: nowrap; }
 .gp-toast--in { opacity: 1; transform: translate(-50%, 0); }
