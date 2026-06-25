@@ -10,15 +10,22 @@ import { DOMBottomPanel } from "./ui/DOMBottomPanel.js";
 import { DOMModalLayer } from "./ui/DOMModalLayer.js";
 import { GameState } from "./state/GameState.js";
 import { Sfx } from "./audio/sfx.js";
+import { Notifications } from "./notifications.js";
 
 const gameState = new GameState();
 const sfx = new Sfx(gameState);
+const notifications = new Notifications(gameState);
 
 if ("serviceWorker" in navigator && import.meta.env.PROD) {
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("/sw.js").catch(() => {});
   });
 }
+
+// 앱이 백그라운드/종료될 때 재방문 알림 예약(권한·Triggers 지원 시에만, 아니면 안전 무동작)
+const scheduleReengage = () => { notifications.schedule().catch(() => {}); };
+window.addEventListener("pagehide", scheduleReengage);
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") scheduleReengage(); });
 
 const config = {
   type: Phaser.AUTO,
@@ -50,6 +57,6 @@ document.getElementById("game").appendChild(uiLayer);
 game.events.once("ready", () => {
   new DOMHud(gameState).mount(uiLayer);
   new DOMBottomPanel(gameState).mount(uiLayer);
-  new DOMModalLayer(gameState).mount(uiLayer);
+  new DOMModalLayer(gameState, notifications).mount(uiLayer);
   sfx.mount();
 });

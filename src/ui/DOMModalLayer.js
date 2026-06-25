@@ -4,14 +4,15 @@ const MILESTONES = [5, 10, 25, 45];
 
 // 오프라인 보상 모달 + 마일스톤 연출 + 신규 온보딩 힌트
 export class DOMModalLayer {
-  constructor(gameState) {
+  constructor(gameState, notifications = null) {
     this.gameState = gameState;
+    this.notifications = notifications;
     this.root = document.createElement("div");
     this.root.className = "gp-modal-layer";
     this._hint = null;
     this._prevArea = gameState.data.stage.area;
     this._onUpgraded = (f) => this._checkMilestone(f);
-    this._onChanged = () => { this._maybeHint(); this._checkStage(); };
+    this._onChanged = () => { this._maybeHint(); this._checkStage(); this._maybeNotifPrompt(); };
     this._onPrestigeConfirm = () => this._confirmPrestige();
     this._onCelebrate = (p) => { this._toast(p.text); this._flash(); };
   }
@@ -180,6 +181,23 @@ export class DOMModalLayer {
 
   _clearHint() {
     if (this._hint) { this._hint.remove(); this._hint = null; }
+  }
+
+  // 첫 감사(프레스티지) 이후 한 번만 정중히 알림 권한 요청. 거부/미지원/이미물음 → 무동작.
+  _maybeNotifPrompt() {
+    const n = this.notifications;
+    if (!n || this._notifPromptShown) return;
+    if (!n.supported() || n.asked() || n.permission() !== "default") return;
+    if ((this.gameState.data.prestige?.runs || 0) < 1) return;
+    this._notifPromptShown = true;
+    this._openModal(`
+      <div class="gp-modal__badge">🔔</div>
+      <div class="gp-mtitle">알림을 켤까요?</div>
+      <div class="gp-msub">출석 보상·오프라인 정산이 준비되면 알려드려요. 언제든 끌 수 있어요.</div>
+      <div class="gp-confirm-row">
+        <button class="gp-btn gp-btn--disabled" data-close>나중에</button>
+        <button class="gp-btn gp-btn--gold" data-confirm>알림 켜기</button>
+      </div>`, () => { n.requestPermission().catch(() => {}); });
   }
 
   _openModal(html, onConfirm) {
