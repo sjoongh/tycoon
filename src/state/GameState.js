@@ -8,6 +8,8 @@ import { achievementDefinitions } from "../data/achievements.js";
 
 const DAY_MS = 86400000;
 const DAILY_STREAK_CAP = 7;
+const TRUST_CRISIS = 20; // 이 미만이면 불신 위기(생산 페널티)
+const TRUST_BONUS = 90; // 이 이상이면 신뢰 보너스(생산 서지)
 
 const SAVE_VERSION = 3;
 const OFFLINE_CAP_MS = 1000 * 60 * 60 * 8;
@@ -582,7 +584,21 @@ export class GameState extends Phaser.Events.EventEmitter {
 
   cpsFor(data) {
     const raw = facilities.reduce((sum, item) => sum + (data.facilities[item.id] || 0) * item.cps, 0);
-    return raw * (0.9 + data.trust / 230) * this.staffMultiplierFor(data) * this.prestigeMultiplierFor(data) * (1 + this.permanentEffectFor(data, "cpsPct"));
+    return raw * (0.9 + data.trust / 230) * this.trustModifier(data.trust) * this.staffMultiplierFor(data) * this.prestigeMultiplierFor(data) * (1 + this.permanentEffectFor(data, "cpsPct"));
+  }
+
+  // 불신 위기 / 신뢰 보너스: 20~90% 구간은 1.0(기존 밸런스 유지), 양 극단에서만 굽는다.
+  // 믿음 <20%: 생산 페널티(불신 위기), 믿음 >=90%: 생산 보너스(신뢰 서지).
+  trustModifier(trust) {
+    if (trust < TRUST_CRISIS) return 0.55 + (trust / TRUST_CRISIS) * 0.45; // 0% →0.55, 20% →1.0
+    if (trust >= TRUST_BONUS) return 1 + ((trust - TRUST_BONUS) / (100 - TRUST_BONUS)) * 0.25; // 90% →1.0, 100% →1.25
+    return 1;
+  }
+
+  trustState() {
+    if (this.data.trust < TRUST_CRISIS) return "crisis";
+    if (this.data.trust >= TRUST_BONUS) return "bonus";
+    return "normal";
   }
 
   staffMultiplierFor(data) {

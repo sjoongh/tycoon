@@ -33,6 +33,16 @@
 .gp-progress__fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--gold) 0%, #ff9f1a 100%); box-shadow: inset 0 1px 0 rgba(255,255,255,0.55); transition: width .3s ease-out; }
 .gp-stage { align-self: center; display: inline-block; background: rgba(20,12,28,0.7); border-radius: 20px; padding: 3px 12px; font-size: 11px; font-weight: 800; color: var(--gold-hi); box-shadow: inset 0 0 0 1px rgba(255,192,46,0.4); }
 
+/* 믿음 위기/보너스: 칩 강조 + 상태 배지 */
+.gp-chip--crisis { box-shadow: 0 3px 0 rgba(0,0,0,0.4), inset 0 0 0 2px #ff5a5a; animation: gp-crisis-pulse 1.1s ease-in-out infinite; }
+.gp-chip--crisis .gp-chip__val { color: #ff9a9a; }
+.gp-chip--bonus { box-shadow: 0 3px 0 rgba(0,0,0,0.4), inset 0 0 0 2px #4cd680; }
+.gp-chip--bonus .gp-chip__val { color: #8df0b0; }
+@keyframes gp-crisis-pulse { 0%,100% { box-shadow: 0 3px 0 rgba(0,0,0,0.4), inset 0 0 0 2px #ff5a5a; } 50% { box-shadow: 0 3px 0 rgba(0,0,0,0.4), inset 0 0 0 2px #ff5a5a, 0 0 10px rgba(255,90,90,0.6); } }
+.gp-truststate { align-self: center; display: inline-block; margin-top: 2px; border-radius: 20px; padding: 2px 12px; font-size: 11px; font-weight: 800; }
+.gp-truststate--crisis { background: rgba(120,20,20,0.9); color: #ffd0d0; box-shadow: inset 0 0 0 1px rgba(255,90,90,0.6); }
+.gp-truststate--bonus { background: rgba(20,90,50,0.9); color: #d6ffe6; box-shadow: inset 0 0 0 1px rgba(76,214,128,0.6); }
+
 /* FIX #1: mute button lives on .gp-ui root, not inside .gp-hud */
 .gp-mute { position: absolute; top: 10px; right: 12px; pointer-events: auto; width: 36px; height: 36px; border: none; border-radius: 10px; background: rgba(20,12,28,0.7); box-shadow: inset 0 0 0 1px rgba(255,192,46,0.4); font-size: 16px; cursor: pointer; z-index: 10; display: flex; align-items: center; justify-content: center; }
 

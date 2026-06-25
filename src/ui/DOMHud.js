@@ -12,7 +12,8 @@ export class DOMHud {
         <div class="gp-chip gp-chip--trust"><span class="gp-chip__ic" style="background-image:url('/art/icons/trust.png')"></span><span><div class="gp-chip__label">믿음</div><div class="gp-chip__val" data-k="trust">0%</div></span></div>
       </div>
       <div class="gp-progress"><div class="gp-progress__fill" data-k="progress"></div></div>
-      <div class="gp-stage" data-k="stage"></div>`;
+      <div class="gp-stage" data-k="stage"></div>
+      <div class="gp-truststate" data-k="truststate" hidden></div>`;
     this._refresh = () => this.refresh();
     // FIX #1: mute button created separately so it mounts on .gp-ui root (above HUD),
     // preventing overlap with the 믿음 chip on the right side.
@@ -42,6 +43,24 @@ export class DOMHud {
     this.root.querySelector('[data-k="progress"]').style.width = `${ratio * 100}%`;
     const cps = this.gameState.cps ? this.gameState.cps() : 0;
     this.root.querySelector('[data-k="stage"]').textContent = `${d.stage.area}구역 · D-${d.days} · 초당 ${cps.toFixed(1)}표`;
+
+    // 믿음 위기/보너스 상태를 믿음 칩과 상태 배지로 노출(테마 시그니처)
+    const state = this.gameState.trustState ? this.gameState.trustState() : "normal";
+    const chip = this.root.querySelector(".gp-chip--trust");
+    chip.classList.toggle("gp-chip--crisis", state === "crisis");
+    chip.classList.toggle("gp-chip--bonus", state === "bonus");
+    const badge = this.root.querySelector('[data-k="truststate"]');
+    if (state === "crisis") {
+      badge.hidden = false;
+      badge.className = "gp-truststate gp-truststate--crisis";
+      badge.textContent = "⚠ 불신 위기 — 생산 감소";
+    } else if (state === "bonus") {
+      badge.hidden = false;
+      badge.className = "gp-truststate gp-truststate--bonus";
+      badge.textContent = "✨ 신뢰 보너스 — 생산 증가";
+    } else {
+      badge.hidden = true;
+    }
   }
 
   destroy() {
