@@ -59,6 +59,15 @@ export class DOMBottomPanel {
   }
 
   mount(parent) {
+    // FIX #7: world scene ambient depth — scanlines + bottom vignette at zero asset cost
+    this._scanlines = document.createElement("div");
+    this._scanlines.className = "gp-world-scanlines";
+    parent.appendChild(this._scanlines);
+
+    this._vignette = document.createElement("div");
+    this._vignette.className = "gp-world-vignette gp-world-vignette--bottom";
+    parent.appendChild(this._vignette);
+
     parent.appendChild(this.root);
     this.gameState.on("changed", this._refresh);
     this.refresh();
@@ -66,6 +75,9 @@ export class DOMBottomPanel {
 
   destroy() {
     this.gameState.off("changed", this._refresh);
+    // Clean up world overlays injected in mount() to avoid orphaned DOM on prestige reset
+    this._scanlines?.remove();
+    this._vignette?.remove();
     this.root.remove();
   }
 
@@ -95,7 +107,15 @@ export class DOMBottomPanel {
 
   _pickEvent() {
     const avail = officeEvents.filter((ev) => this.gameState.data.stage.area >= (ev.minStage || 1));
-    return avail.length ? avail[Math.floor(Math.random() * avail.length)] : null;
+    if (!avail.length) return null;
+    // 데이터에 정의된 weight를 반영한 가중 추첨(희귀 사건이 흔한 사건과 동일 확률로 뜨던 버그 수정)
+    const total = avail.reduce((s, ev) => s + (ev.weight || 1), 0);
+    let roll = Math.random() * total;
+    for (const ev of avail) {
+      roll -= ev.weight || 1;
+      if (roll < 0) return ev;
+    }
+    return avail[avail.length - 1];
   }
 
   refresh() {
@@ -122,7 +142,10 @@ export class DOMBottomPanel {
     const ex = gs.explainCost(sel);
     const canBuy = unlocked && gs.data.votes >= cost && gs.data.explain >= ex;
     const stageDone = gs.data.stage.progress >= gs.data.stage.target;
-    const costLabel = unlocked ? `업그레이드 (${shortNumber(cost)})` : "잠김";
+    // FIX #4: two-line upgrade button — verb on top, cost below — prevents truncation at any number length
+    const upgradeBtn = unlocked
+      ? `<button class="gp-btn gp-btn--gold gp-btn--upgrade ${canBuy ? "" : "gp-btn--disabled"}" data-action="upgradeFac">업그레이드<small>${shortNumber(cost)}표</small></button>`
+      : `<button class="gp-btn gp-btn--upgrade gp-btn--disabled" data-action="upgradeFac">잠김</button>`;
     this.panel.innerHTML = `
       <div class="gp-card">
         <div class="gp-card__icon" style="background-image:url('/art/${sel}-t1.png');background-color:${hex(f.color)}"></div>
@@ -131,7 +154,7 @@ export class DOMBottomPanel {
           <div class="gp-card__sub">${unlocked ? `${shortNumber(cost)}표 · 해명 ${shortNumber(ex)}` : `${f.unlock}구역에서 해금`}</div>
           ${unlocked ? `<div class="gp-card__gain">▲ 업그레이드 시 초당 +${f.cps}표</div>` : ""}
         </div>
-        <button class="gp-btn gp-btn--gold ${canBuy ? "" : "gp-btn--disabled"}" data-action="upgradeFac">${costLabel}</button>
+        ${upgradeBtn}
       </div>
       <div class="gp-facsel">${facilities.map((ff) => {
         const u = gs.isUnlocked(ff.id);
@@ -151,13 +174,14 @@ export class DOMBottomPanel {
       const cost = gs.staffCost(s.id);
       const ex = gs.staffExplainCost(s.id);
       const can = gs.data.votes >= cost && gs.data.explain >= ex;
-      const skill = gs.staffSkillActive(s.id) ? s.skill.name : `스킬 Lv.${s.skill.unlockLevel}`;
+      const skill = s.skill ? (gs.staffSkillActive(s.id) ? s.skill.name : `스킬 Lv.${s.skill.unlockLevel}`) : "";
       return `<div class="gp-staff" style="--rarity-color:${hex(rarityColors[s.rarity] || 0xd8c4a0)}">
         <div class="gp-staff__dot" style="background:${hex(s.color)}"></div>
         <div class="gp-staff__body"><div class="gp-staff__name">${s.name}<span class="gp-staff__rar">${s.rarityName}</span></div><div class="gp-staff__sub">Lv.${lv} · ${skill}</div></div>
         <button class="gp-btn gp-btn--sm ${can ? "" : "gp-btn--disabled"}" data-action="hire" data-id="${s.id}">${shortNumber(cost)}표</button></div>`;
     }).join("");
-    this.panel.innerHTML = `<div class="gp-paneltitle">직원 채용 · 생산 x${gs.staffMultiplierFor(gs.data).toFixed(2)}</div><div class="gp-stafflist">${cards}</div>`;
+    // Scroll fade is a real div (not ::after) for reliable WebView support
+    this.panel.innerHTML = `<div class="gp-paneltitle">직원 채용 · 생산 x${gs.staffMultiplierFor(gs.data).toFixed(2)}</div><div class="gp-stafflist-wrap"><div class="gp-stafflist">${cards}</div><div class="gp-stafflist-fade" aria-hidden="true"></div></div>`;
   }
 
   _renderEvents() {
@@ -180,21 +204,25 @@ export class DOMBottomPanel {
     const active = gs.nextQuest();
     const doneCount = questDefinitions.filter((q) => gs.data.quests[q.id]).length;
 
-    const questRows = questDefinitions.map((q) => {
-      const done = !!gs.data.quests[q.id];
-      const isActive = active && q.id === active.id;
+    const goalRow = (q, state) => {
+      // state: "done" | "active" | "locked"
       const p = gs.questProgress(q);
       const ratio = Math.max(0, Math.min(1, p / q.target));
-      // 다음 목표 예고: 아직 활성도 완료도 아닌 항목은 흐리게.
-      const cls = done ? "gp-goal--done" : isActive ? "gp-goal--active" : "gp-goal--locked";
-      const badge = done ? "✓" : isActive ? "진행" : "예정";
+      const cls = state === "done" ? "gp-goal--done" : state === "active" ? "gp-goal--active" : "gp-goal--locked";
+      const badge = state === "done" ? "✓" : state === "active" ? "진행" : "예정";
       return `<div class="gp-goal ${cls}">
         <div class="gp-goal__head"><span class="gp-goal__title">${q.title}</span><span class="gp-goal__badge">${badge}</span></div>
         <div class="gp-goal__desc">${q.desc}</div>
-        <div class="gp-progress gp-goal__bar"><div class="gp-progress__fill" style="width:${(done ? 1 : ratio) * 100}%"></div></div>
+        <div class="gp-progress gp-goal__bar"><div class="gp-progress__fill" style="width:${(state === "done" ? 1 : ratio) * 100}%"></div></div>
         <div class="gp-goal__foot"><span>${shortNumber(Math.min(p, q.target))} / ${shortNumber(q.target)}</span><span class="gp-goal__reward">${rewardLabel(q.reward)}</span></div>
       </div>`;
-    }).join("");
+    };
+
+    let questRows = questDefinitions.map((q) =>
+      goalRow(q, gs.data.quests[q.id] ? "done" : (active && q.id === active.id ? "active" : "locked"))
+    ).join("");
+    // 정의된 목표를 모두 완료하면 끝없는 누적-표 목표를 현재 진행 목표로 노출
+    if (active && active.generated) questRows += goalRow(active, "active");
 
     const achRows = ACHIEVEMENTS.map((a) => {
       const got = !!gs.data.achievements[a.id];
@@ -207,7 +235,10 @@ export class DOMBottomPanel {
     }).join("");
     const gotCount = ACHIEVEMENTS.filter((a) => gs.data.achievements[a.id]).length;
 
-    this.panel.innerHTML = `<div class="gp-paneltitle">운영 목표 · ${doneCount}/${questDefinitions.length} 완료</div>
+    const titleProgress = active && active.generated
+      ? `정규 완료 · 끝없는 목표 ${gs.data.endless + 1}단계`
+      : `${doneCount}/${questDefinitions.length} 완료`;
+    this.panel.innerHTML = `<div class="gp-paneltitle">운영 목표 · ${titleProgress}</div>
       <div class="gp-stafflist gp-goallist">${questRows}
       <div class="gp-goal__section">업적 · ${gotCount}/${ACHIEVEMENTS.length}</div>${achRows}</div>`;
   }
@@ -216,15 +247,16 @@ export class DOMBottomPanel {
     const gs = this.gameState;
     const preview = gs.prestigePreview();
     const can = preview > 0;
+    // FIX #8: prestige upgrades use .gp-seal (gem-blue) not .gp-fac (gold) — distinct economy, distinct look
     const ups = prestigeUpgrades.map((u) => {
       const lv = gs.prestigeUpgradeLevel(u.id);
       const cost = gs.prestigeUpgradeCost(u.id);
       const cb = gs.data.prestige.seals >= cost && lv < u.maxLevel;
-      return `<button class="gp-fac ${cb ? "" : "gp-fac--locked"}" data-action="buyPrestige" data-id="${u.id}"><span class="gp-fac__role">${u.shortName}</span><span class="gp-fac__lv">Lv.${lv} · ${cost}</span></button>`;
+      return `<button class="gp-seal ${cb ? "" : "gp-seal--locked"}" data-action="buyPrestige" data-id="${u.id}"><span class="gp-seal__role">${u.shortName}</span><span class="gp-seal__lv">Lv.${lv} · ${cost}</span></button>`;
     }).join("");
     const fullMult = gs.prestigeMultiplierFor(gs.data) * (1 + (gs.permanentEffectFor ? gs.permanentEffectFor(gs.data, "cpsPct") : 0));
     this.panel.innerHTML = `<div class="gp-paneltitle">감사 재정비 · 인장 ${gs.data.prestige.seals} · 영구 x${fullMult.toFixed(2)}</div>
       <div class="gp-facsel">${ups}</div>
-      <div class="gp-region"><span>예상 획득 +${preview}</span><button class="gp-btn gp-btn--sm ${can ? "" : "gp-btn--disabled"}" data-action="prestigeReset">감사실행</button></div>`;
+      <div class="gp-region"><span>예상 획득 +${preview}</span><button class="gp-btn gp-btn--sm gp-btn--danger ${can ? "" : "gp-btn--disabled"}" data-action="prestigeReset">감사실행</button></div>`;
   }
 }

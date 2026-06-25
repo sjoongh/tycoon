@@ -64,6 +64,7 @@ const fallbackState = {
   },
   achievements: {},
   quests: {},
+  endless: 0,
   log: ["개표국 개국"],
 };
 
@@ -109,6 +110,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     data.explain = Math.max(0, Number(data.explain) || 0);
     data.trust = Phaser.Math.Clamp(Number(data.trust) || fallbackState.trust, 0, 100);
     data.days = Math.max(0, Number(data.days) || fallbackState.days);
+    data.endless = Math.max(0, Math.floor(Number(data.endless) || 0));
     data.stage.area = Math.max(1, Number(data.stage.area) || 1);
     data.stage.target = this.stageTarget(data.stage.area);
     data.stage.progress = Phaser.Math.Clamp(Number(data.stage.progress) || 0, 0, data.stage.target);
@@ -138,6 +140,8 @@ export class GameState extends Phaser.Events.EventEmitter {
   bindLifecycleSave() {
     if (typeof window === "undefined") return;
     window.addEventListener("pagehide", () => this.save(false));
+    // 모바일 OS가 백그라운드 탭을 정지/종료할 때 — pagehide보다 신뢰도 높은 마지막 저장 기회
+    document.addEventListener("freeze", () => this.save(false));
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "hidden") this.save(false);
     });
@@ -375,6 +379,7 @@ export class GameState extends Phaser.Events.EventEmitter {
         upgrades: this.data.prestige.upgrades,
       },
       achievements: this.data.achievements,
+      tutorial: this.data.tutorial, // 베테랑이 감사(프레스티지) 후 신규 오프닝/튜토리얼을 다시 보지 않도록 유지
     };
 
     this.data = this.normalize({
@@ -436,19 +441,51 @@ export class GameState extends Phaser.Events.EventEmitter {
   }
 
   checkQuests() {
-    questDefinitions.forEach((quest) => {
-      if (this.data.quests[quest.id]) return;
-      if (this.questProgress(quest) < quest.target) return;
-      this.data.quests[quest.id] = true;
+    const grant = (quest) => {
       this.data.votes += quest.reward.votes || 0;
       this.data.explain += quest.reward.explain || 0;
       this.data.trust = Phaser.Math.Clamp(this.data.trust + (quest.reward.trust || 0), 0, 100);
       this.emit("float", { text: `목표완료 ${quest.title}`, x: 195, y: 244, color: "#bba2ff" });
+    };
+    questDefinitions.forEach((quest) => {
+      if (this.data.quests[quest.id]) return;
+      if (this.questProgress(quest) < quest.target) return;
+      this.data.quests[quest.id] = true;
+      grant(quest);
     });
+    // 정의된 목표를 모두 끝낸 뒤로는 끝없는 누적-표 목표가 계속 이어진다(후반 목표 고갈 방지)
+    if (this.allDefinedQuestsDone()) {
+      let guard = 0;
+      let eq = this.endlessQuest(this.data.endless);
+      while (this.questProgress(eq) >= eq.target && guard++ < 50) {
+        grant(eq);
+        this.data.endless += 1;
+        eq = this.endlessQuest(this.data.endless);
+      }
+    }
+  }
+
+  allDefinedQuestsDone() {
+    return questDefinitions.every((quest) => this.data.quests[quest.id]);
+  }
+
+  // tier 0,1,2…에 대해 누적 표 목표가 약 2.4배씩 증가하는 생성형 무한 목표
+  endlessQuest(tier) {
+    const t = Math.max(0, Math.floor(tier || 0));
+    const target = Math.round(50000 * 2.4 ** t);
+    return {
+      id: `endless-${t}`,
+      generated: true,
+      title: `끝없는 개표 ${t + 1}`,
+      desc: `누적 ${target.toLocaleString("en-US")}표를 처리하세요.`,
+      metric: "totalVotes",
+      target,
+      reward: { explain: 40 * (t + 1), votes: Math.round(target * 0.12), trust: 1 },
+    };
   }
 
   nextQuest() {
-    return questDefinitions.find((quest) => !this.data.quests[quest.id]) || null;
+    return questDefinitions.find((quest) => !this.data.quests[quest.id]) || this.endlessQuest(this.data.endless);
   }
 
   questProgress(quest) {

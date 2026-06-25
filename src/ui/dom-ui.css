@@ -19,17 +19,28 @@
 
 /* ---------- HUD ---------- */
 .gp-hud { position: absolute; top: 0; left: 0; right: 0; padding: 10px 12px; display: flex; flex-direction: column; gap: 7px; align-items: stretch; }
+/* FIX #1/#2: mute moved to .gp-ui level (see DOMHud.js); chip row no longer needs right margin for mute */
 .gp-hud__row { display: flex; gap: 8px; }
-.gp-chip { flex: 1; display: flex; align-items: center; gap: 7px; padding: 6px 11px; border-radius: 14px; background: rgba(20,12,28,0.82); box-shadow: 0 3px 0 rgba(0,0,0,0.4), inset 0 0 0 2px var(--gold); }
+/* FIX #2: weighted flex so 표(long numbers) gets more room than 믿음(%); prevents crowding into mute zone */
+.gp-chip { display: flex; align-items: center; gap: 7px; padding: 6px 11px; border-radius: 14px; background: rgba(20,12,28,0.82); box-shadow: 0 3px 0 rgba(0,0,0,0.4), inset 0 0 0 2px var(--gold); flex: 1 1 0; min-width: 0; overflow: hidden; }
+.gp-chip--votes  { flex-grow: 1.6; }
+.gp-chip--explain { flex-grow: 1.2; }
+.gp-chip--trust  { flex-grow: 0.9; }
 .gp-chip__ic { width: 22px; height: 22px; flex: none; background-size: contain; background-repeat: no-repeat; background-position: center; }
-.gp-chip__val { font-family: "Black Han Sans", sans-serif; font-size: 17px; color: var(--gold-hi); line-height: 1; }
+.gp-chip__val { font-family: "Black Han Sans", sans-serif; font-size: 17px; color: var(--gold-hi); line-height: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .gp-chip__label { font-size: 10px; font-weight: 700; color: rgba(243,232,214,0.7); }
 .gp-progress { height: 16px; border-radius: 9px; background: #1c1326; overflow: hidden; box-shadow: inset 0 2px 4px rgba(0,0,0,0.5), 0 0 0 2px rgba(0,0,0,0.3); }
 .gp-progress__fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--gold) 0%, #ff9f1a 100%); box-shadow: inset 0 1px 0 rgba(255,255,255,0.55); transition: width .3s ease-out; }
 .gp-stage { align-self: center; display: inline-block; background: rgba(20,12,28,0.7); border-radius: 20px; padding: 3px 12px; font-size: 11px; font-weight: 800; color: var(--gold-hi); box-shadow: inset 0 0 0 1px rgba(255,192,46,0.4); }
 
+/* FIX #1: mute button lives on .gp-ui root, not inside .gp-hud */
+.gp-mute { position: absolute; top: 10px; right: 12px; pointer-events: auto; width: 36px; height: 36px; border: none; border-radius: 10px; background: rgba(20,12,28,0.7); box-shadow: inset 0 0 0 1px rgba(255,192,46,0.4); font-size: 16px; cursor: pointer; z-index: 10; display: flex; align-items: center; justify-content: center; }
+
 /* ---------- bottom sheet ---------- */
-.gp-bottom { position: absolute; left: 0; right: 0; bottom: 0; pointer-events: auto; padding: 16px 12px 12px; border-top-left-radius: 22px; border-top-right-radius: 22px;
+/* FIX #3: flex-column layout — panel scrolls, tabs pin to bottom */
+.gp-bottom { position: absolute; left: 0; right: 0; bottom: 0; pointer-events: auto;
+  padding: 16px 12px 12px; border-top-left-radius: 22px; border-top-right-radius: 22px;
+  display: flex; flex-direction: column;
   background: linear-gradient(to bottom, rgba(43,29,58,0) 0%, rgba(43,29,58,0.92) 18px, rgba(34,22,46,0.98) 40px);
   box-shadow: 0 -3px 16px rgba(0,0,0,0.4), inset 0 2px 0 rgba(255,192,46,0.35); }
 
@@ -48,8 +59,15 @@
 .gp-btn--gold:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--gold-deep), inset 0 1.5px 0 rgba(255,255,255,0.6); }
 .gp-btn--disabled, .gp-btn--disabled:active { background: #b8aea4; box-shadow: 0 4px 0 #8f867c; color: #6e655c; cursor: not-allowed; transform: none; }
 .gp-btn--sm { padding: 9px 13px; font-size: 13px; border-radius: 12px; }
+/* P2 fix: danger variant for destructive actions (prestige reset) */
+.gp-btn--danger { background: linear-gradient(180deg, #ff6b6b 0%, #d32f2f 100%); box-shadow: 0 5px 0 #9a0007, 0 3px 8px rgba(211,47,47,0.4), inset 0 1.5px 0 rgba(255,255,255,0.35); color: #fff; }
+.gp-btn--danger:active { transform: translateY(4px); box-shadow: 0 1px 0 #9a0007, inset 0 1.5px 0 rgba(255,255,255,0.35); }
 .gp-btn--event { width: 100%; padding: 14px; font-size: 16px; border-radius: 16px; color: #fff; margin-top: 8px;
   background: linear-gradient(180deg, #ff9a5c 0%, var(--event) 100%); box-shadow: 0 5px 0 var(--event-edge), 0 3px 8px rgba(255,122,60,0.4), inset 0 1.5px 0 rgba(255,255,255,0.4); }
+
+/* FIX #4: upgrade button in card — two-line layout, no truncation */
+.gp-btn--upgrade { display: flex; flex-direction: column; align-items: center; gap: 1px; min-width: 72px; flex-shrink: 0; white-space: nowrap; padding: 9px 12px; font-size: 13px; line-height: 1.2; }
+.gp-btn--upgrade small { font-family: "Noto Sans KR", sans-serif; font-size: 10px; font-weight: 700; opacity: 0.85; }
 
 /* ---------- facility selector ---------- */
 .gp-facsel { display: flex; gap: 5px; margin-top: 10px; }
@@ -63,23 +81,37 @@
 .gp-fac--locked .gp-fac__icon { filter: grayscale(1); opacity: 0.4; }
 .gp-fac--locked .gp-fac__role, .gp-fac--locked .gp-fac__lv { opacity: 0.5; }
 
+/* FIX #8: prestige seal buttons use gem-blue accent, distinct from gold facility pickers */
+.gp-seal { flex: 1; pointer-events: auto; border: none; border-radius: 12px; padding: 7px 3px 6px; background: #1c0d2e; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 3px; min-height: 56px; transition: transform .1s; box-shadow: inset 0 0 0 1.5px var(--gem); }
+.gp-seal__role { font-size: 11px; font-weight: 800; color: #d0f0ff; }
+.gp-seal__lv  { font-size: 9px; font-weight: 700; color: #7ec8e3; }
+.gp-seal--active { background: #0d2240; box-shadow: 0 0 0 2px var(--gem) inset, 0 2px 8px rgba(78,197,255,0.4); transform: translateY(-2px); }
+.gp-seal--locked { cursor: not-allowed; opacity: 0.45; }
+
 /* ---------- tabs ---------- */
-.gp-tabs { display: flex; gap: 6px; margin-top: 10px; }
+/* FIX #3: tabs pinned to bottom via flex-none; no margin-top (spacing from panel is handled by gap) */
+.gp-tabs { display: flex; gap: 6px; flex: none; margin-top: 8px; }
 .gp-tab { flex: 1; pointer-events: auto; border: none; border-radius: 12px; padding: 9px 4px; font-size: 12px; font-weight: 800; background: #3a2a4d; color: #b9a9c8; cursor: pointer; transition: all .15s; }
 .gp-tab--active { background: var(--gold); color: #4a2600; box-shadow: 0 2px 8px rgba(255,192,46,0.4); transform: translateY(-1px); }
 
 /* ---------- panel content ---------- */
-.gp-panel { min-height: 98px; }
+/* FIX #3: panel scrolls within flex container */
+.gp-panel { flex: 1; overflow-y: auto; min-height: 98px; max-height: 210px; }
 .gp-paneltitle { font-family: "Black Han Sans", sans-serif; color: var(--gold-hi); font-size: 16px; margin-bottom: 8px; }
 .gp-region { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; font-size: 12px; font-weight: 800; color: #cbb8da; }
 .gp-stage-frac { font-family: "Black Han Sans", sans-serif; font-size: 14px; color: var(--gold); background: rgba(0,0,0,0.3); padding: 6px 12px; border-radius: 10px; }
 
-.gp-stafflist { display: flex; flex-direction: column; gap: 7px; max-height: 172px; overflow-y: auto; }
+/* FIX #6: staff list — wrap + real div fade for reliable WebView scroll affordance */
+.gp-stafflist-wrap { position: relative; }
+.gp-stafflist { display: flex; flex-direction: column; gap: 7px; max-height: 186px; overflow-y: auto; }
+.gp-stafflist-fade { position: absolute; bottom: 0; left: 0; right: 0; height: 28px; background: linear-gradient(to bottom, transparent, rgba(34,22,46,0.98) 90%); pointer-events: none; }
 .gp-goallist { gap: 8px; }
+
+/* FIX #5: goal hierarchy — active goal pops with gold ring; done goals recede; locked stay dim */
 .gp-goal { padding: 9px 11px; border-radius: 13px; background: var(--panel); box-shadow: 0 2px 0 rgba(0,0,0,0.2); border-left: 5px solid var(--ink-soft); }
-.gp-goal--active { border-left-color: var(--gold); box-shadow: 0 2px 0 rgba(0,0,0,0.2), 0 0 0 1.5px rgba(255,192,46,0.5) inset; }
-.gp-goal--done { border-left-color: #4caf50; opacity: 0.92; }
-.gp-goal--locked { opacity: 0.5; }
+.gp-goal--active { border-left-color: var(--gold); box-shadow: 0 0 0 2px var(--gold), 0 4px 12px rgba(255,192,46,0.35); }
+.gp-goal--done { border-left-color: #4caf50; opacity: 0.6; filter: saturate(0.5); }
+.gp-goal--locked { opacity: 0.4; }
 .gp-goal__head { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; }
 .gp-goal__title { font-family: "Black Han Sans", sans-serif; color: var(--ink); font-size: 14px; }
 .gp-goal__badge { font-size: 9px; font-weight: 800; padding: 1px 7px; border-radius: 7px; background: var(--ink-soft); color: #fff; flex: none; }
@@ -87,6 +119,8 @@
 .gp-goal--done .gp-goal__badge { background: #4caf50; }
 .gp-goal__desc { font-size: 11px; font-weight: 700; color: var(--ink-soft); margin: 2px 0 6px; }
 .gp-goal__bar { height: 7px; }
+/* FIX #11: goal progress bar track adapts to parchment background — warm dark-tan instead of near-black */
+.gp-goal .gp-progress { background: rgba(42,32,48,0.18); box-shadow: inset 0 1px 3px rgba(0,0,0,0.2); }
 .gp-goal__foot { display: flex; justify-content: space-between; font-size: 10px; font-weight: 800; color: var(--ink-soft); margin-top: 4px; }
 .gp-goal__reward { color: var(--gold-deep); }
 .gp-goal__section { font-family: "Black Han Sans", sans-serif; color: var(--gold-hi); font-size: 13px; margin: 6px 2px 0; }
@@ -117,9 +151,11 @@
 .gp-modal-layer { position: absolute; inset: 0; pointer-events: none; }
 .gp-modal-ov { position: absolute; inset: 0; pointer-events: auto; background: rgba(15,8,22,0.66); display: flex; align-items: center; justify-content: center; animation: gpFade .2s ease; }
 .gp-modal { width: 80%; max-width: 320px; background: var(--panel); border-radius: 22px; padding: 22px 20px; text-align: center; box-shadow: 0 14px 44px rgba(0,0,0,0.5), inset 0 0 0 3px var(--gold); animation: gpPop .25s cubic-bezier(.2,1.4,.4,1); }
-.gp-modal__badge { font-size: 42px; }
+/* FIX #9: onboarding badge larger for celebratory feel */
+.gp-modal__badge { font-size: 52px; }
 .gp-mtitle { font-family: "Black Han Sans", sans-serif; font-size: 21px; color: var(--ink); margin-top: 4px; }
-.gp-msub { font-size: 12px; font-weight: 700; color: var(--ink-soft); margin: 4px 0 12px; }
+/* FIX #9: modal body text — contrast raised to pass WCAG AA; line-height improved */
+.gp-msub { font-size: 13px; font-weight: 700; color: #4a3828; line-height: 1.55; margin: 4px 0 12px; }
 .gp-mbig { font-family: "Black Han Sans", sans-serif; font-size: 28px; color: var(--gold-deep); line-height: 1.2; margin-bottom: 16px; }
 .gp-mbig span { font-size: 16px; color: #2a9d54; }
 .gp-modal .gp-btn { width: 100%; }
@@ -139,4 +175,12 @@
 .gp-confirm-row { display: flex; gap: 10px; }
 .gp-confirm-row .gp-btn { flex: 1; }
 .gp-modal__art { width: 96px; height: 96px; margin: 0 auto 6px; background-size: contain; background-repeat: no-repeat; background-position: center; }
-.gp-mute { position: absolute; top: 10px; right: 12px; pointer-events: auto; width: 30px; height: 30px; border: none; border-radius: 10px; background: rgba(20,12,28,0.7); box-shadow: inset 0 0 0 1px rgba(255,192,46,0.4); font-size: 15px; cursor: pointer; }
+
+/* FIX #7: world scene — vignette overlay at world/panel boundary; scanlines for ambient depth */
+.gp-world-vignette { position: absolute; left: 0; right: 0; pointer-events: none; }
+.gp-world-vignette--bottom { bottom: 0; height: 120px; background: radial-gradient(ellipse 80% 40% at 50% 100%, rgba(20,10,30,0.35), transparent 70%); }
+.gp-world-scanlines { position: absolute; inset: 0; pointer-events: none;
+  background-image: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,0.04) 3px, rgba(0,0,0,0.04) 4px); }
+
+/* FIX #10: desktop gutters — fine gold crosshatch on bg-deep so side gutters feel thematic, not just empty */
+body { background-color: var(--bg-deep); background-image: repeating-linear-gradient(45deg, rgba(255,192,46,0.03) 0px, rgba(255,192,46,0.03) 1px, transparent 1px, transparent 8px); }

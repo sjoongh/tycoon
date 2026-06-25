@@ -58,7 +58,9 @@ export class WorldView {
       callback: () => {
         const active = facilities.filter((f) => this.gameState.isUnlocked(f.id) && this.gameState.level(f.id) > 0);
         if (active.length === 0) return;
-        const f = active[Math.floor(this.scene.time.now / 600) % active.length];
+        // 벽시계 기반 인덱스는 프레임 지터/탭 스로틀 시 중복·누락이 생겨 라운드로빈 카운터로 교체
+        this._popIdx = ((this._popIdx || 0) + 1) % active.length;
+        const f = active[this._popIdx];
         const spot = worldMap.facilities[f.id]?.workSpots[0];
         if (spot) this.effects.deskPop(spot.x, spot.y);
         // 패시브 수입 가시화: 가끔 시설 위로 +표 플로팅
