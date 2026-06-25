@@ -20,7 +20,8 @@
 /* ---------- HUD ---------- */
 .gp-hud { position: absolute; top: 0; left: 0; right: 0; padding: 10px 12px; display: flex; flex-direction: column; gap: 7px; align-items: stretch; }
 /* FIX #1/#2: mute moved to .gp-ui level (see DOMHud.js); chip row no longer needs right margin for mute */
-.gp-hud__row { display: flex; gap: 8px; }
+/* 우측 상단 토글(mute/bell)이 칩과 안 겹치도록 칩 행 우측 공간 예약 */
+.gp-hud__row { display: flex; gap: 8px; padding-right: 84px; }
 /* FIX #2: weighted flex so 표(long numbers) gets more room than 믿음(%); prevents crowding into mute zone */
 .gp-chip { display: flex; align-items: center; gap: 7px; padding: 6px 11px; border-radius: 14px; background: rgba(20,12,28,0.82); box-shadow: 0 3px 0 rgba(0,0,0,0.4), inset 0 0 0 2px var(--gold); flex: 1 1 0; min-width: 0; overflow: hidden; }
 .gp-chip--votes  { flex-grow: 1.6; }
@@ -48,7 +49,9 @@
 
 /* FIX #1: mute button lives on .gp-ui root, not inside .gp-hud */
 /* FIX P0: shifted right so it doesn't ghost behind the trust chip (was right:12px, now right:54px) */
-.gp-mute { position: absolute; top: 10px; right: 54px; pointer-events: auto; width: 36px; height: 36px; border: none; border-radius: 10px; background: rgba(20,12,28,0.7); box-shadow: inset 0 0 0 1px rgba(255,192,46,0.4); font-size: 16px; cursor: pointer; z-index: 10; display: flex; align-items: center; justify-content: center; }
+.gp-mute { position: absolute; top: 10px; right: 8px; pointer-events: auto; width: 36px; height: 36px; border: none; border-radius: 10px; background: rgba(20,12,28,0.7); box-shadow: inset 0 0 0 1px rgba(255,192,46,0.4); font-size: 16px; cursor: pointer; z-index: 10; display: flex; align-items: center; justify-content: center; }
+/* 알림 토글 벨 — mute 왼쪽(권한 허용 시에만 표시) */
+.gp-bell { position: absolute; top: 10px; right: 48px; pointer-events: auto; width: 36px; height: 36px; border: none; border-radius: 10px; background: rgba(20,12,28,0.7); box-shadow: inset 0 0 0 1px rgba(255,192,46,0.4); font-size: 16px; cursor: pointer; z-index: 10; display: none; align-items: center; justify-content: center; }
 
 /* 긴급 개표(러시) FAB — 바텀시트 위 우측에 떠 있는 액티브 부스트 버튼 */
 /* FIX P0+P1: raised to bottom:310px for safety margin above bottom sheet; unified typography with brief */

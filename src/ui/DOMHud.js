@@ -1,8 +1,9 @@
 import { shortNumber } from "../utils/format.js";
 
 export class DOMHud {
-  constructor(gameState) {
+  constructor(gameState, notifications = null) {
     this.gameState = gameState;
+    this.notifications = notifications;
     this.root = document.createElement("div");
     this.root.className = "gp-hud";
     this.root.innerHTML = `
@@ -34,14 +35,35 @@ export class DOMHud {
     this._briefBtn = document.createElement("button");
     this._briefBtn.className = "gp-brief";
     this._briefBtn.addEventListener("click", () => { if (this.gameState.activateBrief) this.gameState.activateBrief(); });
+
+    // 알림 토글 벨 — 알림 권한을 허용한 경우에만 노출(켜기/끄기). mute 옆.
+    this._bellBtn = document.createElement("button");
+    this._bellBtn.className = "gp-bell";
+    this._bellBtn.setAttribute("aria-label", "알림");
+    this._bellBtn.addEventListener("click", () => {
+      const n = this.notifications;
+      if (!n) return;
+      n.setMuted(!n.muted());
+      this._refreshBell();
+    });
+  }
+
+  _refreshBell() {
+    const n = this.notifications;
+    const btn = this._bellBtn;
+    if (!n || !n.supported || !n.supported() || !n.granted()) { btn.style.display = "none"; return; }
+    btn.style.display = "flex";
+    btn.textContent = n.muted() ? "🔕" : "🔔";
   }
 
   mount(parent) {
     parent.appendChild(this.root);
     // Attach mute to the .gp-ui container (parent), not inside the HUD flex row
     parent.appendChild(this._muteBtn);
+    parent.appendChild(this._bellBtn);
     parent.appendChild(this._rushBtn);
     parent.appendChild(this._briefBtn);
+    this._refreshBell();
     this.gameState.on("changed", this._refresh);
     this.refresh();
   }
@@ -74,10 +96,11 @@ export class DOMHud {
       ? ` · <span style="color:#8df0b0">✦ 신뢰보너스</span>`
       : "";
     stageEl.innerHTML =
-      `${d.stage.area}구역 · D-${d.days} · 초당 <span class="gp-cps${jumped ? " gp-cps--up" : ""}">${cps.toFixed(1)}</span>표${stateSuffix}`;
+      `${d.stage.area}구역 · D-${d.days} · 초당 <span class="gp-cps${jumped ? " gp-cps--up" : ""}">${cps < 10000 ? cps.toFixed(1) : shortNumber(cps)}</span>표${stateSuffix}`;
 
     this._refreshRush();
     this._refreshBrief();
+    this._refreshBell();
   }
 
   // 탭 학습 단계(첫 업그레이드 전)에는 액티브 FAB 숨김 — 첫 60초 CTA 과부하 방지
@@ -143,6 +166,7 @@ export class DOMHud {
     this.gameState.off("changed", this._refresh);
     document.removeEventListener("gp:mute-changed", this._onMute);
     this._muteBtn.remove();
+    this._bellBtn.remove();
     this._rushBtn.remove();
     this._briefBtn.remove();
     this.root.remove();
