@@ -13,12 +13,14 @@ export class DOMModalLayer {
     this._onUpgraded = (f) => this._checkMilestone(f);
     this._onChanged = () => { this._maybeHint(); this._checkStage(); };
     this._onPrestigeConfirm = () => this._confirmPrestige();
+    this._onCelebrate = (p) => { this._toast(p.text); this._flash(); };
   }
 
   mount(parent) {
     parent.appendChild(this.root);
     this.gameState.on("upgraded", this._onUpgraded);
     this.gameState.on("changed", this._onChanged);
+    this.gameState.on("celebrate", this._onCelebrate);
     document.addEventListener("gp:prestige-confirm", this._onPrestigeConfirm);
     if (!this._maybeOpening()) {
       this._showOfflineReward();
@@ -172,6 +174,9 @@ export class DOMModalLayer {
     const t = document.createElement("div");
     t.className = "gp-toast";
     t.textContent = text;
+    // 동시에 여러 완료가 떠도 겹치지 않도록 기존 토스트 수만큼 아래로 띄운다
+    const offset = this.root.querySelectorAll(".gp-toast").length * 46;
+    if (offset) t.style.top = `${120 + offset}px`;
     this.root.appendChild(t);
     requestAnimationFrame(() => t.classList.add("gp-toast--in"));
     setTimeout(() => {
@@ -190,6 +195,7 @@ export class DOMModalLayer {
   destroy() {
     this.gameState.off("upgraded", this._onUpgraded);
     this.gameState.off("changed", this._onChanged);
+    this.gameState.off("celebrate", this._onCelebrate);
     document.removeEventListener("gp:prestige-confirm", this._onPrestigeConfirm);
     this.root.remove();
   }

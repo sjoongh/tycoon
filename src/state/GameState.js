@@ -475,6 +475,7 @@ export class GameState extends Phaser.Events.EventEmitter {
       if (r.trust) this.data.trust = Phaser.Math.Clamp(this.data.trust + r.trust, 0, 100);
       if (r.seals) this.data.prestige.seals += r.seals;
       this.emit("float", { text: `업적 ${a.name}`, x: 195, y: 210, color: "#bba2ff" });
+      this.emit("celebrate", { text: `🏅 업적 달성 · ${a.name}` });
     });
   }
 
@@ -536,6 +537,7 @@ export class GameState extends Phaser.Events.EventEmitter {
       this.data.explain += quest.reward.explain || 0;
       this.data.trust = Phaser.Math.Clamp(this.data.trust + (quest.reward.trust || 0), 0, 100);
       this.emit("float", { text: `목표완료 ${quest.title}`, x: 195, y: 244, color: "#bba2ff" });
+      this.emit("celebrate", { text: `✅ 목표 완료 · ${quest.title}` });
     };
     questDefinitions.forEach((quest) => {
       if (this.data.quests[quest.id]) return;
