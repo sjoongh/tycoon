@@ -11,6 +11,7 @@ const DAILY_STREAK_CAP = 7;
 const TRUST_CRISIS = 20; // 이 미만이면 불신 위기(생산 페널티)
 const TRUST_BONUS = 90; // 이 이상이면 신뢰 보너스(생산 서지)
 const EVENT_COOLDOWN_MS = 45000; // 사건 대응 후 재대기 시간(스팸 방지 + 주기적 참여 비트)
+const FACILITY_MILESTONES = [25, 50, 100]; // 시설 레벨 마일스톤: 도달 시 해당 시설 생산 ×2(영구, 누적). Lv25 미만은 영향 0 → 초반 곡선 보존
 
 const SAVE_VERSION = 3;
 
@@ -622,8 +623,24 @@ export class GameState extends Phaser.Events.EventEmitter {
   }
 
   cpsFor(data) {
-    const raw = facilities.reduce((sum, item) => sum + (data.facilities[item.id] || 0) * item.cps, 0);
+    const raw = facilities.reduce((sum, item) => {
+      const lv = data.facilities[item.id] || 0;
+      return sum + lv * item.cps * this.facilityMilestoneFactor(lv);
+    }, 0);
     return raw * (0.9 + data.trust / 230) * this.trustModifier(data.trust) * this.staffMultiplierFor(data) * this.prestigeMultiplierFor(data) * (1 + this.permanentEffectFor(data, "cpsPct"));
+  }
+
+  // 시설 레벨이 마일스톤을 넘을 때마다 해당 시설 생산 ×2 누적(AdVenture Capitalist식 영구 보너스)
+  facilityMilestoneFactor(level) {
+    let f = 1;
+    for (const m of FACILITY_MILESTONES) if (level >= m) f *= 2;
+    return f;
+  }
+
+  // 해당 레벨 기준 다음 마일스톤(없으면 null) — 시설 카드 "다음 보너스 LvN" 표기용
+  nextFacilityMilestone(level) {
+    for (const m of FACILITY_MILESTONES) if (level < m) return m;
+    return null;
   }
 
   // 불신 위기 / 신뢰 보너스: 20~90% 구간은 1.0(기존 밸런스 유지), 양 극단에서만 굽는다.

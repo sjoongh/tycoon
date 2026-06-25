@@ -147,6 +147,9 @@ export class DOMBottomPanel {
           <div class="gp-card__title">${f.name} Lv.${gs.level(sel)}</div>
           <div class="gp-card__sub">${unlocked ? `${shortNumber(cost)}표 · 해명 ${shortNumber(ex)}` : `${f.unlock}구역에서 해금`}</div>
           ${unlocked ? `<div class="gp-card__gain">▲ 업그레이드 시 초당 +${f.cps}표</div>` : ""}
+          ${unlocked && gs.nextFacilityMilestone(gs.level(sel)) != null
+            ? `<div class="gp-card__milestone">★ Lv.${gs.nextFacilityMilestone(gs.level(sel))} 달성 시 생산 ×2</div>`
+            : ""}
         </div>
         ${upgradeBtn}
       </div>
