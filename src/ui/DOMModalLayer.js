@@ -60,9 +60,19 @@ export class DOMModalLayer {
     ov.className = "gp-modal-ov";
     const render = () => {
       const c = cards[i];
-      ov.innerHTML = `<div class="gp-modal"><div class="gp-modal__art" style="background-image:url('${c.art}')"></div><div class="gp-mtitle">${c.t}</div><div class="gp-msub">${c.s}</div><button class="gp-btn gp-btn--gold" data-next>${i < cards.length - 1 ? "다음" : "분류 시작!"}</button></div>`;
+      const dots = cards.map((_, idx) => `<span class="gp-dot${idx === i ? " gp-dot--on" : ""}"></span>`).join("");
+      const last = i >= cards.length - 1;
+      ov.innerHTML = `<div class="gp-modal">
+        <div class="gp-modal__art" style="background-image:url('${c.art}')"></div>
+        <div class="gp-mtitle">${c.t}</div>
+        <div class="gp-msub">${c.s}</div>
+        <div class="gp-dots">${dots}</div>
+        <button class="gp-btn gp-btn--gold" data-next>${last ? "분류 시작!" : "다음"}</button>
+        ${last ? "" : `<button class="gp-skip" data-skip>건너뛰기</button>`}
+      </div>`;
     };
     ov.addEventListener("click", (e) => {
+      if (e.target.closest("[data-skip]")) { ov.remove(); return; }
       if (!e.target.closest("[data-next]")) return;
       i += 1;
       if (i >= cards.length) ov.remove();

@@ -168,7 +168,17 @@ export class DOMBottomPanel {
         stageDone
           ? `<button class="gp-btn gp-btn--sm" data-action="advanceStage">지역완료 ✓</button>`
           : `<span class="gp-stage-frac">${Math.floor((gs.data.stage.progress / gs.data.stage.target) * 100)}%</span>`
-      }</div>`;
+      }</div>
+      ${this._nextUnlockTeaser()}`;
+  }
+
+  // 다음 해금 티저: 아직 잠긴 시설 중 가장 먼저 열리는 것을 한 줄 안내(진행 동기 부여)
+  _nextUnlockTeaser() {
+    const gs = this.gameState;
+    const locked = gs.lockedFacilities ? gs.lockedFacilities() : [];
+    if (!locked.length) return "";
+    const next = locked.reduce((a, b) => ((b.unlock || 1) < (a.unlock || 1) ? b : a));
+    return `<div class="gp-nextunlock">🔒 다음 해금: <b>${next.name}</b> · ${next.unlock}구역 도달 시</div>`;
   }
 
   _renderCrew() {
