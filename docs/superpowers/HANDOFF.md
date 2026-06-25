@@ -154,3 +154,9 @@
 - **13B 오프라인 2배 수령**(cebd180): 리팩터 리스크 회피 위해 **기본 보상은 로드 시 자동 적용 유지**(유실 없음). 정산 모달에 '그냥 수령' vs '🎁 2배로 받기(하루 1회)' 결정 분기. `claimOfflineBonus()`가 같은 양 한 번 더 지급·`offline2xDay`로 일일 제한·중복 차단. e2e: 기본 2.23M 적용·2배 동일량(+2.23M)·avail 토글·secondBonus=null.
 - 둘 다 build✓ test13/13✓ 회귀(_regression 0에러)✓. 트러스트 중립·초반 곡선 보존.
 - **다음 루프**: ⑤액티브 트러스트 액션(긴급 브리핑: 해명→믿음+짧은 버프 — 해명 두 번째 소비처) ⑥로테이팅 일일퀘스트(data.daily에 clicks/events/upgrades-today). 테스터: 오프닝 3점/스킵, 다음해금 티저 카드, 탭 배지 확대(목표 클레임/구매가능). 모두 밸런스 보존+회귀 필수.
+
+## 루프14 완료 (액티브 깊이/리텐션 2종, 밤샘 자율)
+- **14A 긴급 브리핑(액티브 트러스트)**(b2e3347): `briefCost()=max(15,explainPerSecond*20)` 해명 소비 → 믿음 +12 + 15초 ×1.5 생산 버프, 90초 쿨다운. 해명의 두 번째 소비처 + 트러스트 능동 자원화(위기 탈출/보너스 진입, 트러스트 상승이 생산에 시너지). `cps()` 실시간 경로만(오프라인 미적용). DOMHud 좌측 초록 FAB(러시와 대칭) ready/active/충전/부족. e2e: 비용56·해명-56·믿음+12·cps×1.58·쿨다운 차단.
+- **14B 로테이팅 일일 퀘스트**(9d80682): `src/data/dailyQuests.js` 3종(오늘의 접수=clicks100, 대응=events3, 증설=upgrades5). `data.daily`에 qday/clicks/events/upgrades/claimed, `_bumpDaily`를 processClick/applyEffect/upgrade에 배선, `_ensureDailyQuests`로 자정(qday≠today) 리셋. 목표 탭 상단 섹션에 노출, 완료 시 '받기' 수동 클레임(보상 해명/인장, celebrate 토스트). 목표 탭 알림 점(anyDailyQuestClaimable). 데이터-only(경제 무변). e2e: prog5·done·claim seals+1·중복 null·리셋0·badge true. 테스터의 '목표 클레임 연출'+'탭 배지' 항목도 동시 충족.
+- 둘 다 build✓ test13/13✓ 회귀(_regression cps599 0에러)✓. 밸런스/초반곡선 보존.
+- **다음 루프**: ⑦테스터 잔여(오프닝 3점 진행/스킵 버튼, 다음 해금 티저 카드 — '3구역에서 서버실 해금' 등 lockedFacilities 활용). 큰 아이들 깊이 항목 대부분 소진 → 그 뒤 **종합 7역할 재검증 패스**(이전 리뷰 이후 8개+ 기능 추가됨)로 95% 재점검.
