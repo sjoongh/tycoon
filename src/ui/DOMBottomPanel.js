@@ -62,6 +62,7 @@ export class DOMBottomPanel {
       case "eventChoice": {
         const ev = officeEvents.find((v) => v.id === id);
         if (ev) gs.applyEffect((el.dataset.side === "left" ? ev.left : ev.right)[1]);
+        document.dispatchEvent(new CustomEvent("gp:event-resolved"));
         this.currentEvent = null;
         this.refresh();
         break;

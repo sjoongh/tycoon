@@ -9,8 +9,10 @@ import { DOMHud } from "./ui/DOMHud.js";
 import { DOMBottomPanel } from "./ui/DOMBottomPanel.js";
 import { DOMModalLayer } from "./ui/DOMModalLayer.js";
 import { GameState } from "./state/GameState.js";
+import { Sfx } from "./audio/sfx.js";
 
 const gameState = new GameState();
+const sfx = new Sfx(gameState);
 
 if ("serviceWorker" in navigator && import.meta.env.PROD) {
   window.addEventListener("load", () => {
@@ -49,4 +51,5 @@ game.events.once("ready", () => {
   new DOMHud(gameState).mount(uiLayer);
   new DOMBottomPanel(gameState).mount(uiLayer);
   new DOMModalLayer(gameState).mount(uiLayer);
+  sfx.mount();
 });

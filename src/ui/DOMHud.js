@@ -12,8 +12,13 @@ export class DOMHud {
         <div class="gp-chip"><span class="gp-chip__ic" style="background-image:url('/art/icons/trust.png')"></span><span><div class="gp-chip__label">믿음</div><div class="gp-chip__val" data-k="trust">0%</div></span></div>
       </div>
       <div class="gp-progress"><div class="gp-progress__fill" data-k="progress"></div></div>
-      <div class="gp-stage" data-k="stage"></div>`;
+      <div class="gp-stage" data-k="stage"></div>
+      <button class="gp-mute" data-k="mute" aria-label="소리">🔊</button>`;
     this._refresh = () => this.refresh();
+    this._mute = this.root.querySelector('[data-k="mute"]');
+    this._mute.addEventListener("click", () => document.dispatchEvent(new CustomEvent("gp:toggle-mute")));
+    this._onMute = (e) => { this._mute.textContent = e.detail ? "🔇" : "🔊"; };
+    document.addEventListener("gp:mute-changed", this._onMute);
   }
 
   mount(parent) {
@@ -35,6 +40,7 @@ export class DOMHud {
 
   destroy() {
     this.gameState.off("changed", this._refresh);
+    document.removeEventListener("gp:mute-changed", this._onMute);
     this.root.remove();
   }
 }
