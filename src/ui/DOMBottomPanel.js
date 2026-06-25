@@ -3,6 +3,27 @@ import { facilities } from "../data/facilities.js";
 import { staffDefinitions, rarityColors } from "../data/staff.js";
 import { officeEvents } from "../data/events.js";
 import { prestigeUpgrades } from "../data/prestige.js";
+import { questDefinitions } from "../data/quests.js";
+
+// GameState.checkAchievements와 동일한 정의(표시용). id는 data.achievements 키와 일치.
+const ACHIEVEMENTS = [
+  { id: "v100", name: "첫 백 표", desc: "누적 100표 처리", metric: "totalVotes", target: 100 },
+  { id: "v1000", name: "천 표 개표", desc: "누적 1,000표 처리", metric: "totalVotes", target: 1000 },
+  { id: "cps20", name: "자동화 라인", desc: "초당 20표 생산", metric: "cps", target: 20 },
+  { id: "trust90", name: "신뢰의 국장", desc: "믿음 90% 도달", metric: "trust", target: 90 },
+];
+
+const ACH_METRIC = {
+  totalVotes: (gs) => gs.data.stats.totalVotes,
+  cps: (gs) => gs.cps(),
+  trust: (gs) => gs.data.trust,
+};
+
+const rewardLabel = (r) => [
+  r.votes ? `표 +${shortNumber(r.votes)}` : null,
+  r.explain ? `해명 +${shortNumber(r.explain)}` : null,
+  r.trust ? `믿음 +${r.trust}` : null,
+].filter(Boolean).join(" · ");
 
 const TABS = [
   ["facilities", "시설"],
@@ -156,16 +177,39 @@ export class DOMBottomPanel {
 
   _renderGoals() {
     const gs = this.gameState;
-    const q = gs.nextQuest();
-    if (!q) {
-      this.panel.innerHTML = `<div class="gp-paneltitle">운영 목표</div><div class="gp-card__sub">현재 목표를 모두 완료했습니다.</div>`;
-      return;
-    }
-    const p = gs.questProgress(q);
-    const ratio = Math.max(0, Math.min(1, p / q.target));
-    this.panel.innerHTML = `<div class="gp-paneltitle">${q.title}</div><div class="gp-card__sub">${q.desc}</div>
-      <div class="gp-progress" style="margin-top:10px"><div class="gp-progress__fill" style="width:${ratio * 100}%"></div></div>
-      <div class="gp-card__sub" style="text-align:center;margin-top:4px">${shortNumber(p)} / ${shortNumber(q.target)}</div>`;
+    const active = gs.nextQuest();
+    const doneCount = questDefinitions.filter((q) => gs.data.quests[q.id]).length;
+
+    const questRows = questDefinitions.map((q) => {
+      const done = !!gs.data.quests[q.id];
+      const isActive = active && q.id === active.id;
+      const p = gs.questProgress(q);
+      const ratio = Math.max(0, Math.min(1, p / q.target));
+      // 다음 목표 예고: 아직 활성도 완료도 아닌 항목은 흐리게.
+      const cls = done ? "gp-goal--done" : isActive ? "gp-goal--active" : "gp-goal--locked";
+      const badge = done ? "✓" : isActive ? "진행" : "예정";
+      return `<div class="gp-goal ${cls}">
+        <div class="gp-goal__head"><span class="gp-goal__title">${q.title}</span><span class="gp-goal__badge">${badge}</span></div>
+        <div class="gp-goal__desc">${q.desc}</div>
+        <div class="gp-progress gp-goal__bar"><div class="gp-progress__fill" style="width:${(done ? 1 : ratio) * 100}%"></div></div>
+        <div class="gp-goal__foot"><span>${shortNumber(Math.min(p, q.target))} / ${shortNumber(q.target)}</span><span class="gp-goal__reward">${rewardLabel(q.reward)}</span></div>
+      </div>`;
+    }).join("");
+
+    const achRows = ACHIEVEMENTS.map((a) => {
+      const got = !!gs.data.achievements[a.id];
+      const cur = ACH_METRIC[a.metric] ? ACH_METRIC[a.metric](gs) : 0;
+      const ratio = Math.max(0, Math.min(1, cur / a.target));
+      return `<div class="gp-ach ${got ? "gp-ach--got" : ""}">
+        <span class="gp-ach__medal">${got ? "🏅" : "🔒"}</span>
+        <span class="gp-ach__body"><span class="gp-ach__name">${a.name}</span><span class="gp-ach__desc">${got ? a.desc : `${a.desc} (${Math.floor(ratio * 100)}%)`}</span></span>
+      </div>`;
+    }).join("");
+    const gotCount = ACHIEVEMENTS.filter((a) => gs.data.achievements[a.id]).length;
+
+    this.panel.innerHTML = `<div class="gp-paneltitle">운영 목표 · ${doneCount}/${questDefinitions.length} 완료</div>
+      <div class="gp-stafflist gp-goallist">${questRows}
+      <div class="gp-goal__section">업적 · ${gotCount}/${ACHIEVEMENTS.length}</div>${achRows}</div>`;
   }
 
   _renderPrestige() {

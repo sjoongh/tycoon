@@ -75,6 +75,27 @@
 .gp-stage-frac { font-family: "Black Han Sans", sans-serif; font-size: 14px; color: var(--gold); background: rgba(0,0,0,0.3); padding: 6px 12px; border-radius: 10px; }
 
 .gp-stafflist { display: flex; flex-direction: column; gap: 7px; max-height: 172px; overflow-y: auto; }
+.gp-goallist { gap: 8px; }
+.gp-goal { padding: 9px 11px; border-radius: 13px; background: var(--panel); box-shadow: 0 2px 0 rgba(0,0,0,0.2); border-left: 5px solid var(--ink-soft); }
+.gp-goal--active { border-left-color: var(--gold); box-shadow: 0 2px 0 rgba(0,0,0,0.2), 0 0 0 1.5px rgba(255,192,46,0.5) inset; }
+.gp-goal--done { border-left-color: #4caf50; opacity: 0.92; }
+.gp-goal--locked { opacity: 0.5; }
+.gp-goal__head { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; }
+.gp-goal__title { font-family: "Black Han Sans", sans-serif; color: var(--ink); font-size: 14px; }
+.gp-goal__badge { font-size: 9px; font-weight: 800; padding: 1px 7px; border-radius: 7px; background: var(--ink-soft); color: #fff; flex: none; }
+.gp-goal--active .gp-goal__badge { background: var(--gold-deep); }
+.gp-goal--done .gp-goal__badge { background: #4caf50; }
+.gp-goal__desc { font-size: 11px; font-weight: 700; color: var(--ink-soft); margin: 2px 0 6px; }
+.gp-goal__bar { height: 7px; }
+.gp-goal__foot { display: flex; justify-content: space-between; font-size: 10px; font-weight: 800; color: var(--ink-soft); margin-top: 4px; }
+.gp-goal__reward { color: var(--gold-deep); }
+.gp-goal__section { font-family: "Black Han Sans", sans-serif; color: var(--gold-hi); font-size: 13px; margin: 6px 2px 0; }
+.gp-ach { display: flex; align-items: center; gap: 9px; padding: 8px 11px; border-radius: 12px; background: var(--panel-sunk); opacity: 0.62; }
+.gp-ach--got { opacity: 1; background: var(--panel); box-shadow: 0 0 0 1.5px rgba(255,192,46,0.55) inset; }
+.gp-ach__medal { font-size: 20px; flex: none; }
+.gp-ach__body { display: flex; flex-direction: column; min-width: 0; }
+.gp-ach__name { font-weight: 800; color: var(--ink); font-size: 13px; }
+.gp-ach__desc { font-size: 10px; font-weight: 700; color: var(--ink-soft); }
 .gp-staff { display: flex; align-items: center; gap: 10px; padding: 9px; border-radius: 14px; background: var(--panel); border-left: 5px solid var(--rarity-color, #9aa0a6); box-shadow: 0 2px 0 rgba(0,0,0,0.2); }
 .gp-staff__dot { width: 40px; height: 40px; border-radius: 12px; border: 3px solid var(--rarity-color, #9aa0a6); flex: none; }
 .gp-staff__body { flex: 1; min-width: 0; }

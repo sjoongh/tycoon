@@ -12,6 +12,10 @@ export class WorldView {
     this.scene = scene;
     this.gameState = gameState;
 
+    // era 톤: 방/바닥/벽 이미지에만 구간별 tint를 적용한다(워커·플로팅은 제외해 탁해지지 않게)
+    this._eraImages = [];
+    this._eraArea = -1;
+
     this._buildRoomBack();
     this._buildFloor();
     this._buildWalls();
@@ -73,7 +77,8 @@ export class WorldView {
       for (let c = 0; c < f.cols; c++) {
         const x = f.originX + (c - r) * (f.tileW / 2);
         const y = f.originY + (c + r) * (f.tileH / 2);
-        this.scene.add.image(x, y, ASSET_KEYS.floor).setDisplaySize(f.tileW, f.tileH).setDepth(DEPTH_BASE.floor + y);
+        const tile = this.scene.add.image(x, y, ASSET_KEYS.floor).setDisplaySize(f.tileW, f.tileH).setDepth(DEPTH_BASE.floor + y);
+        this._eraImages.push(tile);
       }
     }
   }
@@ -83,12 +88,30 @@ export class WorldView {
     if (!r) return;
     const img = this.scene.add.image(r.x, r.y, r.key).setDepth(1);
     if (r.w && r.h) img.setDisplaySize(r.w, r.h);
+    this._eraImages.push(img);
   }
 
   _buildWalls() {
     worldMap.walls.forEach((w) => {
-      this.scene.add.image(w.x, w.y, w.key).setDepth(5);
+      this._eraImages.push(this.scene.add.image(w.x, w.y, w.key).setDepth(5));
     });
+  }
+
+  // 구역(area)이 오를수록 새벽→오후→해질녘→야간 분위기로. 1구역은 원색(무틴트).
+  _eraTintFor(area) {
+    if (area <= 1) return 0xffffff;
+    if (area === 2) return 0xfff0d4; // 따뜻한 오전
+    if (area === 3) return 0xffe3b0; // 호박빛 오후
+    if (area === 4) return 0xf3c79a; // 해질녘
+    if (area === 5) return 0xc9b3e6; // 보랏빛 황혼
+    return 0x9fb0e0; // 6구역+ 야간 블루
+  }
+
+  _applyEra(area) {
+    if (area === this._eraArea) return;
+    this._eraArea = area;
+    const tint = this._eraTintFor(area);
+    this._eraImages.forEach((img) => img.setTint(tint));
   }
 
   _buildDecor() {
@@ -119,6 +142,7 @@ export class WorldView {
 
   _refresh() {
     const gs = this.gameState;
+    this._applyEra(gs.data.stage.area);
     facilities.forEach((f) => {
       const view = this.stations[f.id];
       if (!view) return;
