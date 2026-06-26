@@ -2,6 +2,7 @@ import { WorldEffects } from "./WorldEffects.js";
 import { govTextureKey, govStageFor } from "./dotChar.js";
 import { staffDefinitions } from "../data/staff.js";
 import { eraTheme } from "../data/regions.js";
+import { pickRandomItem } from "../data/items.js";
 import { shortNumber } from "../utils/format.js";
 
 // 거지키우기식 심플 월드: 미니멀 픽셀 배경 + 중앙 도트 국장 + 큰 숫자 + 바닥.
@@ -114,6 +115,7 @@ export class WorldView {
 
     this._refresh();
     this._scheduleGolden(45000 + Math.random() * 30000);
+    this._scheduleItem(25000 + Math.random() * 20000);
     // 웹폰트(Galmuri) 로드 완료 후 캔버스 텍스트 재렌더(첫 프레임 폰트 미적용 방지)
     document.fonts?.ready?.then(() => this._refresh());
   }
@@ -386,6 +388,46 @@ export class WorldView {
     });
   }
 
+  // ── 랜덤 아이템(가끔 등장 → 탭하면 종류별 보상) ──
+  _scheduleItem(delay) {
+    this._itemTimer?.remove();
+    this._itemTimer = this.scene.time.delayedCall(delay, () => this._spawnItem());
+  }
+
+  _spawnItem() {
+    if (this._item) return;
+    const def = pickRandomItem();
+    const x = 70 + Math.random() * 250;
+    const y = 170 + Math.random() * 160;
+    const halo = this.scene.add.circle(x, y, 22, 0xffe9a8, 0.18).setDepth(4998);
+    this._itemHalo = halo;
+    this._itemHaloT = this.scene.tweens.add({ targets: halo, scale: 1.4, alpha: 0.05, yoyo: true, repeat: -1, duration: 700, ease: "Sine.easeInOut" });
+    const txt = this.scene.add.text(x, y, def.icon, { fontSize: "30px" }).setOrigin(0.5).setDepth(5001).setInteractive({ useHandCursor: true });
+    this._item = txt;
+    txt.setScale(0);
+    this.scene.tweens.add({ targets: txt, scale: 1, duration: 260, ease: "Back.easeOut" });
+    this._itemBob = this.scene.tweens.add({ targets: txt, y: y - 10, yoyo: true, repeat: -1, duration: 900, ease: "Sine.easeInOut", delay: 270 });
+    txt.on("pointerdown", () => {
+      if (!this._item) return;
+      const res = this.gameState.applyRandomItem(def.id);
+      this.effects.float({ text: res.text, x, y: y - 30, color: "#ffe3a8" });
+      this.effects.deskPop(x, y);
+      this._despawnItem();
+      this._scheduleItem(35000 + Math.random() * 30000);
+    });
+    this._itemLife = this.scene.time.delayedCall(8500, () => {
+      this._despawnItem();
+      this._scheduleItem(35000 + Math.random() * 30000);
+    });
+  }
+
+  _despawnItem() {
+    this._itemHaloT?.stop(); this._itemHaloT = null;
+    this._itemLife?.remove(); this._itemLife = null;
+    if (this._item) { this.scene.tweens.killTweensOf(this._item); this._item.destroy(); this._item = null; }
+    if (this._itemHalo) { this.scene.tweens.killTweensOf(this._itemHalo); this._itemHalo.destroy(); this._itemHalo = null; }
+  }
+
   _refresh() {
     const d = this.gameState.data;
     this._applyEra(d.stage.area);
@@ -413,8 +455,10 @@ export class WorldView {
     this.scene.input.off("pointerdown", this._onPointer);
     this._incomeTimer?.remove();
     this._goldenTimer?.remove();
+    this._itemTimer?.remove();
     this._comboTimer?.remove();
     this._despawnGolden();
+    this._despawnItem();
     this.scene.tweens.killTweensOf(this.gov);
     this.gov?.destroy();
     this.bigNum?.destroy();

@@ -543,6 +543,41 @@ export class GameState extends Phaser.Events.EventEmitter {
     return true;
   }
 
+  // 랜덤 아이템 효과 — 종류별 즉시 보상. cps에 비례해 후반에도 의미있게.
+  applyRandomItem(id) {
+    const cps = this.cps();
+    let r = { icon: "📦", text: "" };
+    switch (id) {
+      case "parcel": {
+        const v = Math.max(80, Math.floor(cps * 90));
+        this.addVotes(v); r = { icon: "📦", text: `의문의 택배 +${shortNumber(v)}표` }; break;
+      }
+      case "doc": {
+        const e = Math.max(30, Math.floor(this.explainPerSecond() * 120 + this.data.explain * 0.25));
+        this.data.explain += e; r = { icon: "📜", text: `기밀 문서 해명+${shortNumber(e)}` }; break;
+      }
+      case "balloon": {
+        this.data.trust = Phaser.Math.Clamp(this.data.trust + 8, 0, 100);
+        r = { icon: "🎈", text: `응원 답지 믿음+8` }; break;
+      }
+      case "votes": {
+        const v = Math.max(120, Math.floor(cps * 150));
+        this.addVotes(v); r = { icon: "🗳️", text: `숨은 표뭉치 +${shortNumber(v)}표` }; break;
+      }
+      case "donation": {
+        const v = Math.max(200, Math.floor(cps * 320));
+        const e = Math.floor(this.data.explain * 0.2 + 50);
+        this.addVotes(v); this.data.explain += e;
+        r = { icon: "💰", text: `거액 후원 +${shortNumber(v)}표` }; break;
+      }
+      default: break;
+    }
+    this.data.stats.totalItems = (this.data.stats.totalItems || 0) + 1;
+    this.addLog(r.text);
+    this.emit("changed");
+    return r;
+  }
+
   canPrestige() {
     return this.data.stage.area >= 4 || this.facilityTotal() >= 55 || this.data.stage.completed >= 3;
   }
