@@ -8,6 +8,7 @@ import { PreloadScene } from "./scenes/PreloadScene.js";
 import { DOMHud } from "./ui/DOMHud.js";
 import { DOMBottomPanel } from "./ui/DOMBottomPanel.js";
 import { DOMModalLayer } from "./ui/DOMModalLayer.js";
+import { DOMMapModal } from "./ui/DOMMapModal.js";
 import { GameState } from "./state/GameState.js";
 import { Sfx } from "./audio/sfx.js";
 import { Notifications } from "./notifications.js";
@@ -58,5 +59,6 @@ game.events.once("ready", () => {
   new DOMHud(gameState, notifications).mount(uiLayer);
   new DOMBottomPanel(gameState).mount(uiLayer);
   new DOMModalLayer(gameState, notifications).mount(uiLayer);
+  new DOMMapModal(gameState).mount(uiLayer);
   sfx.mount();
 });

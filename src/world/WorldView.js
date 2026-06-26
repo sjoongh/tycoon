@@ -179,6 +179,16 @@ export class WorldView {
       .text(cx, top + 31, "개 표 국", { fontFamily: '"Galmuri14", monospace', fontSize: "19px", color: "#ffe3a8" })
       .setOrigin(0.5)
       .setDepth(111);
+    // 간판 아래 "지도" 힌트 + 클릭 영역(탭하면 전국 지도 모달)
+    this.titleHint = this.scene.add
+      .text(cx, top + h + 9, "🗺 전국 지도", { fontFamily: '"Galmuri9", monospace', fontSize: "10px", color: "#9fb8d0" })
+      .setOrigin(0.5)
+      .setDepth(111);
+    this.scene.tweens.add({ targets: this.titleHint, alpha: 0.5, yoyo: true, repeat: -1, duration: 900, ease: "Sine.easeInOut" });
+    this.titleZone = this.scene.add
+      .zone(cx, top + (h + 22) / 2, w, h + 26)
+      .setInteractive({ useHandCursor: true });
+    this.titleZone.on("pointerup", () => document.dispatchEvent(new CustomEvent("gp:open-map")));
   }
 
   // 국장 주변 개표소 소품(투표함/서류더미/깃발)
@@ -189,9 +199,18 @@ export class WorldView {
       this.props.push(s);
       return s;
     };
-    place("prop-flag", 250, 90);        // 캐릭터 뒤(우측) 깃발
-    place("prop-ballotbox", 84, 95);    // 좌측 투표함
-    place("prop-papers", 306, 96);      // 우측 서류더미
+    this.flag = place("prop-flag", 250, 90);        // 캐릭터 뒤(우측) 깃발
+    this.ballotbox = place("prop-ballotbox", 84, 95); // 좌측 투표함
+    this.papers = place("prop-papers", 306, 96);    // 우측 서류더미
+  }
+
+  // 시설 총레벨이 오를수록 소품이 커진다(개표량이 쌓이는 시각 피드백)
+  _syncProps() {
+    const total = this.gameState.facilityTotal ? this.gameState.facilityTotal() : 0;
+    const grow = PROP_SCALE * (1 + Math.min(0.6, total / 80));
+    if (this.papers && Math.abs(this.papers.scaleX - grow) > 0.01) {
+      this.scene.tweens.add({ targets: [this.papers, this.ballotbox], scaleX: grow, scaleY: grow, duration: 200, ease: "Quad.easeOut" });
+    }
   }
 
   _startBob() {
@@ -314,6 +333,7 @@ export class WorldView {
     const cps = this.gameState.cps ? this.gameState.cps() : 0;
     this.cpsText.setText(`▶ 초당 ${cps < 10000 ? cps.toFixed(0) : shortNumber(cps)}표`);
     this._syncWorkers();
+    this._syncProps();
   }
 
   update() {
@@ -340,6 +360,8 @@ export class WorldView {
     this.titleBg?.destroy();
     this.titleTop?.destroy();
     this.titleMain?.destroy();
+    this.titleHint?.destroy();
+    this.titleZone?.destroy();
     (this.props || []).forEach((p) => p.destroy());
     Object.values(this._workers || {}).forEach((w) => { this.scene.tweens.killTweensOf(w); w.destroy(); });
     Object.values(this._workerShadows || {}).forEach((s) => s.destroy());
