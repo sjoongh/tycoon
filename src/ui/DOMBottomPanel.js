@@ -1,7 +1,7 @@
 import { shortNumber } from "../utils/format.js";
 import { facilities } from "../data/facilities.js";
 import { staffDefinitions, rarityColors } from "../data/staff.js";
-import { officeEvents } from "../data/events.js";
+import { officeEvents, realEventIds } from "../data/events.js";
 import { prestigeUpgrades, medalUpgrades } from "../data/prestige.js";
 import { questDefinitions } from "../data/quests.js";
 import { achievementDefinitions } from "../data/achievements.js";
@@ -236,7 +236,9 @@ export class DOMBottomPanel {
     const gs = this.gameState;
     const ev = this.currentEvent;
     if (ev) {
-      this.panel.innerHTML = `<div class="gp-event"><div class="gp-event__title">${ev.title}</div><div class="gp-event__body">${ev.body}</div>
+      const real = realEventIds.has(ev.id);
+      const realBadge = real ? `<div class="gp-event__real">🏛 실화 모티프</div>` : "";
+      this.panel.innerHTML = `<div class="gp-event${real ? " gp-event--real" : ""}">${realBadge}<div class="gp-event__title">${ev.title}</div><div class="gp-event__body">${ev.body}</div>
         <div class="gp-event__choices">
           <button class="gp-btn gp-event__c" data-action="eventChoice" data-id="${ev.id}" data-side="left">${ev.left[0]}<small>${ev.left[2]}</small></button>
           <button class="gp-btn gp-event__c" data-action="eventChoice" data-id="${ev.id}" data-side="right">${ev.right[0]}<small>${ev.right[2]}</small></button>
