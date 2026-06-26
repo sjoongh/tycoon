@@ -114,28 +114,48 @@ export class WorldView {
     document.fonts?.ready?.then(() => this._refresh());
   }
 
+  // 구역(area) 밴드별 분위기 팔레트 — 동네 밤 → 황혼 → 새벽 → 권위 → 전국 → 우주
+  _eraPalette(area) {
+    if (area <= 2) return { sky: 0x1a1c2c, floor: 0x20243f, star: 0x2a2f55, line: 0x2a3050 };
+    if (area <= 4) return { sky: 0x2a2140, floor: 0x2e2448, star: 0x5a4a7a, line: 0x3a2e54 };
+    if (area <= 6) return { sky: 0x14283a, floor: 0x1c3348, star: 0x3a6a8a, line: 0x244055 };
+    if (area <= 8) return { sky: 0x241a2e, floor: 0x2e2440, star: 0x6a3f7a, line: 0x3a2a4a };
+    if (area <= 10) return { sky: 0x0a1828, floor: 0x12283a, star: 0x3a6a9a, line: 0x183048 };
+    return { sky: 0x0a0a16, floor: 0x12122a, star: 0x5a5aaa, line: 0x1a1a3a }; // 우주
+  }
+
   _buildBackground() {
-    const g = this.scene.add.graphics().setDepth(0);
-    // 하늘(상단 어두운 밴드)
-    g.fillStyle(0x1a1c2c, 1);
+    this.bg = this.scene.add.graphics().setDepth(0);
+    this._eraArea = this.gameState.data.stage.area;
+    this._drawBackground(this._eraArea);
+  }
+
+  _drawBackground(area) {
+    const p = this._eraPalette(area);
+    const g = this.bg;
+    g.clear();
+    // 하늘
+    g.fillStyle(p.sky, 1);
     g.fillRect(0, 0, GAME_W, GROUND_Y);
-    // 별 도트(정적)
+    // 별
     const stars = [[40, 150], [92, 206], [150, 138], [300, 168], [342, 224], [212, 184], [70, 262], [330, 300], [120, 308], [262, 250]];
-    g.fillStyle(0x2a2f55, 1);
+    g.fillStyle(p.star, 1);
     stars.forEach(([x, y]) => g.fillRect(x, y, 3, 3));
-    g.fillStyle(0x3a4a8a, 1);
-    g.fillRect(60, 182, 2, 2);
-    g.fillRect(280, 140, 2, 2);
-    g.fillRect(180, 230, 2, 2);
+    // 우주 구역: 추가 별 + 작은 행성
+    if (area >= 11) {
+      g.fillStyle(0xffffff, 1);
+      [[60, 120], [200, 100], [320, 130], [100, 180], [280, 210], [160, 250]].forEach(([x, y]) => g.fillRect(x, y, 2, 2));
+      g.fillStyle(0xef7d57, 1); g.fillRect(306, 142, 12, 12);
+      g.fillStyle(0xffcd75, 1); g.fillRect(308, 142, 4, 12);
+    }
     // 바닥
-    g.fillStyle(0x20243f, 1);
+    g.fillStyle(p.floor, 1);
     g.fillRect(0, GROUND_Y, GAME_W, 844 - GROUND_Y);
     g.fillStyle(0x000000, 1);
     g.fillRect(0, GROUND_Y, GAME_W, 3);
     g.fillStyle(0x333c57, 1);
     g.fillRect(0, GROUND_Y + 3, GAME_W, 2);
-    // 바닥 원근 라인
-    g.fillStyle(0x2a3050, 1);
+    g.fillStyle(p.line, 1);
     for (let i = 1; i <= 4; i++) {
       const y = GROUND_Y + 12 + i * i * 6;
       g.fillRect(0, y, GAME_W, 1);
@@ -143,7 +163,15 @@ export class WorldView {
     // 국장 발밑 그림자
     g.fillStyle(0x0a0a12, 0.5);
     g.fillRect(GAME_W / 2 - 30, GROUND_Y - 4, 60, 6);
-    this.bg = g;
+  }
+
+  // 구역이 바뀌면 배경 전환 + 화면 플래시
+  _applyEra(area) {
+    if (area === this._eraArea) return;
+    this._eraArea = area;
+    this._drawBackground(area);
+    const f = this.scene.add.rectangle(GAME_W / 2, 422, GAME_W, 844, 0xffffff, 0.5).setDepth(200);
+    this.scene.tweens.add({ targets: f, alpha: 0, duration: 420, ease: "Quad.easeOut", onComplete: () => f.destroy() });
   }
 
   // 상단 간판: "믿어주세요 / 개표국"
@@ -324,6 +352,7 @@ export class WorldView {
 
   _refresh() {
     const d = this.gameState.data;
+    this._applyEra(d.stage.area);
     const st = govStageFor(d);
     if (st !== this._govStage) {
       this._govStage = st;
