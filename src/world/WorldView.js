@@ -113,6 +113,12 @@ export class WorldView {
       },
     });
 
+    // 국장 idle 제스처(가끔 점프하며 표 던지기) — 정적이지 않게
+    this._govIdleTimer = scene.time.addEvent({
+      delay: 4500, loop: true,
+      callback: () => { if (this.gov?.active && Math.random() < 0.5) this._govGesture(); },
+    });
+
     this._refresh();
     this._scheduleGolden(45000 + Math.random() * 30000);
     this._scheduleItem(25000 + Math.random() * 20000);
@@ -266,6 +272,8 @@ export class WorldView {
     this.flag.setTint(this._eraColors(this.gameState.data.stage.area).accent); // 체제색
     this.ballotbox = place("prop-ballotbox", 84, 95); // 좌측 투표함
     this.papers = place("prop-papers", 306, 96);    // 우측 서류더미
+    // 깃발 펄럭(휘날림)
+    this._flagFlap = this.scene.tweens.add({ targets: this.flag, scaleX: PROP_SCALE * 0.8, yoyo: true, repeat: -1, duration: 560, ease: "Sine.easeInOut" });
   }
 
   // 시설 총레벨이 오를수록 소품이 커진다(개표량이 쌓이는 시각 피드백)
@@ -307,6 +315,18 @@ export class WorldView {
       this._comboTimer?.remove();
       this._comboTimer = this.scene.time.delayedCall(800, () => { this.comboText.setVisible(false); this._comboN = 0; });
     }
+  }
+
+  // idle 제스처: 살짝 점프하며 가끔 표를 던진다
+  _govGesture() {
+    this.scene.tweens.killTweensOf(this.gov);
+    this.gov.setScale(GOV_SCALE);
+    this.gov.y = GROUND_Y;
+    this.scene.tweens.add({
+      targets: this.gov, y: GROUND_Y - 14, yoyo: true, duration: 200, ease: "Quad.easeOut",
+      onComplete: () => { if (this.gov && this.gov.active) this._startBob(); },
+    });
+    if (Math.random() < 0.6) this.effects.ballots({ x: GAME_W / 2 + (Math.random() * 40 - 20), y: GROUND_Y - 96, count: 2 });
   }
 
   _squishGov() {
@@ -457,6 +477,7 @@ export class WorldView {
     this._goldenTimer?.remove();
     this._itemTimer?.remove();
     this._comboTimer?.remove();
+    this._govIdleTimer?.remove();
     this._despawnGolden();
     this._despawnItem();
     this.scene.tweens.killTweensOf(this.gov);
