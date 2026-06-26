@@ -101,6 +101,7 @@ export class WorldView {
       this._punchNum();
       this._bumpCombo();
       this.effects.deskPop(GAME_W / 2, GROUND_Y - 30);
+      this._flyBallotToBox(); // 처리한 표가 투표함으로 날아가 모인다(의미 + 손맛)
     };
     scene.input.on("pointerdown", this._onPointer);
 
@@ -113,8 +114,8 @@ export class WorldView {
         if (inc > 0) {
           const x = GAME_W / 2 + (Math.random() * 120 - 60);
           this.effects.float({ text: `+${shortNumber(inc)}`, x, y: GROUND_Y - 76, color: "#7fb98a" });
-          // 패시브 투표용지 흩날림(생동감)
-          if (Math.random() < 0.6) this.effects.ballots({ x: GAME_W / 2 + (Math.random() * 170 - 85), y: 360, count: 2 });
+          // 패시브 생산도 표가 투표함으로 모인다
+          this._flyBallotToBox();
         }
         // 일꾼이 일하는 반짝임(랜덤 1명 머리 위)
         const wk = Object.values(this._workers);
@@ -370,6 +371,31 @@ export class WorldView {
     const s = obj.scaleX;
     this.scene.tweens.add({ targets: obj, scaleX: s * 1.22, scaleY: s * 1.22, yoyo: true, duration: 150, ease: "Quad.easeOut" });
     this.effects.deskPop(obj.x, obj.y - 40);
+  }
+
+  // 처리한 표 한 장이 국장 → 좌측 투표함으로 포물선을 그리며 날아가 모인다
+  _flyBallotToBox() {
+    if (!this.ballotbox || this._flying > 6) return; // 동시 비행 표 상한(성능)
+    this._flying = (this._flying || 0) + 1;
+    const sx = GAME_W / 2 + (Math.random() * 30 - 15);
+    const sy = GROUND_Y - 86;
+    const tx = this.ballotbox.x + (Math.random() * 10 - 5);
+    const ty = this.ballotbox.y - this.ballotbox.displayHeight * 0.6;
+    const b = this.scene.add.image(sx, sy, "ballot").setDepth(150).setScale(0);
+    this.scene.tweens.add({ targets: b, scale: 0.42, duration: 110, ease: "Back.easeOut" });
+    this.scene.tweens.add({ targets: b, x: tx, angle: -160, duration: 440, ease: "Sine.easeIn" });
+    this.scene.tweens.add({
+      targets: b, y: ty - 34, duration: 220, yoyo: true, ease: "Sine.easeOut",
+      onComplete: () => {
+        this._flying = Math.max(0, (this._flying || 1) - 1);
+        b.destroy();
+        // 투표함이 표를 받아 살짝 들썩
+        if (this.ballotbox && this.ballotbox.active) {
+          const s = this.ballotbox.scaleX;
+          this.scene.tweens.add({ targets: this.ballotbox, scaleY: s * 0.92, yoyo: true, duration: 90, ease: "Quad.easeOut" });
+        }
+      },
+    });
   }
 
   _startBob() {
