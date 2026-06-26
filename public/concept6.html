@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>개표국 — 레트로 픽셀 확정 시안</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet" />
+<style>
+  /* 한글 픽셀 폰트 Galmuri (실제 한글이 도트로 보이는지 핵심 검증) */
+  @import url('https://cdn.jsdelivr.net/gh/quiple/galmuri/dist/galmuri.css');
+  :root{
+    --bg:#1a1c2c; --bg2:#0f1020;
+    --panel:#29366f; --panel2:#333c57; --panel3:#3b5dc9;
+    --line:#41a6f6; --cyan:#73eff7; --orange:#ef7d57; --red:#b13e53;
+    --green:#38b764; --yellow:#ffcd75; --text:#f4f4f4; --dim:#94b0c2; --pink:#d77bba;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;font-family:"Galmuri11","Press Start 2P",monospace;image-rendering:pixelated;-webkit-font-smoothing:none}
+  body{background:#0a0a12;color:var(--text);padding:24px 16px 70px}
+  .head{max-width:1100px;margin:0 auto 22px}
+  .head h1{font-family:"Galmuri14";font-size:22px;color:var(--yellow)}
+  .head p{color:#b8acc8;font-size:13px;margin-top:8px;line-height:1.7;max-width:840px}
+  .head .pal{display:flex;gap:4px;margin-top:10px}
+  .head .pal i{width:22px;height:22px;border:2px solid #000;display:block}
+  .row{display:flex;gap:26px;max-width:1100px;margin:0 auto;flex-wrap:wrap;align-items:flex-start}
+  .col{flex:1;min-width:280px}
+  .col .lbl{font-family:"Galmuri11";font-size:12px;color:var(--cyan);margin:0 0 8px}
+  .col .lbl b{color:#fff;font-size:13px}
+
+  /* 폰 프레임 */
+  .ph{width:300px;max-width:100%;aspect-ratio:300/600;background:var(--bg);position:relative;display:flex;flex-direction:column;
+      border:4px solid #000;box-shadow:0 0 0 4px #2a2f55, 10px 10px 0 rgba(0,0,0,.5);overflow:hidden}
+  .scan{position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(0,0,0,.16) 0 2px,transparent 2px 4px);z-index:50;mix-blend-mode:multiply}
+
+  /* 픽셀 패널/버튼 공통 (각진 테두리) */
+  .pbox{border:3px solid #000;box-shadow:inset -3px -3px 0 rgba(0,0,0,.35), inset 3px 3px 0 rgba(255,255,255,.12)}
+  .hud{display:flex;gap:6px;padding:9px}
+  .chip{flex:1;background:var(--panel);border:3px solid #000;box-shadow:inset -2px -2px 0 rgba(0,0,0,.4);padding:6px 3px;text-align:center}
+  .chip .v{font-family:"Galmuri11";font-weight:700;font-size:13px;color:var(--cyan)}
+  .chip .k{font-size:9px;color:var(--dim);margin-top:3px}
+
+  .stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;position:relative}
+  .num{font-family:"Press Start 2P";font-size:24px;color:#fff;text-shadow:3px 3px 0 var(--red)}
+  .numko{font-family:"Galmuri14";font-size:12px;color:var(--yellow);margin-top:-2px}
+  .cps{font-family:"Galmuri9";font-size:11px;color:var(--dim)}
+  .floor{width:78%;height:10px;background:var(--panel2);border:3px solid #000;border-bottom:none;margin-top:6px}
+
+  .cta{margin:8px 10px;background:var(--orange);border:3px solid #000;box-shadow:inset -3px -3px 0 rgba(0,0,0,.35),0 4px 0 #000;
+       padding:13px;text-align:center;color:#231;font-family:"Galmuri14";font-size:15px}
+  .cta small{display:block;font-family:"Galmuri9";font-size:10px;color:#3a1d00;margin-top:3px}
+
+  .list{padding:4px 10px;display:flex;flex-direction:column;gap:6px}
+  .item{display:flex;align-items:center;gap:8px;background:var(--panel);border:3px solid #000;box-shadow:inset -2px -2px 0 rgba(0,0,0,.4);padding:7px}
+  .item .ic{width:30px;height:30px;flex-shrink:0;border:2px solid #000;display:flex;align-items:center;justify-content:center;background:var(--panel2);font-size:16px}
+  .item .tt{flex:1;min-width:0}
+  .item .tt b{display:block;font-family:"Galmuri11";font-size:12px;color:#fff}
+  .item .tt s{display:block;text-decoration:none;font-family:"Galmuri9";font-size:10px;color:var(--cyan)}
+  .item .pr{font-family:"Galmuri11";font-size:11px;background:var(--green);color:#04220f;border:2px solid #000;padding:5px 7px;white-space:nowrap}
+  .item .pr.no{background:var(--panel2);color:var(--dim)}
+
+  .tabs{display:flex;gap:5px;padding:8px;background:var(--bg2);border-top:3px solid #000}
+  .tab{flex:1;background:var(--panel2);border:3px solid #000;box-shadow:inset -2px -2px 0 rgba(0,0,0,.4);padding:7px 0 5px;text-align:center;font-family:"Galmuri9";font-size:9px;color:var(--dim)}
+  .tab em{display:block;font-style:normal;font-size:15px;margin-bottom:2px}
+  .tab.on{background:var(--yellow);color:#231;box-shadow:inset -2px -2px 0 rgba(0,0,0,.3)}
+
+  /* 사건 팝업 */
+  .dim{position:absolute;inset:0;background:rgba(8,8,18,.78);z-index:30;display:flex;align-items:center;justify-content:center;padding:14px}
+  .modal{width:100%;background:var(--bg);border:4px solid #000;box-shadow:inset -4px -4px 0 rgba(0,0,0,.4),inset 4px 4px 0 rgba(255,255,255,.1)}
+  .modal .mt{background:var(--red);border-bottom:3px solid #000;padding:8px 10px;font-family:"Galmuri14";font-size:13px;color:#fff;display:flex;align-items:center;gap:6px}
+  .modal .mb{padding:12px 12px 6px}
+  .modal .evil{width:46px;height:46px;margin:0 auto 8px;display:block}
+  .modal p{font-family:"Galmuri11";font-size:12px;line-height:1.7;color:var(--text);text-align:center}
+  .modal .ch{display:flex;flex-direction:column;gap:7px;padding:10px 12px 14px}
+  .modal .opt{background:var(--panel);border:3px solid #000;box-shadow:inset -2px -2px 0 rgba(0,0,0,.4);padding:9px;font-family:"Galmuri11";font-size:12px;color:#fff}
+  .modal .opt s{display:block;text-decoration:none;font-family:"Galmuri9";font-size:10px;margin-top:3px}
+  .modal .opt.good s{color:var(--green)}
+  .modal .opt.bad s{color:var(--red)}
+
+  /* 도트 국장 캐릭터 (SVG) */
+  .gov{width:90px;height:90px;display:block}
+</style>
+</head>
+<body>
+  <div class="head">
+    <h1>믿어주세요 개표국 — 레트로 픽셀 확정 시안</h1>
+    <p>고르신 <b style="color:#fff">6. 레트로 픽셀</b> 방향을 실제 게임 룩으로 구체화한 시안입니다. ① 한글은 도트 폰트 <b style="color:#73eff7">Galmuri</b>로 출력(영문 큰 숫자는 Press Start 2P), ② 국장은 도트 SVG 캐릭터, ③ 개표 메인 · 직원 탭 · 사건 팝업까지 통일된 8비트 UI. 스캔라인 효과 포함. 이 룩으로 전체를 리빌드합니다 — OK면 진행, 고칠 점 있으면 알려주세요.</p>
+    <div class="pal">
+      <i style="background:#1a1c2c"></i><i style="background:#29366f"></i><i style="background:#41a6f6"></i><i style="background:#73eff7"></i>
+      <i style="background:#38b764"></i><i style="background:#ffcd75"></i><i style="background:#ef7d57"></i><i style="background:#b13e53"></i><i style="background:#d77bba"></i><i style="background:#f4f4f4"></i>
+    </div>
+  </div>
+
+  <div class="row">
+
+    <!-- A. 개표 메인 -->
+    <div class="col">
+      <div class="lbl"><b>A. 개표 메인 화면</b> — 도트 국장 + 큰 숫자 + 업그레이드</div>
+      <div class="ph">
+        <div class="scan"></div>
+        <div class="hud">
+          <div class="chip"><div class="v">12.3만</div><div class="k">표</div></div>
+          <div class="chip"><div class="v">4.1천</div><div class="k">해명</div></div>
+          <div class="chip"><div class="v">82%</div><div class="k">믿음</div></div>
+        </div>
+        <div class="stage">
+          <div class="num">123,041</div>
+          <div class="numko">12만 3천 표</div>
+          <div class="cps">▶ 초당 465표 개표중</div>
+          <!-- 도트 국장 -->
+          <svg class="gov" viewBox="0 0 12 12" shape-rendering="crispEdges">
+            <rect x="3" y="1" width="6" height="1" fill="#5a3a1a"/>
+            <rect x="2" y="2" width="8" height="1" fill="#5a3a1a"/>
+            <rect x="2" y="3" width="1" height="3" fill="#5a3a1a"/>
+            <rect x="9" y="3" width="1" height="3" fill="#5a3a1a"/>
+            <rect x="3" y="3" width="6" height="4" fill="#f1c79b"/>
+            <rect x="4" y="4" width="1" height="1" fill="#2a1d12"/>
+            <rect x="7" y="4" width="1" height="1" fill="#2a1d12"/>
+            <rect x="4" y="6" width="4" height="1" fill="#e0a878"/>
+            <rect x="2" y="7" width="8" height="5" fill="#2f3a8c"/>
+            <rect x="4" y="7" width="4" height="1" fill="#f4f4f4"/>
+            <rect x="5" y="8" width="2" height="3" fill="#b13e53"/>
+            <rect x="8" y="8" width="1" height="1" fill="#ffcd75"/>
+            <rect x="2" y="11" width="3" height="1" fill="#1a1c2c"/>
+            <rect x="7" y="11" width="3" height="1" fill="#1a1c2c"/>
+          </svg>
+          <div class="floor"></div>
+        </div>
+        <div class="cta">개표하기 <small>탭 → +127표</small></div>
+        <div class="list">
+          <div class="item"><div class="ic">🗳️</div><div class="tt"><b>접수창구 Lv.16</b><s>+38 표/초</s></div><div class="pr">1.2천</div></div>
+          <div class="item"><div class="ic">📋</div><div class="tt"><b>분류반 Lv.9</b><s>+24 표/초</s></div><div class="pr no">880</div></div>
+        </div>
+        <div class="tabs">
+          <div class="tab on"><em>🗳️</em>개표</div>
+          <div class="tab"><em>🧑</em>직원</div>
+          <div class="tab"><em>⚡</em>사건</div>
+          <div class="tab"><em>🏛</em>감사</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- B. 직원 탭 -->
+    <div class="col">
+      <div class="lbl"><b>B. 직원 탭</b> — 고용/승급 리스트</div>
+      <div class="ph">
+        <div class="scan"></div>
+        <div class="hud">
+          <div class="chip"><div class="v">12.3만</div><div class="k">표</div></div>
+          <div class="chip"><div class="v">x3.2</div><div class="k">배율</div></div>
+          <div class="chip"><div class="v">6/9</div><div class="k">직원</div></div>
+        </div>
+        <div style="padding:6px 10px"><div style="font-family:'Galmuri14';font-size:13px;color:var(--yellow)">▌개표국 직원</div></div>
+        <div class="list" style="flex:1;overflow:hidden">
+          <div class="item"><div class="ic">🧑‍💼</div><div class="tt"><b>접수원 Lv.16</b><s>+38/초 · 분류반 시너지 ↑</s></div><div class="pr">1.2천</div></div>
+          <div class="item"><div class="ic">📋</div><div class="tt"><b>분류반 Lv.9</b><s>+24/초</s></div><div class="pr">880</div></div>
+          <div class="item"><div class="ic">🔍</div><div class="tt"><b>감사관 Lv.5</b><s>+15/초 · 신뢰 방어</s></div><div class="pr no">2.4천</div></div>
+          <div class="item"><div class="ic">🏃</div><div class="tt"><b>운반원 Lv.7</b><s>+19/초</s></div><div class="pr">640</div></div>
+          <div class="item"><div class="ic">🛠️</div><div class="tt"><b>전산직 Lv.3</b><s>+11/초</s></div><div class="pr no">3.1천</div></div>
+          <div class="item" style="opacity:.55"><div class="ic">🔒</div><div class="tt"><b>대변인 ???</b><s>믿음 90%에서 해금</s></div><div class="pr no">잠김</div></div>
+        </div>
+        <div class="tabs">
+          <div class="tab"><em>🗳️</em>개표</div>
+          <div class="tab on"><em>🧑</em>직원</div>
+          <div class="tab"><em>⚡</em>사건</div>
+          <div class="tab"><em>🏛</em>감사</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- C. 사건 팝업 -->
+    <div class="col">
+      <div class="lbl"><b>C. 사건 팝업</b> — 이벤트 선택지(이벤트 대폭 추가 예정)</div>
+      <div class="ph">
+        <div class="scan"></div>
+        <div class="hud">
+          <div class="chip"><div class="v">12.3만</div><div class="k">표</div></div>
+          <div class="chip"><div class="v">4.1천</div><div class="k">해명</div></div>
+          <div class="chip"><div class="v" style="color:#b13e53">61%</div><div class="k">믿음↓</div></div>
+        </div>
+        <div class="stage" style="opacity:.4">
+          <div class="num">123,041</div>
+          <div class="cps">개표중…</div>
+        </div>
+        <div class="tabs" style="opacity:.4">
+          <div class="tab on"><em>🗳️</em>개표</div><div class="tab"><em>🧑</em>직원</div><div class="tab"><em>⚡</em>사건</div><div class="tab"><em>🏛</em>감사</div>
+        </div>
+        <!-- 모달 -->
+        <div class="dim">
+          <div class="modal">
+            <div class="mt"><span>⚠</span> 긴급 사건 발생!</div>
+            <div class="mb">
+              <svg class="evil" viewBox="0 0 12 12" shape-rendering="crispEdges">
+                <rect x="2" y="2" width="8" height="1" fill="#222"/>
+                <rect x="2" y="3" width="1" height="3" fill="#222"/>
+                <rect x="9" y="3" width="1" height="3" fill="#222"/>
+                <rect x="3" y="3" width="6" height="4" fill="#c08457"/>
+                <rect x="4" y="4" width="1" height="1" fill="#b13e53"/>
+                <rect x="7" y="4" width="1" height="1" fill="#b13e53"/>
+                <rect x="2" y="7" width="8" height="5" fill="#3a2f4f"/>
+                <rect x="5" y="8" width="2" height="3" fill="#222"/>
+              </svg>
+              <p>기자가 "재검표 의혹"을<br>제기했다! 어떻게 할까?</p>
+            </div>
+            <div class="ch">
+              <div class="opt good">해명 자료 공개 <s>해명 -2천 / 믿음 +12%</s></div>
+              <div class="opt bad">그냥 강행한다 <s>믿음 -8% / 개표속도 +30% 10초</s></div>
+              <div class="opt">감사관에게 맡긴다 <s>10초 후 자동 처리</s></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>
