@@ -319,16 +319,16 @@ export class WorldView {
   }
 
   _bumpCombo() {
-    const now = this.scene.time.now;
-    if (now - this._comboLast < 500) this._comboN += 1;
-    else this._comboN = 1;
-    this._comboLast = now;
-    if (this._comboN >= 3) {
-      this.comboText.setText(`${this._comboN} 콤보!`).setVisible(true).setScale(1);
+    // 콤보는 GameState가 관리(실보너스와 일치) — 여기선 표시만
+    const n = this.gameState.clickCombo ? this.gameState.clickCombo() : 0;
+    if (n >= 3) {
+      const mult = 1 + Math.min(4, Math.floor(n / 5)) * 0.5;
+      this.comboText.setText(mult > 1 ? `${n} 콤보! ×${mult}` : `${n} 콤보!`).setVisible(true).setScale(1);
+      this.comboText.setColor(mult > 1 ? "#ffd34d" : "#ffcd75");
       this.scene.tweens.killTweensOf(this.comboText);
       this.scene.tweens.add({ targets: this.comboText, scale: 1.3, yoyo: true, duration: 100, ease: "Quad.easeOut" });
       this._comboTimer?.remove();
-      this._comboTimer = this.scene.time.delayedCall(800, () => { this.comboText.setVisible(false); this._comboN = 0; });
+      this._comboTimer = this.scene.time.delayedCall(800, () => { this.comboText.setVisible(false); });
     }
   }
 

@@ -302,16 +302,25 @@ export class GameState extends Phaser.Events.EventEmitter {
   }
 
   processClick(x, y) {
-    const amount = this.clickPower();
+    // 연타 콤보: 600ms 안에 이어 누르면 콤보 누적, 5콤보마다 +0.5배(최대 ×3)
+    const now = (typeof performance !== "undefined" ? performance.now() : Date.now());
+    if (now - (this._lastClickAt || 0) < 600) this._clickCombo = (this._clickCombo || 0) + 1;
+    else this._clickCombo = 1;
+    this._lastClickAt = now;
+    const comboMult = 1 + Math.min(4, Math.floor(this._clickCombo / 5)) * 0.5;
+    const amount = Math.round(this.clickPower() * comboMult);
     this.addVotes(amount);
     this.data.stats.totalClicks += 1;
     this._bumpDaily("clicks");
     this.advanceTutorial("click");
     this.emit("ballots", { x, y, count: 6 });
-    this.emit("float", { text: `+${amount}`, x, y: y - 26, color: "#ffc857" });
+    this.emit("float", { text: `+${shortNumber(amount)}${comboMult > 1 ? ` ×${comboMult}` : ""}`, x, y: y - 26, color: comboMult > 1 ? "#ffd34d" : "#ffc857" });
     this.checkProgression();
     this.emit("changed");
   }
+
+  // 현재 클릭 콤보 수(WorldView 표시용)
+  clickCombo() { return this._clickCombo || 0; }
 
   tick() {
     if (this.data.paused) return;
