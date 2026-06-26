@@ -32,10 +32,10 @@ const config = {
   parent: "game",
   width: GAME_WIDTH,
   height: GAME_HEIGHT,
-  backgroundColor: "#241a2e",
-  pixelArt: false,
+  backgroundColor: "#14121c",
+  pixelArt: true,
   roundPixels: true,
-  antialias: true,
+  antialias: false,
   scale: {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,

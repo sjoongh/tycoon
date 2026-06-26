@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import { generatePlaceholders } from "../textures/devPlaceholders.js";
 import { createAnimations } from "../animations/createAnimations.js";
+import { buildGovTextures } from "../world/dotChar.js";
 
 export class PreloadScene extends Phaser.Scene {
   constructor() {
@@ -54,6 +55,7 @@ export class PreloadScene extends Phaser.Scene {
   create() {
     generatePlaceholders(this);
     createAnimations(this);
+    buildGovTextures(this); // 도트 국장 4단계 텍스처(gov-1..4)
     this.scene.start("GameScene");
   }
 }

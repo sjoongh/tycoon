@@ -4,8 +4,8 @@ body {
   height: 100%;
   margin: 0;
   background:
-    radial-gradient(circle at 50% 0%, #4a2f63, transparent 26rem),
-    linear-gradient(180deg, #2b1d3a 0%, #1c1326 100%);
+    radial-gradient(circle at 50% 0%, #2a2f55, transparent 24rem),
+    linear-gradient(180deg, #14121c 0%, #0a0a12 100%);
   overflow: hidden;
 }
 
@@ -21,9 +21,11 @@ body {
   width: min(100vw, calc(100vh * 390 / 844));
   height: min(100vh, calc(100vw * 844 / 390));
   overflow: hidden;
-  box-shadow: 0 0 40px rgba(120, 90, 60, 0.18);
+  box-shadow: 0 0 0 3px #000, 0 0 40px rgba(40, 50, 90, 0.4);
+  image-rendering: pixelated;
 }
 
 canvas {
   display: block;
+  image-rendering: pixelated;
 }

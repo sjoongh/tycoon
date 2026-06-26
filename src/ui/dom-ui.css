@@ -1,295 +1,271 @@
+/* =========================================================================
+   믿어주세요 개표국 — 레트로 픽셀(8비트) 디자인 시스템
+   한글 도트: Galmuri / 영문·숫자: Press Start 2P
+   16색 팔레트 + 각진 픽셀 패널/버튼. 클래스 구조는 기존 JS와 호환 유지.
+   ========================================================================= */
 :root {
-  --bg-deep: #2b1d3a;
-  --panel: #e8d9b8;
-  --panel-sunk: #d4c19a;
-  --ink: #2a2030;
-  --ink-soft: #6b5d52;
-  --gold: #ffc02e;
-  --gold-deep: #e08a00;
-  --gold-hi: #ffe9a8;
-  --gem: #4ec5ff;
-  --buy: #34d36b;
-  --buy-edge: #1f9e49;
-  --event: #ff7a3c;
-  --event-edge: #c9491a;
+  --bg-deep: #0a0a12;
+  --bg: #1a1c2c;
+  --bg2: #0f1020;
+  --panel: #29366f;        /* 기본 패널(남색) */
+  --panel-sunk: #1f2750;   /* 눌린 패널 */
+  --panel2: #333c57;       /* 보조 패널(회청) */
+  --panel3: #3b5dc9;       /* 밝은 강조 남색 */
+  --ink: #f4f4f4;          /* 밝은 본문 텍스트 */
+  --ink-soft: #94b0c2;     /* 흐린 텍스트 */
+  --gold: #ffcd75;
+  --gold-deep: #d98e3a;
+  --gold-hi: #ffe3a8;
+  --gem: #73eff7;
+  --buy: #38b764;
+  --buy-edge: #1a7a42;
+  --event: #ef7d57;
+  --event-edge: #b8431f;
+  --red: #b13e53;
+  --line: #000;
+
+  /* 픽셀 폰트 스택 */
+  --f-body: "Galmuri11", "Press Start 2P", monospace;
+  --f-bold: "Galmuri14", "Galmuri11", monospace;
+  --f-small: "Galmuri9", "Galmuri11", monospace;
+  --f-num: "Press Start 2P", "Galmuri11", monospace;
+
+  /* 픽셀 그림자(하드, 각진) */
+  --px-out: inset -3px -3px 0 rgba(0,0,0,0.4), inset 3px 3px 0 rgba(255,255,255,0.1);
+  --px-out-sm: inset -2px -2px 0 rgba(0,0,0,0.4);
+  --px-drop: 0 4px 0 #000;
 }
 
-.gp-ui { position: absolute; inset: 0; pointer-events: none; font-family: "Noto Sans KR", system-ui, sans-serif; }
+.gp-ui { position: absolute; inset: 0; pointer-events: none; font-family: var(--f-body); image-rendering: pixelated; -webkit-font-smoothing: none; }
 .gp-ui * { box-sizing: border-box; }
 
 /* ---------- HUD ---------- */
-.gp-hud { position: absolute; top: 0; left: 0; right: 0; padding: 10px 12px; display: flex; flex-direction: column; gap: 7px; align-items: stretch; }
-/* FIX #1/#2: mute moved to .gp-ui level (see DOMHud.js); chip row no longer needs right margin for mute */
-/* 우측 상단 토글(mute/bell)이 칩과 안 겹치도록 칩 행 우측 공간 예약 */
-.gp-hud__row { display: flex; gap: 8px; padding-right: 84px; }
-/* FIX #2: weighted flex so 표(long numbers) gets more room than 믿음(%); prevents crowding into mute zone */
-.gp-chip { display: flex; align-items: center; gap: 7px; padding: 6px 11px; border-radius: 14px; background: rgba(20,12,28,0.82); box-shadow: 0 3px 0 rgba(0,0,0,0.4), inset 0 0 0 2px var(--gold); flex: 1 1 0; min-width: 0; overflow: hidden; }
+.gp-hud { position: absolute; top: 0; left: 0; right: 0; padding: 9px 9px; display: flex; flex-direction: column; gap: 7px; align-items: stretch; }
+.gp-hud__row { display: flex; gap: 6px; padding-right: 84px; }
+.gp-chip { display: flex; align-items: center; gap: 6px; padding: 6px 8px; background: var(--panel); border: 3px solid var(--line); box-shadow: var(--px-out-sm); flex: 1 1 0; min-width: 0; overflow: hidden; }
 .gp-chip--votes  { flex-grow: 1.6; }
 .gp-chip--explain { flex-grow: 1.2; }
 .gp-chip--trust  { flex-grow: 0.9; }
-.gp-chip__ic { width: 22px; height: 22px; flex: none; background-size: contain; background-repeat: no-repeat; background-position: center; }
-.gp-chip__val { font-family: "Black Han Sans", sans-serif; font-size: 17px; color: var(--gold-hi); line-height: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.gp-chip__label { font-size: 10px; font-weight: 700; color: rgba(243,232,214,0.7); }
-.gp-progress { height: 16px; border-radius: 9px; background: #1c1326; overflow: hidden; box-shadow: inset 0 2px 4px rgba(0,0,0,0.5), 0 0 0 2px rgba(0,0,0,0.3); }
-.gp-progress__fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--gold) 0%, #ff9f1a 100%); box-shadow: inset 0 1px 0 rgba(255,255,255,0.55); transition: width .3s ease-out; }
-.gp-stage { align-self: center; display: inline-block; background: rgba(20,12,28,0.7); border-radius: 20px; padding: 3px 12px; font-size: 11px; font-weight: 800; color: var(--gold-hi); box-shadow: inset 0 0 0 1px rgba(255,192,46,0.4); }
+.gp-chip__ic { width: 18px; height: 18px; flex: none; background-size: contain; background-repeat: no-repeat; background-position: center; image-rendering: pixelated; }
+.gp-chip__val { font-family: var(--f-bold); font-size: 13px; color: var(--cyan, var(--gem)); line-height: 1.1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gp-chip__label { font-family: var(--f-small); font-size: 9px; color: var(--ink-soft); }
+.gp-progress { height: 14px; background: var(--bg2); overflow: hidden; border: 3px solid var(--line); box-shadow: var(--px-out-sm); }
+.gp-progress__fill { height: 100%; width: 0%; background: var(--gold); box-shadow: inset 0 -3px 0 rgba(0,0,0,0.22); transition: width .3s steps(8, end); }
+.gp-stage { align-self: center; display: inline-block; background: var(--panel-sunk); padding: 4px 11px; font-family: var(--f-small); font-size: 10px; color: var(--gold-hi); border: 2px solid var(--line); }
 .gp-cps { display: inline-block; }
-.gp-cps--up { animation: gp-cps-pop 0.5s ease-out; }
-@keyframes gp-cps-pop { 0% { transform: scale(1); } 30% { transform: scale(1.45); color: #8df0b0; } 100% { transform: scale(1); color: inherit; } }
+.gp-cps--up { animation: gp-cps-pop 0.5s steps(3); }
+@keyframes gp-cps-pop { 0% { transform: scale(1); } 30% { transform: scale(1.4); color: #8df0b0; } 100% { transform: scale(1); color: inherit; } }
 
-/* 믿음 위기/보너스: 칩 강조 + 상태 배지 */
-.gp-chip--crisis { box-shadow: 0 3px 0 rgba(0,0,0,0.4), inset 0 0 0 2px #ff5a5a; animation: gp-crisis-pulse 1.1s ease-in-out infinite; }
+/* 믿음 위기/보너스 */
+.gp-chip--crisis { box-shadow: var(--px-out-sm), 0 0 0 3px var(--red); animation: gp-crisis-pulse 1.1s steps(2) infinite; }
 .gp-chip--crisis .gp-chip__val { color: #ff9a9a; }
-.gp-chip--bonus { box-shadow: 0 3px 0 rgba(0,0,0,0.4), inset 0 0 0 2px #4cd680; }
+.gp-chip--bonus { box-shadow: var(--px-out-sm), 0 0 0 3px var(--buy); }
 .gp-chip--bonus .gp-chip__val { color: #8df0b0; }
-@keyframes gp-crisis-pulse { 0%,100% { box-shadow: 0 3px 0 rgba(0,0,0,0.4), inset 0 0 0 2px #ff5a5a; } 50% { box-shadow: 0 3px 0 rgba(0,0,0,0.4), inset 0 0 0 2px #ff5a5a, 0 0 10px rgba(255,90,90,0.6); } }
-.gp-truststate { align-self: center; display: inline-block; margin-top: 2px; border-radius: 20px; padding: 2px 12px; font-size: 11px; font-weight: 800; }
-.gp-truststate--crisis { background: rgba(120,20,20,0.9); color: #ffd0d0; box-shadow: inset 0 0 0 1px rgba(255,90,90,0.6); }
-.gp-truststate--bonus { background: rgba(20,90,50,0.9); color: #d6ffe6; box-shadow: inset 0 0 0 1px rgba(76,214,128,0.6); }
+@keyframes gp-crisis-pulse { 0%,100% { box-shadow: var(--px-out-sm), 0 0 0 3px var(--red); } 50% { box-shadow: var(--px-out-sm), 0 0 0 3px #ff7a8c; } }
+.gp-truststate { align-self: center; display: inline-block; margin-top: 2px; padding: 3px 11px; font-family: var(--f-small); font-size: 10px; border: 2px solid var(--line); }
+.gp-truststate--crisis { background: #5a1620; color: #ffd0d0; }
+.gp-truststate--bonus { background: #115033; color: #d6ffe6; }
 
-/* FIX #1: mute button lives on .gp-ui root, not inside .gp-hud */
-/* FIX P0: shifted right so it doesn't ghost behind the trust chip (was right:12px, now right:54px) */
-.gp-mute { position: absolute; top: 10px; right: 8px; pointer-events: auto; width: 36px; height: 36px; border: none; border-radius: 10px; background: rgba(20,12,28,0.7); box-shadow: inset 0 0 0 1px rgba(255,192,46,0.4); font-size: 16px; cursor: pointer; z-index: 10; display: flex; align-items: center; justify-content: center; }
-/* 알림 토글 벨 — mute 왼쪽(권한 허용 시에만 표시) */
-.gp-bell { position: absolute; top: 10px; right: 48px; pointer-events: auto; width: 36px; height: 36px; border: none; border-radius: 10px; background: rgba(20,12,28,0.7); box-shadow: inset 0 0 0 1px rgba(255,192,46,0.4); font-size: 16px; cursor: pointer; z-index: 10; display: none; align-items: center; justify-content: center; }
+/* 우상단 토글 */
+.gp-mute { position: absolute; top: 9px; right: 8px; pointer-events: auto; width: 36px; height: 36px; border: 3px solid var(--line); background: var(--panel); box-shadow: var(--px-out-sm); font-size: 15px; cursor: pointer; z-index: 10; display: flex; align-items: center; justify-content: center; image-rendering: pixelated; }
+.gp-bell { position: absolute; top: 9px; right: 50px; pointer-events: auto; width: 36px; height: 36px; border: 3px solid var(--line); background: var(--panel); box-shadow: var(--px-out-sm); font-size: 15px; cursor: pointer; z-index: 10; display: none; align-items: center; justify-content: center; }
 
-/* 긴급 개표(러시) FAB — 바텀시트 위 우측에 떠 있는 액티브 부스트 버튼 */
-/* FIX P0+P1: raised to bottom:310px for safety margin above bottom sheet; unified typography with brief */
-.gp-rush { position: absolute; right: 12px; bottom: 310px; z-index: 9; pointer-events: auto; border: none; border-radius: 16px; padding: 9px 14px; cursor: pointer;
-  display: flex; flex-direction: column; align-items: center; gap: 1px; min-width: 96px; font-family: "Black Han Sans", "Noto Sans KR", sans-serif; line-height: 1.15; }
-.gp-rush b { font-size: 14px; }
-.gp-rush small { font-family: "Noto Sans KR", sans-serif; font-size: 10px; font-weight: 700; opacity: 0.9; }
-.gp-rush--ready { background: linear-gradient(180deg, #ffe07a 0%, #ff9f1a 100%); color: #5a2e00; box-shadow: 0 5px 0 #c96f00, 0 0 14px rgba(255,180,40,0.6); animation: gp-rush-pulse 1s ease-in-out infinite; }
-.gp-rush--ready:active { transform: translateY(4px); box-shadow: 0 1px 0 #c96f00; }
-/* FIX P0: conic ring contrast raised — dark arc on red gradient is legible; was 0.22 (invisible) */
-.gp-rush--active { background: conic-gradient(rgba(0,0,0,0.38) var(--rush-pct,100%), transparent var(--rush-pct,100%)), linear-gradient(180deg, #ff7a3c 0%, #d32f2f 100%); color: #fff; box-shadow: 0 5px 0 #9a0007, 0 0 18px rgba(255,90,40,0.8); }
-.gp-rush--cd { background: #4a3a52; color: #b9a9c8; box-shadow: 0 4px 0 #2e2438; cursor: not-allowed; opacity: 0.85; }
-@keyframes gp-rush-pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.06); } }
+/* 긴급 개표(러시) FAB */
+.gp-rush { position: absolute; right: 12px; bottom: 310px; z-index: 9; pointer-events: auto; border: 3px solid var(--line); padding: 8px 12px; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; gap: 1px; min-width: 92px; font-family: var(--f-bold); line-height: 1.25; box-shadow: var(--px-drop); }
+.gp-rush b { font-size: 12px; }
+.gp-rush small { font-family: var(--f-small); font-size: 9px; opacity: 0.92; }
+.gp-rush--ready { background: var(--gold); color: #5a2e00; animation: gp-rush-pulse 1s steps(2) infinite; }
+.gp-rush--ready:active { transform: translateY(4px); box-shadow: 0 0 0 #000; }
+.gp-rush--active { background: linear-gradient(0deg, rgba(0,0,0,0.32) var(--rush-pct,100%), transparent var(--rush-pct,100%)), var(--event); color: #fff; }
+.gp-rush--cd { background: var(--panel2); color: var(--ink-soft); cursor: not-allowed; opacity: 0.85; }
+@keyframes gp-rush-pulse { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
 @media (max-height: 700px) { .gp-rush { bottom: 250px; transform: scale(0.85); transform-origin: bottom right; } }
 
-/* 긴급 브리핑 FAB(좌측) — 믿음(초록) 테마, 러시와 완전 대칭 */
-/* FIX P1: padding, font-size, small font-size now identical to .gp-rush for true mirror symmetry */
-.gp-brief { position: absolute; left: 12px; bottom: 310px; z-index: 9; pointer-events: auto; border: none; border-radius: 16px; padding: 9px 14px; cursor: pointer;
-  display: flex; flex-direction: column; align-items: center; gap: 1px; min-width: 96px; font-family: "Black Han Sans", "Noto Sans KR", sans-serif; line-height: 1.15; }
-.gp-brief b { font-size: 14px; }
-.gp-brief small { font-family: "Noto Sans KR", sans-serif; font-size: 10px; font-weight: 700; opacity: 0.9; }
-/* FIX P1: pulse animation added — mirrors gp-rush--ready for symmetric affordance */
-.gp-brief--ready { background: linear-gradient(180deg, #6fe89a 0%, #2fae5e 100%); color: #073a1c; box-shadow: 0 5px 0 #1c7a40, 0 0 12px rgba(60,210,120,0.5); animation: gp-rush-pulse 1.4s ease-in-out infinite; }
-.gp-brief--ready:active { transform: translateY(4px); box-shadow: 0 1px 0 #1c7a40; animation: none; }
-.gp-brief--active { background: linear-gradient(180deg, #4cd680 0%, #1f9e49 100%); color: #fff; box-shadow: 0 5px 0 #145e2c, 0 0 16px rgba(76,214,128,0.7); }
-.gp-brief--cd, .gp-brief--poor { background: #3a4a40; color: #b9c8bd; box-shadow: 0 4px 0 #26342c; cursor: not-allowed; opacity: 0.85; }
+/* 긴급 브리핑 FAB(좌측) */
+.gp-brief { position: absolute; left: 12px; bottom: 310px; z-index: 9; pointer-events: auto; border: 3px solid var(--line); padding: 8px 12px; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; gap: 1px; min-width: 92px; font-family: var(--f-bold); line-height: 1.25; box-shadow: var(--px-drop); }
+.gp-brief b { font-size: 12px; }
+.gp-brief small { font-family: var(--f-small); font-size: 9px; opacity: 0.92; }
+.gp-brief--ready { background: var(--buy); color: #04220f; animation: gp-rush-pulse 1.4s steps(2) infinite; }
+.gp-brief--ready:active { transform: translateY(4px); box-shadow: 0 0 0 #000; animation: none; }
+.gp-brief--active { background: #1f9e49; color: #fff; }
+.gp-brief--cd, .gp-brief--poor { background: var(--panel2); color: var(--ink-soft); cursor: not-allowed; opacity: 0.85; }
 @media (max-height: 700px) { .gp-brief { bottom: 250px; transform: scale(0.85); transform-origin: bottom left; } }
 
 /* ---------- bottom sheet ---------- */
-/* FIX #3: flex-column layout — panel scrolls, tabs pin to bottom */
 .gp-bottom { position: absolute; left: 0; right: 0; bottom: 0; pointer-events: auto;
-  padding: 16px 12px 12px; border-top-left-radius: 22px; border-top-right-radius: 22px;
-  display: flex; flex-direction: column;
-  background: linear-gradient(to bottom, rgba(43,29,58,0) 0%, rgba(43,29,58,0.92) 18px, rgba(34,22,46,0.98) 40px);
-  box-shadow: 0 -3px 16px rgba(0,0,0,0.4), inset 0 2px 0 rgba(255,192,46,0.35); }
+  padding: 14px 9px 10px; display: flex; flex-direction: column;
+  background: var(--bg); border-top: 3px solid var(--line);
+  box-shadow: 0 -3px 0 var(--gold-deep), inset 0 3px 0 rgba(255,255,255,0.08); }
 
-.gp-card { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 16px; background: var(--panel); box-shadow: 0 3px 0 rgba(0,0,0,0.3), inset 0 0 0 1.5px rgba(224,138,0,0.4); }
-.gp-card__icon { width: 48px; height: 48px; border-radius: 13px; background-size: cover; background-position: center; flex: none; box-shadow: inset 0 0 0 2px rgba(0,0,0,0.15), inset 0 -2px 4px rgba(0,0,0,0.15); }
+.gp-card { display: flex; align-items: center; gap: 10px; padding: 10px; background: var(--panel); border: 3px solid var(--line); box-shadow: var(--px-out-sm); }
+.gp-card__icon { width: 44px; height: 44px; background-size: cover; background-position: center; flex: none; border: 2px solid var(--line); image-rendering: pixelated; }
 .gp-card__body { flex: 1; min-width: 0; }
-.gp-card__title { font-family: "Black Han Sans", sans-serif; color: var(--ink); font-size: 17px; }
-.gp-card__sub { font-size: 12px; font-weight: 700; color: var(--ink-soft); }
-.gp-card__gain { font-size: 11px; font-weight: 800; color: #2a9d54; margin-top: 2px; }
-.gp-card__milestone { font-size: 10px; font-weight: 800; color: var(--gold-deep); margin-top: 1px; }
-.gp-nextunlock { margin-top: 8px; text-align: center; font-size: 11px; font-weight: 700; color: #b9a9c8; background: rgba(20,12,28,0.45); border-radius: 12px; padding: 6px 10px; box-shadow: inset 0 0 0 1px rgba(255,192,46,0.2); }
+.gp-card__title { font-family: var(--f-bold); color: var(--ink); font-size: 14px; }
+.gp-card__sub { font-family: var(--f-small); font-size: 10px; color: var(--ink-soft); }
+.gp-card__gain { font-family: var(--f-small); font-size: 10px; color: #6fe89a; margin-top: 2px; }
+.gp-card__milestone { font-family: var(--f-small); font-size: 9px; color: var(--gold); margin-top: 1px; }
+.gp-nextunlock { margin-top: 8px; text-align: center; font-family: var(--f-small); font-size: 10px; color: var(--ink-soft); background: var(--panel-sunk); padding: 6px 10px; border: 2px solid var(--line); }
 .gp-nextunlock b { color: var(--gold-hi); }
 
 /* ---------- buttons ---------- */
-.gp-btn { pointer-events: auto; border: none; border-radius: 14px; padding: 11px 16px; font-family: "Black Han Sans", "Noto Sans KR", sans-serif; font-size: 15px; letter-spacing: 0.02em; color: #08361c; cursor: pointer;
-  background: linear-gradient(180deg, #5be88a 0%, var(--buy) 100%); box-shadow: 0 5px 0 var(--buy-edge), 0 3px 8px rgba(52,211,107,0.35), inset 0 1.5px 0 rgba(255,255,255,0.5); }
-.gp-btn:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--buy-edge), inset 0 1.5px 0 rgba(255,255,255,0.5); }
-.gp-btn--gold { background: linear-gradient(180deg, var(--gold-hi) 0%, var(--gold) 100%); box-shadow: 0 5px 0 var(--gold-deep), 0 3px 8px rgba(255,192,46,0.4), inset 0 1.5px 0 rgba(255,255,255,0.6); color: #5a2e00; }
-.gp-btn--gold:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--gold-deep), inset 0 1.5px 0 rgba(255,255,255,0.6); }
-/* 구매 가능 시 "지금 살 수 있다" 글로우(구매 유도 도파민) */
-.gp-btn--ready { animation: gp-ready-glow 1.4s ease-in-out infinite; }
-@keyframes gp-ready-glow {
-  0%,100% { box-shadow: 0 5px 0 var(--gold-deep), 0 3px 8px rgba(255,192,46,0.4), inset 0 1.5px 0 rgba(255,255,255,0.6); }
-  50% { box-shadow: 0 5px 0 var(--gold-deep), 0 0 14px 3px rgba(255,224,120,0.85), inset 0 1.5px 0 rgba(255,255,255,0.6); }
-}
+.gp-btn { pointer-events: auto; border: 3px solid var(--line); padding: 10px 15px; font-family: var(--f-bold); font-size: 14px; color: #04220f; cursor: pointer;
+  background: var(--buy); box-shadow: var(--px-out-sm), var(--px-drop); }
+.gp-btn:active { transform: translateY(4px); box-shadow: var(--px-out-sm); }
+.gp-btn--gold { background: var(--gold); color: #5a2e00; }
+.gp-btn--ready { animation: gp-ready-glow 1.2s steps(2) infinite; }
+@keyframes gp-ready-glow { 0%,100% { box-shadow: var(--px-out-sm), var(--px-drop); } 50% { box-shadow: var(--px-out-sm), var(--px-drop), 0 0 0 3px var(--gold-hi); } }
 .gp-btn--ready:active { animation: none; }
-.gp-btn--disabled, .gp-btn--disabled:active { background: #b8aea4; box-shadow: 0 4px 0 #8f867c; color: #6e655c; cursor: not-allowed; transform: none; }
-.gp-btn--sm { padding: 9px 13px; font-size: 13px; border-radius: 12px; }
-/* P2 fix: danger variant for destructive actions (prestige reset) */
-.gp-btn--danger { background: linear-gradient(180deg, #ff6b6b 0%, #d32f2f 100%); box-shadow: 0 5px 0 #9a0007, 0 3px 8px rgba(211,47,47,0.4), inset 0 1.5px 0 rgba(255,255,255,0.35); color: #fff; }
-.gp-btn--danger:active { transform: translateY(4px); box-shadow: 0 1px 0 #9a0007, inset 0 1.5px 0 rgba(255,255,255,0.35); }
-/* P1 fix: event button needs position:relative + overflow:hidden for cooldown sweep pseudo-element */
-.gp-btn--event { position: relative; overflow: hidden; width: 100%; padding: 14px; font-size: 16px; border-radius: 16px; color: #fff; margin-top: 8px;
-  background: linear-gradient(180deg, #ff9a5c 0%, var(--event) 100%); box-shadow: 0 5px 0 var(--event-edge), 0 3px 8px rgba(255,122,60,0.4), inset 0 1.5px 0 rgba(255,255,255,0.4); }
-/* Cooldown sweep fill — JS writes --cd-pct each second */
-.gp-btn--event.gp-btn--disabled::before { content: ''; position: absolute; inset: 0; border-radius: inherit; background: rgba(255,160,80,0.3); width: var(--cd-pct, 0%); transition: width 1s linear; pointer-events: none; }
-
-/* FIX #4: upgrade button in card — two-line layout, no truncation */
-.gp-btn--upgrade { display: flex; flex-direction: column; align-items: center; gap: 1px; min-width: 72px; flex-shrink: 0; white-space: nowrap; padding: 9px 12px; font-size: 13px; line-height: 1.2; }
-.gp-btn--upgrade small { font-family: "Noto Sans KR", sans-serif; font-size: 10px; font-weight: 700; opacity: 0.85; }
+.gp-btn--disabled, .gp-btn--disabled:active { background: var(--panel2); box-shadow: var(--px-out-sm), 0 4px 0 #000; color: var(--ink-soft); cursor: not-allowed; transform: none; }
+.gp-btn--sm { padding: 8px 12px; font-size: 12px; }
+.gp-btn--danger { background: var(--red); color: #fff; }
+.gp-btn--event { position: relative; overflow: hidden; width: 100%; padding: 13px; font-size: 15px; color: #fff; margin-top: 8px; background: var(--event); }
+.gp-btn--event.gp-btn--disabled::before { content: ''; position: absolute; inset: 0; background: rgba(255,160,80,0.3); width: var(--cd-pct, 0%); transition: width 1s linear; pointer-events: none; }
+.gp-btn--upgrade { display: flex; flex-direction: column; align-items: center; gap: 1px; min-width: 72px; flex-shrink: 0; white-space: nowrap; padding: 8px 11px; font-size: 12px; line-height: 1.25; }
+.gp-btn--upgrade small { font-family: var(--f-small); font-size: 9px; opacity: 0.9; }
 
 /* ---------- facility selector ---------- */
 .gp-facsel { display: flex; gap: 5px; margin-top: 10px; }
-.gp-fac { flex: 1; pointer-events: auto; border: none; border-radius: 12px; padding: 7px 3px 6px; background: #3a2a4d; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 3px; min-height: 56px; transition: transform .1s; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06); }
-.gp-fac__icon { width: 24px; height: 24px; border-radius: 8px; box-shadow: inset 0 0 0 1.5px rgba(0,0,0,0.25), inset 0 -1px 3px rgba(0,0,0,0.2); }
-.gp-fac__role { font-size: 11px; font-weight: 800; color: #f3e8d6; }
-.gp-fac__lv { font-size: 9px; font-weight: 700; color: #b9a9c8; }
-.gp-fac--active { background: #5a3e12; box-shadow: 0 0 0 2.5px var(--gold) inset, 0 2px 8px rgba(255,192,46,0.4); transform: translateY(-2px); }
-.gp-fac--active .gp-fac__role { color: var(--gold-hi); }
+.gp-fac { flex: 1; pointer-events: auto; border: 3px solid var(--line); padding: 7px 3px 6px; background: var(--panel2); cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 3px; min-height: 56px; box-shadow: var(--px-out-sm); }
+.gp-fac__icon { width: 24px; height: 24px; border: 2px solid var(--line); image-rendering: pixelated; }
+.gp-fac__role { font-family: var(--f-small); font-size: 10px; color: var(--ink); }
+.gp-fac__lv { font-family: var(--f-small); font-size: 9px; color: var(--ink-soft); }
+.gp-fac--active { background: var(--panel3); box-shadow: var(--px-out-sm), 0 0 0 3px var(--gold); transform: translateY(-2px); }
+.gp-fac--active .gp-fac__role { color: #fff; }
 .gp-fac--locked { cursor: not-allowed; }
 .gp-fac--locked .gp-fac__icon { filter: grayscale(1); opacity: 0.4; }
 .gp-fac--locked .gp-fac__role, .gp-fac--locked .gp-fac__lv { opacity: 0.5; }
 
-/* FIX #8: prestige seal buttons use gem-blue accent, distinct from gold facility pickers */
-/* 감사 업그레이드가 8종으로 늘어 4열 그리드(2행)로 배치 */
+/* ---------- prestige seal buttons ---------- */
 .gp-sealgrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-top: 10px; }
-.gp-seal { pointer-events: auto; border: none; border-radius: 12px; padding: 7px 3px 6px; background: #1c0d2e; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 3px; min-height: 54px; transition: transform .1s; box-shadow: inset 0 0 0 1.5px var(--gem); }
-/* P1 fix: larger text in 4-col grid; outer ring on active for glance-speed legibility */
-.gp-seal__role { font-size: 12px; font-weight: 800; color: #d0f0ff; }
-.gp-seal__lv  { font-size: 10px; font-weight: 700; color: #7ec8e3; }
-.gp-seal--active { background: #0d2240; box-shadow: 0 0 0 2.5px var(--gem), 0 0 0 2px var(--gem) inset, 0 2px 8px rgba(78,197,255,0.4); transform: translateY(-3px); }
+.gp-seal { pointer-events: auto; border: 3px solid var(--line); padding: 7px 3px 6px; background: #142036; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 3px; min-height: 54px; box-shadow: var(--px-out-sm), inset 0 0 0 1px var(--gem); }
+.gp-seal__role { font-family: var(--f-small); font-size: 10px; color: #d0f0ff; }
+.gp-seal__lv { font-family: var(--f-small); font-size: 9px; color: var(--gem); }
+.gp-seal--active { background: #0d2240; box-shadow: var(--px-out-sm), 0 0 0 3px var(--gem); transform: translateY(-3px); }
 .gp-seal--locked { cursor: not-allowed; opacity: 0.45; }
 
 /* ---------- tabs ---------- */
-/* FIX #3: tabs pinned to bottom via flex-none; no margin-top (spacing from panel is handled by gap) */
-.gp-tabs { display: flex; gap: 6px; flex: none; margin-top: 8px; }
-.gp-tab { position: relative; flex: 1; pointer-events: auto; border: none; border-radius: 12px; padding: 9px 4px; font-size: 12px; font-weight: 800; background: #3a2a4d; color: #b9a9c8; cursor: pointer; transition: all .15s; }
-.gp-tab__dot { position: absolute; top: 5px; right: 8px; width: 9px; height: 9px; border-radius: 50%; background: #ff5a5a; box-shadow: 0 0 6px rgba(255,90,90,0.8); animation: gp-dot-pulse 1.1s ease-in-out infinite; }
-@keyframes gp-dot-pulse { 0%,100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.35); opacity: 0.7; } }
-.gp-tab--active { background: var(--gold); color: #4a2600; box-shadow: 0 2px 8px rgba(255,192,46,0.4); transform: translateY(-1px); }
+.gp-tabs { display: flex; gap: 5px; flex: none; margin-top: 8px; }
+.gp-tab { position: relative; flex: 1; pointer-events: auto; border: 3px solid var(--line); padding: 9px 4px; font-family: var(--f-small); font-size: 11px; background: var(--panel2); color: var(--ink-soft); cursor: pointer; box-shadow: var(--px-out-sm); }
+.gp-tab__dot { position: absolute; top: 4px; right: 6px; width: 9px; height: 9px; background: #ff5a5a; border: 1px solid #000; animation: gp-dot-pulse 1.1s steps(2) infinite; }
+@keyframes gp-dot-pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.4); } }
+.gp-tab--active { background: var(--gold); color: #4a2600; transform: translateY(-1px); }
 
 /* ---------- panel content ---------- */
-/* FIX #3: panel scrolls within flex container */
-/* FIX P2: taller max-height — was 210/240px, now 248/280px to show content without truncation */
 .gp-panel { flex: 1; overflow-y: auto; min-height: 98px; max-height: 248px; }
 @media (min-height: 750px) { .gp-panel { max-height: 280px; } }
-.gp-paneltitle { font-family: "Black Han Sans", sans-serif; color: var(--gold-hi); font-size: 16px; margin-bottom: 8px; }
-.gp-region { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; font-size: 12px; font-weight: 800; color: #cbb8da; }
-.gp-stage-frac { font-family: "Black Han Sans", sans-serif; font-size: 14px; color: var(--gold); background: rgba(0,0,0,0.3); padding: 6px 12px; border-radius: 10px; }
+.gp-paneltitle { font-family: var(--f-bold); color: var(--gold-hi); font-size: 14px; margin-bottom: 8px; }
+.gp-region { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; font-family: var(--f-small); font-size: 11px; color: #cbb8da; }
+.gp-stage-frac { font-family: var(--f-num); font-size: 11px; color: var(--gold); background: var(--bg2); padding: 6px 10px; border: 2px solid var(--line); }
 
-/* FIX #6: staff list — wrap + real div fade for reliable WebView scroll affordance */
-/* FIX P2: fade height raised to 36px, gradient goes to full opaque — unambiguous scroll affordance */
+/* staff list */
 .gp-stafflist-wrap { position: relative; }
-.gp-stafflist { display: flex; flex-direction: column; gap: 7px; max-height: 220px; overflow-y: auto; }
-.gp-stafflist-fade { position: absolute; bottom: 0; left: 0; right: 0; height: 36px; background: linear-gradient(to bottom, transparent, rgba(34,22,46,1) 100%); pointer-events: none; }
-.gp-goallist { gap: 8px; }
-/* FIX P2: goals tab scroll fade — deeper fade height matches stafflist pattern */
+.gp-stafflist { display: flex; flex-direction: column; gap: 6px; max-height: 220px; overflow-y: auto; }
+.gp-stafflist-fade { position: absolute; bottom: 0; left: 0; right: 0; height: 30px; background: linear-gradient(to bottom, transparent, var(--bg) 100%); pointer-events: none; }
+.gp-goallist { gap: 7px; }
 .gp-goallist-wrap { position: relative; }
-/* FIX P1: fade target matches bottom sheet bg at 0.98 opacity — eliminates visible color seam */
-.gp-goallist-fade { position: absolute; bottom: 0; left: 0; right: 0; height: 36px; background: linear-gradient(to bottom, transparent, rgba(34,22,46,0.98) 100%); pointer-events: none; }
+.gp-goallist-fade { position: absolute; bottom: 0; left: 0; right: 0; height: 30px; background: linear-gradient(to bottom, transparent, var(--bg) 100%); pointer-events: none; }
 
-/* FIX #5: goal hierarchy — active goal pops with gold ring; done/locked use color shifts not opacity (contrast fix) */
-.gp-goal { padding: 9px 11px; border-radius: 13px; background: var(--panel); box-shadow: 0 2px 0 rgba(0,0,0,0.2); border-left: 5px solid var(--ink-soft); }
-.gp-goal--active { border-left-color: var(--gold); box-shadow: 0 0 0 2px var(--gold), 0 4px 12px rgba(255,192,46,0.35); }
-/* P0 fix: remove whole-card opacity dimming — use explicit color shifts to maintain WCAG AA contrast */
-.gp-goal--done { border-left-color: #4caf50; }
-.gp-goal--done .gp-goal__title { color: #5a9a62; text-decoration: line-through; text-decoration-color: rgba(76,175,80,0.5); }
+/* goals */
+.gp-goal { padding: 9px 10px; background: var(--panel); border: 3px solid var(--line); border-left-width: 6px; border-left-color: var(--ink-soft); box-shadow: var(--px-out-sm); }
+.gp-goal--active { border-left-color: var(--gold); box-shadow: var(--px-out-sm), 0 0 0 2px var(--gold); }
+.gp-goal--done { border-left-color: var(--buy); }
+.gp-goal--done .gp-goal__title { color: #6fe89a; text-decoration: line-through; }
 .gp-goal--done .gp-goal__desc, .gp-goal--done .gp-goal__foot { color: #8aaa8e; }
-.gp-goal--done .gp-goal__badge { opacity: 0.7; }
 .gp-goal--locked .gp-goal__title { color: var(--ink-soft); }
-.gp-goal--locked .gp-goal__desc, .gp-goal--locked .gp-goal__foot { color: #a8988a; }
-.gp-goal--locked .gp-progress__fill { background: linear-gradient(90deg, var(--ink-soft) 0%, #9a8a7a 100%); opacity: 0.4; }
+.gp-goal--locked .gp-goal__desc, .gp-goal--locked .gp-goal__foot { color: #6a7a8a; }
+.gp-goal--locked .gp-progress__fill { background: var(--ink-soft); opacity: 0.5; }
 .gp-goal__head { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; }
-.gp-goal__title { font-family: "Black Han Sans", sans-serif; color: var(--ink); font-size: 14px; }
-.gp-goal__badge { font-size: 9px; font-weight: 800; padding: 1px 7px; border-radius: 7px; background: var(--ink-soft); color: #fff; flex: none; }
-.gp-goal--active .gp-goal__badge { background: var(--gold-deep); }
-.gp-goal--done .gp-goal__badge { background: #4caf50; }
-.gp-goal__desc { font-size: 11px; font-weight: 700; color: var(--ink-soft); margin: 2px 0 6px; }
+.gp-goal__title { font-family: var(--f-bold); color: var(--ink); font-size: 13px; }
+.gp-goal__badge { font-family: var(--f-small); font-size: 9px; padding: 2px 6px; background: var(--ink-soft); color: #000; flex: none; border: 1px solid #000; }
+.gp-goal--active .gp-goal__badge { background: var(--gold); }
+.gp-goal--done .gp-goal__badge { background: var(--buy); }
+.gp-goal__desc { font-family: var(--f-small); font-size: 10px; color: var(--ink-soft); margin: 2px 0 6px; }
 .gp-goal__bar { height: 7px; }
-/* FIX #11: goal progress bar track adapts to parchment background — warm dark-tan instead of near-black */
-.gp-goal .gp-progress { background: rgba(42,32,48,0.18); box-shadow: inset 0 1px 3px rgba(0,0,0,0.2); }
-.gp-goal__foot { display: flex; justify-content: space-between; font-size: 10px; font-weight: 800; color: var(--ink-soft); margin-top: 4px; }
-.gp-goal__reward { color: var(--gold-deep); }
-/* FIX P1: section headers get a top border + padding so they stand out from goal cards at scroll speed */
-.gp-goal__section { font-family: "Black Han Sans", sans-serif; color: var(--gold-hi); font-size: 13px; margin: 10px 2px 0; padding-top: 8px; border-top: 1.5px solid rgba(255,192,46,0.2); }
+.gp-goal .gp-progress { background: var(--bg2); }
+.gp-goal__foot { display: flex; justify-content: space-between; font-family: var(--f-small); font-size: 9px; color: var(--ink-soft); margin-top: 4px; }
+.gp-goal__reward { color: var(--gold); }
+.gp-goal__section { font-family: var(--f-bold); color: var(--gold-hi); font-size: 12px; margin: 10px 2px 0; padding-top: 8px; border-top: 2px solid rgba(255,205,117,0.25); }
 .gp-goal__section:first-child { margin-top: 4px; padding-top: 0; border-top: none; }
-/* FIX P1: daily quest rows get a green tint to distinguish from neutral quest cards */
-.gp-goal--daily { background: rgba(34,180,90,0.07); border-left-color: #34d36b; }
-/* 주간 한정 목표: 골드 강조(프리미엄/FOMO) */
-.gp-goal--weekly { background: rgba(255,192,46,0.1); border-left-color: var(--gold); box-shadow: 0 2px 0 rgba(0,0,0,0.2), inset 0 0 0 1px rgba(255,192,46,0.3); }
-.gp-goal__badge--week { background: var(--gold-deep); color: #fff; }
-.gp-ach { display: flex; align-items: center; gap: 9px; padding: 8px 11px; border-radius: 12px; background: var(--panel-sunk); opacity: 0.62; }
-.gp-ach--got { opacity: 1; background: var(--panel); box-shadow: 0 0 0 1.5px rgba(255,192,46,0.55) inset; }
-/* P2 fix: replace emoji medals with reliable monochrome unicode — no WebView font-fallback risk */
-.gp-ach__medal { font-size: 18px; flex: none; color: var(--ink-soft); line-height: 1; }
-.gp-ach--got .gp-ach__medal { color: var(--gold-deep); }
-.gp-ach__body { display: flex; flex-direction: column; min-width: 0; }
-.gp-ach__name { font-weight: 800; color: var(--ink); font-size: 13px; }
-.gp-ach__desc { font-size: 10px; font-weight: 700; color: var(--ink-soft); }
-.gp-staff { display: flex; align-items: center; gap: 10px; padding: 9px; border-radius: 14px; background: var(--panel); border-left: 5px solid var(--rarity-color, #9aa0a6); box-shadow: 0 2px 0 rgba(0,0,0,0.2); }
-.gp-staff__dot { width: 40px; height: 40px; border-radius: 12px; border: 3px solid var(--rarity-color, #9aa0a6); flex: none; }
-.gp-staff__body { flex: 1; min-width: 0; }
-.gp-staff__name { font-weight: 800; color: var(--ink); font-size: 13px; }
-/* P2 fix: rarity badge — dark ink for light-luminance rarity colors (grey/common tier) */
-.gp-staff__rar { font-size: 9px; font-weight: 800; padding: 1px 6px; border-radius: 6px; background: var(--rarity-color, #9aa0a6); color: #fff; margin-left: 4px; }
-.gp-staff--light-rarity .gp-staff__rar { color: var(--ink); }
-.gp-staff__sub { font-size: 11px; font-weight: 700; color: var(--ink-soft); }
-.gp-staff__syn { font-size: 10px; font-weight: 800; color: #9a7cc8; }
-.gp-staff__syn--on { color: #6a3fb0; }
+.gp-goal--daily { background: #1a3a2a; border-left-color: var(--buy); }
+.gp-goal--weekly { background: #3a3018; border-left-color: var(--gold); box-shadow: var(--px-out-sm), inset 0 0 0 1px rgba(255,205,117,0.4); }
+.gp-goal__badge--week { background: var(--gold); color: #000; }
 
-.gp-event { background: linear-gradient(135deg, #fff3d6 0%, #ffe8b8 100%); border-radius: 16px; padding: 13px; border-left: 5px solid var(--event); box-shadow: inset 0 0 0 1.5px var(--event), 0 3px 8px rgba(255,122,60,0.25); }
-.gp-event__title { font-family: "Black Han Sans", sans-serif; color: var(--ink); font-size: 16px; }
-.gp-event__title::before { content: "!"; display: inline-block; background: var(--event); color: #fff; font-family: "Black Han Sans", sans-serif; width: 20px; height: 20px; border-radius: 6px; text-align: center; line-height: 20px; font-size: 13px; margin-right: 6px; vertical-align: middle; }
-.gp-event__body { font-size: 12px; font-weight: 700; color: #8a6a4d; margin: 6px 0 10px; }
+/* achievements */
+.gp-ach { display: flex; align-items: center; gap: 9px; padding: 8px 10px; background: var(--panel-sunk); border: 3px solid var(--line); opacity: 0.62; }
+.gp-ach--got { opacity: 1; background: var(--panel); box-shadow: var(--px-out-sm), inset 0 0 0 1px var(--gold); }
+.gp-ach__medal { font-size: 18px; flex: none; color: var(--ink-soft); line-height: 1; }
+.gp-ach--got .gp-ach__medal { color: var(--gold); }
+.gp-ach__body { display: flex; flex-direction: column; min-width: 0; }
+.gp-ach__name { font-family: var(--f-bold); color: var(--ink); font-size: 12px; }
+.gp-ach__desc { font-family: var(--f-small); font-size: 9px; color: var(--ink-soft); }
+
+/* staff cards */
+.gp-staff { display: flex; align-items: center; gap: 9px; padding: 9px; background: var(--panel); border: 3px solid var(--line); border-left-width: 6px; border-left-color: var(--rarity-color, #9aa0a6); box-shadow: var(--px-out-sm); }
+.gp-staff__dot { width: 38px; height: 38px; border: 3px solid var(--rarity-color, #9aa0a6); flex: none; image-rendering: pixelated; }
+.gp-staff__body { flex: 1; min-width: 0; }
+.gp-staff__name { font-family: var(--f-bold); color: var(--ink); font-size: 12px; }
+.gp-staff__rar { font-family: var(--f-small); font-size: 9px; padding: 1px 5px; background: var(--rarity-color, #9aa0a6); color: #000; margin-left: 4px; border: 1px solid #000; }
+.gp-staff--light-rarity .gp-staff__rar { color: #000; }
+.gp-staff__sub { font-family: var(--f-small); font-size: 10px; color: var(--ink-soft); }
+.gp-staff__syn { font-family: var(--f-small); font-size: 9px; color: #b89cf0; }
+.gp-staff__syn--on { color: var(--gem); }
+
+/* event card (panel variant) */
+.gp-event { background: var(--panel); border: 3px solid var(--line); border-left-width: 6px; border-left-color: var(--event); padding: 12px; box-shadow: var(--px-out-sm); }
+.gp-event__title { font-family: var(--f-bold); color: var(--ink); font-size: 14px; }
+.gp-event__title::before { content: "!"; display: inline-block; background: var(--event); color: #fff; font-family: var(--f-bold); width: 18px; height: 18px; text-align: center; line-height: 18px; font-size: 12px; margin-right: 6px; vertical-align: middle; border: 1px solid #000; }
+.gp-event__body { font-family: var(--f-small); font-size: 10px; color: var(--ink-soft); margin: 6px 0 10px; line-height: 1.6; }
 .gp-event__choices { display: flex; gap: 8px; }
-.gp-event__c { flex: 1; display: flex; flex-direction: column; align-items: center; font-size: 14px; color: #5a3a00; background: linear-gradient(180deg, var(--gold-hi), var(--gold)); box-shadow: 0 4px 0 var(--gold-deep); }
-/* P1 fix: raise hint text to 10px/700 to pass contrast AA; clamp to 2 lines to prevent height jank */
-.gp-event__c small { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-weight: 700; font-size: 10px; color: #3a2200; margin-top: 3px; max-width: 100%; }
+.gp-event__c { flex: 1; display: flex; flex-direction: column; align-items: center; font-family: var(--f-body); font-size: 12px; color: #5a3a00; background: var(--gold); border: 3px solid var(--line); box-shadow: var(--px-out-sm), var(--px-drop); }
+.gp-event__c small { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-family: var(--f-small); font-size: 9px; color: #3a2200; margin-top: 3px; max-width: 100%; }
 .gp-log { margin-top: 8px; max-height: 84px; overflow-y: auto; }
-.gp-logline { font-size: 11px; font-weight: 700; color: #b9a9c8; padding: 2px 0; }
+.gp-logline { font-family: var(--f-small); font-size: 10px; color: var(--ink-soft); padding: 2px 0; }
 
 /* ---------- modal layer / onboarding / juice ---------- */
 .gp-modal-layer { position: absolute; inset: 0; pointer-events: none; }
-.gp-modal-ov { position: absolute; inset: 0; pointer-events: auto; background: rgba(15,8,22,0.66); display: flex; align-items: center; justify-content: center; animation: gpFade .2s ease; }
-.gp-modal { width: 80%; max-width: 320px; background: var(--panel); border-radius: 22px; padding: 22px 20px; text-align: center; box-shadow: 0 14px 44px rgba(0,0,0,0.5), inset 0 0 0 3px var(--gold); animation: gpPop .25s cubic-bezier(.2,1.4,.4,1); }
-/* FIX #9: onboarding badge larger for celebratory feel */
-.gp-modal__badge { font-size: 52px; }
-/* P0 fix: modal art larger and centered; modal scrollable so bottom button is never clipped */
-.gp-modal__art { width: 128px; height: 128px; margin: 0 auto 6px; background-size: contain; background-repeat: no-repeat; background-position: center; }
-.gp-modal { max-height: 90vh; overflow-y: auto; }
-.gp-mtitle { font-family: "Black Han Sans", sans-serif; font-size: 21px; color: var(--ink); margin-top: 4px; }
-/* FIX #9: modal body text — contrast raised to pass WCAG AA; line-height improved */
-.gp-msub { font-size: 13px; font-weight: 700; color: #4a3828; line-height: 1.55; margin: 4px 0 12px; }
-/* 오프닝 진행 점 + 건너뛰기 */
+.gp-modal-ov { position: absolute; inset: 0; pointer-events: auto; background: rgba(8,8,18,0.78); display: flex; align-items: center; justify-content: center; animation: gpFade .2s steps(3); }
+.gp-modal { width: 84%; max-width: 320px; background: var(--bg); border: 4px solid var(--line); padding: 20px 18px; text-align: center; box-shadow: var(--px-out), 0 0 0 3px var(--gold); animation: gpPop .2s steps(4); max-height: 90vh; overflow-y: auto; }
+.gp-modal__badge { font-size: 48px; }
+.gp-modal__art { width: 120px; height: 120px; margin: 0 auto 6px; background-size: contain; background-repeat: no-repeat; background-position: center; image-rendering: pixelated; }
+.gp-mtitle { font-family: var(--f-bold); font-size: 18px; color: var(--gold-hi); margin-top: 4px; }
+.gp-msub { font-family: var(--f-body); font-size: 12px; color: var(--ink); line-height: 1.7; margin: 6px 0 12px; }
 .gp-dots { display: flex; justify-content: center; gap: 6px; margin: 2px 0 10px; }
-.gp-dot { width: 7px; height: 7px; border-radius: 50%; background: rgba(42,32,48,0.25); }
-.gp-dot--on { background: var(--gold-deep); transform: scale(1.15); }
-/* FIX P0: skip button — contrast raised to var(--ink) (~8:1 on parchment), min tap-target 44px, pill bg */
-.gp-skip { display: inline-flex; align-items: center; justify-content: center; margin: 8px auto 0; background: rgba(42,32,48,0.08); border: none; border-radius: 20px; padding: 10px 16px; min-height: 44px; pointer-events: auto; cursor: pointer; font-size: 13px; font-weight: 700; color: var(--ink); text-decoration: underline; text-decoration-thickness: 1.5px; }
-.gp-mbig { font-family: "Black Han Sans", sans-serif; font-size: 28px; color: var(--gold-deep); line-height: 1.2; margin-bottom: 16px; }
-.gp-mbig span { font-size: 16px; color: #2a9d54; }
+.gp-dot { width: 7px; height: 7px; background: rgba(255,255,255,0.25); }
+.gp-dot--on { background: var(--gold); transform: scale(1.15); }
+.gp-skip { display: inline-flex; align-items: center; justify-content: center; margin: 8px auto 0; background: var(--panel2); border: 2px solid var(--line); padding: 10px 16px; min-height: 44px; pointer-events: auto; cursor: pointer; font-family: var(--f-small); font-size: 11px; color: var(--ink); }
+.gp-mbig { font-family: var(--f-num); font-size: 20px; color: var(--gold); line-height: 1.4; margin-bottom: 16px; }
+.gp-mbig span { font-family: var(--f-bold); font-size: 14px; color: #6fe89a; }
 .gp-modal .gp-btn { width: 100%; }
 .gp-hint { position: absolute; left: 0; right: 0; top: 42%; display: flex; flex-direction: column; align-items: center; gap: 8px; pointer-events: none; z-index: 5; }
-/* 탭을 가리키는 하단 코치: 바텀시트 바로 위에 배치, 아래쪽(탭)을 향함 */
 .gp-hint--bottom { top: auto; bottom: 64px; }
-.gp-hint--bottom .gp-hint__txt { animation: gp-coach-bob 1.1s ease-in-out infinite; }
+.gp-hint--bottom .gp-hint__txt { animation: gp-coach-bob 1.1s steps(2) infinite; }
 @keyframes gp-coach-bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(4px); } }
-.gp-hint__hand { width: 66px; height: 66px; background: url('/art/tutorial-hand.webp') center/contain no-repeat; animation: gpTap 1s ease-in-out infinite; }
-.gp-hint__txt { font-family: "Black Han Sans", sans-serif; background: var(--gold); color: #4a2600; font-size: 14px; padding: 8px 16px; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
-.gp-toast { position: absolute; left: 50%; top: 120px; transform: translate(-50%, -14px); opacity: 0; pointer-events: none; font-family: "Black Han Sans", sans-serif; background: #1c1326; color: var(--gold); font-size: 15px; padding: 10px 20px; border-radius: 18px; box-shadow: 0 6px 18px rgba(0,0,0,0.5), inset 0 0 0 2px var(--gold); transition: all .3s cubic-bezier(.2,1.4,.4,1); white-space: nowrap; }
+.gp-hint__hand { width: 60px; height: 60px; background: url('/art/tutorial-hand.webp') center/contain no-repeat; animation: gpTap 1s steps(2) infinite; image-rendering: pixelated; }
+.gp-hint__txt { font-family: var(--f-bold); background: var(--gold); color: #4a2600; font-size: 13px; padding: 8px 14px; border: 3px solid var(--line); box-shadow: var(--px-drop); }
+.gp-toast { position: absolute; left: 50%; top: 120px; transform: translate(-50%, -14px); opacity: 0; pointer-events: none; font-family: var(--f-bold); background: var(--bg2); color: var(--gold); font-size: 13px; padding: 10px 18px; border: 3px solid var(--gold); transition: all .2s steps(4); white-space: nowrap; }
 .gp-toast--in { opacity: 1; transform: translate(-50%, 0); }
-.gp-flash { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(circle at 50% 45%, rgba(255,200,80,0.6), transparent 60%); animation: gpFlash .42s ease-out; }
+.gp-flash { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(circle at 50% 45%, rgba(255,205,117,0.55), transparent 60%); animation: gpFlash .42s steps(4); }
 @keyframes gpFade { from { opacity: 0; } }
 @keyframes gpPop { from { transform: scale(.85); opacity: 0; } }
 @keyframes gpTap { 0%,100% { transform: scale(1) translateY(0); } 50% { transform: scale(.86) translateY(4px); } }
 @keyframes gpFlash { from { opacity: 1; } to { opacity: 0; } }
 
-.gp-banner { position: absolute; left: 0; right: 0; top: 150px; pointer-events: none; text-align: center; font-family: "Black Han Sans", sans-serif; font-size: 26px; color: var(--gold-hi); padding: 12px 0; background: linear-gradient(90deg, transparent, rgba(20,12,28,0.92) 15%, rgba(20,12,28,0.92) 85%, transparent); box-shadow: inset 0 2px 0 var(--gold), inset 0 -2px 0 var(--gold); opacity: 0; transform: translateY(-20px) scale(0.9); transition: all .35s cubic-bezier(.2,1.4,.4,1); text-shadow: 0 2px 0 var(--gold-deep); }
-.gp-banner--in { opacity: 1; transform: translateY(0) scale(1); }
+.gp-banner { position: absolute; left: 0; right: 0; top: 150px; pointer-events: none; text-align: center; font-family: var(--f-bold); font-size: 20px; color: var(--gold-hi); padding: 12px 0; background: linear-gradient(90deg, transparent, var(--bg2) 15%, var(--bg2) 85%, transparent); box-shadow: inset 0 3px 0 var(--gold), inset 0 -3px 0 var(--gold); opacity: 0; transform: translateY(-20px); transition: all .25s steps(4); }
+.gp-banner--in { opacity: 1; transform: translateY(0); }
 .gp-confirm-row { display: flex; gap: 10px; }
 .gp-confirm-row .gp-btn { flex: 1; }
 
-/* FIX #7: world scene — vignette overlay at world/panel boundary; scanlines for ambient depth */
+/* world overlays */
 .gp-world-vignette { position: absolute; left: 0; right: 0; pointer-events: none; }
-.gp-world-vignette--bottom { bottom: 0; height: 120px; background: radial-gradient(ellipse 80% 40% at 50% 100%, rgba(20,10,30,0.35), transparent 70%); }
-.gp-world-scanlines { position: absolute; inset: 0; pointer-events: none;
-  background-image: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,0.04) 3px, rgba(0,0,0,0.04) 4px); }
+.gp-world-vignette--bottom { bottom: 0; height: 120px; background: radial-gradient(ellipse 80% 40% at 50% 100%, rgba(8,8,18,0.5), transparent 70%); }
+.gp-world-scanlines { position: absolute; inset: 0; pointer-events: none; z-index: 4; mix-blend-mode: multiply;
+  background-image: repeating-linear-gradient(0deg, rgba(0,0,0,0.16) 0 2px, transparent 2px 4px); }
 
-/* FIX #10: desktop gutters — fine gold crosshatch on bg-deep so side gutters feel thematic, not just empty */
-body { background-color: var(--bg-deep); background-image: repeating-linear-gradient(45deg, rgba(255,192,46,0.03) 0px, rgba(255,192,46,0.03) 1px, transparent 1px, transparent 8px); }
-
-/* FIX P2: desktop — lock to phone height and CENTER the strip horizontally (was left-aligned) */
+/* desktop gutters */
+body { background-color: var(--bg-deep); background-image: repeating-linear-gradient(45deg, rgba(120,140,200,0.04) 0px, rgba(120,140,200,0.04) 1px, transparent 1px, transparent 8px); }
 @media (min-width: 430px) {
-  .gp-ui { width: 390px; height: 844px; overflow: hidden; position: relative; left: 50%; transform: translateX(-50%); box-shadow: 0 0 0 1px rgba(255,192,46,0.15), 0 24px 80px rgba(0,0,0,0.7); }
+  .gp-ui { width: 390px; height: 844px; overflow: hidden; position: relative; left: 50%; transform: translateX(-50%); box-shadow: 0 0 0 3px #000, 0 24px 80px rgba(0,0,0,0.7); }
 }
-
-/* P1 fix: prestige region — breathing room between seal grid and danger button */
 .gp-sealgrid + .gp-region { margin-top: 12px; }

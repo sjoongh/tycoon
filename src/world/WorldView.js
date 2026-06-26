@@ -1,91 +1,153 @@
-import { worldMap } from "./worldMap.js";
-import { ASSET_KEYS } from "../assets/assetManifest.js";
-import { facilities } from "../data/facilities.js";
-import { FacilityStationView } from "./FacilityStationView.js";
-import { WorkerManager } from "./WorkerManager.js";
 import { WorldEffects } from "./WorldEffects.js";
-import { DEPTH_BASE, stationDepth } from "./depth.js";
+import { govTextureKey, govStageFor } from "./dotChar.js";
 import { shortNumber } from "../utils/format.js";
+
+// 거지키우기식 심플 월드: 미니멀 픽셀 배경 + 중앙 도트 국장 + 큰 숫자 + 바닥.
+// (구 버전의 이소 오피스 다이어그램·화분·시계·창문·워커·시설 스테이션은 전부 제거)
+const GAME_W = 390;
+const GROUND_Y = 440;   // 국장 발이 닿는 바닥선
+const GOV_SCALE = 6;    // 16px 도트 → 96px 표시
+const GOV_BOB_MS = 900;
 
 export class WorldView {
   constructor(scene, gameState) {
     this.scene = scene;
     this.gameState = gameState;
 
-    // era 톤: 방/바닥/벽 이미지에만 구간별 tint를 적용한다(워커·플로팅은 제외해 탁해지지 않게)
-    this._eraImages = [];
-    this._eraArea = -1;
+    this._buildBackground();
 
-    this._buildRoomBack();
-    this._buildFloor();
-    this._buildWalls();
-    this._buildDecor();
+    // 중앙 도트 국장
+    this.gov = scene.add
+      .image(GAME_W / 2, GROUND_Y, govTextureKey(gameState.data))
+      .setOrigin(0.5, 1)
+      .setScale(GOV_SCALE)
+      .setDepth(100);
+    this._govStage = govStageFor(gameState.data);
+    this._startBob();
 
-    this.stations = {};
-    facilities.forEach((f) => {
-      const fm = worldMap.facilities[f.id];
-      if (!fm) return;
-      const view = new FacilityStationView(scene, f.id, fm.anchor);
-      view.onSelect(() => gameState.select(f.id));
-      this.stations[f.id] = view;
-    });
+    // 중앙 큰 숫자(개표수) — 한글 단위 지원 위해 Galmuri14
+    this.bigNum = scene.add
+      .text(GAME_W / 2, 252, "0", { fontFamily: '"Galmuri14", monospace', fontSize: "30px", color: "#ffffff" })
+      .setOrigin(0.5)
+      .setDepth(120);
+    this.bigNum.setShadow(3, 3, "#b13e53", 0, true, true);
+    this.bigSub = scene.add
+      .text(GAME_W / 2, 286, "표", { fontFamily: '"Galmuri11", monospace', fontSize: "12px", color: "#ffcd75" })
+      .setOrigin(0.5)
+      .setDepth(120);
+    this.cpsText = scene.add
+      .text(GAME_W / 2, GROUND_Y + 20, "", { fontFamily: '"Galmuri9", monospace', fontSize: "11px", color: "#94b0c2" })
+      .setOrigin(0.5)
+      .setDepth(120);
 
-    this.workers = new WorkerManager(scene, gameState);
     this.effects = new WorldEffects(scene);
 
     this._onChanged = () => this._refresh();
-    this._onUpgraded = (facility) => this.stations[facility.id]?.playUpgrade();
     this._onFloat = (p) => this.effects.float(p);
     this._onBallots = (p) => this.effects.ballots(p);
+    this._onUpgraded = () => this._squishGov();
     gameState.on("changed", this._onChanged);
-    gameState.on("upgraded", this._onUpgraded);
     gameState.on("float", this._onFloat);
     gameState.on("ballots", this._onBallots);
+    gameState.on("upgraded", this._onUpgraded);
 
-    // 하단 DOM 패널은 pointer-events:auto로 자체 탭을 가로채므로, 캔버스에 도달한 탭만 처리한다
+    // 캔버스에 도달한 빈 공간 탭만 득표로 처리(하단 DOM 패널은 자체 처리)
     this._onPointer = (pointer, currentlyOver) => {
-      // 시설 스프라이트 등 인터랙티브 오브젝트 위 탭은 '선택'으로 처리 — 빈 공간/소품 탭만 득표(클릭 중복 방지)
       if (currentlyOver && currentlyOver.length) return;
       gameState.processClick(pointer.x, pointer.y);
-      this._squishBallotbox();
+      this._squishGov();
+      this.effects.deskPop(GAME_W / 2, GROUND_Y - 30);
     };
     scene.input.on("pointerdown", this._onPointer);
 
-    this._refresh();
-    this._workTimer = scene.time.addEvent({
-      delay: 600,
+    // 패시브 수입 가시화: 국장 위로 주기적 +표 플로팅
+    this._incomeTimer = scene.time.addEvent({
+      delay: 1200,
       loop: true,
       callback: () => {
-        const active = facilities.filter((f) => this.gameState.isUnlocked(f.id) && this.gameState.level(f.id) > 0);
-        if (active.length === 0) return;
-        // 벽시계 기반 인덱스는 프레임 지터/탭 스로틀 시 중복·누락이 생겨 라운드로빈 카운터로 교체
-        this._popIdx = ((this._popIdx || 0) + 1) % active.length;
-        const f = active[this._popIdx];
-        const spot = worldMap.facilities[f.id]?.workSpots[0];
-        if (spot) this.effects.deskPop(spot.x, spot.y);
-        // 패시브 수입 가시화: 가끔 시설 위로 +표 플로팅
-        this._incomeTick = (this._incomeTick || 0) + 1;
-        if (this._incomeTick % 2 === 0 && spot) {
-          const inc = this.gameState.cps();
-          if (inc > 0) this.effects.float({ text: `+${shortNumber(inc)}`, x: spot.x, y: spot.y - 16, color: "#7fb98a" });
+        const inc = this.gameState.cps ? this.gameState.cps() : 0;
+        if (inc > 0) {
+          const x = GAME_W / 2 + (Math.random() * 120 - 60);
+          this.effects.float({ text: `+${shortNumber(inc)}`, x, y: GROUND_Y - 76, color: "#7fb98a" });
         }
       },
     });
 
-    // 필드 황금 투표함: 가끔 등장 → 탭하면 CPS스케일 보상(액티브 손맛). 첫 등장 45~75초.
+    this._refresh();
     this._scheduleGolden(45000 + Math.random() * 30000);
+    // 웹폰트(Galmuri) 로드 완료 후 캔버스 텍스트 재렌더(첫 프레임 폰트 미적용 방지)
+    document.fonts?.ready?.then(() => this._refresh());
   }
 
+  _buildBackground() {
+    const g = this.scene.add.graphics().setDepth(0);
+    // 하늘(상단 어두운 밴드)
+    g.fillStyle(0x1a1c2c, 1);
+    g.fillRect(0, 0, GAME_W, GROUND_Y);
+    // 별 도트(정적)
+    const stars = [[40, 150], [92, 206], [150, 138], [300, 168], [342, 224], [212, 184], [70, 262], [330, 300], [120, 308], [262, 250]];
+    g.fillStyle(0x2a2f55, 1);
+    stars.forEach(([x, y]) => g.fillRect(x, y, 3, 3));
+    g.fillStyle(0x3a4a8a, 1);
+    g.fillRect(60, 182, 2, 2);
+    g.fillRect(280, 140, 2, 2);
+    g.fillRect(180, 230, 2, 2);
+    // 바닥
+    g.fillStyle(0x20243f, 1);
+    g.fillRect(0, GROUND_Y, GAME_W, 844 - GROUND_Y);
+    g.fillStyle(0x000000, 1);
+    g.fillRect(0, GROUND_Y, GAME_W, 3);
+    g.fillStyle(0x333c57, 1);
+    g.fillRect(0, GROUND_Y + 3, GAME_W, 2);
+    // 바닥 원근 라인
+    g.fillStyle(0x2a3050, 1);
+    for (let i = 1; i <= 4; i++) {
+      const y = GROUND_Y + 12 + i * i * 6;
+      g.fillRect(0, y, GAME_W, 1);
+    }
+    // 국장 발밑 그림자
+    g.fillStyle(0x0a0a12, 0.5);
+    g.fillRect(GAME_W / 2 - 30, GROUND_Y - 4, 60, 6);
+    this.bg = g;
+  }
+
+  _startBob() {
+    this.gov.y = GROUND_Y;
+    this._govBob = this.scene.tweens.add({
+      targets: this.gov,
+      y: GROUND_Y - 4,
+      yoyo: true,
+      repeat: -1,
+      duration: GOV_BOB_MS,
+      ease: "Sine.easeInOut",
+    });
+  }
+
+  _squishGov() {
+    this.scene.tweens.killTweensOf(this.gov);
+    this.gov.setScale(GOV_SCALE);
+    this.gov.y = GROUND_Y;
+    this.scene.tweens.add({
+      targets: this.gov,
+      scaleX: GOV_SCALE * 1.08,
+      scaleY: GOV_SCALE * 0.92,
+      duration: 80,
+      yoyo: true,
+      ease: "Quad.easeOut",
+      onComplete: () => { if (this.gov && this.gov.active) this._startBob(); },
+    });
+  }
+
+  // ---- 필드 황금 투표함(액티브 손맛) — 유지 ----
   _scheduleGolden(delay) {
-    this._goldenTimer?.remove(); // 중복 예약 방지(느린 프레임 레이스에 타이머 중첩 차단)
+    this._goldenTimer?.remove();
     this._goldenTimer = this.scene.time.delayedCall(delay, () => this._spawnGolden());
   }
 
   _spawnGolden() {
     if (this._golden) return;
     const x = 70 + Math.random() * 250;
-    const y = 180 + Math.random() * 260;
-    // 사전 로드된 투표함 아트를 금색으로 — "황금 투표함" 테마 + 안정적 렌더(생성텍스처/셰이프는 일부 환경 미렌더)
+    const y = 180 + Math.random() * 200;
     const key = "decor/ballotbox";
     const halo = this.scene.add.image(x, y, key).setDepth(4999).setTint(0xffe9a8).setAlpha(0.3).setScale(1.5);
     this._goldenHalo = halo;
@@ -95,7 +157,6 @@ export class WorldView {
     this._golden = disc;
     disc.setScale(0.3).setAlpha(0);
     this.scene.tweens.add({ targets: disc, scale: 0.95, alpha: 1, duration: 280, ease: "Back.easeOut" });
-    // 펄스는 등장 완료 후 시작(스케일 트윈 충돌 방지)
     this._goldenPulse = this.scene.tweens.add({ targets: disc, scale: 1.08, yoyo: true, repeat: -1, duration: 560, ease: "Sine.easeInOut", delay: 290 });
     disc.on("pointerdown", () => {
       if (!this._golden) return;
@@ -103,9 +164,8 @@ export class WorldView {
       this.effects.float({ text: `+${shortNumber(reward)}`, x, y: y - 28, color: "#ffd34d" });
       this.effects.deskPop(x, y);
       this._despawnGolden();
-      this._scheduleGolden(60000 + Math.random() * 60000); // 다음 등장 60~120초
+      this._scheduleGolden(60000 + Math.random() * 60000);
     });
-    // 미수령 시 9초 후 자동 소멸 후 재예약
     this._goldenLife = this.scene.time.delayedCall(9000, () => {
       this._despawnGolden();
       this._scheduleGolden(60000 + Math.random() * 60000);
@@ -116,108 +176,42 @@ export class WorldView {
     if (this._goldenPulse) { this._goldenPulse.stop(); this._goldenPulse = null; }
     if (this._goldenHaloPulse) { this._goldenHaloPulse.stop(); this._goldenHaloPulse = null; }
     if (this._goldenLife) { this._goldenLife.remove(); this._goldenLife = null; }
-    for (const k of ["_golden", "_goldenStar", "_goldenHalo"]) {
+    for (const k of ["_golden", "_goldenHalo"]) {
       if (this[k]) { this.scene.tweens.killTweensOf(this[k]); this[k].destroy(); this[k] = null; }
     }
   }
 
-  _buildFloor() {
-    const f = worldMap.floor;
-    for (let r = 0; r < f.rows; r++) {
-      for (let c = 0; c < f.cols; c++) {
-        const x = f.originX + (c - r) * (f.tileW / 2);
-        const y = f.originY + (c + r) * (f.tileH / 2);
-        const tile = this.scene.add.image(x, y, ASSET_KEYS.floor).setDisplaySize(f.tileW, f.tileH).setDepth(DEPTH_BASE.floor + y);
-        this._eraImages.push(tile);
-      }
-    }
-  }
-
-  _buildRoomBack() {
-    const r = worldMap.room;
-    if (!r) return;
-    const img = this.scene.add.image(r.x, r.y, r.key).setDepth(1);
-    if (r.w && r.h) img.setDisplaySize(r.w, r.h);
-    this._eraImages.push(img);
-  }
-
-  _buildWalls() {
-    worldMap.walls.forEach((w) => {
-      this._eraImages.push(this.scene.add.image(w.x, w.y, w.key).setDepth(5));
-    });
-  }
-
-  // 구역(area)이 오를수록 새벽→오후→해질녘→야간 분위기로. 1구역은 원색(무틴트).
-  _eraTintFor(area) {
-    if (area <= 1) return 0xffffff;
-    if (area === 2) return 0xfff0d4; // 따뜻한 오전
-    if (area === 3) return 0xffe3b0; // 호박빛 오후
-    if (area === 4) return 0xf3c79a; // 해질녘
-    if (area === 5) return 0xc9b3e6; // 보랏빛 황혼
-    return 0x9fb0e0; // 6구역+ 야간 블루
-  }
-
-  _applyEra(area) {
-    if (area === this._eraArea) return;
-    this._eraArea = area;
-    const tint = this._eraTintFor(area);
-    this._eraImages.forEach((img) => img.setTint(tint));
-  }
-
-  _buildDecor() {
-    (worldMap.decor || []).forEach((d) => {
-      const img = this.scene.add.image(d.x, d.y, d.key).setOrigin(0.5, 1).setDepth(stationDepth(d.y));
-      if (d.scale) img.setScale(d.scale);
-      if (d.key === "decor/ballotbox") {
-        this.ballotbox = img;
-        this._ballotboxScale = img.scaleX;
-      }
-    });
-  }
-
-  _squishBallotbox() {
-    if (!this.ballotbox) return;
-    const s = this._ballotboxScale;
-    this.scene.tweens.killTweensOf(this.ballotbox);
-    this.ballotbox.setScale(s);
-    this.scene.tweens.add({
-      targets: this.ballotbox,
-      scaleX: s * 1.1,
-      scaleY: s * 0.9,
-      duration: 90,
-      yoyo: true,
-      ease: "Quad.easeOut",
-    });
-  }
-
   _refresh() {
-    const gs = this.gameState;
-    this._applyEra(gs.data.stage.area);
-    facilities.forEach((f) => {
-      const view = this.stations[f.id];
-      if (!view) return;
-      const unlocked = gs.isUnlocked(f.id);
-      const canUpgrade = unlocked && gs.data.votes >= gs.cost(f.id) && gs.data.explain >= gs.explainCost(f.id);
-      view.refresh({ level: gs.level(f.id), unlocked, selected: gs.data.selected === f.id, canUpgrade });
-    });
-    this.workers.sync();
+    const d = this.gameState.data;
+    const st = govStageFor(d);
+    if (st !== this._govStage) {
+      this._govStage = st;
+      this.gov.setTexture(`gov-${st}`);
+    }
+    this.bigNum.setText(shortNumber(d.votes));
+    const cps = this.gameState.cps ? this.gameState.cps() : 0;
+    this.cpsText.setText(`▶ 초당 ${cps < 10000 ? cps.toFixed(0) : shortNumber(cps)}표`);
   }
 
   update() {
-    this.workers.update();
+    // bob/연출은 트윈으로 처리 — 프레임 루프 작업 없음
   }
 
   destroy() {
     this.gameState.off("changed", this._onChanged);
-    this.gameState.off("upgraded", this._onUpgraded);
     this.gameState.off("float", this._onFloat);
     this.gameState.off("ballots", this._onBallots);
+    this.gameState.off("upgraded", this._onUpgraded);
     this.scene.input.off("pointerdown", this._onPointer);
-    this._workTimer?.remove();
+    this._incomeTimer?.remove();
     this._goldenTimer?.remove();
     this._despawnGolden();
-    Object.values(this.stations).forEach((v) => v.destroy());
-    this.workers.destroy();
+    this.scene.tweens.killTweensOf(this.gov);
+    this.gov?.destroy();
+    this.bigNum?.destroy();
+    this.bigSub?.destroy();
+    this.cpsText?.destroy();
+    this.bg?.destroy();
     this.effects.destroy();
   }
 }
