@@ -1,5 +1,6 @@
 import { WorldEffects } from "./WorldEffects.js";
 import { govTextureKey, govStageFor } from "./dotChar.js";
+import { staffDefinitions } from "../data/staff.js";
 import { shortNumber } from "../utils/format.js";
 
 // 거지키우기식 심플 월드: 미니멀 픽셀 배경 + 중앙 도트 국장 + 큰 숫자 + 바닥.
@@ -9,6 +10,18 @@ const GROUND_Y = 492;   // 국장 발이 닿는 바닥선
 const GOV_SCALE = 6;    // 16px 도트 → 96px 표시
 const GOV_BOB_MS = 900;
 const PROP_SCALE = 4;   // 16px 소품 → 64px
+// 채용된 직원이 서는 바닥 슬롯(좌우로 고루 분산)
+const WORKER_SLOTS = [44, 96, 148, 244, 296, 344];
+const WORKER_SCALE = 4;
+
+// 어두운 직원 색이 다크 배경에 묻히지 않도록 밝게 보정(amt 0~1)
+function lightenColor(hex, amt) {
+  const r = (hex >> 16) & 255, g = (hex >> 8) & 255, b = hex & 255;
+  const lr = Math.round(r + (255 - r) * amt);
+  const lg = Math.round(g + (255 - g) * amt);
+  const lb = Math.round(b + (255 - b) * amt);
+  return (lr << 16) | (lg << 8) | lb;
+}
 
 export class WorldView {
   constructor(scene, gameState) {
@@ -57,6 +70,8 @@ export class WorldView {
     this._comboLast = 0;
 
     this.effects = new WorldEffects(scene);
+    this._workers = {}; // 채용된 직원 도트(staffId → sprite)
+    this._workerShadows = {};
 
     this._onChanged = () => this._refresh();
     this._onFloat = (p) => this.effects.float(p);
@@ -87,6 +102,8 @@ export class WorldView {
         if (inc > 0) {
           const x = GAME_W / 2 + (Math.random() * 120 - 60);
           this.effects.float({ text: `+${shortNumber(inc)}`, x, y: GROUND_Y - 76, color: "#7fb98a" });
+          // 패시브 투표용지 흩날림(생동감)
+          if (Math.random() < 0.6) this.effects.ballots({ x: GAME_W / 2 + (Math.random() * 170 - 85), y: 360, count: 2 });
         }
       },
     });
@@ -267,6 +284,25 @@ export class WorldView {
     }
   }
 
+  // 채용된 직원을 바닥에 도트 일꾼으로 등장시킨다(직원별 색, 등장 팝 + bob).
+  _syncWorkers() {
+    staffDefinitions.forEach((s, i) => {
+      if (i >= WORKER_SLOTS.length) return;
+      const lv = this.gameState.staffLevel ? this.gameState.staffLevel(s.id) : 0;
+      if (lv > 0 && !this._workers[s.id]) {
+        const sx = WORKER_SLOTS[i];
+        const sh = this.scene.add.rectangle(sx, GROUND_Y + 1, 34, 8, 0x000000, 0.4).setDepth(98);
+        this._workerShadows[s.id] = sh;
+        const w = this.scene.add.image(sx, GROUND_Y, "worker-mini")
+          .setOrigin(0.5, 1).setScale(0).setDepth(99).setTint(lightenColor(s.color || 0xffffff, 0.35));
+        this._workers[s.id] = w;
+        this.scene.tweens.add({ targets: w, scaleX: WORKER_SCALE, scaleY: WORKER_SCALE, duration: 280, ease: "Back.easeOut" });
+        this.scene.tweens.add({ targets: w, y: GROUND_Y - 3, yoyo: true, repeat: -1, duration: 640 + i * 70, ease: "Sine.easeInOut", delay: 120 + i * 90 });
+        this.effects.deskPop(sx, GROUND_Y - 14);
+      }
+    });
+  }
+
   _refresh() {
     const d = this.gameState.data;
     const st = govStageFor(d);
@@ -277,6 +313,7 @@ export class WorldView {
     this.bigNum.setText(shortNumber(d.votes));
     const cps = this.gameState.cps ? this.gameState.cps() : 0;
     this.cpsText.setText(`▶ 초당 ${cps < 10000 ? cps.toFixed(0) : shortNumber(cps)}표`);
+    this._syncWorkers();
   }
 
   update() {
@@ -304,6 +341,8 @@ export class WorldView {
     this.titleTop?.destroy();
     this.titleMain?.destroy();
     (this.props || []).forEach((p) => p.destroy());
+    Object.values(this._workers || {}).forEach((w) => { this.scene.tweens.killTweensOf(w); w.destroy(); });
+    Object.values(this._workerShadows || {}).forEach((s) => s.destroy());
     this.effects.destroy();
   }
 }

@@ -156,6 +156,20 @@ export const PROP_MAPS = {
   "prop-flag": PROP_FLAG,
 };
 
+// 미니 일꾼(직원) — 흰/회색 실루엣. 런타임에 직원별 색으로 tint한다. 10x10.
+const WORKER_MINI = [
+  "...wwww...",
+  "..wGGGGw..",
+  "..GwGwwG..",
+  "..wGGGGw..",
+  "...wGGw...",
+  "..wwwwww..",
+  ".wGwwwwGw.",
+  ".wwwwwwww.",
+  ".ww....ww.",
+  ".kk....kk.",
+];
+
 // 도트맵 1장을 off-screen graphics로 굽는다.
 function bakeTexture(scene, key, map, size = GOV_SIZE) {
   if (scene.textures.exists(key)) return;
@@ -181,6 +195,11 @@ export function buildGovTextures(scene) {
 // 개표소 소품 텍스처(prop-ballotbox / prop-papers / prop-flag).
 export function buildPropTextures(scene) {
   Object.entries(PROP_MAPS).forEach(([key, map]) => bakeTexture(scene, key, map));
+}
+
+// 미니 일꾼 텍스처(worker-mini, 10x10) — tint로 직원별 색 입힘.
+export function buildWorkerTexture(scene) {
+  bakeTexture(scene, "worker-mini", WORKER_MINI, 10);
 }
 
 // 진행/프레스티지 상태로 국장 성장 단계(1~4) 산정.
