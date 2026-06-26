@@ -78,7 +78,7 @@ export class WorldView {
     this._onChanged = () => this._refresh();
     this._onFloat = (p) => this.effects.float(p);
     this._onBallots = (p) => this.effects.ballots(p);
-    this._onUpgraded = () => this._squishGov();
+    this._onUpgraded = (facility) => { this._squishGov(); this._pulseProp(facility); };
     gameState.on("changed", this._onChanged);
     gameState.on("float", this._onFloat);
     gameState.on("ballots", this._onBallots);
@@ -205,7 +205,6 @@ export class WorldView {
     const prevKey = eraTheme(this._eraArea).key;
     this._eraArea = area;
     this._drawBackground(area);
-    this.flag?.setTint(this._eraColors(area).accent);
     const f = this.scene.add.rectangle(GAME_W / 2, 422, GAME_W, 844, 0xffffff, 0.5).setDepth(200);
     this.scene.tweens.add({ targets: f, alpha: 0, duration: 420, ease: "Quad.easeOut", onComplete: () => f.destroy() });
     // 체제가 바뀌는 순간엔 배너 토스트
@@ -268,21 +267,37 @@ export class WorldView {
       this.props.push(s);
       return s;
     };
-    this.flag = place("prop-flag", 250, 90);        // 캐릭터 뒤(우측) 깃발
-    this.flag.setTint(this._eraColors(this.gameState.data.stage.area).accent); // 체제색
-    this.ballotbox = place("prop-ballotbox", 84, 95); // 좌측 투표함
-    this.papers = place("prop-papers", 306, 96);    // 우측 서류더미
-    // 깃발 펄럭(휘날림)
-    this._flagFlap = this.scene.tweens.add({ targets: this.flag, scaleX: PROP_SCALE * 0.8, yoyo: true, repeat: -1, duration: 560, ease: "Sine.easeInOut" });
+    // 의미있는 선관위 장비로: 접수 투표함 · 기록 서류더미 · 개표 상황판(전광판)
+    this.board = place("prop-board", 250, 90);      // 캐릭터 뒤 개표 상황판
+    this._boardBlink = this.scene.tweens.add({ targets: this.board, alpha: 0.78, yoyo: true, repeat: -1, duration: 700, ease: "Sine.easeInOut" });
+    this.ballotbox = place("prop-ballotbox", 84, 95); // 좌측 접수 투표함
+    this.papers = place("prop-papers", 306, 96);    // 우측 기록 서류더미
   }
 
-  // 시설 총레벨이 오를수록 소품이 커진다(개표량이 쌓이는 시각 피드백)
+  // 각 장비를 대응 시설 레벨에 맞춰 키운다(시설 업그레이드가 화면에 보이게)
+  //  투표함←접수(desk) · 서류더미←기록(archive) · 상황판←전산(server)
   _syncProps() {
-    const total = this.gameState.facilityTotal ? this.gameState.facilityTotal() : 0;
-    const grow = PROP_SCALE * (1 + Math.min(0.6, total / 80));
-    if (this.papers && Math.abs(this.papers.scaleX - grow) > 0.01) {
-      this.scene.tweens.add({ targets: [this.papers, this.ballotbox], scaleX: grow, scaleY: grow, duration: 200, ease: "Quad.easeOut" });
+    const lvl = (id) => (this.gameState.level ? this.gameState.level(id) : 0);
+    const grow = (l) => PROP_SCALE * (1 + Math.min(0.6, l / 40));
+    this._tweenScale(this.ballotbox, grow(lvl("desk")));
+    this._tweenScale(this.papers, grow(lvl("archive")));
+    this._tweenScale(this.board, grow(lvl("server")));
+  }
+
+  _tweenScale(obj, sc) {
+    if (obj && Math.abs(obj.scaleX - sc) > 0.01) {
+      this.scene.tweens.add({ targets: obj, scaleX: sc, scaleY: sc, duration: 200, ease: "Quad.easeOut" });
     }
+  }
+
+  // 시설 업그레이드 시 대응 장비가 반짝 커지는 연출
+  _pulseProp(facility) {
+    const map = { desk: this.ballotbox, archive: this.papers, server: this.board };
+    const obj = map[facility && facility.id];
+    if (!obj) return;
+    const s = obj.scaleX;
+    this.scene.tweens.add({ targets: obj, scaleX: s * 1.22, scaleY: s * 1.22, yoyo: true, duration: 150, ease: "Quad.easeOut" });
+    this.effects.deskPop(obj.x, obj.y - 40);
   }
 
   _startBob() {

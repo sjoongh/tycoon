@@ -131,29 +131,30 @@ const PROP_PAPERS = [
   "..kwwwwwwwwwwk..",
   "..kkkkkkkkkkkk..",
 ];
-const PROP_FLAG = [
-  "....kk..........",
-  "....kktttttk....",
-  "....ktwwwwtk....",
-  "....kttttttk....",
-  "....ktwwwwtk....",
-  "....kttttttk....",
-  "....kkkkkkk.....",
-  "....rr..........",
-  "....rr..........",
-  "....rr..........",
-  "....rr..........",
-  "....rr..........",
-  "....rr..........",
-  "...rrrr.........",
-  "..kkkkkkk.......",
+// 개표 상황판(전광판) — 검은 화면 + 시안 LED 데이터, 받침대. "개표 현황"을 보여주는 의미.
+const PROP_BOARD = [
+  "................",
+  "...GGGGGGGGGG...",
+  "..GkkkkkkkkkkG..",
+  "..Gk.cc..cc.kG..",
+  "..Gk.c.cc.c.kG..",
+  "..Gk.cccccc.kG..",
+  "..Gk.c.c.c..kG..",
+  "..Gk.cc..c..kG..",
+  "..GkkkkkkkkkkG..",
+  "...GGGGGGGGGG...",
+  "......GG........",
+  "......GG........",
+  "......GG........",
+  "....GGGGGGGG....",
+  "...GkkkkkkkkG...",
   "................",
 ];
 
 export const PROP_MAPS = {
   "prop-ballotbox": PROP_BALLOTBOX,
   "prop-papers": PROP_PAPERS,
-  "prop-flag": PROP_FLAG,
+  "prop-board": PROP_BOARD,
 };
 
 // 미니 일꾼(직원) — 흰/회색 실루엣. 런타임에 직원별 색으로 tint한다. 10x10.
@@ -192,7 +193,7 @@ export function buildGovTextures(scene) {
   GOV_MAPS.forEach((map, i) => bakeTexture(scene, `gov-${i + 1}`, map));
 }
 
-// 개표소 소품 텍스처(prop-ballotbox / prop-papers / prop-flag).
+// 개표소 소품 텍스처(prop-ballotbox / prop-papers / prop-board).
 export function buildPropTextures(scene) {
   Object.entries(PROP_MAPS).forEach(([key, map]) => bakeTexture(scene, key, map));
 }
