@@ -94,24 +94,93 @@ const STAGE4 = [   // 명예 국장(금장 + 망토 + 훈장)
 export const GOV_MAPS = [STAGE1, STAGE2, STAGE3, STAGE4];
 export const GOV_SIZE = 16;
 
-// scene.make.graphics로 off-screen 렌더 → generateTexture. create() 시점에 1회 호출.
-export function buildGovTextures(scene) {
-  GOV_MAPS.forEach((map, i) => {
-    const key = `gov-${i + 1}`;
-    if (scene.textures.exists(key)) return;
-    const g = scene.make.graphics({ x: 0, y: 0, add: false });
-    for (let y = 0; y < map.length; y++) {
-      const row = map[y];
-      for (let x = 0; x < row.length; x++) {
-        const c = PAL[row[x]];
-        if (c == null) continue;
-        g.fillStyle(c, 1);
-        g.fillRect(x, y, 1, 1);
-      }
+// ── 개표소 소품(도트 16x16) ── 국장 주변에 배치해 "개표국" 분위기를 낸다.
+const PROP_BALLOTBOX = [
+  "................",
+  "................",
+  "...kkkkkkkkkk...",
+  "..kkJJJJJJJJkk..",
+  "..kJkkkkkkkkJk..",   // 투입구 슬롯
+  "..kJJJJJJJJJJk..",
+  "..kJjjjjjjjjJk..",
+  "..kJjjYYYYjjJk..",
+  "..kJjYYjjYYjJk..",
+  "..kJjjjjjjjjJk..",
+  "..kJJJJJJJJJJk..",
+  "..kJjjjjjjjjJk..",
+  "..kJJJJJJJJJJk..",
+  "..kkkkkkkkkkkk..",
+  "...k........k...",
+  "................",
+];
+const PROP_PAPERS = [
+  "................",
+  "................",
+  "................",
+  ".....kkkkkk.....",
+  "....kwwwwwwk.....",
+  "....kwggggwk.....",
+  "....kwwwwwwk.....",
+  "...kkkkkkkkk....",
+  "...kwwwwwwwwk...",
+  "...kwggggggwk...",
+  "...kwwwwwwwwk...",
+  "..kkkkkkkkkkk...",
+  "..kwwwwwwwwwwk..",
+  "..kwggggggggwk..",
+  "..kwwwwwwwwwwk..",
+  "..kkkkkkkkkkkk..",
+];
+const PROP_FLAG = [
+  "....kk..........",
+  "....kktttttk....",
+  "....ktwwwwtk....",
+  "....kttttttk....",
+  "....ktwwwwtk....",
+  "....kttttttk....",
+  "....kkkkkkk.....",
+  "....rr..........",
+  "....rr..........",
+  "....rr..........",
+  "....rr..........",
+  "....rr..........",
+  "....rr..........",
+  "...rrrr.........",
+  "..kkkkkkk.......",
+  "................",
+];
+
+export const PROP_MAPS = {
+  "prop-ballotbox": PROP_BALLOTBOX,
+  "prop-papers": PROP_PAPERS,
+  "prop-flag": PROP_FLAG,
+};
+
+// 도트맵 1장을 off-screen graphics로 굽는다.
+function bakeTexture(scene, key, map, size = GOV_SIZE) {
+  if (scene.textures.exists(key)) return;
+  const g = scene.make.graphics({ x: 0, y: 0, add: false });
+  for (let y = 0; y < map.length; y++) {
+    const row = map[y];
+    for (let x = 0; x < row.length; x++) {
+      const c = PAL[row[x]];
+      if (c == null) continue;
+      g.fillStyle(c, 1);
+      g.fillRect(x, y, 1, 1);
     }
-    g.generateTexture(key, GOV_SIZE, GOV_SIZE);
-    g.destroy();
-  });
+  }
+  g.generateTexture(key, size, size);
+  g.destroy();
+}
+
+// create() 시점에 1회 호출 — 국장 4단계 텍스처(gov-1..4).
+export function buildGovTextures(scene) {
+  GOV_MAPS.forEach((map, i) => bakeTexture(scene, `gov-${i + 1}`, map));
+}
+
+// 개표소 소품 텍스처(prop-ballotbox / prop-papers / prop-flag).
+export function buildPropTextures(scene) {
+  Object.entries(PROP_MAPS).forEach(([key, map]) => bakeTexture(scene, key, map));
 }
 
 // 진행/프레스티지 상태로 국장 성장 단계(1~4) 산정.

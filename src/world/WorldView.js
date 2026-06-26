@@ -5,9 +5,10 @@ import { shortNumber } from "../utils/format.js";
 // 거지키우기식 심플 월드: 미니멀 픽셀 배경 + 중앙 도트 국장 + 큰 숫자 + 바닥.
 // (구 버전의 이소 오피스 다이어그램·화분·시계·창문·워커·시설 스테이션은 전부 제거)
 const GAME_W = 390;
-const GROUND_Y = 440;   // 국장 발이 닿는 바닥선
+const GROUND_Y = 492;   // 국장 발이 닿는 바닥선
 const GOV_SCALE = 6;    // 16px 도트 → 96px 표시
 const GOV_BOB_MS = 900;
+const PROP_SCALE = 4;   // 16px 소품 → 64px
 
 export class WorldView {
   constructor(scene, gameState) {
@@ -15,6 +16,8 @@ export class WorldView {
     this.gameState = gameState;
 
     this._buildBackground();
+    this._buildTitle();
+    this._buildProps();
 
     // 중앙 도트 국장
     this.gov = scene.add
@@ -27,12 +30,12 @@ export class WorldView {
 
     // 중앙 큰 숫자(개표수) — 한글 단위 지원 위해 Galmuri14
     this.bigNum = scene.add
-      .text(GAME_W / 2, 252, "0", { fontFamily: '"Galmuri14", monospace', fontSize: "30px", color: "#ffffff" })
+      .text(GAME_W / 2, 312, "0", { fontFamily: '"Galmuri14", monospace', fontSize: "30px", color: "#ffffff" })
       .setOrigin(0.5)
       .setDepth(120);
     this.bigNum.setShadow(3, 3, "#b13e53", 0, true, true);
     this.bigSub = scene.add
-      .text(GAME_W / 2, 286, "표", { fontFamily: '"Galmuri11", monospace', fontSize: "12px", color: "#ffcd75" })
+      .text(GAME_W / 2, 346, "표", { fontFamily: '"Galmuri11", monospace', fontSize: "12px", color: "#ffcd75" })
       .setOrigin(0.5)
       .setDepth(120);
     this.cpsText = scene.add
@@ -109,6 +112,54 @@ export class WorldView {
     g.fillStyle(0x0a0a12, 0.5);
     g.fillRect(GAME_W / 2 - 30, GROUND_Y - 4, 60, 6);
     this.bg = g;
+  }
+
+  // 상단 간판: "믿어주세요 / 개표국"
+  _buildTitle() {
+    const cx = GAME_W / 2;
+    const w = 300, h = 46, top = 214, x = cx - w / 2;
+    const g = this.scene.add.graphics().setDepth(110);
+    // 현수막 끈
+    g.fillStyle(0x14121c, 1);
+    g.fillRect(x + 18, top - 12, 3, 14);
+    g.fillRect(x + w - 21, top - 12, 3, 14);
+    // 외곽 + 본체
+    g.fillStyle(0x000000, 1);
+    g.fillRect(x - 3, top - 3, w + 6, h + 6);
+    g.fillStyle(0x29366f, 1);
+    g.fillRect(x, top, w, h);
+    g.fillStyle(0x3b5dc9, 1);
+    g.fillRect(x, top, w, 4);
+    g.fillStyle(0x1f2750, 1);
+    g.fillRect(x, top + h - 5, w, 5);
+    // 모서리 못(금색)
+    g.fillStyle(0xffcd75, 1);
+    g.fillRect(x + 5, top + 5, 4, 4);
+    g.fillRect(x + w - 9, top + 5, 4, 4);
+    g.fillRect(x + 5, top + h - 9, 4, 4);
+    g.fillRect(x + w - 9, top + h - 9, 4, 4);
+    this.titleBg = g;
+    this.titleTop = this.scene.add
+      .text(cx, top + 14, "믿어주세요", { fontFamily: '"Galmuri11", monospace', fontSize: "11px", color: "#94b0c2" })
+      .setOrigin(0.5)
+      .setDepth(111);
+    this.titleMain = this.scene.add
+      .text(cx, top + 31, "개 표 국", { fontFamily: '"Galmuri14", monospace', fontSize: "19px", color: "#ffe3a8" })
+      .setOrigin(0.5)
+      .setDepth(111);
+  }
+
+  // 국장 주변 개표소 소품(투표함/서류더미/깃발)
+  _buildProps() {
+    this.props = [];
+    const place = (key, px, depth) => {
+      const s = this.scene.add.image(px, GROUND_Y, key).setOrigin(0.5, 1).setScale(PROP_SCALE).setDepth(depth);
+      this.props.push(s);
+      return s;
+    };
+    place("prop-flag", 250, 90);        // 캐릭터 뒤(우측) 깃발
+    place("prop-ballotbox", 84, 95);    // 좌측 투표함
+    place("prop-papers", 306, 96);      // 우측 서류더미
   }
 
   _startBob() {
@@ -212,6 +263,10 @@ export class WorldView {
     this.bigSub?.destroy();
     this.cpsText?.destroy();
     this.bg?.destroy();
+    this.titleBg?.destroy();
+    this.titleTop?.destroy();
+    this.titleMain?.destroy();
+    (this.props || []).forEach((p) => p.destroy());
     this.effects.destroy();
   }
 }
