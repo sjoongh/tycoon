@@ -15,6 +15,7 @@ const PROP_SCALE = 4;   // 16px 소품 → 64px
 // 채용된 직원이 서는 바닥 슬롯(좌우로 고루 분산)
 const WORKER_SLOTS = [44, 96, 148, 244, 296, 344];
 const WORKER_SCALE = 4;
+const SORTER_SCALE = 2.8; // 국장 앞 개표대(분류기) — 국장 가리지 않게 작게
 // 국장 풍자 대사(선관위 이슈 위트, 정치 중립)
 const GOV_LINES = [
   "한 표만 믿어주세요!", "분류기는 정상입니다.", "소쿠리는 이제 그만…",
@@ -284,6 +285,9 @@ export class WorldView {
     this._boardBlink = this.scene.tweens.add({ targets: this.board, alpha: 0.78, yoyo: true, repeat: -1, duration: 700, ease: "Sine.easeInOut" });
     this.ballotbox = place("prop-ballotbox", 84, 95); // 좌측 접수 투표함
     this.papers = place("prop-papers", 306, 96);    // 우측 기록 서류더미
+    // 국장 앞 개표대(투표지 분류기) — 분류반 시설
+    this.sorter = this.scene.add.image(GAME_W / 2, GROUND_Y, "prop-sorter").setOrigin(0.5, 1).setScale(SORTER_SCALE).setDepth(101);
+    this.props.push(this.sorter);
   }
 
   // 각 장비를 대응 시설 레벨에 맞춰 키운다(시설 업그레이드가 화면에 보이게)
@@ -294,6 +298,7 @@ export class WorldView {
     this._tweenScale(this.ballotbox, grow(lvl("desk")));
     this._tweenScale(this.papers, grow(lvl("archive")));
     this._tweenScale(this.board, grow(lvl("server")));
+    this._tweenScale(this.sorter, SORTER_SCALE * (1 + Math.min(0.45, lvl("sorter") / 40)));
   }
 
   _tweenScale(obj, sc) {
@@ -304,7 +309,7 @@ export class WorldView {
 
   // 시설 업그레이드 시 대응 장비가 반짝 커지는 연출
   _pulseProp(facility) {
-    const map = { desk: this.ballotbox, archive: this.papers, server: this.board };
+    const map = { desk: this.ballotbox, archive: this.papers, server: this.board, sorter: this.sorter };
     const obj = map[facility && facility.id];
     if (!obj) return;
     const s = obj.scaleX;

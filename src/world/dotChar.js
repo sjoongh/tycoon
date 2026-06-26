@@ -151,10 +151,31 @@ const PROP_BOARD = [
   "................",
 ];
 
+// 투표지 분류기 — 국장 앞 개표대. 투입구(시안) + 분류칸 + 표(흰). 분류반 시설 표현.
+const PROP_SORTER = [
+  "................",
+  "................",
+  "..kkkkkkkkkkkk..",
+  ".kGGGGGGGGGGGGk.",
+  ".kGccccccccccGk.",
+  ".kGGGGGGGGGGGGk.",
+  ".kGkGGkGGkGGkGk.",
+  ".kGGGGGGGGGGGGk.",
+  ".kGwwGwwGwwGwGk.",
+  ".kGGGGGGGGGGGGk.",
+  ".kkkkkkkkkkkkkk.",
+  "..k..kk..kk..k..",
+  "..k..kk..kk..k..",
+  "................",
+  "................",
+  "................",
+];
+
 export const PROP_MAPS = {
   "prop-ballotbox": PROP_BALLOTBOX,
   "prop-papers": PROP_PAPERS,
   "prop-board": PROP_BOARD,
+  "prop-sorter": PROP_SORTER,
 };
 
 // 미니 일꾼(직원) — 흰/회색 실루엣. 런타임에 직원별 색으로 tint한다. 10x10.
