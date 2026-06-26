@@ -15,6 +15,13 @@ const PROP_SCALE = 4;   // 16px 소품 → 64px
 // 채용된 직원이 서는 바닥 슬롯(좌우로 고루 분산)
 const WORKER_SLOTS = [44, 96, 148, 244, 296, 344];
 const WORKER_SCALE = 4;
+// 국장 풍자 대사(선관위 이슈 위트, 정치 중립)
+const GOV_LINES = [
+  "한 표만 믿어주세요!", "분류기는 정상입니다.", "소쿠리는 이제 그만…",
+  "수검표 환영합니다.", "CCTV 다 공개할게요.", "야근 수당은 대체…",
+  "재검표… 또요?", "비둘기 좀 내보내!", "이번엔 깔끔하게.",
+  "보안점검 받겠습니다.", "아빠 찬스 아닙니다.", "통계는 통계일 뿐!",
+];
 
 // 어두운 직원 색이 다크 배경에 묻히지 않도록 밝게 보정(amt 0~1)
 function lightenColor(hex, amt) {
@@ -117,6 +124,11 @@ export class WorldView {
     this._govIdleTimer = scene.time.addEvent({
       delay: 4500, loop: true,
       callback: () => { if (this.gov?.active && Math.random() < 0.5) this._govGesture(); },
+    });
+    // 국장 풍자 대사(가끔)
+    this._speakTimer = scene.time.addEvent({
+      delay: 9000, loop: true,
+      callback: () => { if (this.gov?.active && Math.random() < 0.5) this._govSpeak(); },
     });
 
     this._refresh();
@@ -332,6 +344,11 @@ export class WorldView {
     }
   }
 
+  _govSpeak() {
+    const txt = GOV_LINES[(Math.random() * GOV_LINES.length) | 0];
+    this.effects.float({ text: `"${txt}"`, x: GAME_W / 2, y: 372, color: "#ffe9c0" });
+  }
+
   // idle 제스처: 살짝 점프하며 가끔 표를 던진다
   _govGesture() {
     this.scene.tweens.killTweensOf(this.gov);
@@ -493,6 +510,7 @@ export class WorldView {
     this._itemTimer?.remove();
     this._comboTimer?.remove();
     this._govIdleTimer?.remove();
+    this._speakTimer?.remove();
     this._despawnGolden();
     this._despawnItem();
     this.scene.tweens.killTweensOf(this.gov);
