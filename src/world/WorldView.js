@@ -39,7 +39,10 @@ export class WorldView {
       .setOrigin(0.5)
       .setDepth(120);
     this.cpsText = scene.add
-      .text(GAME_W / 2, GROUND_Y + 20, "", { fontFamily: '"Galmuri9", monospace', fontSize: "11px", color: "#94b0c2" })
+      .text(GAME_W / 2, GROUND_Y + 22, "", {
+        fontFamily: '"Galmuri9", monospace', fontSize: "11px", color: "#bcd0e0",
+        backgroundColor: "rgba(20,18,28,0.72)", padding: { x: 7, y: 4 },
+      })
       .setOrigin(0.5)
       .setDepth(120);
 

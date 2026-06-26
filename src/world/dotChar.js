@@ -97,16 +97,16 @@ export const GOV_SIZE = 16;
 // ── 개표소 소품(도트 16x16) ── 국장 주변에 배치해 "개표국" 분위기를 낸다.
 const PROP_BALLOTBOX = [
   "................",
-  "................",
-  "...kkkkkkkkkk...",
-  "..kkJJJJJJJJkk..",
-  "..kJkkkkkkkkJk..",   // 투입구 슬롯
+  "......kkkk......",   // 투입 중인 용지
+  ".....kwwwwk.....",
+  ".....kwggwk.....",
+  "...kkkkkkkkkk...",   // 윗뚜껑
+  "..kJkkkkkkkkJk..",   // 투입구 슬롯(검정)
   "..kJJJJJJJJJJk..",
   "..kJjjjjjjjjJk..",
+  "..kJjjjYYjjjJk..",   // 별 ★
   "..kJjjYYYYjjJk..",
-  "..kJjYYjjYYjJk..",
-  "..kJjjjjjjjjJk..",
-  "..kJJJJJJJJJJk..",
+  "..kJjjjYYjjjJk..",
   "..kJjjjjjjjjJk..",
   "..kJJJJJJJJJJk..",
   "..kkkkkkkkkkkk..",
