@@ -82,6 +82,7 @@ export class WorldView {
     this.effects = new WorldEffects(scene);
     this._workers = {}; // 채용된 직원 도트(staffId → sprite)
     this._workerShadows = {};
+    this._propTier = {}; // 시설별 시각 티어(승급 색 진화 추적)
 
     this._onChanged = () => this._refresh();
     this._onFloat = (p) => this.effects.float(p);
@@ -288,7 +289,30 @@ export class WorldView {
     // 국장 앞 개표대(투표지 분류기) — 분류반 시설
     this.sorter = this.scene.add.image(GAME_W / 2, GROUND_Y, "prop-sorter").setOrigin(0.5, 1).setScale(SORTER_SCALE).setDepth(101);
     this.props.push(this.sorter);
+
+    // 상황판(전광판)에 올리는 실시간 개표 현황 LED 텍스트 — "왜 있는지" 의미 부여
+    this.boardText = this.scene.add
+      .text(250, GROUND_Y - 52, "", { fontFamily: '"Galmuri9", monospace', fontSize: "9px", color: "#73eff7", align: "center" })
+      .setOrigin(0.5)
+      .setDepth(91);
+
+    // 시설 레벨 뱃지(prop 아래) — 업그레이드가 화면에 숫자로 보이게
+    this.propLabels = {};
+    const mkLabel = (obj, id) => {
+      const t = this.scene.add
+        .text(obj.x, GROUND_Y + 4, "", { fontFamily: '"Galmuri9", monospace', fontSize: "8px", color: "#9fb8d0" })
+        .setOrigin(0.5, 0)
+        .setDepth(102);
+      this.propLabels[id] = t;
+    };
+    mkLabel(this.ballotbox, "desk");
+    mkLabel(this.papers, "archive");
+    mkLabel(this.board, "server");
   }
+
+  // 시설 시각 티어(0~3): 레벨 10/25/40에서 승급 — 색이 기본→은→금으로 진화
+  _propTierFor(l) { return l >= 40 ? 3 : l >= 25 ? 2 : l >= 10 ? 1 : 0; }
+  _tierTint(t) { return t >= 3 ? 0xffe9a8 : t >= 2 ? 0xd8e0ff : 0xffffff; }
 
   // 각 장비를 대응 시설 레벨에 맞춰 키운다(시설 업그레이드가 화면에 보이게)
   //  투표함←접수(desk) · 서류더미←기록(archive) · 상황판←전산(server)
@@ -299,6 +323,37 @@ export class WorldView {
     this._tweenScale(this.papers, grow(lvl("archive")));
     this._tweenScale(this.board, grow(lvl("server")));
     this._tweenScale(this.sorter, SORTER_SCALE * (1 + Math.min(0.45, lvl("sorter") / 40)));
+
+    // 시설 레벨 뱃지 + 티어 색 진화(승급 시 번쩍 + 알림)
+    const PROP_OF = { desk: this.ballotbox, archive: this.papers, server: this.board, sorter: this.sorter };
+    const TIER_NAME = ["", "은장", "금장", "명품"];
+    Object.entries(PROP_OF).forEach(([id, obj]) => {
+      if (!obj) return;
+      const l = lvl(id);
+      const label = this.propLabels[id];
+      if (label) label.setText(l > 0 ? `Lv.${l}` : "");
+      const t = this._propTierFor(l);
+      if (this._propTier[id] === undefined) {
+        this._propTier[id] = t;
+        obj.setTint(this._tierTint(t));
+      } else if (t !== this._propTier[id]) {
+        const up = t > this._propTier[id];
+        this._propTier[id] = t;
+        obj.setTint(this._tierTint(t));
+        if (up && t > 0) {
+          const s = obj.scaleX;
+          this.scene.tweens.add({ targets: obj, scaleX: s * 1.3, scaleY: s * 1.3, yoyo: true, duration: 180, ease: "Back.easeOut" });
+          this.effects.float({ text: `★ ${TIER_NAME[t]} 승급!`, x: obj.x, y: obj.y - 56, color: "#ffd34d" });
+        }
+      }
+    });
+
+    // 상황판 실시간 개표 현황(구역 진행률)
+    if (this.boardText) {
+      const d = this.gameState.data;
+      const pct = Math.min(100, Math.round((d.stage.progress / d.stage.target) * 100));
+      this.boardText.setText(`${d.stage.area}구역\n개표 ${pct}%`);
+    }
   }
 
   _tweenScale(obj, sc) {
@@ -530,6 +585,8 @@ export class WorldView {
     this.titleMain?.destroy();
     this.titleHint?.destroy();
     this.titleZone?.destroy();
+    this.boardText?.destroy();
+    Object.values(this.propLabels || {}).forEach((t) => t.destroy());
     (this.props || []).forEach((p) => p.destroy());
     Object.values(this._workers || {}).forEach((w) => { this.scene.tweens.killTweensOf(w); w.destroy(); });
     Object.values(this._workerShadows || {}).forEach((s) => s.destroy());
