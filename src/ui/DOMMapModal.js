@@ -1,4 +1,4 @@
-import { regions, regionFor } from "../data/regions.js";
+import { regions, regionFor, eraTheme } from "../data/regions.js";
 import { shortNumber } from "../utils/format.js";
 
 // 전국 개표 지도 모달 — 간판 탭으로 열림("gp:open-map" 이벤트).
@@ -39,7 +39,13 @@ export class DOMMapModal {
     const maxNode = Math.max(regions.length, area);
 
     let nodes = "";
+    let lastEra = null;
     for (let a = 1; a <= maxNode; a++) {
+      const th = eraTheme(a);
+      if (th.key !== lastEra) {
+        nodes += `<div class="gp-map__era">${th.icon} ${th.name}</div>`;
+        lastEra = th.key;
+      }
       const r = regionFor(a);
       const state = a < area ? "done" : a === area ? "cur" : "lock";
       const st = a < area ? "정복 ✓" : a === area ? `${pct}%` : "잠김";

@@ -15,6 +15,14 @@ export const regions = [
   { name: "우주정거장 개표국", desc: "은하 표심까지", icon: "🛰" },
 ];
 
+// 구역(area) 밴드를 풍자적 "체제 시대"로 매핑 — 배경/상징/깃발색이 시대마다 바뀐다.
+export function eraTheme(area) {
+  if (area <= 3) return { key: "force", name: "무력 시대", icon: "⚔" };
+  if (area <= 6) return { key: "red", name: "적색 시대", icon: "★" };
+  if (area <= 9) return { key: "demo", name: "민주 시대", icon: "🗳" };
+  return { key: "future", name: "미래 시대", icon: "🛸" };
+}
+
 export function regionFor(area) {
   const idx = Math.max(0, Math.min(regions.length - 1, area - 1));
   const r = regions[idx];
