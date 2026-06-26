@@ -81,3 +81,67 @@ export const prestigeUpgrades = [
     effect: { cpsPct: 0.04 },
   },
 ];
+
+// 2차 프레스티지 통화 = 훈장(medal). 새 구역을 처음 돌파할 때만 적립(감사 스팸 불가, 깊이 보상).
+// 인장 트리가 몇 런 만에 "풀리는" 결정-붕괴를 메우는 메타 레이어 — seal의 +%/Lv 복붙이 아니라
+// 질적으로 다른 효과(곱연산 인장수입·메타공식 강화·시작자본·상한해제·무한소비처)만 담는다.
+export const medalUpgrades = [
+  {
+    id: "decree",
+    name: "포고령",
+    shortName: "포고령",
+    currency: "medal",
+    baseCost: 1,
+    costMul: 1.7,
+    maxLevel: 10,
+    desc: "감사 인장 획득 ×(1+12%/Lv) — 곱연산",
+    effect: { sealMult: 0.12 },
+  },
+  {
+    id: "tenure",
+    name: "관록",
+    shortName: "관록",
+    currency: "medal",
+    baseCost: 1,
+    costMul: 1.7,
+    maxLevel: 8,
+    desc: "감사 횟수 영구배율 보너스 +15%/Lv",
+    effect: { runsMult: 0.15 },
+  },
+  {
+    id: "legacy",
+    name: "유산",
+    shortName: "유산",
+    currency: "medal",
+    baseCost: 1,
+    costMul: 1.6,
+    maxLevel: 8,
+    desc: "감사 후 시작 표 +1,200/Lv (초반 도약)",
+    effect: { startVotesFlat: 1200 },
+  },
+  {
+    id: "archive",
+    name: "전당",
+    shortName: "전당",
+    currency: "medal",
+    baseCost: 2,
+    costMul: 1.9,
+    maxLevel: 5,
+    desc: "모든 인장 업그레이드 최대 레벨 +2/Lv",
+    effect: { capBoost: 2 },
+  },
+  {
+    id: "eternal",
+    name: "명예의 전당",
+    shortName: "명예전당",
+    currency: "medal",
+    baseCost: 3,
+    costMul: 1.5,
+    maxLevel: 999, // 무한 — 후반 훈장의 영구 소비처
+    desc: "생산량을 영구 증가 (무한 강화)",
+    effect: { cpsPct: 0.05 },
+  },
+];
+
+// 인장+훈장 통합 목록 — permanentEffectFor가 두 통화 효과를 한 번에 합산하기 위함.
+export const allPrestigeUpgrades = [...prestigeUpgrades, ...medalUpgrades];

@@ -2,7 +2,7 @@ import { shortNumber } from "../utils/format.js";
 import { facilities } from "../data/facilities.js";
 import { staffDefinitions, rarityColors } from "../data/staff.js";
 import { officeEvents } from "../data/events.js";
-import { prestigeUpgrades } from "../data/prestige.js";
+import { prestigeUpgrades, medalUpgrades } from "../data/prestige.js";
 import { questDefinitions } from "../data/quests.js";
 import { achievementDefinitions } from "../data/achievements.js";
 import { dailyQuestDefinitions } from "../data/dailyQuests.js";
@@ -352,22 +352,21 @@ export class DOMBottomPanel {
     const firstAffordable = prestigeUpgrades.find((u) => {
       const lv = gs.prestigeUpgradeLevel(u.id);
       const cost = gs.prestigeUpgradeCost(u.id);
-      return gs.data.prestige.seals >= cost && lv < u.maxLevel;
+      return gs.data.prestige.seals >= cost && lv < gs.effectiveMaxLevel(u);
     });
     if (!this._selectedSeal) this._selectedSeal = firstAffordable?.id || prestigeUpgrades[0]?.id;
     const sel = this._selectedSeal;
     const selDef = prestigeUpgrades.find((u) => u.id === sel);
     const selLv = selDef ? gs.prestigeUpgradeLevel(sel) : 0;
     const selCost = selDef ? gs.prestigeUpgradeCost(sel) : 0;
-    const selCanBuy = selDef && gs.data.prestige.seals >= selCost && selLv < selDef.maxLevel;
+    const selCanBuy = selDef && gs.data.prestige.seals >= selCost && selLv < gs.effectiveMaxLevel(selDef);
 
     const ups = prestigeUpgrades.map((u) => {
       const lv = gs.prestigeUpgradeLevel(u.id);
       const cost = gs.prestigeUpgradeCost(u.id);
-      const cb = gs.data.prestige.seals >= cost && lv < u.maxLevel;
       const isActive = u.id === sel;
       // FIX P1: gp-seal--locked only for max-level seals; unaffordable seals stay visible (not dimmed)
-      const maxed = lv >= u.maxLevel;
+      const maxed = lv >= gs.effectiveMaxLevel(u);
       return `<button class="gp-seal ${isActive ? "gp-seal--active" : ""} ${maxed ? "gp-seal--locked" : ""}" data-action="buyPrestige" data-id="${u.id}"><span class="gp-seal__role">${u.shortName}</span><span class="gp-seal__lv">${maxed ? `완료` : `Lv.${lv} · ${cost}`}</span></button>`;
     }).join("");
 
@@ -381,18 +380,65 @@ export class DOMBottomPanel {
       </div>
       <button class="gp-btn gp-btn--sm gp-btn--gold ${selCanBuy ? "gp-btn--ready" : "gp-btn--disabled"}" data-action="buyPrestige" data-id="${sel}">구매</button>
     </div>` : "";
-    this.panel.innerHTML = `<div class="gp-paneltitle">감사 재정비 · 인장 ${gs.data.prestige.seals} · 영구 x${fullMult.toFixed(2)}</div>
+
+    const medalSection = this._renderMedalSection();
+
+    this.panel.innerHTML = `<div class="gp-paneltitle">감사 재정비 · 인장 ${gs.data.prestige.seals} · &#127894; 훈장 ${gs.data.prestige.medals} · 영구 x${fullMult.toFixed(2)}</div>
       <div class="gp-sealgrid">${ups}</div>
       ${detailCard}
-      <div class="gp-region"><span>예상 획득 +${preview}</span><button class="gp-btn gp-btn--sm gp-btn--danger ${can ? "" : "gp-btn--disabled"}" data-action="prestigeReset">감사실행</button></div>`;
+      ${medalSection}
+      <div class="gp-region"><span>예상 획득 +${preview}${gs.medalPreview() > 0 ? ` · &#127894;+${gs.medalPreview()}` : ""}</span><button class="gp-btn gp-btn--sm gp-btn--danger ${can ? "" : "gp-btn--disabled"}" data-action="prestigeReset">감사실행</button></div>`;
 
-    // Wire seal selection clicks (re-render with new selection, don't buy immediately)
+    // Wire seal + medal selection clicks (re-render with new selection, don't buy immediately)
     this.panel.querySelectorAll(".gp-seal").forEach((btn) => {
       btn.addEventListener("click", (e) => {
         e.stopPropagation();
-        this._selectedSeal = btn.dataset.id;
+        if (btn.dataset.medal === "1") this._selectedMedal = btn.dataset.id;
+        else this._selectedSeal = btn.dataset.id;
         this._renderPrestige();
       });
     });
+  }
+
+  // 훈장(2차 통화) 전당 — 인장 트리와 시각·경제를 구분(금색 강조). 미해금 시엔 획득법 안내만 노출.
+  _renderMedalSection() {
+    const gs = this.gameState;
+    const unlocked = (gs.data.prestige.totalMedals || 0) > 0 || (gs.data.prestige.medals || 0) > 0;
+    if (!unlocked) {
+      return `<div class="gp-goal__section" style="margin-top:10px">&#127894; 훈장 전당 · 2차</div>
+        <div class="gp-card__sub" style="padding:2px 4px 0;opacity:.78">새 구역을 처음 돌파하면 <b>훈장</b>을 얻어 영구 메타 강화를 해금합니다.</div>`;
+    }
+    const medalFirst = medalUpgrades.find((u) => {
+      const lv = gs.prestigeUpgradeLevel(u.id);
+      return gs.data.prestige.medals >= gs.prestigeUpgradeCost(u.id) && lv < u.maxLevel;
+    });
+    if (!this._selectedMedal) this._selectedMedal = medalFirst?.id || medalUpgrades[0]?.id;
+    const sel = this._selectedMedal;
+    const selDef = medalUpgrades.find((u) => u.id === sel);
+    const selLv = selDef ? gs.prestigeUpgradeLevel(sel) : 0;
+    const selCost = selDef ? gs.prestigeUpgradeCost(sel) : 0;
+    const selCanBuy = selDef && gs.data.prestige.medals >= selCost && selLv < selDef.maxLevel;
+
+    const grid = medalUpgrades.map((u) => {
+      const lv = gs.prestigeUpgradeLevel(u.id);
+      const cost = gs.prestigeUpgradeCost(u.id);
+      const isActive = u.id === sel;
+      const maxed = lv >= u.maxLevel;
+      // 금색 강조로 인장(gem-blue)과 경제 구분
+      return `<button class="gp-seal gp-seal--medal ${isActive ? "gp-seal--active" : ""} ${maxed ? "gp-seal--locked" : ""}" data-action="buyPrestige" data-id="${u.id}" data-medal="1" style="border-color:${isActive ? "#ffd479" : "rgba(255,212,121,.35)"}"><span class="gp-seal__role">${u.shortName}</span><span class="gp-seal__lv">${maxed ? `완료` : `Lv.${lv} · ${cost}`}</span></button>`;
+    }).join("");
+
+    const detail = selDef ? `<div class="gp-card" style="margin-top:8px;border-color:rgba(255,212,121,.3)">
+      <div class="gp-card__body">
+        <div class="gp-card__title">${selDef.shortName} Lv.${selLv}${selDef.maxLevel >= 999 ? "" : `/${selDef.maxLevel}`}</div>
+        <div class="gp-card__sub">${selDef.desc || ""}</div>
+        <div class="gp-card__gain">비용: &#127894; 훈장 ${selCost}</div>
+      </div>
+      <button class="gp-btn gp-btn--sm gp-btn--gold ${selCanBuy ? "gp-btn--ready" : "gp-btn--disabled"}" data-action="buyPrestige" data-id="${sel}">구매</button>
+    </div>` : "";
+
+    return `<div class="gp-goal__section" style="margin-top:10px">&#127894; 훈장 전당 · 2차 · 보유 ${gs.data.prestige.medals}</div>
+      <div class="gp-sealgrid">${grid}</div>
+      ${detail}`;
   }
 }

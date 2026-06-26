@@ -101,11 +101,12 @@ export class DOMModalLayer {
   _confirmPrestige() {
     const proj = this.gameState.prestigeProjection
       ? this.gameState.prestigeProjection()
-      : { earned: 0, current: 1, projected: 1 };
+      : { earned: 0, current: 1, projected: 1, medalEarned: 0 };
+    const medalLine = proj.medalEarned > 0 ? ` · <b style="color:#ffd479">🏆 훈장 +${proj.medalEarned}</b>` : "";
     this._openModal(`
       <div class="gp-modal__badge">🔨</div>
       <div class="gp-mtitle">감사 실행</div>
-      <div class="gp-msub">표·시설·직원은 초기화되지만, <b>제도인장 +${proj.earned}</b>을 받아 <b>영구 생산 배율</b>이 영원히 오릅니다. (감사 업그레이드·업적은 유지)</div>
+      <div class="gp-msub">표·시설·직원은 초기화되지만, <b>제도인장 +${proj.earned}</b>${medalLine}을 받아 <b>영구 생산 배율</b>이 영원히 오릅니다. (감사 업그레이드·업적은 유지)</div>
       <div class="gp-mbig">영구 x${proj.current.toFixed(2)} → <span style="color:#8df0b0">x${proj.projected.toFixed(2)}</span></div>
       <div class="gp-confirm-row">
         <button class="gp-btn gp-btn--disabled" data-close>취소</button>

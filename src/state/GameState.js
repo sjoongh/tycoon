@@ -1,7 +1,7 @@
 import Phaser from "phaser";
 import { SAVE_KEY } from "../config.js";
 import { facilities } from "../data/facilities.js";
-import { prestigeUpgrades } from "../data/prestige.js";
+import { prestigeUpgrades, medalUpgrades, allPrestigeUpgrades } from "../data/prestige.js";
 import { questDefinitions } from "../data/quests.js";
 import { staffDefinitions } from "../data/staff.js";
 import { achievementDefinitions } from "../data/achievements.js";
@@ -73,6 +73,11 @@ const fallbackState = {
       briefing: 0,
       night: 0,
     },
+    // 2차 통화(훈장) — 새 구역 돌파 시에만 적립. medalBest = 훈장 적립 기준이 된 최고 구역(기본 4 = 감사 가능 최소 구역).
+    medals: 0,
+    totalMedals: 0,
+    medalBest: 4,
+    medalUpgrades: {},
   },
   stats: {
     totalVotes: 0,
@@ -167,9 +172,20 @@ export class GameState extends Phaser.Events.EventEmitter {
     data.prestige.runs = Math.max(0, Number(data.prestige.runs) || 0);
     data.prestige.bestArea = Math.max(1, Number(data.prestige.bestArea) || 1);
     data.prestige.totalSeals = Math.max(0, Number(data.prestige.totalSeals) || 0);
+    // 훈장(2차 통화) 정규화 — 인장 상한 클램프가 전당(capBoost)에 의존하므로 훈장 먼저 처리
+    data.prestige.medals = Math.max(0, Number(data.prestige.medals) || 0);
+    data.prestige.totalMedals = Math.max(0, Number(data.prestige.totalMedals) || 0);
+    data.prestige.medalBest = Math.max(4, Number(data.prestige.medalBest) || 4);
+    data.prestige.medalUpgrades = { ...(data.prestige.medalUpgrades || {}) };
+    medalUpgrades.forEach((upgrade) => {
+      data.prestige.medalUpgrades[upgrade.id] = Phaser.Math.Clamp(Number(data.prestige.medalUpgrades[upgrade.id]) || 0, 0, upgrade.maxLevel);
+    });
+    const capBoost = medalUpgrades.reduce((sum, up) => sum + (data.prestige.medalUpgrades[up.id] || 0) * (up.effect.capBoost || 0), 0);
     data.prestige.upgrades = { ...fallbackState.prestige.upgrades, ...(data.prestige.upgrades || {}) };
     prestigeUpgrades.forEach((upgrade) => {
-      data.prestige.upgrades[upgrade.id] = Phaser.Math.Clamp(Number(data.prestige.upgrades[upgrade.id]) || 0, 0, upgrade.maxLevel);
+      // 전당(capBoost)이 유한 인장 업그레이드의 상한을 올린다(무한 골든은 제외)
+      const max = upgrade.maxLevel >= 999 ? upgrade.maxLevel : upgrade.maxLevel + capBoost;
+      data.prestige.upgrades[upgrade.id] = Phaser.Math.Clamp(Number(data.prestige.upgrades[upgrade.id]) || 0, 0, max);
     });
 
     if (!facilities.some((facility) => facility.id === data.selected)) data.selected = "desk";
@@ -372,8 +388,8 @@ export class GameState extends Phaser.Events.EventEmitter {
     const p = this.data.prestige;
     const cpsFactor = 1 + this.permanentEffectFor(this.data, "cpsPct");
     const current = this.prestigeMultiplierFor(this.data) * cpsFactor;
-    const projectedSeal = this.prestigeMultiplierRaw(p.totalSeals + earned, p.runs + 1);
-    return { earned, current, projected: projectedSeal * cpsFactor };
+    const projectedSeal = this.prestigeMultiplierRaw(p.totalSeals + earned, p.runs + 1, this.permanentEffectFor(this.data, "runsMult"));
+    return { earned, current, projected: projectedSeal * cpsFactor, medalEarned: this.medalPreview() };
   }
 
   upgrade(id = this.data.selected) {
@@ -465,8 +481,14 @@ export class GameState extends Phaser.Events.EventEmitter {
     const facilityValue = Math.floor(this.facilityTotal() / 12);
     const eventValue = Math.floor(this.data.stats.totalEvents / 3);
     const base = Math.max(4, areaValue + facilityValue + eventValue);
-    // 정밀 감사반: 인장 획득량 증가
-    return Math.floor(base * (1 + this.permanentEffectFor(this.data, "sealPct")));
+    // 정밀 감사반(sealPct, 가산) × 포고령(sealMult, 곱연산) — 두 통화가 인장 수입에 함께 작용
+    return Math.floor(base * (1 + this.permanentEffectFor(this.data, "sealPct")) * (1 + this.permanentEffectFor(this.data, "sealMult")));
+  }
+
+  // 훈장(2차 통화) 적립 = 이번 감사로 도달한 구역이 기존 최고치를 넘은 만큼만(구역당 1). 감사 스팸으론 못 캠 — 깊이를 밀어야 한다.
+  medalPreview() {
+    if (!this.canPrestige()) return 0;
+    return Math.max(0, this.data.stage.area - (this.data.prestige.medalBest || 4));
   }
 
   prestigeReset() {
@@ -475,6 +497,7 @@ export class GameState extends Phaser.Events.EventEmitter {
       this.emit("float", { text: "아직 감사불가", x: 195, y: 720, color: "#ff8e8e" });
       return false;
     }
+    const medalEarned = this.medalPreview();
 
     const kept = {
       prestige: {
@@ -483,6 +506,11 @@ export class GameState extends Phaser.Events.EventEmitter {
         bestArea: Math.max(this.data.prestige.bestArea, this.data.stage.area),
         totalSeals: this.data.prestige.totalSeals + earned,
         upgrades: this.data.prestige.upgrades,
+        // 훈장: 새 구역 돌파분 적립 + 기준 구역 갱신(다음엔 더 깊이 가야 적립)
+        medals: this.data.prestige.medals + medalEarned,
+        totalMedals: this.data.prestige.totalMedals + medalEarned,
+        medalBest: Math.max(this.data.prestige.medalBest || 4, this.data.stage.area),
+        medalUpgrades: this.data.prestige.medalUpgrades,
       },
       achievements: this.data.achievements,
       tutorial: this.data.tutorial, // 베테랑이 감사(프레스티지) 후 신규 오프닝/튜토리얼을 다시 보지 않도록 유지
@@ -496,7 +524,7 @@ export class GameState extends Phaser.Events.EventEmitter {
       explain: fallbackState.explain + earned * 3,
       votes: this.startingVotesFor(kept.prestige),
       trust: Math.min(90, fallbackState.trust + kept.prestige.runs),
-      log: [`감사 완료: 제도인장 +${earned}`, "개표국 재정비"],
+      log: [medalEarned > 0 ? `감사 완료: 제도인장 +${earned} · 훈장 +${medalEarned}` : `감사 완료: 제도인장 +${earned}`, "개표국 재정비"],
     }, Date.now());
     // 감사로 stats.totalVotes가 0으로 리셋되므로 주간 기준점도 재정렬(안 하면 progress가 음수→0에 영구 고정)
     this.data.weekly.baseVotes = this.data.stats.totalVotes;
@@ -512,28 +540,33 @@ export class GameState extends Phaser.Events.EventEmitter {
     if (startTrust > 0) this.data.trust = Phaser.Math.Clamp(this.data.trust + startTrust, 0, 95);
     this.offlineReward = null;
     this.emit("float", { text: `제도인장 +${earned}`, x: 195, y: 190, color: "#bba2ff" });
+    if (medalEarned > 0) this.emit("float", { text: `훈장 +${medalEarned}`, x: 195, y: 158, color: "#ffd479" });
     this.emit("changed");
     this.save(false);
     return true;
   }
 
   buyPrestigeUpgrade(id) {
-    const upgrade = prestigeUpgrades.find((item) => item.id === id);
+    const upgrade = allPrestigeUpgrades.find((item) => item.id === id);
     if (!upgrade) return false;
+    const isMedal = upgrade.currency === "medal";
+    const store = isMedal ? this.data.prestige.medalUpgrades : this.data.prestige.upgrades;
     const level = this.prestigeUpgradeLevel(id);
-    if (level >= upgrade.maxLevel) {
+    if (level >= this.effectiveMaxLevel(upgrade)) {
       this.emit("float", { text: "최대레벨", x: 195, y: 720, color: "#ff8e8e" });
       return false;
     }
     const cost = this.prestigeUpgradeCost(id);
-    if (this.data.prestige.seals < cost) {
-      this.emit("float", { text: "인장부족", x: 195, y: 720, color: "#ff8e8e" });
+    const bank = isMedal ? this.data.prestige.medals : this.data.prestige.seals;
+    if (bank < cost) {
+      this.emit("float", { text: isMedal ? "훈장부족" : "인장부족", x: 195, y: 720, color: "#ff8e8e" });
       return false;
     }
-    this.data.prestige.seals -= cost;
-    this.data.prestige.upgrades[id] = level + 1;
+    if (isMedal) this.data.prestige.medals -= cost;
+    else this.data.prestige.seals -= cost;
+    store[id] = level + 1;
     this.addLog(`${upgrade.shortName} Lv.${level + 1}`);
-    this.emit("float", { text: `${upgrade.shortName} 강화`, x: 195, y: 604, color: "#bba2ff" });
+    this.emit("float", { text: `${upgrade.shortName} 강화`, x: 195, y: 604, color: isMedal ? "#ffd479" : "#bba2ff" });
     this.emit("changed");
     this.save(false);
     return true;
@@ -912,15 +945,16 @@ export class GameState extends Phaser.Events.EventEmitter {
 
   // 인장은 가산, 감사 횟수는 가산항과 곱해지는 복리식(매 감사가 누적 인장을 증폭 → "다음 감사가 더 빨라진다" 감각).
   // 감사 횟수 보너스는 소프트캡(runs/40)으로 후반 과인플레 방지. seals=0,runs=0 → 1.0 (기존과 연속).
-  prestigeMultiplierRaw(totalSeals, runs) {
+  prestigeMultiplierRaw(totalSeals, runs, runsMult = 0) {
     const s = Math.max(0, totalSeals || 0);
     const r = Math.max(0, runs || 0);
-    const runsBonus = (0.06 * r) / (1 + r / 40);
+    // 관록(runsMult): 감사 횟수 보너스의 기울기를 키운다(소프트캡은 유지 → 폭주 방지)
+    const runsBonus = (0.06 * (1 + runsMult) * r) / (1 + r / 40);
     return (1 + s * 0.025) * (1 + runsBonus);
   }
 
   prestigeMultiplierFor(data) {
-    return this.prestigeMultiplierRaw(data.prestige?.totalSeals || 0, data.prestige?.runs || 0);
+    return this.prestigeMultiplierRaw(data.prestige?.totalSeals || 0, data.prestige?.runs || 0, this.permanentEffectFor(data, "runsMult"));
   }
 
   explainPerSecond() {
@@ -961,11 +995,19 @@ export class GameState extends Phaser.Events.EventEmitter {
     return hours * 3600000;
   }
 
+  // 인장+훈장 두 통화의 영구 효과를 한 번에 합산(키 단위). cpsPct처럼 양쪽이 같은 키를 가지면 자연히 더해진다.
   permanentEffectFor(data, key) {
-    return prestigeUpgrades.reduce((sum, upgrade) => {
-      const level = data.prestige?.upgrades?.[upgrade.id] || 0;
+    return allPrestigeUpgrades.reduce((sum, upgrade) => {
+      const store = upgrade.currency === "medal" ? data.prestige?.medalUpgrades : data.prestige?.upgrades;
+      const level = store?.[upgrade.id] || 0;
       return sum + level * (upgrade.effect[key] || 0);
     }, 0);
+  }
+
+  // 유한 인장 업그레이드의 실효 상한 = 정의 상한 + 전당(capBoost). 무한(>=999)·훈장 업그레이드는 그대로.
+  effectiveMaxLevel(upgrade) {
+    if (upgrade.currency === "medal" || upgrade.maxLevel >= 999) return upgrade.maxLevel;
+    return upgrade.maxLevel + Math.round(this.permanentEffectFor(this.data, "capBoost"));
   }
 
   level(id) {
@@ -1014,16 +1056,21 @@ export class GameState extends Phaser.Events.EventEmitter {
   }
 
   prestigeUpgradeLevel(id) {
-    return this.data.prestige.upgrades[id] || 0;
+    const upgrade = allPrestigeUpgrades.find((item) => item.id === id);
+    const store = upgrade?.currency === "medal" ? this.data.prestige.medalUpgrades : this.data.prestige.upgrades;
+    return store?.[id] || 0;
   }
 
   prestigeUpgradeCost(id) {
-    const upgrade = prestigeUpgrades.find((item) => item.id === id);
-    return Math.floor(upgrade.baseCost * 1.55 ** this.prestigeUpgradeLevel(id));
+    const upgrade = allPrestigeUpgrades.find((item) => item.id === id);
+    return Math.floor(upgrade.baseCost * (upgrade.costMul || 1.55) ** this.prestigeUpgradeLevel(id));
   }
 
+  // 시작 표 = 감사 횟수 기반 + 유산(startVotesFlat) 평탄 가산. runs=0(첫 감사)에서도 유산이 즉시 도약을 준다.
   startingVotesFor(prestige) {
-    return Math.floor(120 * (prestige.runs || 0) ** 1.28);
+    const base = Math.floor(120 * (prestige.runs || 0) ** 1.28);
+    const flat = medalUpgrades.reduce((sum, up) => sum + (prestige.medalUpgrades?.[up.id] || 0) * (up.effect.startVotesFlat || 0), 0);
+    return base + flat;
   }
 
   stageTarget(area) {
