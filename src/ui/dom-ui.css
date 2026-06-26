@@ -125,6 +125,13 @@
 .gp-btn--upgrade { display: flex; flex-direction: column; align-items: center; gap: 1px; min-width: 72px; flex-shrink: 0; white-space: nowrap; padding: 8px 11px; font-size: 12px; line-height: 1.25; }
 .gp-btn--upgrade small { font-family: var(--f-small); font-size: 9px; opacity: 0.9; }
 
+/* ---------- 일괄구매 수량 토글 ---------- */
+.gp-qty { display: flex; gap: 5px; margin-top: 8px; }
+.gp-qtybtn { flex: 1; pointer-events: auto; border: 3px solid var(--line); padding: 6px 0; font-family: var(--f-small); font-size: 11px; background: var(--panel2); color: var(--ink-soft); cursor: pointer; box-shadow: var(--px-out-sm); }
+.gp-qtybtn--on { background: var(--gold); color: #4a2600; }
+.gp-paneltitle--row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.gp-paneltitle--row .gp-qty { margin-top: 0; flex: 0 0 auto; width: 150px; }
+
 /* ---------- facility selector ---------- */
 .gp-facsel { display: flex; gap: 5px; margin-top: 10px; }
 .gp-fac { flex: 1; pointer-events: auto; border: 3px solid var(--line); padding: 7px 3px 6px; background: var(--panel2); cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 3px; min-height: 56px; box-shadow: var(--px-out-sm); }

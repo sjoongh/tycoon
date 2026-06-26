@@ -43,6 +43,16 @@ export class WorldView {
       .setOrigin(0.5)
       .setDepth(120);
 
+    // 클릭 콤보 카운터(연타 시 등장)
+    this.comboText = scene.add
+      .text(GAME_W / 2, 286, "", { fontFamily: '"Galmuri14", monospace', fontSize: "15px", color: "#ffcd75" })
+      .setOrigin(0.5)
+      .setDepth(121)
+      .setVisible(false);
+    this.comboText.setShadow(2, 2, "#000", 0, true, true);
+    this._comboN = 0;
+    this._comboLast = 0;
+
     this.effects = new WorldEffects(scene);
 
     this._onChanged = () => this._refresh();
@@ -59,6 +69,8 @@ export class WorldView {
       if (currentlyOver && currentlyOver.length) return;
       gameState.processClick(pointer.x, pointer.y);
       this._squishGov();
+      this._punchNum();
+      this._bumpCombo();
       this.effects.deskPop(GAME_W / 2, GROUND_Y - 30);
     };
     scene.input.on("pointerdown", this._onPointer);
@@ -174,6 +186,26 @@ export class WorldView {
     });
   }
 
+  _punchNum() {
+    this.scene.tweens.killTweensOf(this.bigNum);
+    this.bigNum.setScale(1);
+    this.scene.tweens.add({ targets: this.bigNum, scale: 1.22, yoyo: true, duration: 90, ease: "Quad.easeOut" });
+  }
+
+  _bumpCombo() {
+    const now = this.scene.time.now;
+    if (now - this._comboLast < 500) this._comboN += 1;
+    else this._comboN = 1;
+    this._comboLast = now;
+    if (this._comboN >= 3) {
+      this.comboText.setText(`${this._comboN} 콤보!`).setVisible(true).setScale(1);
+      this.scene.tweens.killTweensOf(this.comboText);
+      this.scene.tweens.add({ targets: this.comboText, scale: 1.3, yoyo: true, duration: 100, ease: "Quad.easeOut" });
+      this._comboTimer?.remove();
+      this._comboTimer = this.scene.time.delayedCall(800, () => { this.comboText.setVisible(false); this._comboN = 0; });
+    }
+  }
+
   _squishGov() {
     this.scene.tweens.killTweensOf(this.gov);
     this.gov.setScale(GOV_SCALE);
@@ -256,12 +288,14 @@ export class WorldView {
     this.scene.input.off("pointerdown", this._onPointer);
     this._incomeTimer?.remove();
     this._goldenTimer?.remove();
+    this._comboTimer?.remove();
     this._despawnGolden();
     this.scene.tweens.killTweensOf(this.gov);
     this.gov?.destroy();
     this.bigNum?.destroy();
     this.bigSub?.destroy();
     this.cpsText?.destroy();
+    this.comboText?.destroy();
     this.bg?.destroy();
     this.titleBg?.destroy();
     this.titleTop?.destroy();

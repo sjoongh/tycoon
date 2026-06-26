@@ -27,6 +27,7 @@ export class DOMBottomPanel {
   constructor(gameState) {
     this.gameState = gameState;
     this.currentEvent = null;
+    this.buyQty = 1; // 일괄구매 수량: 1 | 10 | "max" (시설/직원 공유)
     this.root = document.createElement("div");
     this.root.className = "gp-bottom";
     this.root.innerHTML = `<div class="gp-panel" data-k="panel"></div><div class="gp-tabs" data-k="tabs"></div>`;
@@ -76,9 +77,10 @@ export class DOMBottomPanel {
     const id = el.dataset.id;
     switch (el.dataset.action) {
       case "selectFac": gs.select(id); break;
-      case "upgradeFac": gs.upgrade(gs.data.selected); break;
+      case "upgradeFac": gs.bulkUpgrade(gs.data.selected, this.buyQty); break;
       case "advanceStage": gs.advanceStage(); break;
-      case "hire": gs.hireStaff(id); break;
+      case "hire": gs.bulkHire(id, this.buyQty); break;
+      case "setBuyQty": this.buyQty = (id === "max" ? "max" : Number(id)); this.refresh(); break;
       case "getEvent": if (gs.eventReady()) { this.currentEvent = this._pickEvent(); this.refresh(); } break;
       case "eventChoice": {
         const ev = officeEvents.find((v) => v.id === id);
@@ -135,6 +137,14 @@ export class DOMBottomPanel {
     if (goalDot) goalDot.hidden = !(goalClaimable && activeTab !== "goals");
   }
 
+  // 일괄구매 수량 토글(x1 / x10 / MAX) — 시설·직원 탭 공유
+  _qtyToggle() {
+    const opts = [["1", "x1"], ["10", "x10"], ["max", "MAX"]];
+    return `<div class="gp-qty">${opts.map(([v, l]) =>
+      `<button class="gp-qtybtn ${String(this.buyQty) === v ? "gp-qtybtn--on" : ""}" data-action="setBuyQty" data-id="${v}">${l}</button>`
+    ).join("")}</div>`;
+  }
+
   _renderFacilities() {
     const gs = this.gameState;
     const sel = gs.facility(gs.data.selected) ? gs.data.selected : "desk";
@@ -142,11 +152,15 @@ export class DOMBottomPanel {
     const unlocked = gs.isUnlocked(sel);
     const cost = gs.cost(sel);
     const ex = gs.explainCost(sel);
-    const canBuy = unlocked && gs.data.votes >= cost && gs.data.explain >= ex;
     const stageDone = gs.data.stage.progress >= gs.data.stage.target;
+    // 일괄구매 플랜(현재 수량 기준)
+    const plan = unlocked ? gs.facilityBulkPlan(sel, this.buyQty) : { levels: 0, voteCost: 0, explainCost: 0 };
+    const canBuy = unlocked && plan.levels > 0 && gs.data.votes >= plan.voteCost && gs.data.explain >= plan.explainCost;
+    const qtyTag = this.buyQty === "max" ? (plan.levels > 0 ? `+${plan.levels}Lv` : "MAX") : `×${plan.levels || this.buyQty}`;
+    const costStr = plan.levels > 0 ? `${shortNumber(plan.voteCost)}표` : "부족";
     // FIX #4: two-line upgrade button — verb on top, cost below — prevents truncation at any number length
     const upgradeBtn = unlocked
-      ? `<button class="gp-btn gp-btn--gold gp-btn--upgrade ${canBuy ? "gp-btn--ready" : "gp-btn--disabled"}" data-action="upgradeFac">업그레이드<small>${shortNumber(cost)}표</small></button>`
+      ? `<button class="gp-btn gp-btn--gold gp-btn--upgrade ${canBuy ? "gp-btn--ready" : "gp-btn--disabled"}" data-action="upgradeFac">업그레이드<small>${costStr}${this.buyQty !== 1 ? ` · ${qtyTag}` : ""}</small></button>`
       : `<button class="gp-btn gp-btn--upgrade gp-btn--disabled" data-action="upgradeFac">잠김</button>`;
     this.panel.innerHTML = `
       <div class="gp-card">
@@ -161,6 +175,7 @@ export class DOMBottomPanel {
         </div>
         ${upgradeBtn}
       </div>
+      ${unlocked ? this._qtyToggle() : ""}
       <div class="gp-facsel">${facilities.map((ff) => {
         const u = gs.isUnlocked(ff.id);
         // P1 fix: facility picker icon — use webp asset as background-image, color as fallback
@@ -193,9 +208,8 @@ export class DOMBottomPanel {
     };
     const cards = staffDefinitions.map((s) => {
       const lv = gs.staffLevel(s.id);
-      const cost = gs.staffCost(s.id);
-      const ex = gs.staffExplainCost(s.id);
-      const can = gs.data.votes >= cost && gs.data.explain >= ex;
+      const plan = gs.staffBulkPlan(s.id, this.buyQty);
+      const can = plan.levels > 0 && gs.data.votes >= plan.voteCost && gs.data.explain >= plan.explainCost;
       const skill = s.skill ? (gs.staffSkillActive(s.id) ? s.skill.name : `스킬 Lv.${s.skill.unlockLevel}`) : "";
       // 시너지: 대응 시설과 곱연산 — 빌드 방향 표시(활성 시 강조)
       const synFac = s.synergy ? facilities.find((f) => f.id === s.synergy.facility) : null;
@@ -207,7 +221,7 @@ export class DOMBottomPanel {
       return `<div class="gp-staff${lightRarity}" style="--rarity-color:${hex(rarityHex)}">
         <div class="gp-staff__dot" style="background:${hex(s.color)}"></div>
         <div class="gp-staff__body"><div class="gp-staff__name">${s.name}<span class="gp-staff__rar">${s.rarityName}</span></div><div class="gp-staff__sub">Lv.${lv} · ${skill}</div><div class="gp-staff__sub">${synLabel}</div></div>
-        <button class="gp-btn gp-btn--sm gp-btn--upgrade ${can ? "gp-btn--ready" : "gp-btn--disabled"}" data-action="hire" data-id="${s.id}">${shortNumber(cost)}표<small>${shortNumber(ex)}해명</small></button></div>`;
+        <button class="gp-btn gp-btn--sm gp-btn--upgrade ${can ? "gp-btn--ready" : "gp-btn--disabled"}" data-action="hire" data-id="${s.id}">${shortNumber(plan.voteCost)}표<small>${this.buyQty !== 1 ? (this.buyQty === "max" ? (plan.levels > 0 ? `MAX +${plan.levels}` : "MAX") : `×${plan.levels || this.buyQty}`) : `${shortNumber(plan.explainCost)}해명`}</small></button></div>`;
     }).join("");
     // FIX P2: multiplier shown as "+69% 생산 보너스" sub-label (not "x1.69" debug-looking number in title)
     const mult = gs.staffMultiplierFor(gs.data);
@@ -215,7 +229,7 @@ export class DOMBottomPanel {
       ? `<span class="gp-card__gain">+${((mult - 1) * 100).toFixed(0)}% 생산 보너스</span>`
       : `<span class="gp-card__gain">x${mult.toFixed(1)} 생산</span>`;
     // Scroll fade is a real div (not ::after) for reliable WebView support
-    this.panel.innerHTML = `<div class="gp-paneltitle">직원 채용 ${multLabel}</div><div class="gp-stafflist-wrap"><div class="gp-stafflist">${cards}</div><div class="gp-stafflist-fade" aria-hidden="true"></div></div>`;
+    this.panel.innerHTML = `<div class="gp-paneltitle gp-paneltitle--row">직원 채용 ${multLabel}${this._qtyToggle()}</div><div class="gp-stafflist-wrap"><div class="gp-stafflist">${cards}</div><div class="gp-stafflist-fade" aria-hidden="true"></div></div>`;
   }
 
   _renderEvents() {

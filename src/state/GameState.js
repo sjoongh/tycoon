@@ -471,6 +471,78 @@ export class GameState extends Phaser.Events.EventEmitter {
     return true;
   }
 
+  // ── 일괄구매(x1 / x10 / Max) ──────────────────────────────
+  // qty: 숫자(정확히 N레벨) 또는 "max"(자원 한도까지). 등비 비용을 누적 합산한다.
+  facilityBulkPlan(id, qty) {
+    const item = this.facility(id);
+    if (!item || !this.isUnlocked(id)) return { levels: 0, voteCost: 0, explainCost: 0 };
+    const maxLv = item.maxLevel || 99;
+    const want = qty === "max" ? Infinity : Math.max(1, qty);
+    let lv = this.level(id), v = 0, e = 0, n = 0, bv = this.data.votes, be = this.data.explain;
+    while (n < want && lv < maxLv && n < 2000) {
+      const cv = Math.floor(item.cost * 1.48 ** lv);
+      const ce = Math.floor(item.explain * 1.18 ** lv);
+      if (qty === "max") { if (bv < cv || be < ce) break; bv -= cv; be -= ce; }
+      v += cv; e += ce; lv++; n++;
+    }
+    return { levels: n, voteCost: v, explainCost: e };
+  }
+
+  staffBulkPlan(id, qty) {
+    const staff = this.staff(id);
+    if (!staff) return { levels: 0, voteCost: 0, explainCost: 0 };
+    const want = qty === "max" ? Infinity : Math.max(1, qty);
+    let lv = this.staffLevel(id), v = 0, e = 0, n = 0, bv = this.data.votes, be = this.data.explain;
+    while (n < want && n < 2000) {
+      const cv = Math.floor(staff.cost * 1.62 ** lv);
+      const ce = Math.floor(staff.explain * 1.24 ** lv);
+      if (qty === "max") { if (bv < cv || be < ce) break; bv -= cv; be -= ce; }
+      v += cv; e += ce; lv++; n++;
+    }
+    return { levels: n, voteCost: v, explainCost: e };
+  }
+
+  bulkUpgrade(id = this.data.selected, qty = 1) {
+    const plan = this.facilityBulkPlan(id, qty);
+    if (plan.levels < 1 || this.data.votes < plan.voteCost || this.data.explain < plan.explainCost) {
+      this.emit("float", { text: "자원부족", x: 195, y: 320, color: "#ff8e8e" });
+      return false;
+    }
+    const fac = this.facility(id);
+    this.data.votes -= plan.voteCost;
+    this.data.explain -= plan.explainCost;
+    this.data.facilities[id] = this.level(id) + plan.levels;
+    this.data.stats.totalUpgrades += plan.levels;
+    this._bumpDaily("upgrades");
+    this.advanceTutorial("upgrade");
+    this.data.trust = Phaser.Math.Clamp(this.data.trust + (fac.trust || 0) * plan.levels, 0, 100);
+    this.addLog(`${fac.name} Lv.${this.level(id)}${plan.levels > 1 ? ` (+${plan.levels})` : ""}`);
+    this.emit("float", { text: `${fac.name} +${plan.levels}Lv`, x: 195, y: 300, color: "#ffc857" });
+    this.emit("upgraded", fac);
+    this.checkProgression();
+    this.emit("changed");
+    return true;
+  }
+
+  bulkHire(id, qty = 1) {
+    const plan = this.staffBulkPlan(id, qty);
+    if (plan.levels < 1 || this.data.votes < plan.voteCost || this.data.explain < plan.explainCost) {
+      this.emit("float", { text: "채용자원부족", x: 195, y: 320, color: "#ff8e8e" });
+      return false;
+    }
+    const staff = this.staff(id);
+    this.data.votes -= plan.voteCost;
+    this.data.explain -= plan.explainCost;
+    this.data.staff[id] = this.staffLevel(id) + plan.levels;
+    this.advanceTutorial("staff");
+    this.data.trust = Phaser.Math.Clamp(this.data.trust + (staff.trustBonus || 0) * 20 * plan.levels, 0, 100);
+    this.addLog(`${staff.name} Lv.${this.staffLevel(id)}${plan.levels > 1 ? ` (+${plan.levels})` : ""}`);
+    this.emit("float", { text: `${staff.name} +${plan.levels}Lv`, x: 195, y: 300, color: "#7fc8ff" });
+    this.checkProgression();
+    this.emit("changed");
+    return true;
+  }
+
   canPrestige() {
     return this.data.stage.area >= 4 || this.facilityTotal() >= 55 || this.data.stage.completed >= 3;
   }
