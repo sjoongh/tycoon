@@ -105,6 +105,9 @@ export class WorldView {
           // 패시브 투표용지 흩날림(생동감)
           if (Math.random() < 0.6) this.effects.ballots({ x: GAME_W / 2 + (Math.random() * 170 - 85), y: 360, count: 2 });
         }
+        // 일꾼이 일하는 반짝임(랜덤 1명 머리 위)
+        const wk = Object.values(this._workers);
+        if (wk.length) { const r = wk[(Math.random() * wk.length) | 0]; this.effects.deskPop(r.x, r.y - 28); }
       },
     });
 
@@ -345,6 +348,8 @@ export class WorldView {
         this._workers[s.id] = w;
         this.scene.tweens.add({ targets: w, scaleX: WORKER_SCALE, scaleY: WORKER_SCALE, duration: 280, ease: "Back.easeOut" });
         this.scene.tweens.add({ targets: w, y: GROUND_Y - 3, yoyo: true, repeat: -1, duration: 640 + i * 70, ease: "Sine.easeInOut", delay: 120 + i * 90 });
+        // 좌우로 살짝 꼼지락(걸어다니는 느낌)
+        this.scene.tweens.add({ targets: w, x: sx + (i % 2 ? 9 : -9), yoyo: true, repeat: -1, duration: 1600 + i * 180, ease: "Sine.easeInOut", delay: 200 + i * 120 });
         this.effects.deskPop(sx, GROUND_Y - 14);
       }
     });
