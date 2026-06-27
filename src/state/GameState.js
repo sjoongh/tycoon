@@ -376,7 +376,8 @@ export class GameState extends Phaser.Events.EventEmitter {
 
   // 사건 보상의 양수 votes/explain은 현재 구역 규모에 맞춰 스케일(후반에도 의미있게). 비용(음수)은 그대로.
   eventRewardScale() {
-    return Math.min(50, this.stageTarget(this.data.stage.area) / this.stageTarget(1));
+    const base = Math.min(50, this.stageTarget(this.data.stage.area) / this.stageTarget(1));
+    return base * (1 + this.permanentEffectFor(this.data, "eventPct")); // 특별 대응반(감사 업그레이드) 보너스
   }
 
   applyEffect(effect) {

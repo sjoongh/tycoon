@@ -72,6 +72,15 @@ export const prestigeUpgrades = [
     effect: { startTrust: 2 },
   },
   {
+    id: "taskforce",
+    name: "특별 대응반",
+    shortName: "대응반",
+    baseCost: 5,
+    maxLevel: 10,
+    desc: "사건 대응 보상 +10%/레벨",
+    effect: { eventPct: 0.10 },
+  },
+  {
     id: "golden",
     name: "황금 개표기",
     shortName: "황금개표",
