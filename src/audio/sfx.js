@@ -29,6 +29,15 @@ export class Sfx {
       else if (a < this._prevArea) this._prevArea = a;
     });
     document.addEventListener("gp:event-resolved", () => this.play("event"));
+    // 범용 SFX 채널 — 어디서든 gp:sfx 디스패치로 사운드 트리거(골든/아이템/부스트 등)
+    document.addEventListener("gp:sfx", (e) => this.play(e.detail));
+    // 믿음 위기 진입 시 경고음(상태 전이 감지)
+    this._prevTs = this.gameState.trustState ? this.gameState.trustState() : "normal";
+    this.gameState.on("changed", () => {
+      const ts = this.gameState.trustState ? this.gameState.trustState() : "normal";
+      if (ts === "crisis" && this._prevTs !== "crisis") this.play("crisis");
+      this._prevTs = ts;
+    });
     document.addEventListener("gp:toggle-mute", () => {
       const m = this.toggleMuted();
       document.dispatchEvent(new CustomEvent("gp:mute-changed", { detail: m }));
@@ -63,7 +72,23 @@ export class Sfx {
   play(name) {
     if (this.muted || !this.ctx || this.ctx.state !== "running") return;
     if (name === "tap") {
-      this._tone(540 + Math.random() * 80, 0, 0.07, "square", 0.08);
+      // 클릭 콤보가 쌓일수록 음정이 올라가 손맛이 난다
+      const c = this.gameState.clickCombo ? this.gameState.clickCombo() : 0;
+      const bump = Math.min(10, Math.floor(c / 3)) * 42;
+      this._tone(540 + bump + Math.random() * 60, 0, 0.07, "square", 0.08);
+    } else if (name === "coin") {
+      // 골든 투표함/아이템 획득 — 밝은 띠링
+      this._tone(784, 0, 0.07, "square", 0.14);
+      this._tone(1047, 0.06, 0.12, "square", 0.13);
+    } else if (name === "crisis") {
+      // 믿음 위기 — 낮고 불안한 경고음
+      this._tone(196, 0, 0.18, "sawtooth", 0.14);
+      this._tone(165, 0.1, 0.22, "sawtooth", 0.12);
+    } else if (name === "powerup") {
+      // 긴급 개표/브리핑 발동 — 상승 부스트
+      this._tone(440, 0, 0.08, "square", 0.14);
+      this._tone(659, 0.07, 0.1, "square", 0.14);
+      this._tone(880, 0.15, 0.14, "square", 0.14);
     } else if (name === "upgrade") {
       this._tone(523, 0, 0.1, "triangle", 0.16);
       this._tone(784, 0.06, 0.14, "triangle", 0.16);

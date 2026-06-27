@@ -29,12 +29,20 @@ export class DOMHud {
     // 긴급 개표(러시) 부스트 FAB — 액티브 플레이 비트
     this._rushBtn = document.createElement("button");
     this._rushBtn.className = "gp-rush";
-    this._rushBtn.addEventListener("click", () => { if (this.gameState.activateRush) this.gameState.activateRush(); });
+    this._rushBtn.addEventListener("click", () => {
+      const wasReady = this.gameState.rushReady && this.gameState.rushReady();
+      if (this.gameState.activateRush) this.gameState.activateRush();
+      if (wasReady) document.dispatchEvent(new CustomEvent("gp:sfx", { detail: "powerup" }));
+    });
 
     // 긴급 브리핑 FAB(좌측) — 해명 소비 → 믿음 회복 + 생산 버프(액티브 트러스트 관리)
     this._briefBtn = document.createElement("button");
     this._briefBtn.className = "gp-brief";
-    this._briefBtn.addEventListener("click", () => { if (this.gameState.activateBrief) this.gameState.activateBrief(); });
+    this._briefBtn.addEventListener("click", () => {
+      const wasReady = this.gameState.briefReady && this.gameState.briefReady() && this.gameState.briefAffordable && this.gameState.briefAffordable();
+      if (this.gameState.activateBrief) this.gameState.activateBrief();
+      if (wasReady) document.dispatchEvent(new CustomEvent("gp:sfx", { detail: "powerup" }));
+    });
 
     // 알림 토글 벨 — 알림 권한을 허용한 경우에만 노출(켜기/끄기). mute 옆.
     this._bellBtn = document.createElement("button");

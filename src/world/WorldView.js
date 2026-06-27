@@ -487,6 +487,7 @@ export class WorldView {
       const reward = this.gameState.collectGoldenBallot();
       this.effects.float({ text: `+${shortNumber(reward)}`, x, y: y - 28, color: "#ffd34d" });
       this.effects.deskPop(x, y);
+      document.dispatchEvent(new CustomEvent("gp:sfx", { detail: "coin" }));
       this._despawnGolden();
       this._scheduleGolden(60000 + Math.random() * 60000);
     });
@@ -550,6 +551,7 @@ export class WorldView {
       const res = this.gameState.applyRandomItem(def.id);
       this.effects.float({ text: res.text, x, y: y - 30, color: "#ffe3a8" });
       this.effects.deskPop(x, y);
+      document.dispatchEvent(new CustomEvent("gp:sfx", { detail: "coin" }));
       this._despawnItem();
       this._scheduleItem(35000 + Math.random() * 30000);
     });
