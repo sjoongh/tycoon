@@ -57,10 +57,29 @@ export class DOMMapModal {
     }
 
     const done = area - 1;
+
+    // 내 개표 기록(누적 통계) — 성취감/리텐션
+    const s = gs.data.stats || {};
+    const pr = gs.data.prestige || {};
+    const offH = ((s.totalOfflineMs || 0) / 3600000).toFixed(1);
+    const statRows = [
+      ["누적 개표", `${shortNumber(s.totalVotes || 0)}표`],
+      ["누적 클릭", `${shortNumber(s.totalClicks || 0)}회`],
+      ["시설 증설", `${shortNumber(s.totalUpgrades || 0)}회`],
+      ["사건 처리", `${s.totalEvents || 0}건`],
+      ["아이템 획득", `${s.totalItems || 0}개`],
+      ["감사 횟수", `${pr.runs || 0}회`],
+      ["획득 훈장", `${pr.totalMedals || 0}개`],
+      ["오프라인 적립", `${offH}시간`],
+    ].map(([k, v]) => `<div class="gp-stat-row"><span>${k}</span><b>${v}</b></div>`).join("");
+
     this.root.innerHTML = `<div class="gp-map">
       <div class="gp-map__hd"><span>🗺 전국 개표 지도</span><button class="gp-map__x" aria-label="닫기">✕</button></div>
       <div class="gp-map__sub">정복 ${done} · 현재 ${area}구역 · 누적 ${shortNumber(gs.data.votes)}표</div>
-      <div class="gp-map__list">${nodes}</div>
+      <div class="gp-map__list">${nodes}
+        <div class="gp-map__era">📊 내 개표 기록</div>
+        <div class="gp-stats">${statRows}</div>
+      </div>
       <div class="gp-map__foot">구역을 정복할수록 더 높은 권위의 개표소로 이동합니다</div>
     </div>`;
   }
