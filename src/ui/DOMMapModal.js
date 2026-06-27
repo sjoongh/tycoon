@@ -77,6 +77,11 @@ export class DOMMapModal {
     // 사건 도감 — 겪은(해결한) 선관위 사건 수집 현황(영구). 미수집은 잠금 표시.
     const total = officeEvents.length;
     const seenN = gs.seenEventCount();
+    const dexPct = Math.round(gs.dexBonusPct() * 100);
+    const nextM = gs.nextDexMilestone();
+    const dexBonusLine = nextM
+      ? `현재 생산 +${dexPct}% · ${nextM.n}종 수집 시 +${Math.round(nextM.pct * 100)}%`
+      : `전종 수집 완료! 생산 +${dexPct}% 영구`;
     const dexCells = officeEvents
       .slice()
       .sort((a, b) => (a.minStage || 1) - (b.minStage || 1))
@@ -97,6 +102,7 @@ export class DOMMapModal {
         <div class="gp-map__era">📊 내 개표 기록</div>
         <div class="gp-stats">${statRows}</div>
         <div class="gp-map__era">📖 사건 도감 <span class="gp-dex__count">${seenN}/${total}종</span></div>
+        <div class="gp-dex__bonus">${dexBonusLine}</div>
         <div class="gp-dex">${dexCells}</div>
       </div>
       <div class="gp-map__foot">구역을 정복할수록 더 높은 권위의 개표소로 이동합니다</div>

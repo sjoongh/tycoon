@@ -23,6 +23,16 @@ const BRIEF_BUFF_MS = 15000; // 브리핑 생산 버프 15초
 const BRIEF_TRUST = 12; // 브리핑 시 믿음 +12(능동적 트러스트 관리 — 위기 탈출/보너스 진입)
 const BRIEF_BUFF_MULT = 1.5; // 브리핑 버프 중 초당 생산 ×1.5
 
+// 사건 도감 수집 보상 — 누적 수집 종수가 마일스톤을 넘으면 영구 생산 보너스(프레스티지에도 유지되는 메타 진척).
+// pct는 '도달한 최고 마일스톤'의 값(누적 합산 아님). 도감을 모을 동기 + 디스크리트한 해금 비트.
+const DEX_MILESTONES = [
+  { n: 10, pct: 0.03 },
+  { n: 25, pct: 0.07 },
+  { n: 40, pct: 0.12 },
+  { n: 55, pct: 0.18 },
+  { n: 69, pct: 0.25 }, // 전종 수집 완성
+];
+
 const SAVE_VERSION = 3;
 
 const fallbackState = {
@@ -401,9 +411,33 @@ export class GameState extends Phaser.Events.EventEmitter {
     if (!id) return false;
     if (!this.data.seenEvents || typeof this.data.seenEvents !== "object") this.data.seenEvents = {};
     if (this.data.seenEvents[id]) return false;
+    const before = this.seenEventCount();
     this.data.seenEvents[id] = 1;
+    const after = before + 1;
+    // 수집 보상 마일스톤을 새로 넘었으면 해금 연출 신호
+    const crossed = DEX_MILESTONES.find((m) => m.n === after);
+    if (crossed) {
+      this.emit("float", { text: `도감 보상 +${Math.round(crossed.pct * 100)}%`, x: 195, y: 470, color: "#89d98b" });
+      this.emit("dex-milestone", { n: crossed.n, pct: crossed.pct });
+    }
     this.emit("changed");
     return true;
+  }
+
+  // 현재 도감 수집 종수가 도달한 최고 마일스톤의 생산 보너스 비율(0~0.25)
+  dexBonusPct(data = this.data) {
+    const s = data?.seenEvents;
+    const n = s && typeof s === "object" ? Object.keys(s).length : 0;
+    let pct = 0;
+    for (const m of DEX_MILESTONES) if (n >= m.n) pct = m.pct;
+    return pct;
+  }
+
+  // 다음 도감 마일스톤(없으면 null) — UI 안내용
+  nextDexMilestone(data = this.data) {
+    const s = data?.seenEvents;
+    const n = s && typeof s === "object" ? Object.keys(s).length : 0;
+    return DEX_MILESTONES.find((m) => n < m.n) || null;
   }
 
   seenEventCount() {
@@ -1070,7 +1104,7 @@ export class GameState extends Phaser.Events.EventEmitter {
       const lv = data.facilities[item.id] || 0;
       return sum + lv * item.cps * this.facilityMilestoneFactor(lv);
     }, 0);
-    return raw * (0.9 + data.trust / 230) * this.trustModifier(data.trust) * this.staffMultiplierFor(data) * this.prestigeMultiplierFor(data) * (1 + this.permanentEffectFor(data, "cpsPct"));
+    return raw * (0.9 + data.trust / 230) * this.trustModifier(data.trust) * this.staffMultiplierFor(data) * this.prestigeMultiplierFor(data) * (1 + this.permanentEffectFor(data, "cpsPct")) * (1 + this.dexBonusPct(data));
   }
 
   // 시설 레벨이 마일스톤을 넘을 때마다 해당 시설 생산 ×2 누적(AdVenture Capitalist식 영구 보너스)
