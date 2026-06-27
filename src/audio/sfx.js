@@ -28,6 +28,7 @@ export class Sfx {
     this.gameState.on("upgraded", () => this.play("upgrade"));
     // 업적/콤보 마일스톤/특별 보상 등 축하 이벤트 → 팡파레
     this.gameState.on("celebrate", () => this.play("achieve"));
+    this.gameState.on("dex-milestone", () => this.play("powerup")); // 도감 수집 보상 해금음
     this.gameState.on("changed", () => {
       const a = this.gameState.data.stage.area;
       if (a > this._prevArea) { this._prevArea = a; this.play("stage"); }

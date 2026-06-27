@@ -31,5 +31,5 @@ export const achievementDefinitions = [
   { id: "fac200", name: "개표국 제국", desc: "시설 레벨 합계 200", metric: "facilityTotal", target: 200, reward: { explain: 500, seals: 1 } },
   { id: "prestige20", name: "감사 마스터", desc: "감사 20회 완료", metric: "prestigeRuns", target: 20, reward: { explain: 1000, seals: 3 } },
   { id: "dex35", name: "기록 보관소", desc: "사건 도감 35종 수집", metric: "dexSeen", target: 35, reward: { explain: 200 } },
-  { id: "dex69", name: "개표국 사관(史官)", desc: "사건 도감 전 69종 수집", metric: "dexSeen", target: 69, reward: { explain: 800, seals: 2 } },
+  { id: "dex69", name: "개표국 사관(史官)", desc: "사건 도감 전 72종 수집", metric: "dexSeen", target: 72, reward: { explain: 800, seals: 2 } },
 ];

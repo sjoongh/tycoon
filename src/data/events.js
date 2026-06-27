@@ -636,6 +636,33 @@ export const officeEvents = [
     left: ["투명성 어필", { explain: -24, trust: 14 }, "전 과정을 영어 자막과 함께 공개합니다. 국격이 오릅니다."],
     right: ["속도 자랑", { votes: 1600, trust: -9 }, "처리 속도로 승부합니다. 정확성 의문이 따라붙습니다."],
   },
+  {
+    id: "accessibility-tool",
+    title: "보조 기표용구 점검",
+    body: "거동이 불편한 유권자를 위한 보조 기표용구를 챙깁니다. 하나라도 빠지면 누군가의 한 표가 막힙니다.",
+    weight: 5,
+    minStage: 4,
+    left: ["전 투표소 비치", { explain: -14, trust: 11 }, "모든 투표소에 보조용구를 빠짐없이 비치합니다. 보편 참정권이 지켜집니다."],
+    right: ["수량만 확인", { votes: 600, trust: -6 }, "숫자만 세고 넘어갑니다. 현장에서 '용구가 없다'는 민원이 터집니다."],
+  },
+  {
+    id: "phishing-text",
+    title: "선관위 사칭 문자",
+    body: "'당첨! 개표 결과 미리보기 ▶ 클릭' 선관위를 사칭한 스미싱 문자가 전국에 살포됐습니다.",
+    weight: 5,
+    minStage: 6,
+    left: ["공식채널 공지", { explain: -18, trust: 12 }, "'우리는 링크를 보내지 않습니다' 전 국민 공지를 띄웁니다. 신뢰가 오릅니다."],
+    right: ["개표부터 진행", { votes: 900, trust: -8 }, "일단 개표가 먼저라며 미룹니다. 사칭 피해 민원이 쌓입니다."],
+  },
+  {
+    id: "blackout-poll",
+    title: "깜깜이 기간",
+    body: "선거 6일 전부터 여론조사 공표가 금지됩니다. 기자들이 '분위기만이라도' 하며 따라붙습니다.",
+    weight: 4,
+    minStage: 7,
+    left: ["규정 준수", { explain: -20, trust: 13 }, "한 마디도 흘리지 않습니다. 원칙을 지키는 개표국의 품격이 빛납니다."],
+    right: ["슬쩍 암시", { votes: 1000, trust: -12 }, "뉘앙스를 흘립니다. '깜깜이 위반' 논란이 불거집니다."],
+  },
 ];
 
 // "실화 모티프" 사건 — UI에서 🏛 배지로 구분(실제 선관위/개표 이슈를 위트로 각색, 정치 중립)
@@ -648,4 +675,5 @@ export const realEventIds = new Set([
   "exit-poll-miss", "observer-clash", "seal-tampering", "overseas-vote",
   "ballot-shortage", "pen-bleed", "ghost-voter", "interim-tally", "double-lock",
   "unified-glitch", "foreign-press",
+  "accessibility-tool", "phishing-text", "blackout-poll",
 ]);
