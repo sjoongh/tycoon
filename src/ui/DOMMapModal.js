@@ -1,5 +1,6 @@
 import { regions, regionFor, eraTheme } from "../data/regions.js";
 import { shortNumber } from "../utils/format.js";
+import { officeEvents, realEventIds } from "../data/events.js";
 
 // 전국 개표 지도 모달 — 간판 탭으로 열림("gp:open-map" 이벤트).
 // 정복한 구역(✓)·현재 구역(진행%)·잠긴 구역을 세로 경로로 보여준다.
@@ -73,12 +74,30 @@ export class DOMMapModal {
       ["오프라인 적립", `${offH}시간`],
     ].map(([k, v]) => `<div class="gp-stat-row"><span>${k}</span><b>${v}</b></div>`).join("");
 
+    // 사건 도감 — 겪은(해결한) 선관위 사건 수집 현황(영구). 미수집은 잠금 표시.
+    const total = officeEvents.length;
+    const seenN = gs.seenEventCount();
+    const dexCells = officeEvents
+      .slice()
+      .sort((a, b) => (a.minStage || 1) - (b.minStage || 1))
+      .map((ev) => {
+        const got = gs.hasSeenEvent(ev.id);
+        const real = realEventIds.has(ev.id);
+        if (!got) return `<div class="gp-dex__cell gp-dex__cell--lock" title="미발견 사건">？</div>`;
+        const cls = real ? "gp-dex__cell gp-dex__cell--real" : "gp-dex__cell";
+        const mark = real ? "🏛 " : "";
+        return `<div class="${cls}" title="${ev.title.replace(/"/g, "&quot;")}">${mark}${ev.title}</div>`;
+      })
+      .join("");
+
     this.root.innerHTML = `<div class="gp-map">
       <div class="gp-map__hd"><span>🗺 전국 개표 지도</span><button class="gp-map__x" aria-label="닫기">✕</button></div>
       <div class="gp-map__sub">정복 ${done} · 현재 ${area}구역 · 누적 ${shortNumber(gs.data.votes)}표</div>
       <div class="gp-map__list">${nodes}
         <div class="gp-map__era">📊 내 개표 기록</div>
         <div class="gp-stats">${statRows}</div>
+        <div class="gp-map__era">📖 사건 도감 <span class="gp-dex__count">${seenN}/${total}종</span></div>
+        <div class="gp-dex">${dexCells}</div>
       </div>
       <div class="gp-map__foot">구역을 정복할수록 더 높은 권위의 개표소로 이동합니다</div>
     </div>`;

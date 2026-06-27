@@ -85,8 +85,12 @@ export class DOMBottomPanel {
       case "getEvent": if (gs.eventReady()) { this.currentEvent = this._pickEvent(); this.refresh(); } break;
       case "eventChoice": {
         const ev = officeEvents.find((v) => v.id === id);
-        if (ev) gs.applyEffect((el.dataset.side === "left" ? ev.left : ev.right)[1]);
-        document.dispatchEvent(new CustomEvent("gp:event-resolved", { detail: { id: ev?.id, title: ev?.title, real: ev ? realEventIds.has(ev.id) : false } }));
+        let firstSeen = false;
+        if (ev) {
+          gs.applyEffect((el.dataset.side === "left" ? ev.left : ev.right)[1]);
+          firstSeen = gs.markEventSeen(ev.id); // 사건 도감 — 첫 수집이면 true
+        }
+        document.dispatchEvent(new CustomEvent("gp:event-resolved", { detail: { id: ev?.id, title: ev?.title, real: ev ? realEventIds.has(ev.id) : false, firstSeen } }));
         this.currentEvent = null;
         this.refresh();
         break;

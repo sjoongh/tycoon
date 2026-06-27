@@ -89,6 +89,7 @@ const fallbackState = {
   },
   achievements: {},
   quests: {},
+  seenEvents: {}, // 사건 도감 — 겪은(해결한) 사건 id 기록(영구, 프레스티지에도 유지)
   endless: 0,
   daily: { day: 0, streak: 0, qday: 0, clicks: 0, events: 0, upgrades: 0, items: 0, claimed: {} },
   weekly: { week: 0, baseVotes: 0, target: 0, claimed: false },
@@ -133,6 +134,7 @@ export class GameState extends Phaser.Events.EventEmitter {
       staff: { ...fallbackState.staff, ...(parsed?.staff || {}) },
       achievements: { ...fallbackState.achievements, ...(parsed?.achievements || {}) },
       quests: { ...fallbackState.quests, ...(parsed?.quests || {}) },
+      seenEvents: (parsed?.seenEvents && typeof parsed.seenEvents === "object") ? { ...parsed.seenEvents } : {},
       stats: { ...fallbackState.stats, ...(parsed?.stats || {}) },
       stage: { ...fallbackState.stage, ...(parsed?.stage || {}) },
       prestige: { ...fallbackState.prestige, ...(parsed?.prestige || {}) },
@@ -392,6 +394,25 @@ export class GameState extends Phaser.Events.EventEmitter {
     this.emit("float", { text: "대응완료", x: 195, y: 540, color: "#89d98b" });
     this.checkProgression();
     this.emit("changed");
+  }
+
+  // 사건 도감 — 해결한 사건 id를 영구 기록(중복은 무시). 새로 수집되면 true 반환(첫 수집 연출용).
+  markEventSeen(id) {
+    if (!id) return false;
+    if (!this.data.seenEvents || typeof this.data.seenEvents !== "object") this.data.seenEvents = {};
+    if (this.data.seenEvents[id]) return false;
+    this.data.seenEvents[id] = 1;
+    this.emit("changed");
+    return true;
+  }
+
+  seenEventCount() {
+    const s = this.data.seenEvents;
+    return s && typeof s === "object" ? Object.keys(s).length : 0;
+  }
+
+  hasSeenEvent(id) {
+    return !!(this.data.seenEvents && this.data.seenEvents[id]);
   }
 
   eventReady() {
@@ -666,6 +687,7 @@ export class GameState extends Phaser.Events.EventEmitter {
         medalUpgrades: this.data.prestige.medalUpgrades,
       },
       achievements: this.data.achievements,
+      seenEvents: this.data.seenEvents, // 사건 도감은 평생 수집 기록 — 감사(프레스티지)에도 영구 유지
       tutorial: this.data.tutorial, // 베테랑이 감사(프레스티지) 후 신규 오프닝/튜토리얼을 다시 보지 않도록 유지
       daily: this.data.daily, // 감사(프레스티지)는 진행이지 새 세이브가 아님 — 출석 연속/일일 진행 유지
       weekly: this.data.weekly, // 주간 한정 목표(주차/목표/수령여부) 유지 — 안 그러면 재청구 악용 + 목표 리셋

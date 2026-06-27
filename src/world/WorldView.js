@@ -107,7 +107,11 @@ export class WorldView {
     gameState.on("upgraded", this._onUpgraded);
 
     // 실화 모티프 사건 해결 시 월드에 "📺 속보" 배너 연출
-    this._onEventResolved = (e) => { if (e.detail && e.detail.real) this._newsFlash(e.detail.title); };
+    this._onEventResolved = (e) => {
+      if (!e.detail) return;
+      if (e.detail.real) this._newsFlash(e.detail.title);
+      if (e.detail.firstSeen) this.gameState.emit("float", { text: "📖 도감 수집!", x: 195, y: 500, color: "#ffd479" });
+    };
     document.addEventListener("gp:event-resolved", this._onEventResolved);
 
     // 캔버스에 도달한 빈 공간 탭만 득표로 처리(하단 DOM 패널은 자체 처리)
