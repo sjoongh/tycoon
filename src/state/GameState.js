@@ -249,12 +249,6 @@ export class GameState extends Phaser.Events.EventEmitter {
     };
   }
 
-  consumeOfflineReward() {
-    const reward = this.offlineReward;
-    this.offlineReward = null;
-    return reward;
-  }
-
   // 오프라인 기본 보상은 로드 시 자동 적용됨(applyOfflineProgress). 2배 받기는 같은 양을 한 번 더(하루 1회).
   offline2xAvailable() {
     return this._todayIndex() > (this.data.offline2xDay || 0);
