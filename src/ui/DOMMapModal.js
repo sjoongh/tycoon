@@ -11,6 +11,13 @@ export class DOMMapModal {
     this.root.className = "gp-map-ov";
     this.root.hidden = true;
     this.root.addEventListener("click", (e) => {
+      // 도감 상세가 열려 있으면 거기부터 처리(지도 닫힘보다 우선)
+      if (this._detailOpen) {
+        if (e.target.closest(".gp-dexdt__x") || e.target.classList.contains("gp-dexdt")) this._closeDexDetail();
+        return;
+      }
+      const cell = e.target.closest(".gp-dex__cell[data-dexid]");
+      if (cell) { this._openDexDetail(cell.dataset.dexid); return; }
       if (e.target === this.root || e.target.closest(".gp-map__x")) this.close();
     });
     this._open = () => this.open();
@@ -26,10 +33,6 @@ export class DOMMapModal {
     this.root.hidden = false;
     const cur = this.root.querySelector(".gp-mapnode--cur");
     if (cur) cur.scrollIntoView({ block: "center" });
-  }
-
-  close() {
-    this.root.hidden = true;
   }
 
   _render() {
@@ -91,7 +94,7 @@ export class DOMMapModal {
         if (!got) return `<div class="gp-dex__cell gp-dex__cell--lock" title="미발견 사건">？</div>`;
         const cls = real ? "gp-dex__cell gp-dex__cell--real" : "gp-dex__cell";
         const mark = real ? "🏛 " : "";
-        return `<div class="${cls}" title="${ev.title.replace(/"/g, "&quot;")}">${mark}${ev.title}</div>`;
+        return `<div class="${cls}" data-dexid="${ev.id}" title="${ev.title.replace(/"/g, "&quot;")}">${mark}${ev.title}</div>`;
       })
       .join("");
 
@@ -103,10 +106,43 @@ export class DOMMapModal {
         <div class="gp-stats">${statRows}</div>
         <div class="gp-map__era">📖 사건 도감 <span class="gp-dex__count">${seenN}/${total}종</span></div>
         <div class="gp-dex__bonus">${dexBonusLine}</div>
+        <div class="gp-dex__tip">수집한 사건을 눌러 다시 읽어보세요</div>
         <div class="gp-dex">${dexCells}</div>
       </div>
       <div class="gp-map__foot">구역을 정복할수록 더 높은 권위의 개표소로 이동합니다</div>
     </div>`;
+  }
+
+  // 수집한 사건을 다시 읽는 도감 상세 — 본문 + 두 선택지(읽기 전용)
+  _openDexDetail(id) {
+    const ev = officeEvents.find((v) => v.id === id);
+    if (!ev || !this.gameState.hasSeenEvent(id)) return;
+    const real = realEventIds.has(id);
+    const esc = (t) => String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    const choice = (side, label) => `<div class="gp-dexdt__opt">
+      <b>${label}. ${esc(side[0])}</b>
+      <s>${esc(side[2])}</s>
+    </div>`;
+    const el = document.createElement("div");
+    el.className = "gp-dexdt";
+    el.innerHTML = `<div class="gp-dexdt__card">
+      <div class="gp-dexdt__hd">${real ? "🏛 " : "📄 "}${esc(ev.title)}<button class="gp-dexdt__x" aria-label="닫기">✕</button></div>
+      <div class="gp-dexdt__meta">${real ? "실화 모티프 · " : ""}${ev.minStage || 1}구역부터 등장</div>
+      <div class="gp-dexdt__body">${esc(ev.body)}</div>
+      <div class="gp-dexdt__opts">${choice(ev.left, "A")}${choice(ev.right, "B")}</div>
+      <div class="gp-dexdt__foot">눌러서 닫기</div>
+    </div>`;
+    this.root.appendChild(el);
+    this._detailOpen = el;
+  }
+
+  _closeDexDetail() {
+    if (this._detailOpen) { this._detailOpen.remove(); this._detailOpen = null; }
+  }
+
+  close() {
+    this._closeDexDetail();
+    this.root.hidden = true;
   }
 
   destroy() {
