@@ -116,13 +116,28 @@ export class DOMModalLayer {
       </div>`, () => this.gameState.prestigeReset());
   }
 
+  // 배너는 큐로 1개씩 순차 표시 — 동시에 여러 성취(업적·다중 목표 완료)가 떠도 겹쳐 가려지지 않게.
   _banner(text) {
+    if (!this._bannerQueue) this._bannerQueue = [];
+    this._bannerQueue.push(text);
+    if (this._bannerQueue.length > 6) this._bannerQueue.length = 6; // 폭주 시 상한(오프라인 다중완료 등)
+    this._drainBanners();
+  }
+
+  _drainBanners() {
+    if (this._bannerActive || !this._bannerQueue || !this._bannerQueue.length) return;
+    this._bannerActive = true;
+    const text = this._bannerQueue.shift();
     const b = document.createElement("div");
     b.className = "gp-banner";
     b.textContent = text;
     this.root.appendChild(b);
     requestAnimationFrame(() => b.classList.add("gp-banner--in"));
-    setTimeout(() => { b.classList.remove("gp-banner--in"); setTimeout(() => b.remove(), 400); }, 2200);
+    const hold = this._bannerQueue.length ? 1100 : 2000; // 대기 중이면 짧게 흘려 빠르게 소진
+    setTimeout(() => {
+      b.classList.remove("gp-banner--in");
+      setTimeout(() => { b.remove(); this._bannerActive = false; this._drainBanners(); }, 400);
+    }, hold);
   }
 
   _showOfflineReward(onClose) {
@@ -225,22 +240,29 @@ export class DOMModalLayer {
     this.root.appendChild(ov);
   }
 
+  // 토스트는 큐로 1개씩 순차 표시 — 대량 동시 완료(오프라인 복귀·첫 감사 등)에도
+  // 중앙 캐릭터/숫자를 토스트 더미가 덮지 않게(깔끔한 중앙 focus 유지).
   _toast(text) {
-    // 대량 동시 완료(오프라인 복귀·첫 감사 등)에 토스트가 화면을 덮지 않도록 최대 4개로 제한
-    const existing = this.root.querySelectorAll(".gp-toast");
-    if (existing.length >= 4) return;
+    if (!this._toastQueue) this._toastQueue = [];
+    this._toastQueue.push(text);
+    if (this._toastQueue.length > 8) this._toastQueue.length = 8; // 폭주 상한
+    this._drainToasts();
+  }
+
+  _drainToasts() {
+    if (this._toastActive || !this._toastQueue || !this._toastQueue.length) return;
+    this._toastActive = true;
+    const text = this._toastQueue.shift();
     const t = document.createElement("div");
     t.className = "gp-toast";
     t.textContent = text;
-    // 동시에 여러 완료가 떠도 겹치지 않도록 기존 토스트 수만큼 아래로 띄운다
-    const offset = existing.length * 46;
-    if (offset) t.style.top = `${120 + offset}px`;
     this.root.appendChild(t);
     requestAnimationFrame(() => t.classList.add("gp-toast--in"));
+    const hold = this._toastQueue.length ? 900 : 2200; // 대기 중이면 짧게 흘려 빠르게 소진
     setTimeout(() => {
       t.classList.remove("gp-toast--in");
-      setTimeout(() => t.remove(), 300);
-    }, 2600);
+      setTimeout(() => { t.remove(); this._toastActive = false; this._drainToasts(); }, 300);
+    }, hold);
   }
 
   _flash() {
