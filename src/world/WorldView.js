@@ -93,6 +93,10 @@ export class WorldView {
     gameState.on("ballots", this._onBallots);
     gameState.on("upgraded", this._onUpgraded);
 
+    // 실화 모티프 사건 해결 시 월드에 "📺 속보" 배너 연출
+    this._onEventResolved = (e) => { if (e.detail && e.detail.real) this._newsFlash(e.detail.title); };
+    document.addEventListener("gp:event-resolved", this._onEventResolved);
+
     // 캔버스에 도달한 빈 공간 탭만 득표로 처리(하단 DOM 패널은 자체 처리)
     this._onPointer = (pointer, currentlyOver) => {
       if (currentlyOver && currentlyOver.length) return;
@@ -430,6 +434,24 @@ export class WorldView {
     }
   }
 
+  // 실화 사건 해결 속보 배너 — 상단에서 붉은 띠가 펼쳐지며 사건명을 흘린다
+  _newsFlash(title) {
+    const y = 150;
+    const bar = this.scene.add.rectangle(GAME_W / 2, y, GAME_W, 28, 0xb13e53, 0.96).setDepth(200).setScale(1, 0);
+    const live = this.scene.add.rectangle(40, y, 52, 28, 0x14121c, 1).setDepth(201).setScale(1, 0);
+    const liveTx = this.scene.add.text(40, y, "● 속보", { fontFamily: '"Galmuri9", monospace', fontSize: "9px", color: "#ff6a7c" }).setOrigin(0.5).setDepth(202).setAlpha(0);
+    const tx = this.scene.add.text(96, y, `${title || "선관위 사건"}`, { fontFamily: '"Galmuri9", monospace', fontSize: "10px", color: "#ffffff" }).setOrigin(0, 0.5).setDepth(202).setAlpha(0);
+    this.scene.tweens.add({ targets: [bar, live], scaleY: 1, duration: 150, ease: "Back.easeOut" });
+    this.scene.tweens.add({ targets: [tx, liveTx], alpha: 1, duration: 200, delay: 90 });
+    this._govGesture();
+    this.scene.time.delayedCall(2300, () => {
+      this.scene.tweens.add({
+        targets: [bar, live, tx, liveTx], alpha: 0, duration: 320, ease: "Quad.easeIn",
+        onComplete: () => { bar.destroy(); live.destroy(); liveTx.destroy(); tx.destroy(); },
+      });
+    });
+  }
+
   _govSpeak() {
     const txt = GOV_LINES[(Math.random() * GOV_LINES.length) | 0];
     this.effects.float({ text: `"${txt}"`, x: GAME_W / 2, y: 372, color: "#ffe9c0" });
@@ -593,6 +615,7 @@ export class WorldView {
     this.gameState.off("ballots", this._onBallots);
     this.gameState.off("upgraded", this._onUpgraded);
     this.scene.input.off("pointerdown", this._onPointer);
+    document.removeEventListener("gp:event-resolved", this._onEventResolved);
     this._incomeTimer?.remove();
     this._goldenTimer?.remove();
     this._itemTimer?.remove();
