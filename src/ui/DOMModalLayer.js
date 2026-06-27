@@ -25,8 +25,9 @@ export class DOMModalLayer {
     this.gameState.on("celebrate", this._onCelebrate);
     document.addEventListener("gp:prestige-confirm", this._onPrestigeConfirm);
     if (!this._maybeOpening()) {
-      this._showOfflineReward();
-      this._maybeDaily();
+      // 오프라인 정산을 먼저 보여주고, 닫은 뒤에 출석 보상(겹쳐 가려지지 않게 체인)
+      if (this.gameState.offlineReward) this._showOfflineReward(() => this._maybeDaily());
+      else this._maybeDaily();
     }
     this._maybeHint();
   }
@@ -124,11 +125,16 @@ export class DOMModalLayer {
     setTimeout(() => { b.classList.remove("gp-banner--in"); setTimeout(() => b.remove(), 400); }, 2200);
   }
 
-  _showOfflineReward() {
+  _showOfflineReward(onClose) {
     // 기본 보상은 로드 시 이미 적용됨. 모달은 그 양을 보여주고, 하루 1회 '2배 받기'로 같은 양을 한 번 더 받는 선택 제공.
     const r = this.gameState.offlineReward;
     if (!r) return;
-    const mins = Math.max(1, Math.floor(r.elapsed / 60000));
+    const totalMin = Math.max(1, Math.floor(r.elapsed / 60000));
+    const h = Math.floor(totalMin / 60), m = totalMin % 60;
+    const timeStr = h > 0 ? `${h}시간 ${m}분` : `${m}분`;
+    const capMs = this.gameState.offlineCapMsFor ? this.gameState.offlineCapMsFor(this.gameState.data) : 28800000;
+    const capH = Math.round(capMs / 3600000);
+    const near = r.elapsed >= capMs * 0.95;
     const can2x = this.gameState.offline2xAvailable && this.gameState.offline2xAvailable();
     // FIX P0: 2× button uses gold+ready theme (premium CTA), physically larger than plain claim
     // Plain claim uses gp-btn--disabled style so gold 2× is the obvious choice
@@ -141,9 +147,9 @@ export class DOMModalLayer {
     this._openModal(`
       <div class="gp-modal__badge">💤</div>
       <div class="gp-mtitle">오프라인 정산</div>
-      <div class="gp-msub">${mins}분 동안 개표가 계속됐어요</div>
+      <div class="gp-msub">${timeStr} 동안 개표가 계속됐어요${near ? `<br><span style="color:#ffcd75">최대 ${capH}시간까지 적립돼요 — 자주 들러요!</span>` : ""}</div>
       <div class="gp-mbig">+${shortNumber(r.votes)}표<br><span>+${shortNumber(r.explain)} 해명</span></div>
-      ${footer}`, () => this.gameState.claimOfflineBonus());
+      ${footer}`, () => this.gameState.claimOfflineBonus(), onClose);
   }
 
   _checkMilestone(f) {
@@ -202,7 +208,7 @@ export class DOMModalLayer {
       </div>`, () => { n.requestPermission().catch(() => {}); });
   }
 
-  _openModal(html, onConfirm) {
+  _openModal(html, onConfirm, onClose) {
     const ov = document.createElement("div");
     ov.className = "gp-modal-ov";
     ov.innerHTML = `<div class="gp-modal">${html}</div>`;
@@ -210,8 +216,10 @@ export class DOMModalLayer {
       if (e.target.closest("[data-confirm]")) {
         if (onConfirm) onConfirm();
         ov.remove();
+        if (onClose) onClose();
       } else if (e.target.closest("[data-close]") || e.target === ov) {
         ov.remove();
+        if (onClose) onClose();
       }
     });
     this.root.appendChild(ov);
