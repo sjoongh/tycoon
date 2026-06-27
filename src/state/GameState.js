@@ -328,9 +328,7 @@ export class GameState extends Phaser.Events.EventEmitter {
       this.addVotes(bonus);
       this.emit("celebrate", { text: `🔥 ${this._clickCombo} 콤보! +${shortNumber(bonus)}표!` });
       this.emit("float", { text: `🔥 +${shortNumber(bonus)}`, x, y: y - 62, color: "#ff7a3c" });
-      if (typeof document !== "undefined" && document.dispatchEvent) {
-        document.dispatchEvent(new CustomEvent("gp:sfx", { detail: "powerup" }));
-      }
+      // 콤보 축하음은 celebrate 이벤트(achieve)로 처리됨 — 중복 디스패치 제거
     }
     this.checkProgression();
     this.emit("changed");

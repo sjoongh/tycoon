@@ -26,6 +26,8 @@ export class Sfx {
 
     this.gameState.on("ballots", () => this.play("tap"));
     this.gameState.on("upgraded", () => this.play("upgrade"));
+    // 업적/콤보 마일스톤/특별 보상 등 축하 이벤트 → 팡파레
+    this.gameState.on("celebrate", () => this.play("achieve"));
     this.gameState.on("changed", () => {
       const a = this.gameState.data.stage.area;
       if (a > this._prevArea) { this._prevArea = a; this.play("stage"); }
@@ -39,6 +41,7 @@ export class Sfx {
     this.gameState.on("changed", () => {
       const ts = this.gameState.trustState ? this.gameState.trustState() : "normal";
       if (ts === "crisis" && this._prevTs !== "crisis") this.play("crisis");
+      else if (ts === "bonus" && this._prevTs !== "bonus") this.play("bonus");
       this._prevTs = ts;
     });
     document.addEventListener("gp:toggle-mute", () => {
@@ -113,6 +116,15 @@ export class Sfx {
       this._tone(440, 0, 0.08, "square", 0.14);
       this._tone(659, 0.07, 0.1, "square", 0.14);
       this._tone(880, 0.15, 0.14, "square", 0.14);
+    } else if (name === "achieve") {
+      // 업적/마일스톤 달성 — 밝은 상승 팡파레
+      this._tone(659, 0, 0.1, "square", 0.13);
+      this._tone(880, 0.08, 0.1, "square", 0.13);
+      this._tone(1175, 0.16, 0.18, "square", 0.14);
+    } else if (name === "bonus") {
+      // 믿음 신뢰 보너스 진입 — 따뜻한 상승 화음
+      this._tone(523, 0, 0.14, "triangle", 0.16);
+      this._tone(784, 0.1, 0.18, "triangle", 0.16);
     } else if (name === "upgrade") {
       this._tone(523, 0, 0.1, "triangle", 0.16);
       this._tone(784, 0.06, 0.14, "triangle", 0.16);
