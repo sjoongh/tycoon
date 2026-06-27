@@ -749,6 +749,9 @@ export class GameState extends Phaser.Events.EventEmitter {
       case "area": return this.data.stage.area;
       case "prestigeRuns": return this.data.prestige.runs;
       case "totalEvents": return this.data.stats.totalEvents;
+      case "totalClicks": return this.data.stats.totalClicks || 0;
+      case "totalItems": return this.data.stats.totalItems || 0;
+      case "medals": return this.data.prestige.totalMedals || 0;
       default: return 0;
     }
   }
