@@ -29,6 +29,13 @@ const GOV_LINES = [
   "기표용구 쓰세요~", "재외국민 표도 소중!",
 ];
 
+// 큰 성취(업적/콤보/구역 진입 등 celebrate) 순간 국장이 외치는 반응 대사 — 중앙 캐릭터에 감정선 부여.
+const GOV_REACT_LINES = [
+  "해냈다!", "이게 바로 개표국!", "믿어주셔서 감사합니다!",
+  "역시 우리 팀!", "한 표 한 표가 빛난다!", "오늘도 정정당당!",
+  "국민 여러분 보셨죠?", "이 맛에 개표합니다!", "기록 갱신!",
+];
+
 // 국장 성장 단계별 전용 대사 — 넝마(불안)→말단(적응)→정장(원칙)→명예(관록). 공통 GOV_LINES와 섞어 출력.
 const GOV_LINES_BY_STAGE = {
   1: ["처음이라 떨리네요…", "이 일 잘할 수 있을까…", "한 표가 이렇게 무겁다니", "오늘도 야근인가…"],
@@ -101,10 +108,18 @@ export class WorldView {
     this._onFloat = (p) => this.effects.float(p);
     this._onBallots = (p) => this.effects.ballots(p);
     this._onUpgraded = (facility) => { this._squishGov(); this._pulseProp(facility); };
+    // 큰 성취 순간 국장이 기뻐서 폴짝 + 반응 대사(같은 프레임 대량 연쇄 시 쿨다운으로 1회만)
+    this._onCelebrate = () => {
+      const now = this.scene.time.now;
+      if (now - (this._lastReactAt || 0) < 1500) return;
+      this._lastReactAt = now;
+      this._govReact();
+    };
     gameState.on("changed", this._onChanged);
     gameState.on("float", this._onFloat);
     gameState.on("ballots", this._onBallots);
     gameState.on("upgraded", this._onUpgraded);
+    gameState.on("celebrate", this._onCelebrate);
 
     // 실화 모티프 사건 해결 시 월드에 "📺 속보" 배너 연출
     this._onEventResolved = (e) => {
@@ -478,6 +493,14 @@ export class WorldView {
     this.effects.float({ text: `"${txt}"`, x: GAME_W / 2, y: 372, color: "#ffe9c0" });
   }
 
+  // 큰 성취 반응 — 기쁜 점프 + 환호 대사(밝은 금색으로 평소 대사와 구분)
+  _govReact() {
+    if (!this.gov || !this.gov.active) return;
+    const txt = GOV_REACT_LINES[(Math.random() * GOV_REACT_LINES.length) | 0];
+    this.effects.float({ text: `"${txt}"`, x: GAME_W / 2, y: 360, color: "#ffd479" });
+    this._govGesture();
+  }
+
   // idle 제스처: 살짝 점프하며 가끔 표를 던진다
   _govGesture() {
     this.scene.tweens.killTweensOf(this.gov);
@@ -635,6 +658,7 @@ export class WorldView {
     this.gameState.off("float", this._onFloat);
     this.gameState.off("ballots", this._onBallots);
     this.gameState.off("upgraded", this._onUpgraded);
+    this.gameState.off("celebrate", this._onCelebrate);
     this.scene.input.off("pointerdown", this._onPointer);
     document.removeEventListener("gp:event-resolved", this._onEventResolved);
     this._incomeTimer?.remove();
