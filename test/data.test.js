@@ -1,4 +1,6 @@
 import { describe, it, expect } from "vitest";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { randomItems, pickRandomItem } from "../src/data/items.js";
 import { achievementDefinitions } from "../src/data/achievements.js";
 import { dailyQuestDefinitions } from "../src/data/dailyQuests.js";
@@ -9,6 +11,12 @@ describe("게임 데이터 무결성", () => {
     const ids = randomItems.map((i) => i.id);
     expect(new Set(ids).size).toBe(ids.length);
     for (let i = 0; i < 20; i++) expect(randomItems).toContain(pickRandomItem());
+  });
+
+  it("모든 randomItem은 applyRandomItem에 보상 핸들러(case)를 갖는다", () => {
+    const src = readFileSync(fileURLToPath(new URL("../src/state/GameState.js", import.meta.url)), "utf8");
+    const cases = new Set([...src.matchAll(/case "(\w+)":/g)].map((m) => m[1]));
+    for (const it of randomItems) expect(cases.has(it.id)).toBe(true);
   });
 
   it("업적은 고유 id + 양수 target + metric 문자열", () => {

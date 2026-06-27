@@ -672,6 +672,16 @@ export class GameState extends Phaser.Events.EventEmitter {
         this.addVotes(v);
         r = { icon: "🎰", text: big ? `🎉 복권 대박! +${shortNumber(v)}표` : `복권 꽝… +${shortNumber(v)}표` }; break;
       }
+      case "pigeon": {
+        const v = Math.max(90, Math.floor(cps * 95));
+        this.addVotes(v); this.data.trust = Phaser.Math.Clamp(this.data.trust + 3, 0, 100);
+        r = { icon: "🕊️", text: `🕊️ 비둘기 소동 수습 +${shortNumber(v)}표·믿음+3` }; break;
+      }
+      case "tip": {
+        const e = Math.max(40, Math.floor(this.explainPerSecond() * 110 + this.data.explain * 0.15));
+        this.data.explain += e; this.data.trust = Phaser.Math.Clamp(this.data.trust + 3, 0, 100);
+        r = { icon: "📱", text: `📱 제보 전화 해명+${shortNumber(e)}·믿음+3` }; break;
+      }
       default: break;
     }
     this.data.stats.totalItems = (this.data.stats.totalItems || 0) + 1;

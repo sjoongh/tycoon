@@ -9,6 +9,8 @@ export const randomItems = [
   { id: "stamp", icon: "🧾", weight: 14 },      // 결재 도장 → 표+해명
   { id: "ramen", icon: "🍜", weight: 12 },      // 야식 회식 → 표+믿음
   { id: "jackpot", icon: "🎰", weight: 6 },     // 복권 → 대박/꽝 랜덤
+  { id: "pigeon", icon: "🕊️", weight: 12 },     // 비둘기 소동(러닝개그) → 표+믿음
+  { id: "tip", icon: "📱", weight: 12 },         // 제보 전화 → 해명+믿음
 ];
 
 export function pickRandomItem() {
