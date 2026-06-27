@@ -589,6 +589,24 @@ export const officeEvents = [
     left: ["명부 교차검증", { explain: -22, trust: 13 }, "행정 자료와 교차검증해 실존을 확인·공개합니다."],
     right: ["일일이 대응 안함", { votes: 600, trust: -10 }, "'일일이 대응 안 한다'며 넘깁니다. 의혹이 자랍니다."],
   },
+  {
+    id: "interim-tally",
+    title: "잠정 집계 뒤집힘",
+    body: "중간 집계 1위가 막판에 뒤집혔습니다. '아까 그 숫자는 뭐냐'며 항의가 빗발칩니다.",
+    weight: 5,
+    minStage: 5,
+    left: ["집계 절차 설명", { explain: -16, trust: 11 }, "잠정치의 의미를 차분히 브리핑합니다."],
+    right: ["최종만 발표", { votes: 520, trust: -8 }, "'최종이 진짜'라며 넘깁니다. 혼란이 남습니다."],
+  },
+  {
+    id: "double-lock",
+    title: "투표함 이중 자물쇠",
+    body: "사전투표함 자물쇠 열쇠를 누가 보관하냐로 양측이 팽팽히 맞섭니다.",
+    weight: 5,
+    minStage: 4,
+    left: ["공동 보관·기록", { explain: -14, trust: 12 }, "양측이 열쇠를 나눠 갖고 전 과정을 기록합니다."],
+    right: ["담당자 일임", { votes: 360, trust: -9 }, "관행대로 담당자가 맡습니다. 불신의 빌미가 됩니다."],
+  },
 ];
 
 // "실화 모티프" 사건 — UI에서 🏛 배지로 구분(실제 선관위/개표 이슈를 위트로 각색, 정치 중립)
@@ -599,5 +617,5 @@ export const realEventIds = new Set([
   "straw-protocol", "paper-quality",
   "broadcast-bug", "qr-vs-barcode", "writing-tool", "dawn-delay", "invalid-vote",
   "exit-poll-miss", "observer-clash", "seal-tampering", "overseas-vote",
-  "ballot-shortage", "pen-bleed", "ghost-voter",
+  "ballot-shortage", "pen-bleed", "ghost-voter", "interim-tally", "double-lock",
 ]);
