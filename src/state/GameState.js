@@ -89,7 +89,7 @@ const fallbackState = {
   achievements: {},
   quests: {},
   endless: 0,
-  daily: { day: 0, streak: 0, qday: 0, clicks: 0, events: 0, upgrades: 0, claimed: {} },
+  daily: { day: 0, streak: 0, qday: 0, clicks: 0, events: 0, upgrades: 0, items: 0, claimed: {} },
   weekly: { week: 0, baseVotes: 0, target: 0, claimed: false },
   eventReadyAt: 0,
   rushReadyAt: 0,
@@ -614,6 +614,7 @@ export class GameState extends Phaser.Events.EventEmitter {
       default: break;
     }
     this.data.stats.totalItems = (this.data.stats.totalItems || 0) + 1;
+    this._bumpDaily("items");
     this.addLog(r.text);
     this.emit("changed");
     return r;
