@@ -224,6 +224,24 @@ export function buildWorkerTexture(scene) {
   bakeTexture(scene, "worker-mini", WORKER_MINI, 10);
 }
 
+// 도트맵 1장을 SVG data-uri로 — DOM(모달/카드)에서도 같은 도트 아트를 쓰게 한다(화풍 통일).
+export function dotSvgUri(map) {
+  const h = map.length;
+  const w = map[0].length;
+  let rects = "";
+  for (let y = 0; y < h; y++) {
+    const row = map[y];
+    for (let x = 0; x < row.length; x++) {
+      const c = PAL[row[x]];
+      if (c == null) continue;
+      const hex = "#" + c.toString(16).padStart(6, "0");
+      rects += `<rect x="${x}" y="${y}" width="1" height="1" fill="${hex}"/>`;
+    }
+  }
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" shape-rendering="crispEdges">${rects}</svg>`;
+  return "data:image/svg+xml," + encodeURIComponent(svg);
+}
+
 // 진행/프레스티지 상태로 국장 성장 단계(1~4) 산정.
 export function govStageFor(data) {
   const p = data.prestige || {};

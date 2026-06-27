@@ -1,4 +1,5 @@
 import { shortNumber } from "../utils/format.js";
+import { GOV_MAPS, PROP_MAPS, dotSvgUri } from "../world/dotChar.js";
 
 const MILESTONES = [5, 10, 25, 45];
 
@@ -55,9 +56,9 @@ export class DOMModalLayer {
     if (d.tutorial) d.tutorial.openingSeen = true;
     this.gameState.save && this.gameState.save(false);
     const cards = [
-      { art: "/art/worker-clerk.webp", t: "믿어주세요, 개표국", s: "오늘부터 당신이 개표국장입니다. 믿음도 바닥, 서류도 엉망. 밑바닥에서 시작합니다." },
-      { art: "/art/desk-t1.webp", t: "표를 처리하라", s: "화면을 탭해 표를 처리하고, 시설을 키우고, 직원을 채용하세요." },
-      { art: "/art/ballotbox.webp", t: "사건에 대응하라", s: "터지는 사건마다 믿음이 걸려 있습니다. 전국이 지켜봅니다. 자, 분류 시작!" },
+      { art: dotSvgUri(GOV_MAPS[0]), t: "믿어주세요, 개표국", s: "오늘부터 당신이 개표국장입니다. 믿음도 바닥, 서류도 엉망. 밑바닥에서 시작합니다." },
+      { art: dotSvgUri(PROP_MAPS["prop-sorter"]), t: "표를 처리하라", s: "화면을 탭해 표를 처리하고, 시설을 키우고, 직원을 채용하세요." },
+      { art: dotSvgUri(PROP_MAPS["prop-board"]), t: "사건에 대응하라", s: "터지는 사건마다 믿음이 걸려 있습니다. 전국이 지켜봅니다. 자, 분류 시작!" },
     ];
     let i = 0;
     const ov = document.createElement("div");

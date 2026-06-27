@@ -237,7 +237,7 @@
 .gp-modal-ov { position: absolute; inset: 0; pointer-events: auto; background: rgba(8,8,18,0.78); display: flex; align-items: center; justify-content: center; animation: gpFade .2s steps(3); }
 .gp-modal { width: 84%; max-width: 320px; background: var(--bg); border: 4px solid var(--line); padding: 20px 18px; text-align: center; box-shadow: var(--px-out), 0 0 0 3px var(--gold); animation: gpPop .2s steps(4); max-height: 90vh; overflow-y: auto; }
 .gp-modal__badge { font-size: 48px; }
-.gp-modal__art { width: 120px; height: 120px; margin: 0 auto 6px; background-size: contain; background-repeat: no-repeat; background-position: center; image-rendering: pixelated; }
+.gp-modal__art { width: 112px; height: 112px; margin: 4px auto 8px; background-size: contain; background-repeat: no-repeat; background-position: center; image-rendering: pixelated; background-color: var(--bg2); border: 3px solid var(--line); box-shadow: var(--px-out-sm); }
 .gp-mtitle { font-family: var(--f-bold); font-size: 18px; color: var(--gold-hi); margin-top: 4px; }
 .gp-msub { font-family: var(--f-body); font-size: 12px; color: var(--ink); line-height: 1.7; margin: 6px 0 12px; }
 .gp-dots { display: flex; justify-content: center; gap: 6px; margin: 2px 0 10px; }
