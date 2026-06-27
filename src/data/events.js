@@ -607,6 +607,35 @@ export const officeEvents = [
     left: ["공동 보관·기록", { explain: -14, trust: 12 }, "양측이 열쇠를 나눠 갖고 전 과정을 기록합니다."],
     right: ["담당자 일임", { votes: 360, trust: -9 }, "관행대로 담당자가 맡습니다. 불신의 빌미가 됩니다."],
   },
+
+  // ── 엔드게임 구역(9~11) 특화 사건 ──────────────────
+  {
+    id: "unified-glitch",
+    title: "통합 전산망 먹통",
+    body: "전국을 하나로 묶은 개표 전산망이 결정적 순간에 멈췄습니다. 전국이 숨을 죽입니다.",
+    weight: 4,
+    minStage: 9,
+    left: ["수개표 전면 전환", { votes: -500, trust: 13 }, "전국이 수개표로 전환합니다. 느려도 신뢰를 지킵니다."],
+    right: ["재부팅만 대기", { votes: 1300, trust: -11 }, "복구만 기다립니다. '왜 통합했냐' 비판이 쏟아집니다."],
+  },
+  {
+    id: "summit-protocol",
+    title: "정상급 의전 점검",
+    body: "최고위층이 영빈관 개표를 참관합니다. 의전팀이 동선을 서른 번 점검합니다.",
+    weight: 4,
+    minStage: 10,
+    left: ["원칙대로 안내", { explain: -26, trust: 15 }, "지위와 무관하게 동일 절차로 안내합니다. 격이 오릅니다."],
+    right: ["특별 의전", { votes: 1400, trust: -13 }, "과한 의전을 펼칩니다. '개표가 쇼냐' 논란이 됩니다."],
+  },
+  {
+    id: "foreign-press",
+    title: "외신 대서특필",
+    body: "해외 주요 언론이 우리 개표를 1면에 실었습니다. 통역기에 진땀이 흐릅니다.",
+    weight: 4,
+    minStage: 11,
+    left: ["투명성 어필", { explain: -24, trust: 14 }, "전 과정을 영어 자막과 함께 공개합니다. 국격이 오릅니다."],
+    right: ["속도 자랑", { votes: 1600, trust: -9 }, "처리 속도로 승부합니다. 정확성 의문이 따라붙습니다."],
+  },
 ];
 
 // "실화 모티프" 사건 — UI에서 🏛 배지로 구분(실제 선관위/개표 이슈를 위트로 각색, 정치 중립)
@@ -618,4 +647,5 @@ export const realEventIds = new Set([
   "broadcast-bug", "qr-vs-barcode", "writing-tool", "dawn-delay", "invalid-vote",
   "exit-poll-miss", "observer-clash", "seal-tampering", "overseas-vote",
   "ballot-shortage", "pen-bleed", "ghost-voter", "interim-tally", "double-lock",
+  "unified-glitch", "foreign-press",
 ]);
