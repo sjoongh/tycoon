@@ -15,6 +15,7 @@ export const staffDefinitions = [
       name: "빠른 접수",
       desc: "5레벨마다 클릭 보너스가 추가로 증가합니다.",
       unlockLevel: 5,
+      clickBonus: 1,
     },
     desc: "클릭 처리량과 초반 생산을 안정적으로 올립니다.",
   },
