@@ -1,6 +1,5 @@
 import Phaser from "phaser";
 import { generatePlaceholders } from "../textures/devPlaceholders.js";
-import { createAnimations } from "../animations/createAnimations.js";
 import { buildGovTextures, buildPropTextures, buildWorkerTexture } from "../world/dotChar.js";
 
 export class PreloadScene extends Phaser.Scene {
@@ -23,38 +22,14 @@ export class PreloadScene extends Phaser.Scene {
     const bar = this.add.rectangle(W / 2 - 121, H / 2, 0, 11, 0xffc14d).setOrigin(0, 0.5);
     this.load.on("progress", (v) => { bar.width = 242 * v; pct.setText(`${Math.round(v * 100)}%`); });
 
-    // 실제 아트(codex 생성, public/art). 로드된 키는 devPlaceholders가 "이미 존재하면 건너뜀".
-    this.load.image("floor/pastel", "/art/floor-pastel.webp");
-    this.load.image("room/back", "/art/room-back.webp");
-    this.load.image("wall/back-left", "/art/window.webp");
-    this.load.image("wall/back-right", "/art/window.webp");
-    this.load.image("decor/plant", "/art/plant.webp");
+    // 픽셀 리빌드 후 실제 사용하는 아트만 로드(나머지 이소 오피스 webp는 미사용 — 제거).
+    //  · decor/ballotbox: 필드 황금 투표함  · ballot: 투표용지 파티클(BallotPool)
     this.load.image("decor/ballotbox", "/art/ballotbox.webp");
-    this.load.image("wall/clock", "/art/wall-clock.webp");
-    this.load.image("wall/poster", "/art/wall-poster.webp");
     this.load.image("ballot", "/art/ballot.webp");
-    this.load.image("worker/clerk", "/art/worker-clerk.webp");
-    this.load.image("worker/clerk-2", "/art/worker-clerk-2.webp");
-    this.load.image("worker/clerk-3", "/art/worker-clerk-3.webp");
-    this.load.image("facility/desk/t1/idle", "/art/desk-t1.webp");
-    this.load.image("facility/desk/t2/idle", "/art/desk-t2.webp");
-    this.load.image("facility/desk/t3/idle", "/art/desk-t3.webp");
-    this.load.image("facility/desk/t4/idle", "/art/desk-t4.webp");
-    this.load.image("facility/desk/t5/idle", "/art/desk-t5.webp");
-
-    // 나머지 5개 시설: t1~t3 실제 아트, t4/t5는 t3 재사용(아트 미제작분 폴백)
-    ["sorter", "notice", "server", "archive", "studio"].forEach((id) => {
-      this.load.image(`facility/${id}/t1/idle`, `/art/${id}-t1.webp`);
-      this.load.image(`facility/${id}/t2/idle`, `/art/${id}-t2.webp`);
-      this.load.image(`facility/${id}/t3/idle`, `/art/${id}-t3.webp`);
-      this.load.image(`facility/${id}/t4/idle`, `/art/${id}-t3.webp`);
-      this.load.image(`facility/${id}/t5/idle`, `/art/${id}-t3.webp`);
-    });
   }
 
   create() {
-    generatePlaceholders(this);
-    createAnimations(this);
+    generatePlaceholders(this); // ballot 폴백 등 안전망(존재하면 건너뜀)
     buildGovTextures(this); // 도트 국장 4단계 텍스처(gov-1..4)
     buildPropTextures(this); // 개표소 소품 텍스처(투표함/서류/깃발)
     buildWorkerTexture(this); // 미니 일꾼(직원) 텍스처
