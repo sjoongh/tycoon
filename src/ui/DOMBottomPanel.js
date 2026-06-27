@@ -103,13 +103,16 @@ export class DOMBottomPanel {
   }
 
   _pickEvent() {
-    const avail = officeEvents.filter((ev) => this.gameState.data.stage.area >= (ev.minStage || 1));
+    const gs = this.gameState;
+    const avail = officeEvents.filter((ev) => gs.data.stage.area >= (ev.minStage || 1));
     if (!avail.length) return null;
-    // 데이터에 정의된 weight를 반영한 가중 추첨(희귀 사건이 흔한 사건과 동일 확률로 뜨던 버그 수정)
-    const total = avail.reduce((s, ev) => s + (ev.weight || 1), 0);
+    // 데이터 weight 가중 추첨 + 미수집 사건 가중치 상향(도감 완성이 RNG 그라인드가 되지 않게).
+    // 미수집은 ×2.5로 더 자주 등장하되, 수집한 사건도 계속 나와 다양성/재대응은 유지.
+    const w = (ev) => (ev.weight || 1) * (gs.hasSeenEvent(ev.id) ? 1 : 2.5);
+    const total = avail.reduce((s, ev) => s + w(ev), 0);
     let roll = Math.random() * total;
     for (const ev of avail) {
-      roll -= ev.weight || 1;
+      roll -= w(ev);
       if (roll < 0) return ev;
     }
     return avail[avail.length - 1];
