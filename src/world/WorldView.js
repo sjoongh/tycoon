@@ -29,6 +29,12 @@ const GOV_LINES = [
   "기표용구 쓰세요~", "재외국민 표도 소중!",
 ];
 
+// 불신 위기(믿음<20%) 때 국장이 흘리는 불안한 대사 — 위기 상태를 중앙 캐릭터가 체감시킨다.
+const GOV_LINES_CRISIS = [
+  "믿음이… 바닥이에요", "오해를 풀어야 하는데…", "여론이 싸늘합니다…",
+  "해명이 시급해요!", "이러다 큰일 나요…", "제발 믿어주세요…", "식은땀이 나네요",
+];
+
 // 큰 성취(업적/콤보/구역 진입 등 celebrate) 순간 국장이 외치는 반응 대사 — 중앙 캐릭터에 감정선 부여.
 const GOV_REACT_LINES = [
   "해냈다!", "이게 바로 개표국!", "믿어주셔서 감사합니다!",
@@ -486,6 +492,12 @@ export class WorldView {
   }
 
   _govSpeak() {
+    // 불신 위기(trust<20)면 절반은 위기 대사 — 중앙 캐릭터가 게임 상태(믿음)에 반응하게.
+    if (this.gameState.trustState && this.gameState.trustState() === "crisis" && Math.random() < 0.5) {
+      const txt = GOV_LINES_CRISIS[(Math.random() * GOV_LINES_CRISIS.length) | 0];
+      this.effects.float({ text: `"${txt}"`, x: GAME_W / 2, y: 372, color: "#ff9a8e" }); // 불안한 붉은톤
+      return;
+    }
     // 45% 확률로 현재 성장 단계 전용 대사, 아니면 공통 풀에서 — 캐릭터 성장이 말에도 드러나게
     const stageLines = GOV_LINES_BY_STAGE[this._govStage] || [];
     const pool = (stageLines.length && Math.random() < 0.45) ? stageLines : GOV_LINES;
