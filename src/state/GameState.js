@@ -420,6 +420,7 @@ export class GameState extends Phaser.Events.EventEmitter {
       this.emit("float", { text: `도감 보상 +${Math.round(crossed.pct * 100)}%`, x: 195, y: 470, color: "#89d98b" });
       this.emit("dex-milestone", { n: crossed.n, pct: crossed.pct });
     }
+    this.checkAchievements(); // 도감 수집 즉시 dexSeen 업적 판정(applyEffect의 checkProgression은 markEventSeen 이전에 돈다)
     this.emit("changed");
     return true;
   }
@@ -813,6 +814,7 @@ export class GameState extends Phaser.Events.EventEmitter {
       case "totalClicks": return this.data.stats.totalClicks || 0;
       case "totalItems": return this.data.stats.totalItems || 0;
       case "medals": return this.data.prestige.totalMedals || 0;
+      case "dexSeen": return this.seenEventCount();
       default: return 0;
     }
   }

@@ -20,6 +20,14 @@ describe("게임 데이터 무결성", () => {
     }
   });
 
+  it("전종 수집 업적(dex69) target은 실제 사건 수와 일치한다", async () => {
+    const { officeEvents } = await import("../src/data/events.js");
+    const full = achievementDefinitions.find((a) => a.id === "dex69");
+    expect(full).toBeTruthy();
+    expect(full.metric).toBe("dexSeen");
+    expect(full.target).toBe(officeEvents.length);
+  });
+
   it("데일리/주간 목표는 고유 id", () => {
     const d = dailyQuestDefinitions.map((x) => x.id);
     expect(new Set(d).size).toBe(d.length);
