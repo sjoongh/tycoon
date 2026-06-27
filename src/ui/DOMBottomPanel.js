@@ -260,7 +260,15 @@ export class DOMBottomPanel {
       const btn = ready
         ? `<button class="gp-btn gp-btn--event" data-action="getEvent">사건 받기</button>`
         : `<button class="gp-btn gp-btn--event gp-btn--disabled" data-action="getEvent">다음 사건까지 ${sec}초</button>`;
-      this.panel.innerHTML = `<div class="gp-paneltitle">📋 사건 대응실 · 처리 ${gs.data.stats.totalEvents}건</div><div class="gp-card__sub">사건 대응으로 표·믿음을 얻으세요 · 보상 x${gs.eventRewardScale().toFixed(1)}</div>${btn}<div class="gp-log">${log}</div>`;
+      // 사건 도감 진척을 사건 탭에 노출 — 수집 동기를 사건 발생 지점에 배치
+      const dexN = gs.seenEventCount();
+      const dexTotal = officeEvents.length;
+      const nextM = gs.nextDexMilestone();
+      const dexPct = Math.round(gs.dexBonusPct() * 100);
+      const dexLine = nextM
+        ? `📖 도감 ${dexN}/${dexTotal} · 생산 +${dexPct}% · ${nextM.n}종에서 +${Math.round(nextM.pct * 100)}%`
+        : `📖 도감 ${dexN}/${dexTotal} 완성! · 생산 +${dexPct}% 영구`;
+      this.panel.innerHTML = `<div class="gp-paneltitle">📋 사건 대응실 · 처리 ${gs.data.stats.totalEvents}건</div><div class="gp-card__sub">사건 대응으로 표·믿음을 얻으세요 · 보상 x${gs.eventRewardScale().toFixed(1)}</div>${btn}<div class="gp-dexline">${dexLine}</div><div class="gp-log">${log}</div>`;
       // P1 fix: drive cooldown sweep --cd-pct on the disabled button each second
       if (!ready && totalMs > 0) {
         const btnEl = this.panel.querySelector(".gp-btn--event");
