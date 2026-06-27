@@ -342,6 +342,7 @@ export class DOMBottomPanel {
         <div class="gp-goal__foot"><span>${shortNumber(Math.min(p, q.target))} / ${shortNumber(q.target)}</span><span class="gp-goal__reward">${rewardLabel(q.reward)}</span></div>
       </div>`;
     }).join("");
+    const dailyClaimed = dailyQuestDefinitions.filter((q) => gs.dailyQuestClaimed(q.id)).length;
 
     let questRows = questDefinitions.map((q) =>
       goalRow(q, gs.data.quests[q.id] ? "done" : (active && q.id === active.id ? "active" : "locked"))
@@ -370,7 +371,7 @@ export class DOMBottomPanel {
     this.panel.innerHTML = `<div class="gp-paneltitle">운영 목표 · ${titleProgress}</div>
       <div class="gp-goallist-wrap"><div class="gp-stafflist gp-goallist">
       ${weeklyRow ? `<div class="gp-goal__section">&#9733; 주간 한정 · 일요일 종료</div>${weeklyRow}` : ""}
-      <div class="gp-goal__section">&#9670; 일일 퀘스트 · 자정 초기화</div>${dailyRows}
+      <div class="gp-goal__section">&#9670; 일일 퀘스트 ${dailyClaimed}/${dailyQuestDefinitions.length} · 자정 초기화</div>${dailyRows}
       <div class="gp-goal__section">운영 목표</div>${questRows}
       <div class="gp-goal__section">업적 · ${gotCount}/${achievementDefinitions.length}</div>${achRows}</div><div class="gp-goallist-fade" aria-hidden="true"></div></div>`;
   }
