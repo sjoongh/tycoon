@@ -5,6 +5,10 @@ export const randomItems = [
   { id: "balloon", icon: "🎈", weight: 18 },   // 응원 답지 → 믿음
   { id: "votes", icon: "🗳️", weight: 22 },     // 숨은 표뭉치 → 표(대)
   { id: "donation", icon: "💰", weight: 10 },  // 거액 후원 → 표(특대)+해명
+  { id: "coffee", icon: "☕", weight: 14 },     // 야근 커피 → 표(활력)
+  { id: "stamp", icon: "🧾", weight: 14 },      // 결재 도장 → 표+해명
+  { id: "ramen", icon: "🍜", weight: 12 },      // 야식 회식 → 표+믿음
+  { id: "jackpot", icon: "🎰", weight: 6 },     // 복권 → 대박/꽝 랜덤
 ];
 
 export function pickRandomItem() {

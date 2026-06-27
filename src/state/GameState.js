@@ -590,6 +590,27 @@ export class GameState extends Phaser.Events.EventEmitter {
         this.addVotes(v); this.data.explain += e;
         r = { icon: "💰", text: `거액 후원 +${shortNumber(v)}표` }; break;
       }
+      case "coffee": {
+        const v = Math.max(100, Math.floor(cps * 110));
+        this.addVotes(v); r = { icon: "☕", text: `야근 커피 +${shortNumber(v)}표` }; break;
+      }
+      case "stamp": {
+        const v = Math.max(90, Math.floor(cps * 100));
+        const e = Math.floor(this.data.explain * 0.12 + 30);
+        this.addVotes(v); this.data.explain += e;
+        r = { icon: "🧾", text: `결재 도장 +${shortNumber(v)}표` }; break;
+      }
+      case "ramen": {
+        const v = Math.max(80, Math.floor(cps * 80));
+        this.addVotes(v); this.data.trust = Phaser.Math.Clamp(this.data.trust + 5, 0, 100);
+        r = { icon: "🍜", text: `야식 회식 +${shortNumber(v)}표·믿음+5` }; break;
+      }
+      case "jackpot": {
+        const big = Math.random() < 0.5;
+        const v = big ? Math.max(500, Math.floor(cps * 600)) : Math.max(60, Math.floor(cps * 40));
+        this.addVotes(v);
+        r = { icon: "🎰", text: big ? `🎉 복권 대박! +${shortNumber(v)}표` : `복권 꽝… +${shortNumber(v)}표` }; break;
+      }
       default: break;
     }
     this.data.stats.totalItems = (this.data.stats.totalItems || 0) + 1;
