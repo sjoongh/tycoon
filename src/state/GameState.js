@@ -315,6 +315,17 @@ export class GameState extends Phaser.Events.EventEmitter {
     this.advanceTutorial("click");
     this.emit("ballots", { x, y, count: 6 });
     this.emit("float", { text: `+${shortNumber(amount)}${comboMult > 1 ? ` ×${comboMult}` : ""}`, x, y: y - 26, color: comboMult > 1 ? "#ffd34d" : "#ffc857" });
+    // 콤보 마일스톤: 25/50/100 연타 도달 시 표 폭발 보너스 + 축포(액티브 손맛 절정)
+    const msBonus = { 25: 40, 50: 120, 100: 300 }[this._clickCombo];
+    if (msBonus) {
+      const bonus = Math.round(this.clickPower() * msBonus);
+      this.addVotes(bonus);
+      this.emit("celebrate", { text: `🔥 ${this._clickCombo} 콤보! +${shortNumber(bonus)}표!` });
+      this.emit("float", { text: `🔥 +${shortNumber(bonus)}`, x, y: y - 62, color: "#ff7a3c" });
+      if (typeof document !== "undefined" && document.dispatchEvent) {
+        document.dispatchEvent(new CustomEvent("gp:sfx", { detail: "powerup" }));
+      }
+    }
     this.checkProgression();
     this.emit("changed");
   }
