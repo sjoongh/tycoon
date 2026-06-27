@@ -16,8 +16,11 @@ export class Sfx {
         if (AC) this.ctx = new AC();
       }
       if (this.ctx && this.ctx.state === "suspended") this.ctx.resume();
-      // 컨텍스트가 실행되면 더 이상 필요 없으므로 리스너 자진 제거(누수 방지)
-      if (this.ctx && this.ctx.state === "running") document.removeEventListener("pointerdown", resume);
+      // 컨텍스트가 실행되면 더 이상 필요 없으므로 리스너 자진 제거(누수 방지) + BGM 시작
+      if (this.ctx && this.ctx.state === "running") {
+        document.removeEventListener("pointerdown", resume);
+        this.startBgm();
+      }
     };
     document.addEventListener("pointerdown", resume);
 
@@ -48,6 +51,27 @@ export class Sfx {
   setMuted(m) {
     this.muted = m;
     localStorage.setItem(MUTE_KEY, m ? "1" : "0");
+    if (m) this.stopBgm();
+    else this.startBgm();
+  }
+
+  // 은은한 8비트 칩튠 루프(C 펜타토닉) — 저음량, mute 연동
+  startBgm() {
+    if (this._bgmTimer || this.muted || !this.ctx) return;
+    const mel = [330, 392, 440, 392, 330, 294, 262, 294, 330, 392, 440, 523, 440, 392, 330, 294];
+    const bass = [131, 131, 196, 174];
+    this._bgmStep = 0;
+    this._bgmTimer = setInterval(() => {
+      if (this.muted || !this.ctx || this.ctx.state !== "running") return;
+      const s = this._bgmStep;
+      this._tone(mel[s % mel.length], 0, 0.2, "square", 0.03);       // 멜로디(저음량)
+      if (s % 4 === 0) this._tone(bass[(s / 4 | 0) % bass.length], 0, 0.42, "triangle", 0.045); // 베이스
+      this._bgmStep = (s + 1) % 64;
+    }, 300);
+  }
+
+  stopBgm() {
+    if (this._bgmTimer) { clearInterval(this._bgmTimer); this._bgmTimer = null; }
   }
   toggleMuted() {
     this.setMuted(!this.muted);
