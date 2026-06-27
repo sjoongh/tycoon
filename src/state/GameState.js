@@ -101,7 +101,7 @@ const fallbackState = {
   quests: {},
   seenEvents: {}, // 사건 도감 — 겪은(해결한) 사건 id 기록(영구, 프레스티지에도 유지)
   endless: 0,
-  daily: { day: 0, streak: 0, qday: 0, clicks: 0, events: 0, upgrades: 0, items: 0, claimed: {} },
+  daily: { day: 0, streak: 0, qday: 0, clicks: 0, events: 0, upgrades: 0, items: 0, newdex: 0, claimed: {} },
   weekly: { week: 0, baseVotes: 0, target: 0, claimed: false },
   eventReadyAt: 0,
   rushReadyAt: 0,
@@ -158,6 +158,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     data.daily.events = Math.max(0, Math.floor(Number(data.daily.events) || 0));
     data.daily.upgrades = Math.max(0, Math.floor(Number(data.daily.upgrades) || 0));
     data.daily.items = Math.max(0, Math.floor(Number(data.daily.items) || 0));
+    data.daily.newdex = Math.max(0, Math.floor(Number(data.daily.newdex) || 0));
     data.daily.claimed = (data.daily.claimed && typeof data.daily.claimed === "object") ? data.daily.claimed : {};
     // 누적 통계 숫자 정규화(손상/NaN 방지 — 통계 화면·업적 metric이 의존)
     ["totalVotes", "totalClicks", "totalUpgrades", "totalEvents", "totalOfflineMs", "totalItems"].forEach((k) => {
@@ -414,6 +415,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     if (this.data.seenEvents[id]) return false;
     const before = this.seenEventCount();
     this.data.seenEvents[id] = 1;
+    this._bumpDaily("newdex"); // 오늘의 도감 — 새 사건 첫 수집 카운트
     const after = before + 1;
     // 수집 보상 마일스톤을 새로 넘었으면 해금 연출 신호
     const crossed = DEX_MILESTONES.find((m) => m.n === after);
@@ -877,6 +879,8 @@ export class GameState extends Phaser.Events.EventEmitter {
       this.data.daily.clicks = 0;
       this.data.daily.events = 0;
       this.data.daily.upgrades = 0;
+      this.data.daily.items = 0; // 버그 수정: items 미리셋 → 줍줍 데일리가 매일 stale 카운트로 자동완료되던 문제
+      this.data.daily.newdex = 0; // 도감 신규 수집 데일리 카운터
       this.data.daily.claimed = {};
     }
   }

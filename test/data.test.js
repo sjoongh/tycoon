@@ -36,6 +36,15 @@ describe("게임 데이터 무결성", () => {
     expect(full.target).toBe(officeEvents.length);
   });
 
+  it("모든 일일 퀘스트 metric은 자정 리셋(_ensureDailyQuests)에서 0으로 초기화된다", () => {
+    // 리셋 누락 시 stale 카운트로 데일리가 매일 자동완료되는 버그(R45 items 사례) 방지 가드.
+    const src = readFileSync(fileURLToPath(new URL("../src/state/GameState.js", import.meta.url)), "utf8");
+    const resetBlock = src.slice(src.indexOf("_ensureDailyQuests() {"), src.indexOf("dailyQuestProgress"));
+    for (const q of dailyQuestDefinitions) {
+      expect(resetBlock).toMatch(new RegExp(`daily\\.${q.metric}\\s*=\\s*0`));
+    }
+  });
+
   it("데일리/주간 목표는 고유 id", () => {
     const d = dailyQuestDefinitions.map((x) => x.id);
     expect(new Set(d).size).toBe(d.length);

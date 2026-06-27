@@ -5,4 +5,5 @@ export const dailyQuestDefinitions = [
   { id: "d-events", title: "오늘의 대응", desc: "오늘 사건 3건 대응하기", metric: "events", target: 3, reward: { explain: 60 } },
   { id: "d-upgrades", title: "오늘의 증설", desc: "오늘 시설 5번 업그레이드하기", metric: "upgrades", target: 5, reward: { seals: 1 } },
   { id: "d-items", title: "오늘의 줍줍", desc: "오늘 필드 아이템 3개 줍기", metric: "items", target: 3, reward: { explain: 50 } },
+  { id: "d-newdex", title: "오늘의 도감", desc: "오늘 새 사건 1종 수집하기", metric: "newdex", target: 1, reward: { explain: 45 } },
 ];
