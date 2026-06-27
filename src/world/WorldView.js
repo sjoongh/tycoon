@@ -29,6 +29,14 @@ const GOV_LINES = [
   "기표용구 쓰세요~", "재외국민 표도 소중!",
 ];
 
+// 국장 성장 단계별 전용 대사 — 넝마(불안)→말단(적응)→정장(원칙)→명예(관록). 공통 GOV_LINES와 섞어 출력.
+const GOV_LINES_BY_STAGE = {
+  1: ["처음이라 떨리네요…", "이 일 잘할 수 있을까…", "한 표가 이렇게 무겁다니", "오늘도 야근인가…"],
+  2: ["조금씩 손에 익어요", "이제 좀 알겠어요!", "실수는 안 하렵니다"],
+  3: ["절차대로 갑니다.", "이의 있으면 말씀을.", "원칙이 우선입니다.", "한 표도 안 놓쳐요."],
+  4: ["전국이 지켜봅니다.", "역사에 남길 개표죠.", "한 치 오차 없이!", "관록이 다릅니다.", "이 정도는 기본이죠."],
+};
+
 // 어두운 직원 색이 다크 배경에 묻히지 않도록 밝게 보정(amt 0~1)
 function lightenColor(hex, amt) {
   const r = (hex >> 16) & 255, g = (hex >> 8) & 255, b = hex & 255;
@@ -459,7 +467,10 @@ export class WorldView {
   }
 
   _govSpeak() {
-    const txt = GOV_LINES[(Math.random() * GOV_LINES.length) | 0];
+    // 45% 확률로 현재 성장 단계 전용 대사, 아니면 공통 풀에서 — 캐릭터 성장이 말에도 드러나게
+    const stageLines = GOV_LINES_BY_STAGE[this._govStage] || [];
+    const pool = (stageLines.length && Math.random() < 0.45) ? stageLines : GOV_LINES;
+    const txt = pool[(Math.random() * pool.length) | 0];
     this.effects.float({ text: `"${txt}"`, x: GAME_W / 2, y: 372, color: "#ffe9c0" });
   }
 
