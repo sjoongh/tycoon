@@ -224,8 +224,9 @@ export class WorldView {
     const prevKey = eraTheme(this._eraArea).key;
     this._eraArea = area;
     this._drawBackground(area);
-    const f = this.scene.add.rectangle(GAME_W / 2, 422, GAME_W, 844, 0xffffff, 0.5).setDepth(200);
-    this.scene.tweens.add({ targets: f, alpha: 0, duration: 420, ease: "Quad.easeOut", onComplete: () => f.destroy() });
+    // 구역 전환 플래시 — 픽셀답게 짧고 옅게(스텝 페이드), 잔상 최소화
+    const f = this.scene.add.rectangle(GAME_W / 2, 422, GAME_W, 844, 0xffe9a8, 0.32).setDepth(200);
+    this.scene.tweens.add({ targets: f, alpha: 0, duration: 240, ease: "Quad.easeOut", onComplete: () => f.destroy() });
     // 체제가 바뀌는 순간엔 배너 토스트
     if (eraTheme(area).key !== prevKey) {
       const t = eraTheme(area);
