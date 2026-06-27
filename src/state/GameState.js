@@ -85,6 +85,7 @@ const fallbackState = {
     totalUpgrades: 0,
     totalEvents: 0,
     totalOfflineMs: 0,
+    totalItems: 0,
   },
   achievements: {},
   quests: {},
@@ -144,7 +145,12 @@ export class GameState extends Phaser.Events.EventEmitter {
     data.daily.clicks = Math.max(0, Math.floor(Number(data.daily.clicks) || 0));
     data.daily.events = Math.max(0, Math.floor(Number(data.daily.events) || 0));
     data.daily.upgrades = Math.max(0, Math.floor(Number(data.daily.upgrades) || 0));
+    data.daily.items = Math.max(0, Math.floor(Number(data.daily.items) || 0));
     data.daily.claimed = (data.daily.claimed && typeof data.daily.claimed === "object") ? data.daily.claimed : {};
+    // 누적 통계 숫자 정규화(손상/NaN 방지 — 통계 화면·업적 metric이 의존)
+    ["totalVotes", "totalClicks", "totalUpgrades", "totalEvents", "totalOfflineMs", "totalItems"].forEach((k) => {
+      data.stats[k] = Math.max(0, Number(data.stats[k]) || 0);
+    });
     data.weekly = { ...fallbackState.weekly, ...(parsed?.weekly || {}) };
     data.weekly.week = Math.max(0, Math.floor(Number(data.weekly.week) || 0));
     data.weekly.baseVotes = Math.max(0, Number(data.weekly.baseVotes) || 0);
