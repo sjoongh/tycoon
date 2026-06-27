@@ -286,6 +286,75 @@ export function workerIconUri() {
   return _workerUri;
 }
 
+// 탭바 아이콘 도트(사건=경고, 목표=깃발, 감사=도장)
+const TAB_ALERT = [
+  "................",
+  "................",
+  "....kkkkkk......",
+  "...kttttttk.....",
+  "..kttttttttk....",
+  "..ktttwwtttk....",
+  "..ktttwwtttk....",
+  "..ktttwwtttk....",
+  "..ktttwwtttk....",
+  "..kttttttttk....",
+  "..ktttwwtttk....",
+  "...kttttttk.....",
+  "....kkkkkk......",
+  "................",
+  "................",
+  "................",
+];
+const TAB_FLAG = [
+  "................",
+  "....k...........",
+  "....kwwwwww.....",
+  "....kwYYYYw.....",
+  "....kwwwwww.....",
+  "....kwYYYYw.....",
+  "....kwwwwww.....",
+  "....k...........",
+  "....k...........",
+  "....k...........",
+  "....k...........",
+  "...kkk..........",
+  "..kkkkk.........",
+  "................",
+  "................",
+  "................",
+];
+const TAB_SEAL = [
+  "................",
+  "......kkkk......",
+  ".....kGGGGk.....",
+  ".....kGGGGk.....",
+  "....kkkkkkkk....",
+  "...kttttttttk...",
+  "..kttttttttttk..",
+  "..kttwwwwwwttk..",
+  "..kttwkkkkwttk..",
+  "..kttwwwwwwttk..",
+  "..kttttttttttk..",
+  "...kttttttttk...",
+  "....kkkkkkkk....",
+  "................",
+  "................",
+  "................",
+];
+const _tabCache = {};
+export function tabIconUri(id) {
+  if (_tabCache[id]) return _tabCache[id];
+  const m = id === "facilities" ? PROP_MAPS["prop-ballotbox"]
+    : id === "crew" ? WORKER_MINI
+    : id === "events" ? TAB_ALERT
+    : id === "goals" ? TAB_FLAG
+    : id === "prestige" ? TAB_SEAL
+    : null;
+  const uri = m ? dotSvgUri(m) : "";
+  _tabCache[id] = uri;
+  return uri;
+}
+
 // 도트맵 1장을 SVG data-uri로 — DOM(모달/카드)에서도 같은 도트 아트를 쓰게 한다(화풍 통일).
 export function dotSvgUri(map) {
   const h = map.length;

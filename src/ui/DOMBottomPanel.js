@@ -5,7 +5,7 @@ import { officeEvents, realEventIds } from "../data/events.js";
 import { prestigeUpgrades, medalUpgrades } from "../data/prestige.js";
 import { questDefinitions } from "../data/quests.js";
 import { achievementDefinitions } from "../data/achievements.js";
-import { facilityIconUri, workerIconUri } from "../world/dotChar.js";
+import { facilityIconUri, workerIconUri, tabIconUri } from "../world/dotChar.js";
 import { dailyQuestDefinitions } from "../data/dailyQuests.js";
 
 const rewardLabel = (r) => [
@@ -38,7 +38,7 @@ export class DOMBottomPanel {
       const b = document.createElement("button");
       b.className = "gp-tab";
       b.dataset.tab = id;
-      b.innerHTML = `${label}<span class="gp-tab__dot" data-dot="${id}" hidden></span>`;
+      b.innerHTML = `<span class="gp-tab__ic" style="background-image:url('${tabIconUri(id)}')"></span>${label}<span class="gp-tab__dot" data-dot="${id}" hidden></span>`;
       b.addEventListener("click", () => this.gameState.setTab(id));
       tabsEl.appendChild(b);
     });
