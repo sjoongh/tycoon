@@ -5,6 +5,7 @@ import { officeEvents, realEventIds } from "../data/events.js";
 import { prestigeUpgrades, medalUpgrades } from "../data/prestige.js";
 import { questDefinitions } from "../data/quests.js";
 import { achievementDefinitions } from "../data/achievements.js";
+import { facilityIconUri } from "../world/dotChar.js";
 import { dailyQuestDefinitions } from "../data/dailyQuests.js";
 
 const rewardLabel = (r) => [
@@ -164,7 +165,7 @@ export class DOMBottomPanel {
       : `<button class="gp-btn gp-btn--upgrade gp-btn--disabled" data-action="upgradeFac">잠김</button>`;
     this.panel.innerHTML = `
       <div class="gp-card">
-        <div class="gp-card__icon" style="background-image:url('/art/${sel}-t1.webp');background-color:${hex(f.color)}"></div>
+        <div class="gp-card__icon" style="background-image:url('${facilityIconUri(sel)}');background-color:${hex(f.color)}"></div>
         <div class="gp-card__body">
           <div class="gp-card__title">${f.name} Lv.${gs.level(sel)}</div>
           <div class="gp-card__sub">${unlocked ? `${shortNumber(cost)}표 · 해명 ${shortNumber(ex)}` : `${f.unlock}구역에서 해금`}</div>
@@ -179,7 +180,7 @@ export class DOMBottomPanel {
       <div class="gp-facsel">${facilities.map((ff) => {
         const u = gs.isUnlocked(ff.id);
         // P1 fix: facility picker icon — use webp asset as background-image, color as fallback
-      return `<button class="gp-fac ${ff.id === sel ? "gp-fac--active" : ""} ${u ? "" : "gp-fac--locked"}" data-action="selectFac" data-id="${ff.id}"><span class="gp-fac__icon" style="background-color:${hex(ff.color)};background-image:url('/art/${ff.id}-t1.webp')"></span><span class="gp-fac__role">${ff.role}</span><span class="gp-fac__lv">${u ? `Lv.${gs.level(ff.id)}` : `${ff.unlock}구`}</span></button>`;
+      return `<button class="gp-fac ${ff.id === sel ? "gp-fac--active" : ""} ${u ? "" : "gp-fac--locked"}" data-action="selectFac" data-id="${ff.id}"><span class="gp-fac__icon" style="background-image:url('${facilityIconUri(ff.id)}')"></span><span class="gp-fac__role">${ff.role}</span><span class="gp-fac__lv">${u ? `Lv.${gs.level(ff.id)}` : `${ff.unlock}구`}</span></button>`;
       }).join("")}</div>
       <div class="gp-region"><span>${gs.data.stage.area}구역 · ${shortNumber(gs.data.stage.progress)} / ${shortNumber(gs.data.stage.target)}</span>${
         stageDone

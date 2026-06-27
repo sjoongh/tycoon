@@ -171,12 +171,67 @@ const PROP_SORTER = [
   "................",
 ];
 
+// 안심공지판(홍보 시설) — 흰 종이에 글줄 + 받침대.
+const PROP_NOTICE = [
+  "................",
+  "..kkkkkkkkkkkk..",
+  "..kGGGGGGGGGGk..",
+  "..kGwwwwwwwwGk..",
+  "..kGwkkkkkkwGk..",
+  "..kGwwwwwwwwGk..",
+  "..kGwkkkkkkwGk..",
+  "..kGwwwwwwwwGk..",
+  "..kGwkkkkkkwGk..",
+  "..kGwwwwwwwwGk..",
+  "..kGGGGGGGGGGk..",
+  "..kkkkkkkkkkkk..",
+  ".....k....k.....",
+  ".....k....k.....",
+  "....kkk..kkk....",
+  "................",
+];
+// 브리핑룸(브리핑 시설) — 마이크 + 받침.
+const PROP_STUDIO = [
+  "................",
+  "......kkkk......",
+  ".....kGGGGk.....",
+  "....kGccccGk....",
+  "....kGccccGk....",
+  "....kGccccGk....",
+  ".....kGGGGk.....",
+  "......kGGk......",
+  "......kGGk......",
+  "......kGGk......",
+  "......kGGk......",
+  ".....kkGGkk.....",
+  "....kGGGGGGk....",
+  "...kGGGGGGGGk...",
+  "..kkkkkkkkkkkk..",
+  "................",
+];
+
 export const PROP_MAPS = {
   "prop-ballotbox": PROP_BALLOTBOX,
   "prop-papers": PROP_PAPERS,
   "prop-board": PROP_BOARD,
   "prop-sorter": PROP_SORTER,
+  "prop-notice": PROP_NOTICE,
+  "prop-studio": PROP_STUDIO,
 };
+
+// 시설 id → 도트 아이콘 data-uri (카드/선택 버튼에서 webp 대신 도트로 화풍 통일). 결과 캐시.
+const FAC_ICON_KEY = {
+  desk: "prop-ballotbox", sorter: "prop-sorter", server: "prop-board",
+  archive: "prop-papers", notice: "prop-notice", studio: "prop-studio",
+};
+const _facIconCache = {};
+export function facilityIconUri(id) {
+  if (_facIconCache[id]) return _facIconCache[id];
+  const map = PROP_MAPS[FAC_ICON_KEY[id]];
+  const uri = map ? dotSvgUri(map) : "";
+  _facIconCache[id] = uri;
+  return uri;
+}
 
 // 미니 일꾼(직원) — 흰/회색 실루엣. 런타임에 직원별 색으로 tint한다. 10x10.
 const WORKER_MINI = [

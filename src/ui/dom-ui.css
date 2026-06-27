@@ -135,7 +135,7 @@
 /* ---------- facility selector ---------- */
 .gp-facsel { display: flex; gap: 5px; margin-top: 10px; }
 .gp-fac { flex: 1; pointer-events: auto; border: 3px solid var(--line); padding: 7px 3px 6px; background: var(--panel2); cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 3px; min-height: 56px; box-shadow: var(--px-out-sm); }
-.gp-fac__icon { width: 24px; height: 24px; border: 2px solid var(--line); image-rendering: pixelated; }
+.gp-fac__icon { width: 24px; height: 24px; border: 2px solid var(--line); image-rendering: pixelated; background-size: contain; background-repeat: no-repeat; background-position: center; background-color: var(--bg2); }
 .gp-fac__role { font-family: var(--f-small); font-size: 10px; color: var(--ink); }
 .gp-fac__lv { font-family: var(--f-small); font-size: 9px; color: var(--ink-soft); }
 .gp-fac--active { background: var(--panel3); box-shadow: var(--px-out-sm), 0 0 0 3px var(--gold); transform: translateY(-2px); }
