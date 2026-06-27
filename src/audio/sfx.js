@@ -96,7 +96,15 @@ export class Sfx {
     osc.stop(t0 + dur + 0.02);
   }
 
+  // 모바일 햅틱 — 주요 이벤트에 진동(지원 시). mute와 연동(소리 끄면 진동도 끔).
+  _vibrate(name) {
+    if (this.muted || typeof navigator === "undefined" || !navigator.vibrate) return;
+    const P = { achieve: [0, 25, 15, 25], stage: 40, crisis: [0, 50, 30, 50], coin: 20, powerup: 30, bonus: 25 };
+    if (P[name] != null) { try { navigator.vibrate(P[name]); } catch { /* 미지원/거부 무시 */ } }
+  }
+
   play(name) {
+    this._vibrate(name);
     if (this.muted || !this.ctx || this.ctx.state !== "running") return;
     if (name === "tap") {
       // 클릭 콤보가 쌓일수록 음정이 올라가 손맛이 난다
