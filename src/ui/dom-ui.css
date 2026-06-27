@@ -210,7 +210,7 @@
 
 /* staff cards */
 .gp-staff { display: flex; align-items: center; gap: 9px; padding: 9px; background: var(--panel); border: 3px solid var(--line); border-left-width: 6px; border-left-color: var(--rarity-color, #9aa0a6); box-shadow: var(--px-out-sm); }
-.gp-staff__dot { width: 38px; height: 38px; border: 3px solid var(--rarity-color, #9aa0a6); flex: none; image-rendering: pixelated; }
+.gp-staff__dot { width: 38px; height: 38px; border: 3px solid var(--rarity-color, #9aa0a6); flex: none; image-rendering: pixelated; background-size: contain; background-repeat: no-repeat; background-position: center bottom; }
 .gp-staff__body { flex: 1; min-width: 0; }
 .gp-staff__name { font-family: var(--f-bold); color: var(--ink); font-size: 12px; }
 .gp-staff__rar { font-family: var(--f-small); font-size: 9px; padding: 1px 5px; background: var(--rarity-color, #9aa0a6); color: #000; margin-left: 4px; border: 1px solid #000; }

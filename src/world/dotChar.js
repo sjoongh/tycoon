@@ -279,6 +279,13 @@ export function buildWorkerTexture(scene) {
   bakeTexture(scene, "worker-mini", WORKER_MINI, 10);
 }
 
+// 직원 카드용 도트 일꾼 아이콘(흰/회색 실루엣) — 카드 배경의 직원색 위에 얹어 화풍 통일. 캐시.
+let _workerUri = null;
+export function workerIconUri() {
+  if (!_workerUri) _workerUri = dotSvgUri(WORKER_MINI);
+  return _workerUri;
+}
+
 // 도트맵 1장을 SVG data-uri로 — DOM(모달/카드)에서도 같은 도트 아트를 쓰게 한다(화풍 통일).
 export function dotSvgUri(map) {
   const h = map.length;

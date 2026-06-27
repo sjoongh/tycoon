@@ -5,7 +5,7 @@ import { officeEvents, realEventIds } from "../data/events.js";
 import { prestigeUpgrades, medalUpgrades } from "../data/prestige.js";
 import { questDefinitions } from "../data/quests.js";
 import { achievementDefinitions } from "../data/achievements.js";
-import { facilityIconUri } from "../world/dotChar.js";
+import { facilityIconUri, workerIconUri } from "../world/dotChar.js";
 import { dailyQuestDefinitions } from "../data/dailyQuests.js";
 
 const rewardLabel = (r) => [
@@ -220,7 +220,7 @@ export class DOMBottomPanel {
       const lightRarity = isLightColor(rarityHex) ? " gp-staff--light-rarity" : "";
       // P0 fix: show 해명 cost in hire button (two-line pattern); add gp-btn--ready glow when affordable
       return `<div class="gp-staff${lightRarity}" style="--rarity-color:${hex(rarityHex)}">
-        <div class="gp-staff__dot" style="background:${hex(s.color)}"></div>
+        <div class="gp-staff__dot" style="background-color:${hex(s.color)};background-image:url('${workerIconUri()}')"></div>
         <div class="gp-staff__body"><div class="gp-staff__name">${s.name}<span class="gp-staff__rar">${s.rarityName}</span></div><div class="gp-staff__sub">Lv.${lv} · ${skill}</div><div class="gp-staff__sub">${synLabel}</div></div>
         <button class="gp-btn gp-btn--sm gp-btn--upgrade ${can ? "gp-btn--ready" : "gp-btn--disabled"}" data-action="hire" data-id="${s.id}">${shortNumber(plan.voteCost)}표<small>${this.buyQty !== 1 ? (this.buyQty === "max" ? (plan.levels > 0 ? `MAX +${plan.levels}` : "MAX") : `×${plan.levels || this.buyQty}`) : `${shortNumber(plan.explainCost)}해명`}</small></button></div>`;
     }).join("");
