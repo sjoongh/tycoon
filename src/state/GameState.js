@@ -2,6 +2,7 @@ import Phaser from "phaser";
 import { SAVE_KEY } from "../config.js";
 import { facilities } from "../data/facilities.js";
 import { prestigeUpgrades, medalUpgrades, allPrestigeUpgrades } from "../data/prestige.js";
+import { govTitles, titleById, RARITY_ORDER } from "../data/titles.js";
 import { questDefinitions } from "../data/quests.js";
 import { staffDefinitions } from "../data/staff.js";
 import { achievementDefinitions } from "../data/achievements.js";
@@ -100,6 +101,9 @@ const fallbackState = {
   achievements: {},
   quests: {},
   seenEvents: {}, // 사건 도감 — 겪은(해결한) 사건 id 기록(영구, 프레스티지에도 유지)
+  titles: {}, // 국장 칭호 — { titleId: level }. 뽑기로 획득, 중복=레벨업. 영구(프레스티지 유지)
+  titleDraws: 0, // 누적 뽑기 횟수(비용 곡선용)
+  equippedTitle: null, // 대표 칭호 id(월드 표시·자동 = 최고 희귀/레벨)
   endless: 0,
   daily: { day: 0, streak: 0, qday: 0, clicks: 0, events: 0, upgrades: 0, items: 0, newdex: 0, claimed: {} },
   weekly: { week: 0, baseVotes: 0, target: 0, claimed: false },
@@ -145,6 +149,9 @@ export class GameState extends Phaser.Events.EventEmitter {
       achievements: { ...fallbackState.achievements, ...(parsed?.achievements || {}) },
       quests: { ...fallbackState.quests, ...(parsed?.quests || {}) },
       seenEvents: (parsed?.seenEvents && typeof parsed.seenEvents === "object") ? { ...parsed.seenEvents } : {},
+      titles: (parsed?.titles && typeof parsed.titles === "object") ? { ...parsed.titles } : {},
+      titleDraws: Math.max(0, Math.floor(Number(parsed?.titleDraws) || 0)),
+      equippedTitle: (parsed?.equippedTitle && titleById(parsed.equippedTitle)) ? parsed.equippedTitle : null,
       stats: { ...fallbackState.stats, ...(parsed?.stats || {}) },
       stage: { ...fallbackState.stage, ...(parsed?.stage || {}) },
       prestige: { ...fallbackState.prestige, ...(parsed?.prestige || {}) },
@@ -372,7 +379,7 @@ export class GameState extends Phaser.Events.EventEmitter {
   // 사건 보상의 양수 votes/explain은 현재 구역 규모에 맞춰 스케일(후반에도 의미있게). 비용(음수)은 그대로.
   eventRewardScale() {
     const base = Math.min(50, this.stageTarget(this.data.stage.area) / this.stageTarget(1));
-    return base * (1 + this.permanentEffectFor(this.data, "eventPct")); // 특별 대응반(감사 업그레이드) 보너스
+    return base * (1 + this.permanentEffectFor(this.data, "eventPct") + this.titleEffectFor(this.data, "eventPct")); // 특별 대응반 + 칭호(서기관)
   }
 
   applyEffect(effect) {
@@ -730,6 +737,9 @@ export class GameState extends Phaser.Events.EventEmitter {
       },
       achievements: this.data.achievements,
       seenEvents: this.data.seenEvents, // 사건 도감은 평생 수집 기록 — 감사(프레스티지)에도 영구 유지
+      titles: this.data.titles, // 국장 칭호(인사 발령)는 평생 컬렉션 — 감사에도 유지
+      titleDraws: this.data.titleDraws,
+      equippedTitle: this.data.equippedTitle,
       tutorial: this.data.tutorial, // 베테랑이 감사(프레스티지) 후 신규 오프닝/튜토리얼을 다시 보지 않도록 유지
       daily: this.data.daily, // 감사(프레스티지)는 진행이지 새 세이브가 아님 — 출석 연속/일일 진행 유지
       weekly: this.data.weekly, // 주간 한정 목표(주차/목표/수령여부) 유지 — 안 그러면 재청구 악용 + 목표 리셋
@@ -1115,7 +1125,7 @@ export class GameState extends Phaser.Events.EventEmitter {
       const lv = data.facilities[item.id] || 0;
       return sum + lv * item.cps * this.facilityMilestoneFactor(lv);
     }, 0);
-    return raw * (0.9 + data.trust / 230) * this.trustModifier(data.trust) * this.staffMultiplierFor(data) * this.prestigeMultiplierFor(data) * (1 + this.permanentEffectFor(data, "cpsPct")) * (1 + this.dexBonusPct(data));
+    return raw * (0.9 + data.trust / 230) * this.trustModifier(data.trust) * this.staffMultiplierFor(data) * this.prestigeMultiplierFor(data) * (1 + this.permanentEffectFor(data, "cpsPct") + this.titleEffectFor(data, "cpsPct")) * (1 + this.dexBonusPct(data));
   }
 
   // 시설 레벨이 마일스톤을 넘을 때마다 해당 시설 생산 ×2 누적(AdVenture Capitalist식 영구 보너스)
@@ -1186,7 +1196,7 @@ export class GameState extends Phaser.Events.EventEmitter {
 
   explainPerSecondFor(data) {
     const raw = 0.55 + (data.facilities.notice || 0) * 0.2 + (data.facilities.server || 0) * 0.16 + (data.facilities.studio || 0) * 0.12;
-    return raw * (1 + this.permanentEffectFor(data, "explainPct"));
+    return raw * (1 + this.permanentEffectFor(data, "explainPct") + this.titleEffectFor(data, "explainPct"));
   }
 
   clickPower() {
@@ -1200,7 +1210,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     }, 0);
     const clerkSkill = Math.floor(this.staffLevel("clerk") / 5);
     const raw = 1 + facilityPower + staffPower + clerkSkill;
-    return Math.round(raw * (1 + this.permanentEffectFor(this.data, "clickPct"))); // round: 작은 raw에서 clickPct 보너스가 floor로 0이 되던 문제 보정
+    return Math.round(raw * (1 + this.permanentEffectFor(this.data, "clickPct") + this.titleEffectFor(this.data, "clickPct"))); // round: 작은 raw에서 clickPct 보너스가 floor로 0이 되던 문제 보정
   }
 
   trustDecay() {
@@ -1209,7 +1219,7 @@ export class GameState extends Phaser.Events.EventEmitter {
   }
 
   offlineRateFor(data) {
-    return 0.72 * (1 + this.permanentEffectFor(data, "offlinePct"));
+    return 0.72 * (1 + this.permanentEffectFor(data, "offlinePct") + this.titleEffectFor(data, "offlinePct"));
   }
 
   // 기록 보관소: 기본 8시간 + 레벨당 1시간
@@ -1225,6 +1235,77 @@ export class GameState extends Phaser.Events.EventEmitter {
       const level = store?.[upgrade.id] || 0;
       return sum + level * (upgrade.effect[key] || 0);
     }, 0);
+  }
+
+  // ----- 국장 칭호(인사 발령 뽑기) -----
+  // 보유 칭호 레벨 × 효과를 같은 key 버킷에 합산 — permanentEffectFor와 함께 수식에 들어간다.
+  titleEffectFor(data, key) {
+    const titles = data?.titles;
+    if (!titles || typeof titles !== "object") return 0;
+    return govTitles.reduce((sum, t) => sum + (titles[t.id] || 0) * (t.effect[key] || 0), 0);
+  }
+
+  ownedTitleCount() {
+    const t = this.data.titles;
+    return t && typeof t === "object" ? Object.keys(t).filter((id) => t[id] > 0).length : 0;
+  }
+
+  // 뽑기 비용(해명) — 누적 뽑기 수에 따라 1.22배씩 상승(초반 저렴→후반 묵직한 해명 소비처)
+  gachaDrawCost() {
+    return Math.floor(40 * Math.pow(1.22, this.data.titleDraws || 0));
+  }
+
+  canDrawGacha() {
+    return this.data.explain >= this.gachaDrawCost();
+  }
+
+  // 대표 칭호 = 보유 중 최고 희귀도, 동률이면 최고 레벨. 월드 표시·꾸미기에 사용.
+  bestTitleId() {
+    const t = this.data.titles || {};
+    let best = null, bestRank = -1, bestLv = 0;
+    for (const def of govTitles) {
+      const lv = t[def.id] || 0;
+      if (lv <= 0) continue;
+      const rank = RARITY_ORDER[def.rarity] ?? 0;
+      if (rank > bestRank || (rank === bestRank && lv > bestLv)) { best = def.id; bestRank = rank; bestLv = lv; }
+    }
+    return best;
+  }
+
+  equippedTitleDef() {
+    const id = this.data.equippedTitle || this.bestTitleId();
+    return id ? titleById(id) : null;
+  }
+
+  _pickGachaTitle() {
+    const total = govTitles.reduce((s, t) => s + (t.weight || 1), 0);
+    let roll = Math.random() * total;
+    for (const t of govTitles) { roll -= (t.weight || 1); if (roll < 0) return t; }
+    return govTitles[govTitles.length - 1];
+  }
+
+  // 인사 발령 뽑기 1회 — 해명 차감, 칭호 획득(중복=레벨업), 대표 칭호 갱신. 결과 객체 반환(없으면 null).
+  drawGacha() {
+    const cost = this.gachaDrawCost();
+    if (this.data.explain < cost) {
+      this.emit("float", { text: "해명 부족", x: 195, y: 720, color: "#ff8e8e" });
+      return null;
+    }
+    this.data.explain -= cost;
+    this.data.titleDraws = (this.data.titleDraws || 0) + 1;
+    const def = this._pickGachaTitle();
+    if (!this.data.titles || typeof this.data.titles !== "object") this.data.titles = {};
+    const prev = this.data.titles[def.id] || 0;
+    const isNew = prev === 0;
+    this.data.titles[def.id] = prev + 1;
+    const level = prev + 1;
+    // 대표 칭호 갱신(더 높은 등급/레벨이면 자동 장착)
+    this.data.equippedTitle = this.bestTitleId();
+    this.emit("celebrate", { text: `${isNew ? "🎉 신규 발령" : "⬆️ 승진"} · ${def.name}${isNew ? "" : ` Lv.${level}`}` });
+    this.checkProgression();
+    this.emit("changed");
+    this.save(false);
+    return { id: def.id, name: def.name, rarity: def.rarity, per: def.per, emoji: def.emoji, level, isNew };
   }
 
   // 유한 인장 업그레이드의 실효 상한 = 정의 상한 + 전당(capBoost). 무한(>=999)·훈장 업그레이드는 그대로.
