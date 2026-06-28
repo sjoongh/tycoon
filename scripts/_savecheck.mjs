@@ -27,25 +27,30 @@ await p.goto(URL, { waitUntil: "networkidle", timeout: 30000 });
 await p.evaluate(() => localStorage.clear());
 await p.reload({ waitUntil: "networkidle" }); await boot();
 
-// 1) 수집 + 저장 → localStorage에 seenEvents 기록
+// 1) 수집 + 저장 → localStorage에 seenEvents/titles 기록
 const s1 = await p.evaluate((KEY) => {
   const gs = window.__game.registry.get("gameState");
   ["recount-demand", "phishing-text", "blackout-poll", "ghost-voter", "interim-tally"].forEach((id) => gs.markEventSeen(id));
+  gs.data.titles = { intern: 3, director: 2 }; gs.data.titleDraws = 9; gs.data.equippedTitle = "director"; // 칭호 컬렉션 시드
   gs.save(false);
   const raw = JSON.parse(localStorage.getItem(KEY));
-  return { seenCount: gs.seenEventCount(), savedKeys: Object.keys(raw.seenEvents || {}).length };
+  return { seenCount: gs.seenEventCount(), savedKeys: Object.keys(raw.seenEvents || {}).length, savedTitleKeys: Object.keys(raw.titles || {}).length, savedDraws: raw.titleDraws };
 }, SAVE_KEY);
 expect(s1.seenCount === 5, `수집 카운트 5 기대, 실제 ${s1.seenCount}`);
 expect(s1.savedKeys === 5, `저장된 seenEvents 5 기대, 실제 ${s1.savedKeys}`);
+expect(s1.savedTitleKeys === 2, `저장된 titles 2 기대, 실제 ${s1.savedTitleKeys}`);
+expect(s1.savedDraws === 9, `저장된 titleDraws 9 기대, 실제 ${s1.savedDraws}`);
 
 // 2) 리로드 후 복원
 await p.reload({ waitUntil: "networkidle" }); await boot();
 const s2 = await p.evaluate(() => {
   const gs = window.__game.registry.get("gameState");
-  return { afterReload: gs.seenEventCount(), hasPhishing: gs.hasSeenEvent("phishing-text") };
+  return { afterReload: gs.seenEventCount(), hasPhishing: gs.hasSeenEvent("phishing-text"), titlesOwned: gs.ownedTitleCount(), draws: gs.data.titleDraws, eq: gs.data.equippedTitle };
 });
 expect(s2.afterReload === 5, `리로드 후 5 기대, 실제 ${s2.afterReload}`);
 expect(s2.hasPhishing === true, "리로드 후 phishing-text 보존 실패");
+expect(s2.titlesOwned === 2, `리로드 후 칭호 2종 기대, 실제 ${s2.titlesOwned}`);
+expect(s2.draws === 9 && s2.eq === "director", "리로드 후 titleDraws/대표칭호 보존 실패");
 
 // 3) 감사(프레스티지) 후 보존
 const s3 = await p.evaluate(() => {
@@ -58,6 +63,19 @@ expect(s3.prestigeOk === true, "프레스티지 실행 실패");
 expect(s3.afterPrestige === 5, `감사 후 5 보존 기대, 실제 ${s3.afterPrestige}`);
 expect(s3.stillHas === true, "감사 후 phishing-text 보존 실패");
 
+// 4) 공산주의 하드 리셋 후에도 메타(도감/칭호) 보존 + 코어 초기화
+const s4 = await p.evaluate(() => {
+  const gs = window.__game.registry.get("gameState");
+  gs.data.stage.area = 6; gs.data.facilities.desk = 25; gs.emit("changed");
+  const ok = gs.communistReset();
+  return { ok, dex: gs.seenEventCount(), titles: gs.ownedTitleCount(), area: gs.data.stage.area, desk: gs.data.facilities.desk, collapses: gs.data.stats.collapses };
+});
+expect(s4.ok === true, "공산주의 리셋 실행 실패");
+expect(s4.dex === 5, `전복 후 도감 5 보존 기대, 실제 ${s4.dex}`);
+expect(s4.titles === 2, `전복 후 칭호 2종 보존 기대, 실제 ${s4.titles}`);
+expect(s4.area === 1 && s4.desk <= 1, `전복 후 코어 초기화 기대(area1/desk≤1), 실제 area${s4.area}/desk${s4.desk}`);
+expect(s4.collapses === 1, `전복 횟수 1 기대, 실제 ${s4.collapses}`);
+
 expect(errs.length === 0, `콘솔/페이지 에러 ${errs.length}건: ${errs.slice(0, 3).join(" | ")}`);
 
 await b.close();
@@ -67,4 +85,4 @@ if (fails.length) {
   fails.forEach((f) => console.log("  ✗ " + f));
   process.exit(1);
 }
-console.log("SAVE PERSISTENCE OK — 도감 저장/리로드/감사 보존 검증 통과");
+console.log("SAVE PERSISTENCE OK — 도감/칭호 저장·리로드·감사·전복 보존 검증 통과");
