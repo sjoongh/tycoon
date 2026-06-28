@@ -162,7 +162,7 @@
 .gp-tab--active { background: var(--gold); color: #4a2600; transform: translateY(-1px); }
 
 /* ---------- panel content ---------- */
-.gp-panel { flex: 1; overflow-y: auto; min-height: 98px; max-height: 248px; }
+.gp-panel { flex: 1; overflow-y: auto; min-height: 98px; max-height: 248px; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
 @media (min-height: 750px) { .gp-panel { max-height: 280px; } }
 .gp-paneltitle { font-family: var(--f-bold); color: var(--gold-hi); font-size: 14px; margin-bottom: 8px; }
 .gp-region { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; font-family: var(--f-small); font-size: 11px; color: #cbb8da; }
@@ -170,7 +170,7 @@
 
 /* staff list */
 .gp-stafflist-wrap { position: relative; }
-.gp-stafflist { display: flex; flex-direction: column; gap: 6px; max-height: 220px; overflow-y: auto; }
+.gp-stafflist { display: flex; flex-direction: column; gap: 6px; max-height: 220px; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
 .gp-stafflist-fade { position: absolute; bottom: 0; left: 0; right: 0; height: 30px; background: linear-gradient(to bottom, transparent, var(--bg) 100%); pointer-events: none; }
 .gp-goallist { gap: 7px; }
 .gp-goallist-wrap { position: relative; }
@@ -237,7 +237,7 @@
 /* ---------- modal layer / onboarding / juice ---------- */
 .gp-modal-layer { position: absolute; inset: 0; pointer-events: none; }
 .gp-modal-ov { position: absolute; inset: 0; pointer-events: auto; background: rgba(8,8,18,0.78); display: flex; align-items: center; justify-content: center; animation: gpFade .2s steps(3); }
-.gp-modal { width: 84%; max-width: 320px; background: var(--bg); border: 4px solid var(--line); padding: 20px 18px; text-align: center; box-shadow: var(--px-out), 0 0 0 3px var(--gold); animation: gpPop .2s steps(4); max-height: 90vh; overflow-y: auto; }
+.gp-modal { width: 84%; max-width: 320px; background: var(--bg); border: 4px solid var(--line); padding: 20px 18px; text-align: center; box-shadow: var(--px-out), 0 0 0 3px var(--gold); animation: gpPop .2s steps(4); max-height: 90dvh; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
 .gp-modal__badge { font-size: 48px; }
 .gp-modal__art { width: 112px; height: 112px; margin: 4px auto 8px; background-size: contain; background-repeat: no-repeat; background-position: center; image-rendering: pixelated; background-color: var(--bg2); border: 3px solid var(--line); box-shadow: var(--px-out-sm); }
 .gp-mtitle { font-family: var(--f-bold); font-size: 18px; color: var(--gold-hi); margin-top: 4px; }
@@ -288,7 +288,7 @@ body { background-color: var(--bg-deep); background-image: repeating-linear-grad
 .gp-map__hd { display: flex; justify-content: space-between; align-items: center; background: var(--panel); border-bottom: 3px solid var(--line); padding: 10px 12px; font-family: var(--f-bold); font-size: 15px; color: var(--gold-hi); }
 .gp-map__x { pointer-events: auto; border: 3px solid var(--line); background: var(--red); color: #fff; width: 30px; height: 30px; font-family: var(--f-bold); font-size: 13px; cursor: pointer; box-shadow: var(--px-out-sm); }
 .gp-map__sub { padding: 8px 12px; font-family: var(--f-small); font-size: 10px; color: var(--ink-soft); border-bottom: 2px solid var(--panel2); }
-.gp-map__list { flex: 1; overflow-y: auto; padding: 10px 12px; display: flex; flex-direction: column; gap: 7px; }
+.gp-map__list { flex: 1; overflow-y: auto; padding: 10px 12px; display: flex; flex-direction: column; gap: 7px; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
 .gp-mapnode { display: flex; align-items: center; gap: 10px; padding: 8px 9px; background: var(--panel); border: 3px solid var(--line); box-shadow: var(--px-out-sm); }
 .gp-mapnode__ic { width: 24px; text-align: center; font-size: 14px; flex: none; }
 .gp-mapnode__body { flex: 1; min-width: 0; }
