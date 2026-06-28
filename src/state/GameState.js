@@ -1317,9 +1317,10 @@ export class GameState extends Phaser.Events.EventEmitter {
     return t && typeof t === "object" ? Object.keys(t).filter((id) => t[id] > 0).length : 0;
   }
 
-  // 뽑기 비용(해명) — 누적 뽑기 수에 따라 1.22배씩 상승(초반 저렴→후반 묵직한 해명 소비처)
+  // 뽑기 비용(해명) — 누적 뽑기 수에 따라 1.13배씩 상승(초반 40 저렴 → 후반 묵직한 해명 소비처).
+  // 1.13: 전6종 수집(평균~51뽑기)이 ~15만 해명으로 장기 플레이 내 도달 가능(리텐션). 1.22는 461만으로 사실상 불가라 완화.
   gachaDrawCost() {
-    return Math.floor(40 * Math.pow(1.22, this.data.titleDraws || 0));
+    return Math.floor(40 * Math.pow(1.13, this.data.titleDraws || 0));
   }
 
   canDrawGacha() {
