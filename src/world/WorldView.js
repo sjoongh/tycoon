@@ -3,6 +3,7 @@ import { govTextureKey, govStageFor } from "./dotChar.js";
 import { staffDefinitions } from "../data/staff.js";
 import { eraTheme } from "../data/regions.js";
 import { pickRandomItem } from "../data/items.js";
+import { RARITY_COLOR } from "../data/titles.js";
 import { shortNumber } from "../utils/format.js";
 
 // 거지키우기식 심플 월드: 미니멀 픽셀 배경 + 중앙 도트 국장 + 큰 숫자 + 바닥.
@@ -96,6 +97,17 @@ export class WorldView {
       })
       .setOrigin(0.5)
       .setDepth(120);
+
+    // 국장 대표 칭호 명패(인사 발령 뽑기 결과 — 머리 위에 직급 표시, 꾸미기)
+    this.titlePlate = scene.add
+      .text(GAME_W / 2, 380, "", {
+        fontFamily: '"Galmuri9", monospace', fontSize: "10px", color: "#ffd479",
+        backgroundColor: "rgba(20,18,28,0.78)", padding: { x: 6, y: 3 },
+      })
+      .setOrigin(0.5)
+      .setDepth(121)
+      .setVisible(false);
+    this._titleId = null;
 
     // 클릭 콤보 카운터(연타 시 등장)
     this.comboText = scene.add
@@ -659,8 +671,26 @@ export class WorldView {
     this.bigNum.setText(shortNumber(d.votes));
     const cps = this.gameState.cps ? this.gameState.cps() : 0;
     this.cpsText.setText(`▶ 초당 ${cps < 10000 ? cps.toFixed(0) : shortNumber(cps)}표`);
+    this._syncTitlePlate(d);
     this._syncWorkers();
     this._syncProps();
+  }
+
+  // 대표 칭호 명패 갱신 — 바뀌면 톡 튀는 연출(새 발령/승진이 캐릭터에 보이게)
+  _syncTitlePlate(d) {
+    if (!this.titlePlate) return;
+    const td = this.gameState.equippedTitleDef ? this.gameState.equippedTitleDef() : null;
+    if (!td) { this.titlePlate.setVisible(false); this._titleId = null; return; }
+    const lv = (d.titles && d.titles[td.id]) || 0;
+    this.titlePlate.setText(`${td.emoji} ${td.name}${lv > 1 ? ` Lv.${lv}` : ""}`);
+    this.titlePlate.setColor(RARITY_COLOR[td.rarity] || "#ffd479");
+    this.titlePlate.setVisible(true);
+    if (this._titleId !== td.id) {
+      this._titleId = td.id;
+      this.scene.tweens.killTweensOf(this.titlePlate);
+      this.titlePlate.setScale(0.4);
+      this.scene.tweens.add({ targets: this.titlePlate, scale: 1, duration: 320, ease: "Back.easeOut" });
+    }
   }
 
   update() {
