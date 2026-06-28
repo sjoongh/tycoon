@@ -1,7 +1,8 @@
 html,
 body {
   width: 100%;
-  height: 100%;
+  height: 100vh; /* 폴백 */
+  height: 100dvh; /* 폰 주소창 반영 동적 뷰포트 — 상하 잘림 방지 */
   margin: 0;
   background:
     radial-gradient(circle at 50% 0%, #2a2f55, transparent 24rem),
@@ -18,8 +19,12 @@ body {
 /* 게임을 폰 비율(390:844) 프레임으로 고정 — 캔버스와 DOM UI가 항상 정렬되게 */
 #game {
   position: relative;
+  /* 폴백(구형 브라우저) */
   width: min(100vw, calc(100vh * 390 / 844));
   height: min(100vh, calc(100vw * 844 / 390));
+  /* 동적 뷰포트 — 주소창이 보일 때도 가시영역에 정확히 맞춤 */
+  width: min(100dvw, calc(100dvh * 390 / 844));
+  height: min(100dvh, calc(100dvw * 844 / 390));
   overflow: hidden;
   box-shadow: 0 0 0 3px #000, 0 0 40px rgba(40, 50, 90, 0.4);
   image-rendering: pixelated;
