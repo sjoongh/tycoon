@@ -65,6 +65,11 @@
 .gp-truststate { align-self: center; display: inline-block; margin-top: 2px; padding: 3px 11px; font-family: var(--f-small); font-size: 10px; border: 2px solid var(--line); }
 .gp-truststate--crisis { background: #5a1620; color: #ffd0d0; }
 .gp-truststate--bonus { background: #115033; color: #d6ffe6; }
+/* 공산화(체제 전복) 위험 게이지 — 위험 누적 시에만 노출 */
+.gp-commgauge { align-self: stretch; position: relative; margin-top: 3px; height: 18px; background: #2a0f14; border: 2px solid #b13e53; overflow: hidden; }
+.gp-commgauge__fill { position: absolute; inset: 0 auto 0 0; width: 0; background: linear-gradient(90deg, #b13e53, #ff5a5a); transition: width .3s steps(4); }
+.gp-commgauge__txt { position: relative; z-index: 1; display: block; text-align: center; line-height: 16px; font-family: var(--f-small); font-size: 9px; color: #fff; text-shadow: 1px 1px 0 #000; }
+.gp-commgauge--danger { animation: gp-crisis-pulse 0.7s steps(2) infinite; }
 
 /* 우상단 토글 */
 .gp-mute { position: absolute; top: max(9px, env(safe-area-inset-top)); right: 8px; pointer-events: auto; width: 36px; height: 36px; border: 3px solid var(--line); background: var(--panel); box-shadow: var(--px-out-sm); font-size: 15px; cursor: pointer; z-index: 10; display: flex; align-items: center; justify-content: center; image-rendering: pixelated; }

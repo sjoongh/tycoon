@@ -14,7 +14,8 @@ export class DOMHud {
       </div>
       <div class="gp-progress"><div class="gp-progress__fill" data-k="progress"></div></div>
       <div class="gp-stage" data-k="stage"></div>
-      <div class="gp-truststate" data-k="truststate" hidden></div>`;
+      <div class="gp-truststate" data-k="truststate" hidden></div>
+      <div class="gp-commgauge" data-k="commgauge" hidden><div class="gp-commgauge__fill"></div><span class="gp-commgauge__txt"></span></div>`;
     this._refresh = () => this.refresh();
     // FIX #1: mute button created separately so it mounts on .gp-ui root (above HUD),
     // preventing overlap with the 믿음 chip on the right side.
@@ -105,6 +106,20 @@ export class DOMHud {
       : "";
     stageEl.innerHTML =
       `${d.stage.area}구역 · D-${d.days} · 초당 <span class="gp-cps${jumped ? " gp-cps--up" : ""}">${cps < 10000 ? cps.toFixed(1) : shortNumber(cps)}</span>표${stateSuffix}`;
+
+    // 공산화(체제 전복) 위험 게이지 — 위험이 쌓일 때만 노출(미리 보이게 = 공정)
+    const gauge = this.gameState.commGaugePct ? this.gameState.commGaugePct() : 0;
+    const gEl = this.root.querySelector('[data-k="commgauge"]');
+    if (gEl) {
+      if (gauge > 0) {
+        gEl.hidden = false;
+        gEl.querySelector(".gp-commgauge__fill").style.width = `${Math.round(gauge * 100)}%`;
+        gEl.querySelector(".gp-commgauge__txt").textContent = `🚩 체제 전복 위기 ${Math.round(gauge * 100)}%`;
+        gEl.classList.toggle("gp-commgauge--danger", gauge >= 0.66);
+      } else {
+        gEl.hidden = true;
+      }
+    }
 
     this._refreshRush();
     this._refreshBrief();
