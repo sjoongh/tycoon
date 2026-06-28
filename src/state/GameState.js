@@ -14,6 +14,9 @@ const DAY_MS = 86400000;
 const DAILY_STREAK_CAP = 7;
 const TRUST_CRISIS = 20; // 이 미만이면 불신 위기(생산 페널티)
 const TRUST_BONUS = 90; // 이 이상이면 신뢰 보너스(생산 서지)
+const COMM_THRESHOLD = 5; // 믿음이 이 이하로 바닥나면 '공산화' 게이지 누적
+const COMM_LIMIT = 40; // 게이지가 이 값(≈40초)에 도달하면 체제 전복(하드 리셋)
+const COMM_RECOVER = 3; // 믿음 회복 시 게이지가 1틱당 이만큼 감소(짧은 하락은 안전)
 const EVENT_COOLDOWN_MS = 45000; // 사건 대응 후 재대기 시간(스팸 방지 + 주기적 참여 비트)
 const FACILITY_MILESTONES = [25, 50, 100]; // 시설 레벨 마일스톤: 도달 시 해당 시설 생산 ×2(영구, 누적). Lv25 미만은 영향 0 → 초반 곡선 보존
 const RUSH_DURATION_MS = 20000; // 긴급 개표(러시) 지속 20초
@@ -97,7 +100,9 @@ const fallbackState = {
     totalEvents: 0,
     totalOfflineMs: 0,
     totalItems: 0,
+    collapses: 0, // 공산화(체제 전복) 누적 횟수
   },
+  commGauge: 0, // 공산화 게이지(믿음 바닥 지속 시간 누적) — COMM_LIMIT 도달 시 하드 리셋
   achievements: {},
   quests: {},
   seenEvents: {}, // 사건 도감 — 겪은(해결한) 사건 id 기록(영구, 프레스티지에도 유지)
@@ -167,6 +172,8 @@ export class GameState extends Phaser.Events.EventEmitter {
     data.daily.items = Math.max(0, Math.floor(Number(data.daily.items) || 0));
     data.daily.newdex = Math.max(0, Math.floor(Number(data.daily.newdex) || 0));
     data.daily.claimed = (data.daily.claimed && typeof data.daily.claimed === "object") ? data.daily.claimed : {};
+    data.commGauge = Phaser.Math.Clamp(Number(data.commGauge) || 0, 0, COMM_LIMIT);
+    data.stats.collapses = Math.max(0, Math.floor(Number(data.stats.collapses) || 0));
     // 누적 통계 숫자 정규화(손상/NaN 방지 — 통계 화면·업적 metric이 의존)
     ["totalVotes", "totalClicks", "totalUpgrades", "totalEvents", "totalOfflineMs", "totalItems"].forEach((k) => {
       data.stats[k] = Math.max(0, Number(data.stats[k]) || 0);
@@ -357,9 +364,67 @@ export class GameState extends Phaser.Events.EventEmitter {
     this.data.explain += this.explainPerSecond();
     // 홍보(notice) 패시브 회복은 믿음이 높을수록 둔화 → 100%에 고정되지 않고 평형점에 수렴(위기/보너스 긴장 유지, 보너스는 능동 브리핑으로 진입).
     this.data.trust = Phaser.Math.Clamp(this.data.trust - this.trustDecay() + this.level("notice") * 0.035 * (1 - this.data.trust / 100), 0, 100);
+    this._tickCommunism();
     this.reduceDays();
     this.checkProgression();
     this.emit("changed");
+  }
+
+  // 공산화 게이지 — 믿음이 바닥(≤5%)에 머물면 누적, 회복하면 빠르게 감소. 한계 도달 시 체제 전복(하드 리셋).
+  _tickCommunism() {
+    const prev = this.data.commGauge || 0;
+    let g = prev;
+    if (this.data.trust <= COMM_THRESHOLD) g = Math.min(COMM_LIMIT, g + 1);
+    else g = Math.max(0, g - COMM_RECOVER);
+    this.data.commGauge = g;
+    // 경고 단계 진입(상승 중 33%/66% 돌파 시 1회 경고)
+    const warnAt = [Math.round(COMM_LIMIT * 0.33), Math.round(COMM_LIMIT * 0.66)];
+    if (g > prev) {
+      if (prev < warnAt[0] && g >= warnAt[0]) this.emit("comm-warning", { level: 1, pct: g / COMM_LIMIT, text: "🚩 여론 싸늘 — 체제가 흔들립니다!" });
+      else if (prev < warnAt[1] && g >= warnAt[1]) this.emit("comm-warning", { level: 2, pct: g / COMM_LIMIT, text: "🚩🚩 전복 위기! 믿음을 올리세요!" });
+    }
+    if (g >= COMM_LIMIT && prev < COMM_LIMIT) this.communistReset();
+  }
+
+  commGaugePct() {
+    return Phaser.Math.Clamp((this.data.commGauge || 0) / COMM_LIMIT, 0, 1);
+  }
+
+  // 체제 전복 — 하드 리셋(보상 없음). 표·시설·직원·구역은 초기화, 메타(감사 업그레이드/훈장/도감/칭호/업적)는 유지.
+  // 감사(prestigeReset)와 달리 인장/훈장을 새로 주지 않는다 = 진짜 페널티. 단 영구 진척은 보존해 복구 가능.
+  communistReset() {
+    const kept = {
+      prestige: { ...this.data.prestige }, // 인장·훈장·업그레이드 유지(보상 추가 없음)
+      achievements: this.data.achievements,
+      seenEvents: this.data.seenEvents,
+      titles: this.data.titles,
+      titleDraws: this.data.titleDraws,
+      equippedTitle: this.data.equippedTitle,
+      tutorial: this.data.tutorial,
+      daily: this.data.daily,
+      weekly: this.data.weekly,
+    };
+    const collapses = (this.data.stats.collapses || 0) + 1;
+
+    this.data = this.normalize({
+      ...structuredClone(fallbackState),
+      ...kept,
+      trust: 45, // 재건 시작 믿음(즉시 재전복 방지)
+      log: ["🚩 체제 전복 — 인민개표위원회 수립", "개표국 재건 시작"],
+    }, Date.now());
+    this.data.stats.collapses = collapses;
+    this.data.commGauge = 0;
+    this.data.weekly.baseVotes = this.data.stats.totalVotes;
+    // 감사 영구 효과(시작 인력/믿음)는 재건에도 적용
+    const startDesk = Math.round(this.permanentEffectFor(this.data, "startDesk"));
+    if (startDesk > 0) this.data.facilities.desk = Math.max(this.data.facilities.desk, 1 + startDesk);
+    const startTrust = this.permanentEffectFor(this.data, "startTrust");
+    if (startTrust > 0) this.data.trust = Phaser.Math.Clamp(this.data.trust + startTrust, 0, 95);
+    this.offlineReward = null;
+    this.emit("comm-collapse", { collapses });
+    this.emit("changed");
+    this.save(false);
+    return true;
   }
 
   reduceDays() {

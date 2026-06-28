@@ -18,6 +18,8 @@ export class DOMModalLayer {
     this._onPrestigeConfirm = () => this._confirmPrestige();
     this._onCelebrate = (p) => { this._toast(p.text); this._flash(); };
     this._onGachaResult = (e) => this._showGachaResult(e.detail);
+    this._onCommWarning = (p) => { this._banner(p.text); document.dispatchEvent(new CustomEvent("gp:sfx", { detail: "crisis" })); };
+    this._onCommCollapse = (p) => this._showCollapse(p);
   }
 
   mount(parent) {
@@ -25,6 +27,8 @@ export class DOMModalLayer {
     this.gameState.on("upgraded", this._onUpgraded);
     this.gameState.on("changed", this._onChanged);
     this.gameState.on("celebrate", this._onCelebrate);
+    this.gameState.on("comm-warning", this._onCommWarning);
+    this.gameState.on("comm-collapse", this._onCommCollapse);
     document.addEventListener("gp:prestige-confirm", this._onPrestigeConfirm);
     document.addEventListener("gp:gacha-result", this._onGachaResult);
     if (!this._maybeOpening()) {
@@ -292,10 +296,24 @@ export class DOMModalLayer {
       <button class="gp-btn gp-btn--gold" data-close>확인</button>`);
   }
 
+  // 체제 전복(공산화) 하드 리셋 연출 — 풍자 모달. 메타 유지 안내로 좌절 완화.
+  _showCollapse(p) {
+    this._flash();
+    document.dispatchEvent(new CustomEvent("gp:sfx", { detail: "crisis" }));
+    this._openModal(`
+      <div class="gp-modal__badge">🚩</div>
+      <div class="gp-mtitle" style="color:#ff6b6b">체제 전복!</div>
+      <div class="gp-msub">믿음이 바닥나 개표국이 <b>인민개표위원회</b>로 넘어갔습니다.<br>표·시설·직원·구역은 초기화됐지만, <b>감사 업그레이드·도감·국장 칭호·업적은 그대로</b>입니다. 다시 신뢰를 쌓아 재건하세요.</div>
+      <div class="gp-mbig" style="font-size:15px">누적 전복 ${p?.collapses || 1}회</div>
+      <button class="gp-btn gp-btn--gold" data-close>개표국 재건</button>`);
+  }
+
   destroy() {
     this.gameState.off("upgraded", this._onUpgraded);
     this.gameState.off("changed", this._onChanged);
     this.gameState.off("celebrate", this._onCelebrate);
+    this.gameState.off("comm-warning", this._onCommWarning);
+    this.gameState.off("comm-collapse", this._onCommCollapse);
     document.removeEventListener("gp:prestige-confirm", this._onPrestigeConfirm);
     document.removeEventListener("gp:gacha-result", this._onGachaResult);
     this.root.remove();
