@@ -8,6 +8,13 @@ body {
     radial-gradient(circle at 50% 0%, #2a2f55, transparent 24rem),
     linear-gradient(180deg, #14121c 0%, #0a0a12 100%);
   overflow: hidden;
+  /* 탭 중심 모바일 게임 최적화 */
+  touch-action: manipulation;        /* 더블탭 줌·300ms 탭 지연 제거(연타 즉각 반응) */
+  -webkit-tap-highlight-color: transparent; /* 탭 시 회색 플래시 제거 */
+  overscroll-behavior: none;         /* 당겨서 새로고침·바운스 스크롤 차단 */
+  -webkit-user-select: none;
+  user-select: none;                 /* 연타 시 숫자·라벨 텍스트 선택 방지 */
+  -webkit-touch-callout: none;       /* 길게 눌러 메뉴(이미지 저장 등) 방지 */
 }
 
 body {
