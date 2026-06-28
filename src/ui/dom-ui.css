@@ -48,7 +48,7 @@
 .gp-chip--trust  { flex-grow: 0.9; }
 .gp-chip__ic { width: 18px; height: 18px; flex: none; background-size: contain; background-repeat: no-repeat; background-position: center; image-rendering: pixelated; }
 .gp-chip__val { font-family: var(--f-bold); font-size: 13px; color: var(--cyan, var(--gem)); line-height: 1.1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.gp-chip__label { font-family: var(--f-small); font-size: 9px; color: var(--ink-soft); }
+.gp-chip__label { font-family: var(--f-small); font-size: 9px; color: var(--ink-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .gp-progress { height: 14px; background: var(--bg2); overflow: hidden; border: 3px solid var(--line); box-shadow: var(--px-out-sm); }
 .gp-progress__fill { height: 100%; width: 0%; background: var(--gold); box-shadow: inset 0 -3px 0 rgba(0,0,0,0.22); transition: width .3s steps(8, end); }
 .gp-stage { align-self: center; display: inline-block; background: var(--panel-sunk); padding: 4px 11px; font-family: var(--f-small); font-size: 10px; color: var(--gold-hi); border: 2px solid var(--line); }
