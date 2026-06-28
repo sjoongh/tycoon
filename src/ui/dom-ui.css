@@ -146,6 +146,21 @@
 .gp-fac--locked .gp-fac__role, .gp-fac--locked .gp-fac__lv { opacity: 0.5; }
 
 /* ---------- prestige seal buttons ---------- */
+/* 인사 발령 뽑기 카드 */
+.gp-gacha { margin-top: 10px; padding: 9px 10px; background: var(--panel-sunk); border: 2px solid var(--gold-hi); box-shadow: var(--px-out-sm); }
+.gp-gacha__hd { display: flex; justify-content: space-between; align-items: center; font-family: var(--f-bold); font-size: 12px; color: var(--gold-hi); }
+.gp-gacha__count { font-family: var(--f-num); font-size: 10px; color: var(--ink-soft); }
+.gp-gacha__eq { font-family: var(--f-small); font-size: 10px; color: var(--ink-soft); margin: 5px 0; line-height: 1.4; }
+.gp-gacha__chips { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 7px; }
+.gp-gacha__chip { font-family: var(--f-num); font-size: 10px; padding: 2px 5px; border: 1px solid; border-radius: 2px; background: var(--panel2); }
+.gp-gacha .gp-btn { width: 100%; }
+/* 뽑기 결과 리빌 */
+.gp-gres { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 0 10px; }
+.gp-gres__tag { font-family: var(--f-small); font-size: 11px; color: var(--ink-soft); }
+.gp-gres__emoji { font-size: 52px; line-height: 1.1; filter: drop-shadow(0 0 10px var(--rc)); animation: gpPop .3s steps(5); }
+.gp-gres__name { font-family: var(--f-bold); font-size: 22px; }
+.gp-gres__rarity { font-family: var(--f-small); font-size: 11px; letter-spacing: 1px; }
+.gp-gres__per { font-family: var(--f-body); font-size: 12px; color: var(--ink); margin-top: 4px; padding: 5px 10px; background: var(--panel-sunk); border: 2px solid var(--line); }
 .gp-sealgrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-top: 10px; }
 .gp-seal { pointer-events: auto; border: 3px solid var(--line); padding: 7px 3px 6px; background: #142036; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 3px; min-height: 54px; box-shadow: var(--px-out-sm), inset 0 0 0 1px var(--gem); }
 .gp-seal__role { font-family: var(--f-small); font-size: 10px; color: #d0f0ff; }

@@ -1,5 +1,6 @@
 import { shortNumber } from "../utils/format.js";
 import { GOV_MAPS, PROP_MAPS, dotSvgUri } from "../world/dotChar.js";
+import { RARITY_LABEL, RARITY_COLOR } from "../data/titles.js";
 
 const MILESTONES = [5, 10, 25, 45];
 
@@ -16,6 +17,7 @@ export class DOMModalLayer {
     this._onChanged = () => { this._maybeHint(); this._checkStage(); this._maybeNotifPrompt(); };
     this._onPrestigeConfirm = () => this._confirmPrestige();
     this._onCelebrate = (p) => { this._toast(p.text); this._flash(); };
+    this._onGachaResult = (e) => this._showGachaResult(e.detail);
   }
 
   mount(parent) {
@@ -24,6 +26,7 @@ export class DOMModalLayer {
     this.gameState.on("changed", this._onChanged);
     this.gameState.on("celebrate", this._onCelebrate);
     document.addEventListener("gp:prestige-confirm", this._onPrestigeConfirm);
+    document.addEventListener("gp:gacha-result", this._onGachaResult);
     if (!this._maybeOpening()) {
       // 오프라인 정산을 먼저 보여주고, 닫은 뒤에 출석 보상(겹쳐 가려지지 않게 체인)
       if (this.gameState.offlineReward) this._showOfflineReward(() => this._maybeDaily());
@@ -272,11 +275,29 @@ export class DOMModalLayer {
     setTimeout(() => fl.remove(), 420);
   }
 
+  // 인사 발령 뽑기 결과 리빌 — 칭호 등급색 카드 + 신규/승진 표시 + 능력
+  _showGachaResult(res) {
+    if (!res) return;
+    const color = RARITY_COLOR[res.rarity] || "#ffd479";
+    const tag = res.isNew ? "🎉 신규 발령" : `⬆️ 승진 · Lv.${res.level}`;
+    if (res.rarity === "rare") this._flash(); // 희귀는 화면 플래시로 강조
+    this._openModal(`
+      <div class="gp-gres" style="--rc:${color}">
+        <div class="gp-gres__tag">${tag}</div>
+        <div class="gp-gres__emoji">${res.emoji}</div>
+        <div class="gp-gres__name" style="color:${color}">${res.name}</div>
+        <div class="gp-gres__rarity" style="color:${color}">${RARITY_LABEL[res.rarity] || ""}</div>
+        <div class="gp-gres__per">${res.per}</div>
+      </div>
+      <button class="gp-btn gp-btn--gold" data-close>확인</button>`);
+  }
+
   destroy() {
     this.gameState.off("upgraded", this._onUpgraded);
     this.gameState.off("changed", this._onChanged);
     this.gameState.off("celebrate", this._onCelebrate);
     document.removeEventListener("gp:prestige-confirm", this._onPrestigeConfirm);
+    document.removeEventListener("gp:gacha-result", this._onGachaResult);
     this.root.remove();
   }
 }

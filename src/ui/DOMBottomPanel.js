@@ -7,6 +7,7 @@ import { questDefinitions } from "../data/quests.js";
 import { achievementDefinitions } from "../data/achievements.js";
 import { facilityIconUri, workerIconUri, tabIconUri } from "../world/dotChar.js";
 import { dailyQuestDefinitions } from "../data/dailyQuests.js";
+import { govTitles, titleById, RARITY_LABEL, RARITY_COLOR } from "../data/titles.js";
 
 const rewardLabel = (r) => [
   r.votes ? `표 +${shortNumber(r.votes)}` : null,
@@ -92,6 +93,12 @@ export class DOMBottomPanel {
         }
         document.dispatchEvent(new CustomEvent("gp:event-resolved", { detail: { id: ev?.id, title: ev?.title, real: ev ? realEventIds.has(ev.id) : false, firstSeen } }));
         this.currentEvent = null;
+        this.refresh();
+        break;
+      }
+      case "drawGacha": {
+        const res = gs.drawGacha();
+        if (res) document.dispatchEvent(new CustomEvent("gp:gacha-result", { detail: res }));
         this.refresh();
         break;
       }
@@ -417,6 +424,7 @@ export class DOMBottomPanel {
     const medalSection = this._renderMedalSection();
 
     this.panel.innerHTML = `<div class="gp-paneltitle">감사 재정비 · 인장 ${gs.data.prestige.seals} · &#127894; 훈장 ${gs.data.prestige.medals} · 영구 x${fullMult.toFixed(2)}</div>
+      ${this._renderGachaCard()}
       <div class="gp-sealgrid">${ups}</div>
       ${detailCard}
       ${medalSection}
@@ -431,6 +439,29 @@ export class DOMBottomPanel {
         this._renderPrestige();
       });
     });
+  }
+
+  // 인사 발령 뽑기 — 해명으로 국장 칭호(능력)를 뽑는 가챠. 대표 칭호·보유 현황·비용·뽑기 버튼.
+  _renderGachaCard() {
+    const gs = this.gameState;
+    const cost = gs.gachaDrawCost();
+    const can = gs.canDrawGacha();
+    const owned = gs.ownedTitleCount();
+    const eq = gs.equippedTitleDef();
+    const eqLv = eq ? (gs.data.titles[eq.id] || 0) : 0;
+    const eqLine = eq
+      ? `<span style="color:${RARITY_COLOR[eq.rarity]}">${eq.emoji} ${eq.name} Lv.${eqLv}</span> · ${eq.per}`
+      : `<span class="gp-card__sub">아직 발령 없음 — 첫 뽑기로 칭호를 받으세요</span>`;
+    // 보유 칭호 미니 칩(보유한 것만, 등급색)
+    const chips = govTitles.filter((t) => (gs.data.titles[t.id] || 0) > 0)
+      .map((t) => `<span class="gp-gacha__chip" style="border-color:${RARITY_COLOR[t.rarity]};color:${RARITY_COLOR[t.rarity]}" title="${t.name} · ${t.per}">${t.emoji}${(gs.data.titles[t.id] || 0)}</span>`)
+      .join("");
+    return `<div class="gp-gacha">
+      <div class="gp-gacha__hd">🎰 인사 발령 뽑기 <span class="gp-gacha__count">보유 ${owned}/${govTitles.length}</span></div>
+      <div class="gp-gacha__eq">${eqLine}</div>
+      ${chips ? `<div class="gp-gacha__chips">${chips}</div>` : ""}
+      <button class="gp-btn gp-btn--sm ${can ? "gp-btn--ready gp-btn--gold" : "gp-btn--disabled"}" data-action="drawGacha">뽑기 · 해명 ${shortNumber(cost)}</button>
+    </div>`;
   }
 
   // 훈장(2차 통화) 전당 — 인장 트리와 시각·경제를 구분(금색 강조). 미해금 시엔 획득법 안내만 노출.
