@@ -13,10 +13,13 @@ const GROUND_Y = 492;   // 국장 발이 닿는 바닥선
 const GOV_SCALE = 6;    // 16px 도트 → 96px 표시
 const GOV_BOB_MS = 900;
 const PROP_SCALE = 4;   // 16px 소품 → 64px
+const BACK_SCALE = PROP_SCALE * 0.74; // 뒤쪽 선반(원근감 위해 작게)
+const SHELF_Y = GROUND_Y - 12;        // 뒤쪽 선반(카운터) 라인 — 국장보다 뒤
+const BACK_DEPTH = 88;                // 국장(100)보다 뒤 → 캐릭터를 절대 안 가림
 // 채용된 직원이 서는 바닥 슬롯(좌우로 고루 분산)
 const WORKER_SLOTS = [44, 96, 148, 244, 296, 344];
 const WORKER_SCALE = 4;
-const SORTER_SCALE = 2.8; // 국장 앞 개표대(분류기) — 국장 가리지 않게 작게
+const SORTER_SCALE = BACK_SCALE; // 분류기도 뒷줄 동일 스케일
 // 국장 풍자 대사(선관위 이슈 위트, 정치 중립)
 const GOV_LINES = [
   "한 표만 믿어주세요!", "분류기는 정상입니다.", "소쿠리는 이제 그만…",
@@ -356,39 +359,44 @@ export class WorldView {
     this.titleZone.on("pointerup", () => document.dispatchEvent(new CustomEvent("gp:open-map")));
   }
 
-  // 국장 주변 개표소 소품(투표함/서류더미/깃발)
+  // 개표소 설비 — 국장 뒤쪽 '선반' 한 줄에 균등 배치(국장은 앞 중앙 단독, 안 가림).
   _buildProps() {
     this.props = [];
-    const place = (key, px, depth) => {
-      const s = this.scene.add.image(px, GROUND_Y, key).setOrigin(0.5, 1).setScale(PROP_SCALE).setDepth(depth);
+    // 뒤쪽 선반(카운터) 바 — 설비들이 놓인 받침. 캐릭터보다 뒤 depth.
+    this._shelf = this.scene.add.graphics().setDepth(86);
+    this._shelf.fillStyle(0x000000, 0.35); this._shelf.fillRect(0, SHELF_Y - 1, GAME_W, 4); // 그림자
+    this._shelf.fillStyle(0x1f2750, 1); this._shelf.fillRect(0, SHELF_Y, GAME_W, 6);          // 선반 상판
+    this._shelf.fillStyle(0x333c57, 1); this._shelf.fillRect(0, SHELF_Y + 6, GAME_W, 2);      // 하이라이트
+
+    const place = (key, px, scale = BACK_SCALE) => {
+      const s = this.scene.add.image(px, SHELF_Y, key).setOrigin(0.5, 1).setScale(scale).setDepth(BACK_DEPTH);
       this.props.push(s);
       return s;
     };
-    // 의미있는 선관위 장비로: 접수 투표함 · 기록 서류더미 · 개표 상황판(전광판)
-    this.board = place("prop-board", 250, 90);      // 캐릭터 뒤 개표 상황판
-    this._boardBlink = this.scene.tweens.add({ targets: this.board, alpha: 0.78, yoyo: true, repeat: -1, duration: 700, ease: "Sine.easeInOut" });
-    this.ballotbox = place("prop-ballotbox", 84, 95); // 좌측 접수 투표함
-    this.papers = place("prop-papers", 306, 96);    // 우측 기록 서류더미
-    // 국장 앞 개표대(투표지 분류기) — 분류반 시설
-    this.sorter = this.scene.add.image(GAME_W / 2, GROUND_Y, "prop-sorter").setOrigin(0.5, 1).setScale(SORTER_SCALE).setDepth(101);
-    this.props.push(this.sorter);
+    // 한 줄 균등 배치 — 가운데(국장 자리)는 비우고 좌2·우2가 또렷이 보이게
+    this.ballotbox = place("prop-ballotbox", 46);  // 접수 투표함(desk)
+    this.sorter    = place("prop-sorter", 122);    // 투표지 분류기(sorter)
+    this.papers    = place("prop-papers", 268);    // 기록 서류더미(archive)
+    this.board     = place("prop-board", 344);     // 개표 상황판(server)
+    this._boardBlink = this.scene.tweens.add({ targets: this.board, alpha: 0.8, yoyo: true, repeat: -1, duration: 700, ease: "Sine.easeInOut" });
 
-    // 상황판(전광판)에 올리는 실시간 개표 현황 LED 텍스트 — "왜 있는지" 의미 부여
+    // 상황판 LED 실시간 개표 현황
     this.boardText = this.scene.add
-      .text(250, GROUND_Y - 52, "", { fontFamily: '"Galmuri9", monospace', fontSize: "9px", color: "#73eff7", align: "center" })
+      .text(344, SHELF_Y - 42, "", { fontFamily: '"Galmuri9", monospace', fontSize: "8px", color: "#73eff7", align: "center" })
       .setOrigin(0.5)
-      .setDepth(91);
+      .setDepth(89);
 
-    // 시설 레벨 뱃지(prop 아래) — 업그레이드가 화면에 숫자로 보이게
+    // 시설 레벨 뱃지(설비 아래) — 업그레이드가 화면에 숫자로 보이게
     this.propLabels = {};
     const mkLabel = (obj, id) => {
       const t = this.scene.add
-        .text(obj.x, GROUND_Y + 4, "", { fontFamily: '"Galmuri9", monospace', fontSize: "8px", color: "#9fb8d0" })
+        .text(obj.x, SHELF_Y + 9, "", { fontFamily: '"Galmuri9", monospace', fontSize: "8px", color: "#9fb8d0" })
         .setOrigin(0.5, 0)
-        .setDepth(102);
+        .setDepth(90);
       this.propLabels[id] = t;
     };
     mkLabel(this.ballotbox, "desk");
+    mkLabel(this.sorter, "sorter");
     mkLabel(this.papers, "archive");
     mkLabel(this.board, "server");
   }
@@ -401,11 +409,12 @@ export class WorldView {
   //  투표함←접수(desk) · 서류더미←기록(archive) · 상황판←전산(server)
   _syncProps() {
     const lvl = (id) => (this.gameState.level ? this.gameState.level(id) : 0);
-    const grow = (l) => PROP_SCALE * (1 + Math.min(0.6, l / 40));
+    // 뒷줄 선반 기준(BACK_SCALE)에서 레벨에 따라 완만히 성장 — 너무 커져 옆을 침범하지 않게 +0.4 상한
+    const grow = (l) => BACK_SCALE * (1 + Math.min(0.4, l / 50));
     this._tweenScale(this.ballotbox, grow(lvl("desk")));
     this._tweenScale(this.papers, grow(lvl("archive")));
     this._tweenScale(this.board, grow(lvl("server")));
-    this._tweenScale(this.sorter, SORTER_SCALE * (1 + Math.min(0.45, lvl("sorter") / 40)));
+    this._tweenScale(this.sorter, grow(lvl("sorter")));
 
     // 시설 레벨 뱃지 + 티어 색 진화(승급 시 번쩍 + 알림)
     const PROP_OF = { desk: this.ballotbox, archive: this.papers, server: this.board, sorter: this.sorter };
