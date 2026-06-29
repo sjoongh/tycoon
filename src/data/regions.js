@@ -20,7 +20,9 @@ export function eraTheme(area) {
   if (area <= 3) return { key: "force", name: "무력 시대", icon: "⚔" };
   if (area <= 6) return { key: "red", name: "적색 시대", icon: "★" };
   if (area <= 9) return { key: "demo", name: "민주 시대", icon: "🗳" };
-  return { key: "future", name: "미래 시대", icon: "🛸" };
+  if (area <= 12) return { key: "future", name: "미래 시대", icon: "🛸" };
+  if (area <= 15) return { key: "space", name: "우주 시대", icon: "🌌" };
+  return { key: "myth", name: "신화 시대", icon: "✨" };
 }
 
 export function regionFor(area) {

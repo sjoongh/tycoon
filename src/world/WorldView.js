@@ -203,7 +203,10 @@ export class WorldView {
     if (k === "force") return { sky: 0x262216, floor: 0x302a1a, star: 0x6a5a2a, line: 0x3a3420, accent: 0xb13e53 };
     if (k === "red") return { sky: 0x3a1418, floor: 0x3e1a1e, star: 0xd14a5e, line: 0x4a1e24, accent: 0xff4d4d };
     if (k === "demo") return { sky: 0x14283a, floor: 0x1c3348, star: 0x6ad0e0, line: 0x244055, accent: 0x73eff7 };
-    return { sky: 0x0a0a16, floor: 0x12122a, star: 0x5a5aaa, line: 0x1a1a3a, accent: 0xffd34d }; // future
+    if (k === "future") return { sky: 0x0a0a16, floor: 0x12122a, star: 0x5a5aaa, line: 0x1a1a3a, accent: 0xffd34d };
+    if (k === "space") return { sky: 0x140a2a, floor: 0x1a1030, star: 0xb18cff, line: 0x281a44, accent: 0xb18cff };
+    if (k === "myth") return { sky: 0x1a1206, floor: 0x241a0a, star: 0xffd479, line: 0x3a2a12, accent: 0xffd479 };
+    return { sky: 0x0a0a16, floor: 0x12122a, star: 0x5a5aaa, line: 0x1a1a3a, accent: 0xffd34d }; // fallback
   }
 
   _buildBackground() {
@@ -245,12 +248,32 @@ export class WorldView {
         g.fillStyle(col, 0.4); g.fillCircle(x, y, 9);
         g.fillStyle(col, 0.55); g.fillRect(x, y + 9, 1, 14);
       });
-    } else {
-      // 미래/우주: 추가 별 + 행성
+    } else if (key === "future") {
+      // 미래: 추가 별 + 행성
       g.fillStyle(0xffffff, 1);
       [[60, 120], [200, 100], [320, 130], [100, 180], [280, 210], [160, 250]].forEach(([x, y]) => g.fillRect(x, y, 2, 2));
       g.fillStyle(0xef7d57, 1); g.fillRect(306, 142, 12, 12);
       g.fillStyle(0xffcd75, 1); g.fillRect(308, 142, 4, 12);
+    } else if (key === "space") {
+      // 우주: 성운(보라 글로우) + 고리 행성 + 촘촘한 별
+      g.fillStyle(0xb18cff, 0.12); g.fillCircle(110, 160, 60);
+      g.fillStyle(0x73eff7, 0.10); g.fillCircle(280, 200, 48);
+      g.fillStyle(0xffffff, 1);
+      [[50, 110], [150, 90], [240, 130], [330, 110], [90, 200], [200, 230], [300, 260], [130, 280], [260, 90]].forEach(([x, y]) => g.fillRect(x, y, 2, 2));
+      // 고리 행성
+      g.fillStyle(0xc8a0ff, 1); g.fillCircle(300, 150, 14);
+      g.fillStyle(0xfff4cf, 0.5); g.fillRect(276, 149, 48, 2);
+    } else {
+      // 신화: 금빛 후광 + 별자리(선으로 이은 점) + 빛나는 구슬
+      g.fillStyle(0xffd479, 0.10); g.fillCircle(GAME_W / 2, 120, 80);
+      g.fillStyle(0xffe9a8, 0.5);
+      const cons = [[70, 110], [110, 150], [160, 120], [210, 160], [250, 120]];
+      for (let i = 0; i < cons.length - 1; i++) {
+        const [x1, y1] = cons[i], [x2, y2] = cons[i + 1];
+        for (let t = 0; t <= 1; t += 0.1) g.fillRect(Math.round(x1 + (x2 - x1) * t), Math.round(y1 + (y2 - y1) * t), 1, 1);
+      }
+      g.fillStyle(0xffd479, 1); cons.forEach(([x, y]) => g.fillRect(x - 1, y - 1, 3, 3));
+      g.fillStyle(0xffcd75, 0.9); [[300, 130], [320, 220], [60, 250]].forEach(([x, y]) => g.fillCircle(x, y, 5));
     }
 
     // 바닥
