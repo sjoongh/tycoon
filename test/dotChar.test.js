@@ -2,8 +2,8 @@ import { describe, it, expect } from "vitest";
 import { GOV_MAPS, GOV_SIZE, govStageFor, govTextureKey, dotSvgUri, facilityIconUri } from "../src/world/dotChar.js";
 
 describe("dotChar", () => {
-  it("국장 도트맵은 4단계, 각 16x16 정사각", () => {
-    expect(GOV_MAPS).toHaveLength(4);
+  it("국장 도트맵은 5단계, 각 16x16 정사각", () => {
+    expect(GOV_MAPS).toHaveLength(5);
     for (const m of GOV_MAPS) {
       expect(m).toHaveLength(GOV_SIZE);
       for (const row of m) expect(row).toHaveLength(GOV_SIZE);

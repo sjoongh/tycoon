@@ -91,7 +91,26 @@ const STAGE4 = [   // 명예 국장(금장 + 망토 + 훈장)
   "..jj......jj....",
 ];
 
-export const GOV_MAPS = [STAGE1, STAGE2, STAGE3, STAGE4];
+const STAGE5 = [   // 전설 국장(왕관 + 금빛 망토 + 훈장 2줄)
+  "..Y.YY..YY.Y....",
+  "..YYYYYYYYYY....",
+  "..hHhhhhhhHh....",
+  "..hhssssssh.....",
+  "..hsssssssss....",
+  "..hseSssseSs....",
+  "..ssssssssss....",
+  "...sssSSsss.....",
+  ".yYwwwwwwwwYy...",
+  ".yjjjwttwjjjy...",
+  ".yjjYYttYYjjy...",
+  ".yjjYjttjYjjy...",
+  ".yjjjjjjjjjjy...",
+  "..jjjjjjjjjj....",
+  "..jjj....jjj....",
+  "..jj......jj....",
+];
+
+export const GOV_MAPS = [STAGE1, STAGE2, STAGE3, STAGE4, STAGE5];
 export const GOV_SIZE = 16;
 
 // ── 개표소 소품(도트 16x16) ── 국장 주변에 배치해 "개표국" 분위기를 낸다.
@@ -383,6 +402,7 @@ export function govStageFor(data) {
   if (runs >= 1 || area >= 3) s = 2;
   if (runs >= 3 || area >= 5) s = 3;
   if (medals >= 1 || runs >= 6) s = 4;
+  if (medals >= 5 || runs >= 12 || area >= 16) s = 5; // 전설 — 깊은 감사/훈장 또는 신화 시대 도달
   return s;
 }
 
