@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastScanned": 1782281583825,
+  "lastScanned": 1782532438508,
   "projectRoot": "/Users/manager/aidp/gaepyo-master",
   "techStack": {
     "languages": [
@@ -15,9 +15,19 @@
     ],
     "frameworks": [
       {
+        "name": "playwright",
+        "version": "1.61.1",
+        "category": "testing"
+      },
+      {
         "name": "vite",
         "version": "7.0.0",
         "category": "build"
+      },
+      {
+        "name": "vitest",
+        "version": "4.1.9",
+        "category": "testing"
       }
     ],
     "packageManager": "npm",
@@ -25,18 +35,20 @@
   },
   "build": {
     "buildCommand": "npm run build",
-    "testCommand": null,
+    "testCommand": "npm test",
     "lintCommand": null,
     "devCommand": "npm run dev",
     "scripts": {
       "dev": "vite --host 0.0.0.0 --port 5178",
       "build": "vite build",
-      "preview": "vite preview --host 0.0.0.0 --port 4178"
+      "preview": "vite preview --host 0.0.0.0 --port 4178",
+      "test": "vitest run",
+      "test:watch": "vitest"
     }
   },
   "conventions": {
     "namingStyle": null,
-    "importStyle": "ES modules",
+    "importStyle": null,
     "testPattern": null,
     "fileOrganization": null
   },
@@ -45,8 +57,11 @@
     "workspaces": [],
     "mainDirectories": [
       "assets",
+      "docs",
       "public",
-      "src"
+      "scripts",
+      "src",
+      "test"
     ],
     "gitBranches": null
   },
@@ -56,7 +71,7 @@
       "path": "assets",
       "purpose": "Static assets",
       "fileCount": 1,
-      "lastAccessed": 1782281583814,
+      "lastAccessed": 1782532438494,
       "keyFiles": [
         "office-map.png"
       ]
@@ -64,368 +79,136 @@
     "dist": {
       "path": "dist",
       "purpose": "Distribution/build output",
-      "fileCount": 4,
-      "lastAccessed": 1782281583815,
+      "fileCount": 7,
+      "lastAccessed": 1782532438494,
       "keyFiles": [
+        "char.html",
+        "concept6.html",
+        "concepts.html",
         "icon.svg",
-        "index.html",
-        "manifest.webmanifest",
-        "sw.js"
+        "index.html"
       ]
+    },
+    "docs": {
+      "path": "docs",
+      "purpose": "Documentation",
+      "fileCount": 0,
+      "lastAccessed": 1782532438496,
+      "keyFiles": []
     },
     "public": {
       "path": "public",
       "purpose": "Public files",
-      "fileCount": 3,
-      "lastAccessed": 1782281583819,
+      "fileCount": 6,
+      "lastAccessed": 1782532438496,
       "keyFiles": [
+        "char.html",
+        "concept6.html",
+        "concepts.html",
         "icon.svg",
-        "manifest.webmanifest",
-        "sw.js"
+        "manifest.webmanifest"
+      ]
+    },
+    "scripts": {
+      "path": "scripts",
+      "purpose": "Build/utility scripts",
+      "fileCount": 98,
+      "lastAccessed": 1782532438496,
+      "keyFiles": [
+        "_achtest.mjs",
+        "_balance.mjs",
+        "_brieftest.mjs",
+        "_buffjuicetest.mjs",
+        "_celebtest.mjs"
       ]
     },
     "src": {
       "path": "src",
       "purpose": "Source code",
-      "fileCount": 3,
-      "lastAccessed": 1782281583819,
+      "fileCount": 4,
+      "lastAccessed": 1782532438496,
       "keyFiles": [
         "config.js",
         "main.js",
+        "notifications.js",
         "style.css"
       ]
+    },
+    "test": {
+      "path": "test",
+      "purpose": "Test files",
+      "fileCount": 7,
+      "lastAccessed": 1782532438497,
+      "keyFiles": [
+        "assetManifest.test.js",
+        "data.test.js",
+        "depth.test.js",
+        "dotChar.test.js",
+        "events.test.js"
+      ]
+    },
+    "tmp": {
+      "path": "tmp",
+      "purpose": null,
+      "fileCount": 0,
+      "lastAccessed": 1782532438497,
+      "keyFiles": []
     },
     "dist/assets": {
       "path": "dist/assets",
       "purpose": "Static assets",
       "fileCount": 3,
-      "lastAccessed": 1782281583819,
+      "lastAccessed": 1782532438497,
       "keyFiles": [
-        "index-CuG6n8A8.js",
-        "index-Dq3_CwQV.css",
+        "index-D9qap_7b.js",
+        "index-Do5RC4EH.css",
         "phaser-DFK5Ua9d.js"
+      ]
+    },
+    "src/assets": {
+      "path": "src/assets",
+      "purpose": "Static assets",
+      "fileCount": 1,
+      "lastAccessed": 1782532438498,
+      "keyFiles": [
+        "assetManifest.js"
       ]
     },
     "src/data": {
       "path": "src/data",
       "purpose": "Data files",
-      "fileCount": 5,
-      "lastAccessed": 1782281583819,
+      "fileCount": 10,
+      "lastAccessed": 1782532438498,
       "keyFiles": [
-        "events.js",
-        "facilities.js",
-        "prestige.js"
-      ]
-    },
-    "src/utils": {
-      "path": "src/utils",
-      "purpose": "Utility functions",
-      "fileCount": 1,
-      "lastAccessed": 1782281583820,
-      "keyFiles": [
-        "format.js"
+        "achievements.js",
+        "dailyQuests.js",
+        "events.js"
       ]
     }
   },
   "hotPaths": [
     {
-      "path": "src/world/WorldView.js",
-      "accessCount": 27,
-      "lastAccessed": 1782398935354,
-      "type": "file"
-    },
-    {
-      "path": "src/main.js",
-      "accessCount": 20,
-      "lastAccessed": 1782400573645,
-      "type": "file"
-    },
-    {
-      "path": "src/world/FacilityStationView.js",
-      "accessCount": 18,
-      "lastAccessed": 1782398464857,
-      "type": "file"
-    },
-    {
-      "path": "src/scenes/PreloadScene.js",
-      "accessCount": 15,
-      "lastAccessed": 1782398456817,
-      "type": "file"
-    },
-    {
-      "path": "src/world/WorkerActor.js",
-      "accessCount": 15,
-      "lastAccessed": 1782398465831,
-      "type": "file"
-    },
-    {
-      "path": "src/world/worldMap.js",
-      "accessCount": 15,
-      "lastAccessed": 1782398475255,
-      "type": "file"
-    },
-    {
-      "path": "src/world/WorkerManager.js",
-      "accessCount": 13,
-      "lastAccessed": 1782398465339,
-      "type": "file"
-    },
-    {
-      "path": "src/animations/createAnimations.js",
-      "accessCount": 10,
-      "lastAccessed": 1782398906524,
-      "type": "file"
-    },
-    {
-      "path": "src/textures/devPlaceholders.js",
-      "accessCount": 9,
-      "lastAccessed": 1782320374829,
-      "type": "file"
-    },
-    {
-      "path": "src/scenes/GameScene.js",
-      "accessCount": 8,
-      "lastAccessed": 1782398466332,
-      "type": "file"
-    },
-    {
-      "path": "src/world/WorldEffects.js",
-      "accessCount": 8,
-      "lastAccessed": 1782398968570,
+      "path": "src/ui/dom-ui.css",
+      "accessCount": 6,
+      "lastAccessed": 1782532984768,
       "type": "file"
     },
     {
       "path": "src/style.css",
-      "accessCount": 7,
-      "lastAccessed": 1782395163196,
-      "type": "file"
-    },
-    {
-      "path": "src/assets/assetManifest.js",
-      "accessCount": 5,
-      "lastAccessed": 1782313978128,
-      "type": "file"
-    },
-    {
-      "path": "src/world/depth.js",
-      "accessCount": 5,
-      "lastAccessed": 1782398474777,
-      "type": "file"
-    },
-    {
-      "path": "src/world/facilityTiers.js",
-      "accessCount": 5,
-      "lastAccessed": 1782398489604,
-      "type": "file"
-    },
-    {
-      "path": "src/data/facilities.js",
-      "accessCount": 5,
-      "lastAccessed": 1782398492108,
-      "type": "file"
-    },
-    {
-      "path": "src/world/pathGraph.js",
-      "accessCount": 4,
-      "lastAccessed": 1782398490608,
-      "type": "file"
-    },
-    {
-      "path": "src/scenes/BootScene.js",
-      "accessCount": 4,
-      "lastAccessed": 1782399017228,
-      "type": "file"
-    },
-    {
-      "path": "package.json",
       "accessCount": 3,
-      "lastAccessed": 1782312675323,
+      "lastAccessed": 1782532935752,
       "type": "file"
     },
     {
-      "path": "index.html",
-      "accessCount": 3,
-      "lastAccessed": 1782395155598,
-      "type": "file"
-    },
-    {
-      "path": "docs/superpowers/plans/2026-06-24-gaepyo-vertical-slice-desk.md",
-      "accessCount": 2,
-      "lastAccessed": 1782312381754,
-      "type": "file"
-    },
-    {
-      "path": "README.md",
+      "path": "scripts/_shotmobile.mjs",
       "accessCount": 1,
-      "lastAccessed": 1782281669550,
+      "lastAccessed": 1782532748780,
       "type": "file"
     },
     {
-      "path": "src/config.js",
+      "path": "scripts/_shotsizes.mjs",
       "accessCount": 1,
-      "lastAccessed": 1782281670379,
-      "type": "file"
-    },
-    {
-      "path": "src/scenes/UIScene.js",
-      "accessCount": 1,
-      "lastAccessed": 1782281679914,
-      "type": "file"
-    },
-    {
-      "path": "src/textures/createPixelTextures.js",
-      "accessCount": 1,
-      "lastAccessed": 1782281679977,
-      "type": "file"
-    },
-    {
-      "path": "assets/design/service-ui-target.png",
-      "accessCount": 1,
-      "lastAccessed": 1782281685259,
-      "type": "file"
-    },
-    {
-      "path": "assets/office-map.png",
-      "accessCount": 1,
-      "lastAccessed": 1782281685382,
-      "type": "file"
-    },
-    {
-      "path": "public/art/world-office.png",
-      "accessCount": 1,
-      "lastAccessed": 1782281694452,
-      "type": "file"
-    },
-    {
-      "path": ".superpowers/sdd/task-1-brief.md",
-      "accessCount": 1,
-      "lastAccessed": 1782312669190,
-      "type": "file"
-    },
-    {
-      "path": "vitest.config.js",
-      "accessCount": 1,
-      "lastAccessed": 1782312677557,
-      "type": "file"
-    },
-    {
-      "path": "test/smoke.test.js",
-      "accessCount": 1,
-      "lastAccessed": 1782312680719,
-      "type": "file"
-    },
-    {
-      "path": ".superpowers/sdd/task-1-report.md",
-      "accessCount": 1,
-      "lastAccessed": 1782312697254,
-      "type": "file"
-    },
-    {
-      "path": ".superpowers/sdd/task-2-brief.md",
-      "accessCount": 1,
-      "lastAccessed": 1782312771979,
-      "type": "file"
-    },
-    {
-      "path": ".superpowers/sdd/task-3-brief.md",
-      "accessCount": 1,
-      "lastAccessed": 1782312772172,
-      "type": "file"
-    },
-    {
-      "path": ".superpowers/sdd/task-4-brief.md",
-      "accessCount": 1,
-      "lastAccessed": 1782312772373,
-      "type": "file"
-    },
-    {
-      "path": ".superpowers/sdd/task-5-brief.md",
-      "accessCount": 1,
-      "lastAccessed": 1782312772446,
-      "type": "file"
-    },
-    {
-      "path": "test/facilityTiers.test.js",
-      "accessCount": 1,
-      "lastAccessed": 1782312777353,
-      "type": "file"
-    },
-    {
-      "path": "test/depth.test.js",
-      "accessCount": 1,
-      "lastAccessed": 1782312779058,
-      "type": "file"
-    },
-    {
-      "path": "test/pathGraph.test.js",
-      "accessCount": 1,
-      "lastAccessed": 1782312780943,
-      "type": "file"
-    },
-    {
-      "path": "test/worldMap.test.js",
-      "accessCount": 1,
-      "lastAccessed": 1782312782420,
-      "type": "file"
-    },
-    {
-      "path": ".superpowers/sdd/task-2-5-report.md",
-      "accessCount": 1,
-      "lastAccessed": 1782312821194,
-      "type": "file"
-    },
-    {
-      "path": ".superpowers/sdd/task-6-brief.md",
-      "accessCount": 1,
-      "lastAccessed": 1782312883767,
-      "type": "file"
-    },
-    {
-      "path": ".superpowers/sdd/task-7-brief.md",
-      "accessCount": 1,
-      "lastAccessed": 1782312883837,
-      "type": "file"
-    },
-    {
-      "path": "test/assetManifest.test.js",
-      "accessCount": 1,
-      "lastAccessed": 1782312933323,
-      "type": "file"
-    },
-    {
-      "path": ".superpowers/sdd/task-6-7-report.md",
-      "accessCount": 1,
-      "lastAccessed": 1782312965925,
-      "type": "file"
-    },
-    {
-      "path": ".superpowers/sdd/task-8-brief.md",
-      "accessCount": 1,
-      "lastAccessed": 1782313048636,
-      "type": "file"
-    },
-    {
-      "path": ".superpowers/sdd/task-9-brief.md",
-      "accessCount": 1,
-      "lastAccessed": 1782313048745,
-      "type": "file"
-    },
-    {
-      "path": ".superpowers/sdd/task-10-brief.md",
-      "accessCount": 1,
-      "lastAccessed": 1782313048851,
-      "type": "file"
-    },
-    {
-      "path": ".superpowers/sdd/task-8-10-report.md",
-      "accessCount": 1,
-      "lastAccessed": 1782313114386,
-      "type": "file"
-    },
-    {
-      "path": ".superpowers/sdd/task-11-brief.md",
-      "accessCount": 1,
-      "lastAccessed": 1782313218364,
+      "lastAccessed": 1782532847152,
       "type": "file"
     }
   ],

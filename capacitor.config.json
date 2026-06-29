@@ -1,0 +1,20 @@
+{
+  "appId": "kr.gaepyo.counting",
+  "appName": "믿어주세요 개표국",
+  "webDir": "dist",
+  "android": {
+    "backgroundColor": "#14121c"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 600,
+      "backgroundColor": "#14121c",
+      "showSpinner": false
+    },
+    "StatusBar": {
+      "style": "DARK",
+      "backgroundColor": "#14121c",
+      "overlaysWebView": false
+    }
+  }
+}

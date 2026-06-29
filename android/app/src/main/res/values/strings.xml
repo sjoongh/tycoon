@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">믿어주세요 개표국</string>
+    <string name="title_activity_main">믿어주세요 개표국</string>
+    <string name="package_name">kr.gaepyo.counting</string>
+    <string name="custom_url_scheme">kr.gaepyo.counting</string>
+</resources>
