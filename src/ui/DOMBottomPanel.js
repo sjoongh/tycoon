@@ -10,6 +10,8 @@ import { dailyQuestDefinitions } from "../data/dailyQuests.js";
 import { govTitles, titleById, RARITY_LABEL, RARITY_COLOR } from "../data/titles.js";
 import { cosmetics, COSMETIC_SLOTS } from "../data/cosmetics.js";
 import { characters } from "../data/characters.js";
+import { Capacitor } from "@capacitor/core";
+import { PLAY_GAMES } from "../playGamesConfig.js";
 
 const rewardLabel = (r) => [
   r.votes ? `표 +${shortNumber(r.votes)}` : null,
@@ -106,6 +108,7 @@ export class DOMBottomPanel {
       }
       case "equipCos": gs.equipCosmetic(id); this.refresh(); break;
       case "selectChar": gs.selectCharacter(id); this.refresh(); break;
+      case "openRank": document.dispatchEvent(new CustomEvent("gp:open-leaderboard")); break;
       case "buyPrestige": gs.buyPrestigeUpgrade(id); break;
       case "prestigeReset": document.dispatchEvent(new CustomEvent("gp:prestige-confirm")); break;
       case "claimDaily": gs.claimDailyQuest(id); this.refresh(); break;
@@ -379,7 +382,10 @@ export class DOMBottomPanel {
       : `${doneCount}/${questDefinitions.length} 완료`;
     // P2 fix: wrap goallist in stafflist-wrap pattern so the fade gradient works
     // FIX P1: 📅 emoji replaced with unicode diamond to avoid Android WebView glyph fallback
-    this.panel.innerHTML = `<div class="gp-paneltitle">운영 목표 · ${titleProgress}</div>
+    // 랭킹 버튼 — 안드로이드 앱 + 랭킹 백엔드(리더보드 ID) 연결됐을 때만 노출. 미연결 시 숨김.
+    const rankBtn = (Capacitor.isNativePlatform && Capacitor.isNativePlatform() && PLAY_GAMES.LEADERBOARD_AREA)
+      ? `<button class="gp-btn gp-btn--sm gp-rankbtn" data-action="openRank">🏆 랭킹</button>` : "";
+    this.panel.innerHTML = `<div class="gp-paneltitle">운영 목표 · ${titleProgress}${rankBtn}</div>
       <div class="gp-goallist-wrap"><div class="gp-stafflist gp-goallist">
       ${weeklyRow ? `<div class="gp-goal__section">&#9733; 주간 한정 · 일요일 종료</div>${weeklyRow}` : ""}
       <div class="gp-goal__section">&#9670; 일일 퀘스트 ${dailyClaimed}/${dailyQuestDefinitions.length} · 자정 초기화</div>${dailyRows}

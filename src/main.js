@@ -13,6 +13,7 @@ import { GameState } from "./state/GameState.js";
 import { Sfx } from "./audio/sfx.js";
 import { Notifications } from "./notifications.js";
 import { initNative } from "./native.js";
+import { initPlayGames, openLeaderboard, saveCloud, submitArea } from "./playgames.js";
 
 const gameState = new GameState();
 const sfx = new Sfx(gameState);
@@ -55,8 +56,11 @@ const uiLayer = document.createElement("div");
 uiLayer.className = "gp-ui";
 document.getElementById("game").appendChild(uiLayer);
 
-// 안드로이드 앱 백그라운드 전환 시 세이브 보장용 훅
-window.__gpSave = () => { try { gameState.save(false); } catch {} };
+// 안드로이드 앱 백그라운드 전환 시 세이브 보장용 훅(로컬 + 클라우드)
+window.__gpSave = () => { try { gameState.save(false); saveCloud(); } catch {} };
+
+// 랭킹 보기 버튼 → 네이티브 리더보드
+document.addEventListener("gp:open-leaderboard", () => openLeaderboard());
 
 // gameState는 preBoot에서 registry에 동기 주입되므로 폴링 없이 바로 마운트
 game.events.once("ready", () => {
@@ -67,4 +71,10 @@ game.events.once("ready", () => {
   sfx.mount();
   // 네이티브(안드로이드) 통합 — 웹에서는 no-op
   initNative();
+  initPlayGames(gameState);
+  // 구역이 오를 때 랭킹 점수 갱신
+  let _prevArea = gameState.data.stage.area;
+  gameState.on("changed", () => {
+    if (gameState.data.stage.area > _prevArea) { _prevArea = gameState.data.stage.area; submitArea(); }
+  });
 });
