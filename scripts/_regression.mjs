@@ -10,6 +10,8 @@ const seed={version:3,votes:5e5,explain:8000,trust:78,days:18,paused:false,selec
   seenEvents:Object.fromEntries(Array.from({length:25},(_,i)=>["ev"+i,1])),
   // 국장 칭호 시드: 주무관(cpsPct 0.02) Lv5 = +10% 생산
   titles:{clerk9:5}, titleDraws:5, equippedTitle:"clerk9",
+  // 캐릭터 시드: 열혈(clickPct 0.10, eventPct 없음 — eventBonus 검증 깔끔)
+  selectedChar:"hotblood",
   achievements:{},quests:{},endless:0,daily:{day:99999999,streak:1},log:["x"]};
 const b=await chromium.launch({args:["--use-gl=angle","--use-angle=swiftshader","--enable-unsafe-swiftshader","--ignore-gpu-blocklist","--enable-webgl"]});
 const p=await b.newPage({viewport:{width:390,height:844},deviceScaleFactor:2});
@@ -57,7 +59,10 @@ const mult=await p.evaluate(()=>{const gs=window.__game.registry.get("gameState"
   const cpsT=gs.cpsFor(d); const st=d.titles; d.titles={};
   const cpsNoT=gs.cpsFor(d); d.titles=st;
   const titleInCps=Math.abs(cpsT/cpsNoT-((1+base+titlePct)/(1+base)))<1e-6;
-  return {dexCount,dexPct,dexInCps,eventBonus,titlePct:+titlePct.toFixed(2),titleInCps,owned:gs.ownedTitleCount(),best:gs.bestTitleId()};
+  // 캐릭터 특성(열혈 clickPct 0.10)이 clickPower에 반영되는가
+  const charClick=gs.charEffectFor("clickPct");
+  const char=gs.currentCharacter().id;
+  return {dexCount,dexPct,dexInCps,eventBonus,titlePct:+titlePct.toFixed(2),titleInCps,char,charClick:+charClick.toFixed(2)};
 });
 // 검증 — 기대값 어긋나면 errs에 적재(ERRORS로 출력되어 0에러 가드에 걸림)
 if(mult.dexCount!==25) errs.push("MULT: dexCount "+mult.dexCount+" != 25");
@@ -66,6 +71,7 @@ if(!mult.dexInCps) errs.push("MULT: cpsFor가 도감 보너스를 반영하지 �
 if(Math.abs(mult.eventBonus-1.5)>0.01) errs.push("MULT: eventRewardScale 특별대응반 반영 "+mult.eventBonus+" != 1.5");
 if(Math.abs(mult.titlePct-0.10)>1e-9) errs.push("MULT: titleEffectFor cpsPct "+mult.titlePct+" != 0.10(주무관Lv5)");
 if(!mult.titleInCps) errs.push("MULT: cpsFor가 국장 칭호 능력을 반영하지 않음");
+if(mult.char!=="hotblood" || Math.abs(mult.charClick-0.10)>1e-9) errs.push("MULT: 캐릭터 특성(열혈 clickPct) "+mult.char+"/"+mult.charClick+" != hotblood/0.10");
 console.log("MULTIPLIERS", JSON.stringify(mult));
 console.log("CLICKS", c1-c0);
 console.log("TABS", JSON.stringify(tabResults));

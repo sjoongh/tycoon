@@ -702,11 +702,13 @@ export class WorldView {
     this._syncProps();
   }
 
-  // 장착한 꾸미기 액세서리를 국장 위 오버레이로 표시(슬롯별 1개). 위치/스케일은 update에서 국장에 글루.
+  // 장착한 꾸미기 + 선택 캐릭터 시그니처를 국장 위 오버레이로 표시. 위치/스케일은 update에서 국장에 글루.
   _syncCosmetics(d) {
-    const slots = ["hat", "face"];
+    const slots = ["hat", "face", "sig"];
     for (const slot of slots) {
-      const id = this.gameState.equippedCosmetic ? this.gameState.equippedCosmetic(slot) : null;
+      const id = slot === "sig"
+        ? (this.gameState.currentCharacter ? this.gameState.currentCharacter().sig : null)
+        : (this.gameState.equippedCosmetic ? this.gameState.equippedCosmetic(slot) : null);
       let spr = this._cosSprites[slot];
       if (!id) { if (spr) spr.setVisible(false); continue; }
       const key = id; // 텍스처 키 = cosmetic id(cos-*)
@@ -739,7 +741,7 @@ export class WorldView {
   update() {
     // 꾸미기 오버레이를 국장에 글루(bob/제스처/스쿼시 트윈 따라가게)
     if (this.gov && this._cosSprites) {
-      for (const slot of ["hat", "face"]) {
+      for (const slot of ["hat", "face", "sig"]) {
         const spr = this._cosSprites[slot];
         if (!spr || !spr.visible) continue;
         spr.x = this.gov.x; spr.y = this.gov.y;

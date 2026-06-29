@@ -4,6 +4,7 @@ import { facilities } from "../data/facilities.js";
 import { prestigeUpgrades, medalUpgrades, allPrestigeUpgrades } from "../data/prestige.js";
 import { govTitles, titleById, RARITY_ORDER } from "../data/titles.js";
 import { cosmetics, cosmeticById } from "../data/cosmetics.js";
+import { characters, characterById } from "../data/characters.js";
 import { questDefinitions } from "../data/quests.js";
 import { staffDefinitions } from "../data/staff.js";
 import { achievementDefinitions } from "../data/achievements.js";
@@ -112,6 +113,7 @@ const fallbackState = {
   equippedTitle: null, // 대표 칭호 id(월드 표시·자동 = 최고 희귀/레벨)
   cosmetics: {}, // 꾸미기 해금 { cosmeticId: 1 } — 영구(프레스티지 유지)
   equippedCos: {}, // 장착 { slot: cosmeticId } — 영구
+  selectedChar: "classic", // 선택한 국장 캐릭터 id — 정체성(모든 리셋에도 유지)
   endless: 0,
   daily: { day: 0, streak: 0, qday: 0, clicks: 0, events: 0, upgrades: 0, items: 0, newdex: 0, claimed: {} },
   weekly: { week: 0, baseVotes: 0, target: 0, claimed: false },
@@ -162,6 +164,7 @@ export class GameState extends Phaser.Events.EventEmitter {
       equippedTitle: (parsed?.equippedTitle && titleById(parsed.equippedTitle)) ? parsed.equippedTitle : null,
       cosmetics: (parsed?.cosmetics && typeof parsed.cosmetics === "object") ? { ...parsed.cosmetics } : {},
       equippedCos: (parsed?.equippedCos && typeof parsed.equippedCos === "object") ? { ...parsed.equippedCos } : {},
+      selectedChar: (parsed?.selectedChar && characterById(parsed.selectedChar)?.id === parsed.selectedChar) ? parsed.selectedChar : "classic",
       stats: { ...fallbackState.stats, ...(parsed?.stats || {}) },
       stage: { ...fallbackState.stage, ...(parsed?.stage || {}) },
       prestige: { ...fallbackState.prestige, ...(parsed?.prestige || {}) },
@@ -405,6 +408,9 @@ export class GameState extends Phaser.Events.EventEmitter {
       titles: this.data.titles,
       titleDraws: this.data.titleDraws,
       equippedTitle: this.data.equippedTitle,
+      cosmetics: this.data.cosmetics,
+      equippedCos: this.data.equippedCos,
+      selectedChar: this.data.selectedChar,
       tutorial: this.data.tutorial,
       daily: this.data.daily,
       weekly: this.data.weekly,
@@ -449,7 +455,7 @@ export class GameState extends Phaser.Events.EventEmitter {
   // 사건 보상의 양수 votes/explain은 현재 구역 규모에 맞춰 스케일(후반에도 의미있게). 비용(음수)은 그대로.
   eventRewardScale() {
     const base = Math.min(50, this.stageTarget(this.data.stage.area) / this.stageTarget(1));
-    return base * (1 + this.permanentEffectFor(this.data, "eventPct") + this.titleEffectFor(this.data, "eventPct")); // 특별 대응반 + 칭호(서기관)
+    return base * (1 + this.permanentEffectFor(this.data, "eventPct") + this.titleEffectFor(this.data, "eventPct") + this.charEffectFor("eventPct")); // 특별 대응반 + 칭호(서기관) + 캐릭터 특성
   }
 
   applyEffect(effect) {
@@ -812,6 +818,7 @@ export class GameState extends Phaser.Events.EventEmitter {
       equippedTitle: this.data.equippedTitle,
       cosmetics: this.data.cosmetics, // 꾸미기 해금은 평생 컬렉션 — 감사 유지
       equippedCos: this.data.equippedCos,
+      selectedChar: this.data.selectedChar, // 캐릭터 선택은 정체성 — 감사에도 유지
       tutorial: this.data.tutorial, // 베테랑이 감사(프레스티지) 후 신규 오프닝/튜토리얼을 다시 보지 않도록 유지
       daily: this.data.daily, // 감사(프레스티지)는 진행이지 새 세이브가 아님 — 출석 연속/일일 진행 유지
       weekly: this.data.weekly, // 주간 한정 목표(주차/목표/수령여부) 유지 — 안 그러면 재청구 악용 + 목표 리셋
@@ -1200,7 +1207,7 @@ export class GameState extends Phaser.Events.EventEmitter {
       const lv = data.facilities[item.id] || 0;
       return sum + lv * item.cps * this.facilityMilestoneFactor(lv);
     }, 0);
-    return raw * (0.9 + data.trust / 230) * this.trustModifier(data.trust) * this.staffMultiplierFor(data) * this.prestigeMultiplierFor(data) * (1 + this.permanentEffectFor(data, "cpsPct") + this.titleEffectFor(data, "cpsPct")) * (1 + this.dexBonusPct(data));
+    return raw * (0.9 + data.trust / 230) * this.trustModifier(data.trust) * this.staffMultiplierFor(data) * this.prestigeMultiplierFor(data) * (1 + this.permanentEffectFor(data, "cpsPct") + this.titleEffectFor(data, "cpsPct") + this.charEffectFor("cpsPct")) * (1 + this.dexBonusPct(data));
   }
 
   // 시설 레벨이 마일스톤을 넘을 때마다 해당 시설 생산 ×2 누적(AdVenture Capitalist식 영구 보너스)
@@ -1285,7 +1292,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     }, 0);
     const clerkSkill = Math.floor(this.staffLevel("clerk") / 5);
     const raw = 1 + facilityPower + staffPower + clerkSkill;
-    return Math.round(raw * (1 + this.permanentEffectFor(this.data, "clickPct") + this.titleEffectFor(this.data, "clickPct"))); // round: 작은 raw에서 clickPct 보너스가 floor로 0이 되던 문제 보정
+    return Math.round(raw * (1 + this.permanentEffectFor(this.data, "clickPct") + this.titleEffectFor(this.data, "clickPct") + this.charEffectFor("clickPct"))); // round: 작은 raw에서 clickPct 보너스가 floor로 0이 되던 문제 보정
   }
 
   trustDecay() {
@@ -1323,6 +1330,21 @@ export class GameState extends Phaser.Events.EventEmitter {
   ownedTitleCount() {
     const t = this.data.titles;
     return t && typeof t === "object" ? Object.keys(t).filter((id) => t[id] > 0).length : 0;
+  }
+
+  // ----- 캐릭터 선택 -----
+  currentCharacter() { return characterById(this.data.selectedChar || "classic"); }
+  // 선택 캐릭터 특성 효과(키 단위) — cps/click/event 버킷에 합산.
+  charEffectFor(key) {
+    const c = this.currentCharacter();
+    return (c.trait && c.trait[key]) || 0;
+  }
+  selectCharacter(id) {
+    if (!characterById(id) || characterById(id).id !== id) return false;
+    this.data.selectedChar = id;
+    this.emit("changed");
+    this.save(false);
+    return true;
   }
 
   // 뽑기 비용(해명) — 누적 뽑기 수에 따라 1.13배씩 상승(초반 40 저렴 → 후반 묵직한 해명 소비처).
