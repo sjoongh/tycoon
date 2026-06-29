@@ -8,6 +8,7 @@ import { achievementDefinitions } from "../data/achievements.js";
 import { facilityIconUri, workerIconUri, tabIconUri } from "../world/dotChar.js";
 import { dailyQuestDefinitions } from "../data/dailyQuests.js";
 import { govTitles, titleById, RARITY_LABEL, RARITY_COLOR } from "../data/titles.js";
+import { cosmetics, COSMETIC_SLOTS } from "../data/cosmetics.js";
 
 const rewardLabel = (r) => [
   r.votes ? `표 +${shortNumber(r.votes)}` : null,
@@ -102,6 +103,7 @@ export class DOMBottomPanel {
         this.refresh();
         break;
       }
+      case "equipCos": gs.equipCosmetic(id); this.refresh(); break;
       case "buyPrestige": gs.buyPrestigeUpgrade(id); break;
       case "prestigeReset": document.dispatchEvent(new CustomEvent("gp:prestige-confirm")); break;
       case "claimDaily": gs.claimDailyQuest(id); this.refresh(); break;
@@ -425,6 +427,7 @@ export class DOMBottomPanel {
 
     this.panel.innerHTML = `<div class="gp-paneltitle">감사 재정비 · 인장 ${gs.data.prestige.seals} · &#127894; 훈장 ${gs.data.prestige.medals} · 영구 x${fullMult.toFixed(2)}</div>
       ${this._renderGachaCard()}
+      ${this._renderCosmeticCard()}
       <div class="gp-sealgrid">${ups}</div>
       ${detailCard}
       ${medalSection}
@@ -461,6 +464,28 @@ export class DOMBottomPanel {
       <div class="gp-gacha__eq">${eqLine}</div>
       ${chips ? `<div class="gp-gacha__chips">${chips}</div>` : ""}
       <button class="gp-btn gp-btn--sm ${can ? "gp-btn--ready gp-btn--gold" : "gp-btn--disabled"}" data-action="drawGacha">뽑기 · 해명 ${shortNumber(cost)}</button>
+    </div>`;
+  }
+
+  // 국장 꾸미기 — 슬롯별 보유 액세서리를 칩으로(장착=강조, 미해금=잠금+힌트). 탭하면 장착/해제.
+  _renderCosmeticCard() {
+    const gs = this.gameState;
+    const owned = gs.ownedCosmeticCount();
+    const slotLabel = { hat: "머리", face: "얼굴" };
+    const rows = COSMETIC_SLOTS.map((slot) => {
+      const eq = gs.equippedCosmetic(slot);
+      const chips = cosmetics.filter((c) => c.slot === slot).map((c) => {
+        const has = gs.ownsCosmetic(c.id);
+        if (!has) return `<span class="gp-cos__chip gp-cos__chip--lock" title="${c.name} · ${c.hint}">🔒</span>`;
+        const on = eq === c.id;
+        return `<button class="gp-cos__chip ${on ? "gp-cos__chip--on" : ""}" data-action="equipCos" data-id="${c.id}" title="${c.name}${on ? " (장착중·탭하면 벗기)" : ""}">${c.emoji}</button>`;
+      }).join("");
+      return `<div class="gp-cos__row"><span class="gp-cos__slot">${slotLabel[slot] || slot}</span><div class="gp-cos__chips">${chips || "—"}</div></div>`;
+    }).join("");
+    return `<div class="gp-gacha gp-cos">
+      <div class="gp-gacha__hd">🎩 국장 꾸미기 <span class="gp-gacha__count">보유 ${owned}/${cosmetics.length}</span></div>
+      ${rows}
+      <div class="gp-cos__tip">진행하면 더 해금돼요 · 탭해서 장착/해제</div>
     </div>`;
   }
 

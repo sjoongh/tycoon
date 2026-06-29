@@ -166,6 +166,14 @@
 .gp-gres__name { font-family: var(--f-bold); font-size: 22px; }
 .gp-gres__rarity { font-family: var(--f-small); font-size: 11px; letter-spacing: 1px; }
 .gp-gres__per { font-family: var(--f-body); font-size: 12px; color: var(--ink); margin-top: 4px; padding: 5px 10px; background: var(--panel-sunk); border: 2px solid var(--line); }
+/* 국장 꾸미기 카드 */
+.gp-cos__row { display: flex; align-items: center; gap: 8px; margin: 5px 0; }
+.gp-cos__slot { font-family: var(--f-small); font-size: 10px; color: var(--ink-soft); width: 28px; flex: none; }
+.gp-cos__chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.gp-cos__chip { font-size: 16px; width: 30px; height: 30px; line-height: 26px; text-align: center; padding: 0; background: var(--panel2); border: 2px solid var(--line); cursor: pointer; box-shadow: var(--px-out-sm); }
+.gp-cos__chip--on { border-color: var(--gold-hi); background: var(--panel); box-shadow: var(--px-out-sm), 0 0 0 2px var(--gold-hi); }
+.gp-cos__chip--lock { opacity: 0.5; cursor: default; filter: grayscale(1); }
+.gp-cos__tip { text-align: center; font-family: var(--f-small); font-size: 8px; color: var(--ink-faint, #6b5d52); padding-top: 4px; }
 .gp-sealgrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-top: 10px; }
 .gp-seal { pointer-events: auto; border: 3px solid var(--line); padding: 7px 3px 6px; background: #142036; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 3px; min-height: 54px; box-shadow: var(--px-out-sm), inset 0 0 0 1px var(--gem); }
 .gp-seal__role { font-family: var(--f-small); font-size: 10px; color: #d0f0ff; }
