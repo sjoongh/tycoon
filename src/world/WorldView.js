@@ -79,6 +79,7 @@ export class WorldView {
       .setScale(GOV_SCALE)
       .setDepth(100);
     this._govStage = govStageFor(gameState.data);
+    this._cosSprites = {}; // 꾸미기 오버레이 슬롯별 스프라이트(국장에 글루)
     this._startBob();
 
     // 중앙 큰 숫자(개표수) — 한글 단위 지원 위해 Galmuri14
@@ -696,8 +697,26 @@ export class WorldView {
     const cps = this.gameState.cps ? this.gameState.cps() : 0;
     this.cpsText.setText(`▶ 초당 ${cps < 10000 ? cps.toFixed(0) : shortNumber(cps)}표`);
     this._syncTitlePlate(d);
+    this._syncCosmetics(d);
     this._syncWorkers();
     this._syncProps();
+  }
+
+  // 장착한 꾸미기 액세서리를 국장 위 오버레이로 표시(슬롯별 1개). 위치/스케일은 update에서 국장에 글루.
+  _syncCosmetics(d) {
+    const slots = ["hat", "face"];
+    for (const slot of slots) {
+      const id = this.gameState.equippedCosmetic ? this.gameState.equippedCosmetic(slot) : null;
+      let spr = this._cosSprites[slot];
+      if (!id) { if (spr) spr.setVisible(false); continue; }
+      const key = id; // 텍스처 키 = cosmetic id(cos-*)
+      if (!spr) {
+        spr = this.scene.add.image(this.gov.x, this.gov.y, key).setOrigin(0.5, 1).setScale(GOV_SCALE).setDepth(102);
+        this._cosSprites[slot] = spr;
+      }
+      if (spr.texture.key !== key) spr.setTexture(key);
+      spr.setVisible(true);
+    }
   }
 
   // 대표 칭호 명패 갱신 — 바뀌면 톡 튀는 연출(새 발령/승진이 캐릭터에 보이게)
@@ -718,7 +737,16 @@ export class WorldView {
   }
 
   update() {
-    // bob/연출은 트윈으로 처리 — 프레임 루프 작업 없음
+    // 꾸미기 오버레이를 국장에 글루(bob/제스처/스쿼시 트윈 따라가게)
+    if (this.gov && this._cosSprites) {
+      for (const slot of ["hat", "face"]) {
+        const spr = this._cosSprites[slot];
+        if (!spr || !spr.visible) continue;
+        spr.x = this.gov.x; spr.y = this.gov.y;
+        spr.scaleX = this.gov.scaleX; spr.scaleY = this.gov.scaleY;
+        spr.flipX = this.gov.flipX;
+      }
+    }
   }
 
   destroy() {

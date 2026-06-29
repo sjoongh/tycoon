@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 import { generatePlaceholders } from "../textures/devPlaceholders.js";
-import { buildGovTextures, buildPropTextures, buildWorkerTexture } from "../world/dotChar.js";
+import { buildGovTextures, buildPropTextures, buildWorkerTexture, buildCosmeticTextures } from "../world/dotChar.js";
 
 export class PreloadScene extends Phaser.Scene {
   constructor() {
@@ -33,6 +33,7 @@ export class PreloadScene extends Phaser.Scene {
     buildGovTextures(this); // 도트 국장 4단계 텍스처(gov-1..4)
     buildPropTextures(this); // 개표소 소품 텍스처(투표함/서류/깃발)
     buildWorkerTexture(this); // 미니 일꾼(직원) 텍스처
+    buildCosmeticTextures(this); // 꾸미기 액세서리 오버레이(cos-*)
     this.scene.start("GameScene");
   }
 }

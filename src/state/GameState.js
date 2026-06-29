@@ -3,6 +3,7 @@ import { SAVE_KEY } from "../config.js";
 import { facilities } from "../data/facilities.js";
 import { prestigeUpgrades, medalUpgrades, allPrestigeUpgrades } from "../data/prestige.js";
 import { govTitles, titleById, RARITY_ORDER } from "../data/titles.js";
+import { cosmetics, cosmeticById } from "../data/cosmetics.js";
 import { questDefinitions } from "../data/quests.js";
 import { staffDefinitions } from "../data/staff.js";
 import { achievementDefinitions } from "../data/achievements.js";
@@ -109,6 +110,8 @@ const fallbackState = {
   titles: {}, // 국장 칭호 — { titleId: level }. 뽑기로 획득, 중복=레벨업. 영구(프레스티지 유지)
   titleDraws: 0, // 누적 뽑기 횟수(비용 곡선용)
   equippedTitle: null, // 대표 칭호 id(월드 표시·자동 = 최고 희귀/레벨)
+  cosmetics: {}, // 꾸미기 해금 { cosmeticId: 1 } — 영구(프레스티지 유지)
+  equippedCos: {}, // 장착 { slot: cosmeticId } — 영구
   endless: 0,
   daily: { day: 0, streak: 0, qday: 0, clicks: 0, events: 0, upgrades: 0, items: 0, newdex: 0, claimed: {} },
   weekly: { week: 0, baseVotes: 0, target: 0, claimed: false },
@@ -157,6 +160,8 @@ export class GameState extends Phaser.Events.EventEmitter {
       titles: (parsed?.titles && typeof parsed.titles === "object") ? { ...parsed.titles } : {},
       titleDraws: Math.max(0, Math.floor(Number(parsed?.titleDraws) || 0)),
       equippedTitle: (parsed?.equippedTitle && titleById(parsed.equippedTitle)) ? parsed.equippedTitle : null,
+      cosmetics: (parsed?.cosmetics && typeof parsed.cosmetics === "object") ? { ...parsed.cosmetics } : {},
+      equippedCos: (parsed?.equippedCos && typeof parsed.equippedCos === "object") ? { ...parsed.equippedCos } : {},
       stats: { ...fallbackState.stats, ...(parsed?.stats || {}) },
       stage: { ...fallbackState.stage, ...(parsed?.stage || {}) },
       prestige: { ...fallbackState.prestige, ...(parsed?.prestige || {}) },
@@ -805,6 +810,8 @@ export class GameState extends Phaser.Events.EventEmitter {
       titles: this.data.titles, // 국장 칭호(인사 발령)는 평생 컬렉션 — 감사에도 유지
       titleDraws: this.data.titleDraws,
       equippedTitle: this.data.equippedTitle,
+      cosmetics: this.data.cosmetics, // 꾸미기 해금은 평생 컬렉션 — 감사 유지
+      equippedCos: this.data.equippedCos,
       tutorial: this.data.tutorial, // 베테랑이 감사(프레스티지) 후 신규 오프닝/튜토리얼을 다시 보지 않도록 유지
       daily: this.data.daily, // 감사(프레스티지)는 진행이지 새 세이브가 아님 — 출석 연속/일일 진행 유지
       weekly: this.data.weekly, // 주간 한정 목표(주차/목표/수령여부) 유지 — 안 그러면 재청구 악용 + 목표 리셋
@@ -867,6 +874,7 @@ export class GameState extends Phaser.Events.EventEmitter {
   checkProgression() {
     this.checkAchievements();
     this.checkQuests();
+    this.checkCosmeticUnlocks();
   }
 
   checkAchievements() {
@@ -1374,6 +1382,53 @@ export class GameState extends Phaser.Events.EventEmitter {
     this.emit("changed");
     this.save(false);
     return { id: def.id, name: def.name, rarity: def.rarity, per: def.per, emoji: def.emoji, level, isNew };
+  }
+
+  // ----- 국장 꾸미기(액세서리) -----
+  ownsCosmetic(id) { return !!(this.data.cosmetics && this.data.cosmetics[id]); }
+  ownedCosmeticCount() {
+    const c = this.data.cosmetics;
+    return c && typeof c === "object" ? Object.keys(c).filter((k) => c[k]).length : 0;
+  }
+  equippedCosmetic(slot) {
+    const id = this.data.equippedCos?.[slot];
+    return id && this.ownsCosmetic(id) ? id : null;
+  }
+
+  // 장착/해제(토글) — 보유한 것만. 같은 걸 다시 누르면 벗는다.
+  equipCosmetic(id) {
+    const def = cosmeticById(id);
+    if (!def || !this.ownsCosmetic(id)) return false;
+    if (!this.data.equippedCos || typeof this.data.equippedCos !== "object") this.data.equippedCos = {};
+    if (this.data.equippedCos[def.slot] === id) delete this.data.equippedCos[def.slot]; // 토글 해제
+    else this.data.equippedCos[def.slot] = id;
+    this.emit("changed");
+    this.save(false);
+    return true;
+  }
+
+  _cosmeticUnlocked(def) {
+    const u = def.unlock || {};
+    switch (u.type) {
+      case "area": return this.data.stage.area >= u.value;
+      case "prestigeRuns": return (this.data.prestige.runs || 0) >= u.value;
+      case "trust": return this.data.trust >= u.value;
+      case "totalEvents": return (this.data.stats.totalEvents || 0) >= u.value;
+      default: return false;
+    }
+  }
+
+  // 마일스톤 충족 시 꾸미기 해금(1회) + 슬롯이 비어있으면 자동 장착(진행하며 외형이 바뀌는 보상감).
+  checkCosmeticUnlocks() {
+    if (!this.data.cosmetics || typeof this.data.cosmetics !== "object") this.data.cosmetics = {};
+    if (!this.data.equippedCos || typeof this.data.equippedCos !== "object") this.data.equippedCos = {};
+    for (const def of cosmetics) {
+      if (this.data.cosmetics[def.id]) continue;
+      if (!this._cosmeticUnlocked(def)) continue;
+      this.data.cosmetics[def.id] = 1;
+      if (!this.data.equippedCos[def.slot]) this.data.equippedCos[def.slot] = def.id; // 빈 슬롯 자동 장착
+      this.emit("celebrate", { text: `${def.emoji} 꾸미기 해금 · ${def.name}` });
+    }
   }
 
   // 유한 인장 업그레이드의 실효 상한 = 정의 상한 + 전당(capBoost). 무한(>=999)·훈장 업그레이드는 그대로.
