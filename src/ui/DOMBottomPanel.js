@@ -9,6 +9,7 @@ import { facilityIconUri, workerIconUri, tabIconUri } from "../world/dotChar.js"
 import { dailyQuestDefinitions } from "../data/dailyQuests.js";
 import { govTitles, titleById, RARITY_LABEL, RARITY_COLOR } from "../data/titles.js";
 import { cosmetics, COSMETIC_SLOTS } from "../data/cosmetics.js";
+import { characters } from "../data/characters.js";
 
 const rewardLabel = (r) => [
   r.votes ? `표 +${shortNumber(r.votes)}` : null,
@@ -104,6 +105,7 @@ export class DOMBottomPanel {
         break;
       }
       case "equipCos": gs.equipCosmetic(id); this.refresh(); break;
+      case "selectChar": gs.selectCharacter(id); this.refresh(); break;
       case "buyPrestige": gs.buyPrestigeUpgrade(id); break;
       case "prestigeReset": document.dispatchEvent(new CustomEvent("gp:prestige-confirm")); break;
       case "claimDaily": gs.claimDailyQuest(id); this.refresh(); break;
@@ -426,6 +428,7 @@ export class DOMBottomPanel {
     const medalSection = this._renderMedalSection();
 
     this.panel.innerHTML = `<div class="gp-paneltitle">감사 재정비 · 인장 ${gs.data.prestige.seals} · &#127894; 훈장 ${gs.data.prestige.medals} · 영구 x${fullMult.toFixed(2)}</div>
+      ${this._renderCharacterCard()}
       ${this._renderGachaCard()}
       ${this._renderCosmeticCard()}
       <div class="gp-sealgrid">${ups}</div>
@@ -464,6 +467,24 @@ export class DOMBottomPanel {
       <div class="gp-gacha__eq">${eqLine}</div>
       ${chips ? `<div class="gp-gacha__chips">${chips}</div>` : ""}
       <button class="gp-btn gp-btn--sm ${can ? "gp-btn--ready gp-btn--gold" : "gp-btn--disabled"}" data-action="drawGacha">뽑기 · 해명 ${shortNumber(cost)}</button>
+    </div>`;
+  }
+
+  // 국장 캐릭터 선택 — 3종을 카드로(현재 선택=강조). 각자 외형+특성. 탭하면 변경(모든 리셋에도 유지).
+  _renderCharacterCard() {
+    const gs = this.gameState;
+    const cur = gs.currentCharacter ? gs.currentCharacter().id : "classic";
+    const opts = characters.map((c) => {
+      const on = c.id === cur;
+      return `<button class="gp-char__opt ${on ? "gp-char__opt--on" : ""}" data-action="selectChar" data-id="${c.id}">
+        <span class="gp-char__emoji">${c.emoji}</span>
+        <span class="gp-char__name">${c.name}</span>
+        <span class="gp-char__trait">${c.traitText}</span>
+      </button>`;
+    }).join("");
+    return `<div class="gp-gacha gp-charcard">
+      <div class="gp-gacha__hd">🧑‍💼 국장 캐릭터</div>
+      <div class="gp-char__grid">${opts}</div>
     </div>`;
   }
 
