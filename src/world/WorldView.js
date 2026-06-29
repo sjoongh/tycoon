@@ -16,9 +16,10 @@ const PROP_SCALE = 4;   // 16px 소품 → 64px
 const BACK_SCALE = PROP_SCALE * 0.74; // 뒤쪽 선반(원근감 위해 작게)
 const SHELF_Y = GROUND_Y - 12;        // 뒤쪽 선반(카운터) 라인 — 국장보다 뒤
 const BACK_DEPTH = 88;                // 국장(100)보다 뒤 → 캐릭터를 절대 안 가림
-// 채용된 직원이 서는 바닥 슬롯(좌우로 고루 분산)
-const WORKER_SLOTS = [44, 96, 148, 244, 296, 344];
-const WORKER_SCALE = 4;
+// 채용된 직원이 서는 바닥 슬롯 — 설비(선반 x: 46/122/268/344)·국장(195) 사이 빈 곳에 작게
+const WORKER_SLOTS = [84, 160, 230, 306, 40, 350];
+const WORKER_SCALE = 3;
+const WORKER_Y = GROUND_Y + 4; // 바닥선(설비 선반보다 앞·아래)
 const SORTER_SCALE = BACK_SCALE; // 분류기도 뒷줄 동일 스케일
 // 국장 풍자 대사(선관위 이슈 위트, 정치 중립)
 const GOV_LINES = [
@@ -639,13 +640,13 @@ export class WorldView {
       const lv = this.gameState.staffLevel ? this.gameState.staffLevel(s.id) : 0;
       if (lv > 0 && !this._workers[s.id]) {
         const sx = WORKER_SLOTS[i];
-        const sh = this.scene.add.rectangle(sx, GROUND_Y + 1, 34, 8, 0x000000, 0.4).setDepth(98);
+        const sh = this.scene.add.rectangle(sx, WORKER_Y + 1, 26, 7, 0x000000, 0.4).setDepth(110);
         this._workerShadows[s.id] = sh;
-        const w = this.scene.add.image(sx, GROUND_Y, "worker-mini")
-          .setOrigin(0.5, 1).setScale(0).setDepth(99).setTint(lightenColor(s.color || 0xffffff, 0.35));
+        const w = this.scene.add.image(sx, WORKER_Y, "worker-mini")
+          .setOrigin(0.5, 1).setScale(0).setDepth(111).setTint(lightenColor(s.color || 0xffffff, 0.35));
         this._workers[s.id] = w;
         this.scene.tweens.add({ targets: w, scaleX: WORKER_SCALE, scaleY: WORKER_SCALE, duration: 280, ease: "Back.easeOut" });
-        this.scene.tweens.add({ targets: w, y: GROUND_Y - 3, yoyo: true, repeat: -1, duration: 640 + i * 70, ease: "Sine.easeInOut", delay: 120 + i * 90 });
+        this.scene.tweens.add({ targets: w, y: WORKER_Y - 3, yoyo: true, repeat: -1, duration: 640 + i * 70, ease: "Sine.easeInOut", delay: 120 + i * 90 });
         // 좌우로 살짝 꼼지락(걸어다니는 느낌)
         this.scene.tweens.add({ targets: w, x: sx + (i % 2 ? 9 : -9), yoyo: true, repeat: -1, duration: 1600 + i * 180, ease: "Sine.easeInOut", delay: 200 + i * 120 });
         this.effects.deskPop(sx, GROUND_Y - 14);
