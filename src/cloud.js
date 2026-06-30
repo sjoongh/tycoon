@@ -97,10 +97,12 @@ export async function submitScore() {
 
 async function fetchTop(n = 50) {
   const { db, fs } = await fb();
-  const q = fs.query(fs.collection(db, "scores"), fs.orderBy("area", "desc"), fs.orderBy("votes", "desc"), fs.limit(n));
+  // 단일 정렬(area)만 서버에서 — 복합 색인 불필요. 동점 표(votes) 정렬은 클라이언트에서.
+  const q = fs.query(fs.collection(db, "scores"), fs.orderBy("area", "desc"), fs.limit(n));
   const res = await fs.getDocs(q);
   const rows = [];
   res.forEach((doc) => rows.push({ id: doc.id, ...doc.data() }));
+  rows.sort((a, b) => (b.area - a.area) || ((b.votes || 0) - (a.votes || 0)));
   return rows;
 }
 

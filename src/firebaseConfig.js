@@ -12,12 +12,13 @@
 // (웹 apiKey는 비밀이 아니라 공개돼도 됩니다. 보안은 Firestore 규칙으로 합니다.)
 // ────────────────────────────────────────────────────────────────
 export const FIREBASE_CONFIG = {
-  apiKey: "",
-  authDomain: "",
-  projectId: "",
-  storageBucket: "",
-  messagingSenderId: "",
-  appId: "",
+  apiKey: "AIzaSyBXoox16wKeEithTT5pJO7nOzKCRs-wedI",
+  authDomain: "gaepyo-tycoon.firebaseapp.com",
+  projectId: "gaepyo-tycoon",
+  storageBucket: "gaepyo-tycoon.firebasestorage.app",
+  messagingSenderId: "60363002316",
+  appId: "1:60363002316:web:5f087f6e4bf740c8860d69",
+  measurementId: "G-1YFQHKF8HY",
 };
 
 export const cloudEnabled = () => !!FIREBASE_CONFIG.apiKey;
