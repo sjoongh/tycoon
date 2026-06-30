@@ -364,3 +364,12 @@ body { background-color: var(--bg-deep); background-image: repeating-linear-grad
 .gp-dex__cell--real { color: var(--gold-hi); border-color: var(--gold-hi); }
 .gp-dex__cell--lock { color: var(--ink-faint, #6b5d52); background: var(--panel-sunk); border-style: dashed; font-family: var(--f-num); min-width: 18px; text-align: center; }
 .gp-rankbtn { float: right; margin-top: -2px; }
+/* 랭킹 모달 */
+.gp-rank__list { padding: 4px 0; }
+.gp-rank__row { display: flex; align-items: center; gap: 8px; padding: 8px 14px; font-family: var(--f-small); font-size: 11px; color: var(--ink); border-bottom: 1px solid var(--panel-sunk); }
+.gp-rank__row--me { background: var(--panel-sunk); box-shadow: inset 3px 0 0 var(--gold-hi); }
+.gp-rank__no { width: 28px; flex: none; text-align: center; font-family: var(--f-num); font-size: 11px; color: var(--gold-hi); }
+.gp-rank__nick { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gp-rank__area { font-family: var(--f-bold); color: var(--gold-hi); }
+.gp-rank__msg { padding: 30px 16px; text-align: center; font-family: var(--f-small); font-size: 11px; color: var(--ink-soft); }
+.gp-nickinput { width: 100%; margin-top: 10px; padding: 10px; font-family: var(--f-body); font-size: 13px; background: var(--panel-sunk); color: var(--ink); border: 2px solid var(--line); box-sizing: border-box; }

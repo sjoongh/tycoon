@@ -20,6 +20,7 @@
     "@capacitor/preferences": "^8.0.1",
     "@capacitor/splash-screen": "^8.0.1",
     "@capacitor/status-bar": "^8.0.2",
+    "firebase": "^12.15.0",
     "phaser": "^3.90.0"
   },
   "devDependencies": {

@@ -13,7 +13,7 @@ import { GameState } from "./state/GameState.js";
 import { Sfx } from "./audio/sfx.js";
 import { Notifications } from "./notifications.js";
 import { initNative } from "./native.js";
-import { initPlayGames, openLeaderboard, saveCloud, submitArea } from "./playgames.js";
+import { initCloud, openLeaderboard, saveCloud, submitScore } from "./cloud.js";
 
 const gameState = new GameState();
 const sfx = new Sfx(gameState);
@@ -71,10 +71,10 @@ game.events.once("ready", () => {
   sfx.mount();
   // 네이티브(안드로이드) 통합 — 웹에서는 no-op
   initNative();
-  initPlayGames(gameState);
+  initCloud(gameState);
   // 구역이 오를 때 랭킹 점수 갱신
   let _prevArea = gameState.data.stage.area;
   gameState.on("changed", () => {
-    if (gameState.data.stage.area > _prevArea) { _prevArea = gameState.data.stage.area; submitArea(); }
+    if (gameState.data.stage.area > _prevArea) { _prevArea = gameState.data.stage.area; submitScore(); }
   });
 });
