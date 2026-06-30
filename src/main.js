@@ -13,7 +13,7 @@ import { GameState } from "./state/GameState.js";
 import { Sfx } from "./audio/sfx.js";
 import { Notifications } from "./notifications.js";
 import { initNative } from "./native.js";
-import { initCloud, openLeaderboard, saveCloud, submitScore } from "./cloud.js";
+import { initCloud, openLeaderboard, saveCloud, submitScore, logEvt } from "./cloud.js";
 
 const gameState = new GameState();
 const sfx = new Sfx(gameState);
@@ -72,9 +72,16 @@ game.events.once("ready", () => {
   // 네이티브(안드로이드) 통합 — 웹에서는 no-op
   initNative();
   initCloud(gameState);
-  // 구역이 오를 때 랭킹 점수 갱신
+  // 구역이 오를 때 랭킹 점수 갱신 + 분석
   let _prevArea = gameState.data.stage.area;
   gameState.on("changed", () => {
-    if (gameState.data.stage.area > _prevArea) { _prevArea = gameState.data.stage.area; submitScore(); }
+    if (gameState.data.stage.area > _prevArea) {
+      _prevArea = gameState.data.stage.area;
+      submitScore();
+      logEvt("area_up", { area: _prevArea });
+    }
   });
+  // 주요 게임 이벤트 분석 로깅
+  gameState.on("comm-collapse", () => logEvt("communist_collapse", {}));
+  gameState.on("dex-milestone", (p) => logEvt("dex_milestone", { n: p?.n }));
 });

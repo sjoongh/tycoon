@@ -29,8 +29,24 @@ async function fb() {
   const app = initializeApp(FIREBASE_CONFIG);
   const auth = getAuth(app);
   const db = fs.getFirestore(app);
-  _fb = { app, auth, db, fs, signInAnonymously };
+  // Analytics — 지원 환경에서만(세션·화면 자동 집계 + 커스텀 이벤트)
+  let analytics = null;
+  try {
+    const an = await import("firebase/analytics");
+    if (await an.isSupported()) { analytics = an.getAnalytics(app); _fb_logEvent = an.logEvent; }
+  } catch {}
+  _fb = { app, auth, db, fs, signInAnonymously, analytics };
   return _fb;
+}
+let _fb_logEvent = null;
+
+// 게임 이벤트 분석 로깅 — 설정/지원 안 되면 no-op.
+export async function logEvt(name, params) {
+  if (!cloudEnabled()) return;
+  try {
+    const { analytics } = await fb();
+    if (analytics && _fb_logEvent) _fb_logEvent(analytics, name, params || {});
+  } catch {}
 }
 
 // 앱 시작 시 1회 — 익명 로그인 + (성공 시) 클라우드 세이브가 더 최신이면 적용.
