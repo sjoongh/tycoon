@@ -3,6 +3,7 @@ import { govTextureKey, govStageFor } from "./dotChar.js";
 import { staffDefinitions } from "../data/staff.js";
 import { eraTheme } from "../data/regions.js";
 import { pickRandomItem } from "../data/items.js";
+import { pickPress } from "../data/worldPress.js";
 import { RARITY_COLOR } from "../data/titles.js";
 import { shortNumber } from "../utils/format.js";
 
@@ -194,6 +195,11 @@ export class WorldView {
     this._speakTimer = scene.time.addEvent({
       delay: 9000, loop: true,
       callback: () => { if (this.gov?.active && Math.random() < 0.5) this._govSpeak(); },
+    });
+    // 외신 반응 — 주기적으로 믿음 상태에 맞는 가상 외신 헤드라인(사이다/블랙코미디)
+    this._pressTimer = scene.time.addEvent({
+      delay: 32000, loop: true,
+      callback: () => { if (Math.random() < 0.7) this._pressFlash(); },
     });
 
     this._refresh();
@@ -540,6 +546,27 @@ export class WorldView {
     });
   }
 
+  // 외신 반응 배너 — 믿음 상태에 따라 톤이 바뀜(극찬=사이다 / 조롱=블랙코미디). 전부 가상 매체.
+  _pressFlash(forced) {
+    const state = this.gameState.trustState ? this.gameState.trustState() : "normal";
+    const comm = this.gameState.commGaugePct ? this.gameState.commGaugePct() : 0;
+    const item = forced || pickPress(state, comm);
+    const y = 178;
+    const col = item.tone === "praise" ? 0x1f9e49 : item.tone === "mock" ? 0x8a2836 : 0x244055;
+    const accent = item.tone === "praise" ? "#8df0b0" : item.tone === "mock" ? "#ff9a8e" : "#9fd0e0";
+    const bar = this.scene.add.rectangle(GAME_W / 2, y, GAME_W, 26, col, 0.95).setDepth(200).setScale(1, 0);
+    const tag = this.scene.add.text(10, y, "📰 외신", { fontFamily: '"Galmuri9", monospace', fontSize: "9px", color: accent }).setOrigin(0, 0.5).setDepth(202).setAlpha(0);
+    const tx = this.scene.add.text(72, y, `${item.outlet}: ${item.text}`, { fontFamily: '"Galmuri9", monospace', fontSize: "8px", color: "#ffffff", wordWrap: { width: GAME_W - 84 } }).setOrigin(0, 0.5).setDepth(202).setAlpha(0);
+    this.scene.tweens.add({ targets: bar, scaleY: 1, duration: 140, ease: "Back.easeOut" });
+    this.scene.tweens.add({ targets: [tag, tx], alpha: 1, duration: 200, delay: 80 });
+    this.scene.time.delayedCall(3200, () => {
+      this.scene.tweens.add({
+        targets: [bar, tag, tx], alpha: 0, duration: 300, ease: "Quad.easeIn",
+        onComplete: () => { bar.destroy(); tag.destroy(); tx.destroy(); },
+      });
+    });
+  }
+
   _govSpeak() {
     // 불신 위기(trust<20)면 절반은 위기 대사 — 중앙 캐릭터가 게임 상태(믿음)에 반응하게.
     if (this.gameState.trustState && this.gameState.trustState() === "crisis" && Math.random() < 0.5) {
@@ -770,6 +797,8 @@ export class WorldView {
     this.scene.input.off("pointerdown", this._onPointer);
     document.removeEventListener("gp:event-resolved", this._onEventResolved);
     this._incomeTimer?.remove();
+    this._speakTimer?.remove();
+    this._pressTimer?.remove();
     this._goldenTimer?.remove();
     this._itemTimer?.remove();
     this._comboTimer?.remove();
