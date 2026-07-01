@@ -584,18 +584,19 @@ export class WorldView {
     const state = this.gameState.trustState ? this.gameState.trustState() : "normal";
     const comm = this.gameState.commGaugePct ? this.gameState.commGaugePct() : 0;
     const item = forced || pickPress(state, comm);
-    const y = 178;
+    const y = 176;
     const col = item.tone === "praise" ? 0x1f9e49 : item.tone === "mock" ? 0x8a2836 : 0x244055;
     const accent = item.tone === "praise" ? "#8df0b0" : item.tone === "mock" ? "#ff9a8e" : "#9fd0e0";
-    const bar = this.scene.add.rectangle(GAME_W / 2, y, GAME_W, 26, col, 0.95).setDepth(200).setScale(1, 0);
-    const tag = this.scene.add.text(10, y, "📰 외신", { fontFamily: '"Galmuri9", monospace', fontSize: "9px", color: accent }).setOrigin(0, 0.5).setDepth(202).setAlpha(0);
-    const tx = this.scene.add.text(72, y, `${item.outlet}: ${item.text}`, { fontFamily: '"Galmuri9", monospace', fontSize: "8px", color: "#ffffff", wordWrap: { width: GAME_W - 84 } }).setOrigin(0, 0.5).setDepth(202).setAlpha(0);
+    // 2줄 레이아웃 — 위: 📰 외신 · 매체명 / 아래: 헤드라인. 가독성↑
+    const bar = this.scene.add.rectangle(GAME_W / 2, y, GAME_W, 42, col, 0.95).setDepth(200).setScale(1, 0);
+    const top = this.scene.add.text(12, y - 10, `📰 외신 · ${item.outlet}`, { fontFamily: '"Galmuri9", monospace', fontSize: "9px", color: accent }).setOrigin(0, 0.5).setDepth(202).setAlpha(0);
+    const head = this.scene.add.text(12, y + 8, item.text, { fontFamily: '"Galmuri9", monospace', fontSize: "10px", color: "#ffffff", wordWrap: { width: GAME_W - 24 } }).setOrigin(0, 0.5).setDepth(202).setAlpha(0);
     this.scene.tweens.add({ targets: bar, scaleY: 1, duration: 140, ease: "Back.easeOut" });
-    this.scene.tweens.add({ targets: [tag, tx], alpha: 1, duration: 200, delay: 80 });
-    this.scene.time.delayedCall(3200, () => {
+    this.scene.tweens.add({ targets: [top, head], alpha: 1, duration: 200, delay: 80 });
+    this.scene.time.delayedCall(3400, () => {
       this.scene.tweens.add({
-        targets: [bar, tag, tx], alpha: 0, duration: 300, ease: "Quad.easeIn",
-        onComplete: () => { bar.destroy(); tag.destroy(); tx.destroy(); },
+        targets: [bar, top, head], alpha: 0, duration: 300, ease: "Quad.easeIn",
+        onComplete: () => { bar.destroy(); top.destroy(); head.destroy(); },
       });
     });
   }

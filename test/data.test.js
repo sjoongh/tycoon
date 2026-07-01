@@ -55,6 +55,30 @@ describe("게임 데이터 무결성", () => {
     }
   });
 
+  it("외신 반응(worldPress)은 4티어 모두 있고 각 항목이 outlet+text를 갖는다", async () => {
+    const { worldPress, pickPress } = await import("../src/data/worldPress.js");
+    for (const tier of ["praise", "neutral", "mock", "collapse"]) {
+      expect(Array.isArray(worldPress[tier])).toBe(true);
+      expect(worldPress[tier].length).toBeGreaterThan(0);
+      for (const h of worldPress[tier]) {
+        expect(typeof h.outlet).toBe("string");
+        expect(typeof h.text).toBe("string");
+      }
+    }
+    // pickPress: 티어별 tone 반환 + 전복 게이지 우선
+    expect(pickPress("bonus", 0).tone).toBe("praise");
+    expect(pickPress("crisis", 0).tone).toBe("mock");
+    expect(pickPress("normal", 0).tone).toBe("neutral");
+    expect(pickPress("bonus", 0.5).tone).toBe("mock"); // 전복 게이지 우선(collapse pool)
+  });
+
+  it("외신 반응에 실존 국가·언론사·인물 지목이 없다(법적 안전)", async () => {
+    const { worldPress } = await import("../src/data/worldPress.js");
+    const risky = /북한|중국|일본|미국|러시아|노동신문|조선중앙|신화통신|CNN|BBC|로이터|연합뉴스|대통령|위원장/;
+    const all = Object.values(worldPress).flat().map((h) => `${h.outlet} ${h.text}`).join(" ");
+    expect(risky.test(all)).toBe(false);
+  });
+
   it("데일리/주간 목표는 고유 id", () => {
     const d = dailyQuestDefinitions.map((x) => x.id);
     expect(new Set(d).size).toBe(d.length);
