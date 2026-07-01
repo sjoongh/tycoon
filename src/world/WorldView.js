@@ -758,6 +758,13 @@ export class WorldView {
 
   _refresh() {
     const d = this.gameState.data;
+    // 구역 돌파 시 외신 극찬 반응(진입 배너 뒤에 이어서) — 성취를 외신이 확인
+    if (this._prevArea != null && d.stage.area > this._prevArea) {
+      this.scene.time.delayedCall(1900, () => {
+        if (this.gov?.active) this._pressFlash({ outlet: "월드 프레스", text: `'${d.stage.area}구역 개표국' 승승장구 — 세계가 주목`, tone: "praise" });
+      });
+    }
+    this._prevArea = d.stage.area;
     this._applyEra(d.stage.area);
     const st = govStageFor(d);
     if (st !== this._govStage) {

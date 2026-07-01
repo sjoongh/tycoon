@@ -923,6 +923,7 @@ export class GameState extends Phaser.Events.EventEmitter {
       case "dexSeen": return this.seenEventCount();
       case "titlesOwned": return this.ownedTitleCount();
       case "titleDraws": return this.data.titleDraws || 0;
+      case "ciders": return this.data.stats.ciders || 0;
       default: return 0;
     }
   }

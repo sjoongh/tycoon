@@ -34,4 +34,6 @@ export const achievementDefinitions = [
   { id: "dex69", name: "개표국 사관(史官)", desc: "사건 도감 전 75종 수집", metric: "dexSeen", target: 75, reward: { explain: 800, seals: 2 } },
   { id: "draws50", name: "단골 인사과", desc: "인사 발령 뽑기 50회", metric: "titleDraws", target: 50, reward: { explain: 300 } },
   { id: "titlesAll", name: "인사 통달", desc: "국장 칭호 6종 모두 수집", metric: "titlesOwned", target: 6, reward: { explain: 600, seals: 2 } },
+  { id: "cider10", name: "사이다 제조기", desc: "사이다(정의구현) 10회", metric: "ciders", target: 10, reward: { explain: 200 } },
+  { id: "cider50", name: "정의의 개표국", desc: "사이다(정의구현) 50회", metric: "ciders", target: 50, reward: { explain: 600, seals: 1 } },
 ];
