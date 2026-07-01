@@ -16,6 +16,7 @@ const DAY_MS = 86400000;
 const DAILY_STREAK_CAP = 7;
 const TRUST_CRISIS = 20; // 이 미만이면 불신 위기(생산 페널티)
 const TRUST_BONUS = 90; // 이 이상이면 신뢰 보너스(생산 서지)
+const CIDER_TRUST = 12; // 사건 선택으로 믿음이 이만큼(+) 오르면 '사이다!' 정의구현 순간
 const COMM_THRESHOLD = 5; // 믿음이 이 이하로 바닥나면 '공산화' 게이지 누적
 const COMM_LIMIT = 40; // 게이지가 이 값(≈40초)에 도달하면 체제 전복(하드 리셋)
 const COMM_RECOVER = 3; // 믿음 회복 시 게이지가 1틱당 이만큼 감소(짧은 하락은 안전)
@@ -103,6 +104,7 @@ const fallbackState = {
     totalOfflineMs: 0,
     totalItems: 0,
     collapses: 0, // 공산화(체제 전복) 누적 횟수
+    ciders: 0, // 사이다(정의구현) 순간 누적
   },
   commGauge: 0, // 공산화 게이지(믿음 바닥 지속 시간 누적) — COMM_LIMIT 도달 시 하드 리셋
   achievements: {},
@@ -481,6 +483,13 @@ export class GameState extends Phaser.Events.EventEmitter {
     this.advanceTutorial("event");
     this.addLog(`사건 대응: 믿음 ${Math.round(this.data.trust)}%`);
     this.emit("float", { text: "대응완료", x: 195, y: 540, color: "#89d98b" });
+    // 사이다! — 원칙/투명 선택으로 믿음이 크게 오르면 속시원한 정의구현 순간(보너스 + 연출)
+    if ((effect.trust || 0) >= CIDER_TRUST) {
+      const bonus = Math.max(300, Math.round(this.cpsFor(this.data) * 90));
+      this.addVotes(bonus);
+      this.data.stats.ciders = (this.data.stats.ciders || 0) + 1;
+      this.emit("cider", { bonus, trust: Math.round(this.data.trust) });
+    }
     this.checkProgression();
     this.emit("changed");
   }

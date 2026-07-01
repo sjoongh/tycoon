@@ -43,6 +43,13 @@ const GOV_LINES_CRISIS = [
   "해명이 시급해요!", "이러다 큰일 나요…", "제발 믿어주세요…", "식은땀이 나네요",
 ];
 
+// 사이다! 정의구현 순간 국장의 통쾌한 반격 대사 — 속 시원한 한 방.
+const GOV_CLAPBACK = [
+  "봤지? 이게 원칙이다!", "떳떳하면 다 보여준다!", "의혹? 여기 증거 있소!",
+  "투명함이 곧 정답이지!", "거봐요, 깨끗하잖아요!", "이래도 못 믿겠어요?",
+  "정면돌파, 이게 개표국!", "뒤가 없으니 당당하다!", "속 시원하죠?",
+];
+
 // 큰 성취(업적/콤보/구역 진입 등 celebrate) 순간 국장이 외치는 반응 대사 — 중앙 캐릭터에 감정선 부여.
 const GOV_REACT_LINES = [
   "해냈다!", "이게 바로 개표국!", "믿어주셔서 감사합니다!",
@@ -147,6 +154,9 @@ export class WorldView {
     gameState.on("ballots", this._onBallots);
     gameState.on("upgraded", this._onUpgraded);
     gameState.on("celebrate", this._onCelebrate);
+    // 사이다! 정의구현 순간 — 통쾌한 연출
+    this._onCider = (p) => this._ciderMoment(p);
+    gameState.on("cider", this._onCider);
 
     // 실화 모티프 사건 해결 시 월드에 "📺 속보" 배너 연출
     this._onEventResolved = (e) => {
@@ -546,6 +556,29 @@ export class WorldView {
     });
   }
 
+  // 사이다! 정의구현 순간 — 큰 "🔥 사이다!" + 국장 반격 대사 + 외신 극찬 + 축포 + 점프.
+  _ciderMoment(p) {
+    const cx = GAME_W / 2;
+    // 큰 사이다 텍스트(금색, 팝)
+    const big = this.scene.add.text(cx, 262, "🔥 사이다!", { fontFamily: '"Galmuri14", monospace', fontSize: "26px", color: "#ffd34d" }).setOrigin(0.5).setDepth(210).setScale(0.4);
+    big.setShadow(3, 3, "#b13e53", 0, true, true);
+    this.scene.tweens.add({ targets: big, scale: 1, duration: 300, ease: "Back.easeOut" });
+    this.scene.tweens.add({ targets: big, alpha: 0, y: 232, duration: 500, delay: 900, onComplete: () => big.destroy() });
+    // 보너스 표시
+    if (p?.bonus) this.effects.float({ text: `+${shortNumber(p.bonus)}표`, x: cx, y: 340, color: "#8df0b0" });
+    // 국장 반격 대사 + 점프
+    const line = GOV_CLAPBACK[(Math.random() * GOV_CLAPBACK.length) | 0];
+    this.effects.float({ text: `"${line}"`, x: cx, y: 372, color: "#ffe9c0" });
+    this._govGesture();
+    // 축포 + 외신 극찬(사이다니까 강제 praise)
+    this.effects.ballots({ x: cx, y: 360, count: 10 });
+    this._pressFlash({ outlet: "글로벌 데일리", text: "'통쾌한 정면돌파' 세계가 박수", tone: "praise" });
+    document.dispatchEvent(new CustomEvent("gp:sfx", { detail: "achieve" }));
+    // 화면 골드 플래시(짧게)
+    const fl = this.scene.add.rectangle(cx, 422, GAME_W, 844, 0xffe9a8, 0.22).setDepth(205);
+    this.scene.tweens.add({ targets: fl, alpha: 0, duration: 260, ease: "Quad.easeOut", onComplete: () => fl.destroy() });
+  }
+
   // 외신 반응 배너 — 믿음 상태에 따라 톤이 바뀜(극찬=사이다 / 조롱=블랙코미디). 전부 가상 매체.
   _pressFlash(forced) {
     const state = this.gameState.trustState ? this.gameState.trustState() : "normal";
@@ -794,6 +827,7 @@ export class WorldView {
     this.gameState.off("ballots", this._onBallots);
     this.gameState.off("upgraded", this._onUpgraded);
     this.gameState.off("celebrate", this._onCelebrate);
+    this.gameState.off("cider", this._onCider);
     this.scene.input.off("pointerdown", this._onPointer);
     document.removeEventListener("gp:event-resolved", this._onEventResolved);
     this._incomeTimer?.remove();
