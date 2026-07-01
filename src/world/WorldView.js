@@ -21,7 +21,7 @@ const WORKER_SLOTS = [84, 160, 230, 306, 40, 350];
 const WORKER_SCALE = 3;
 const WORKER_Y = GROUND_Y + 4; // 바닥선(설비 선반보다 앞·아래)
 const SORTER_SCALE = BACK_SCALE; // 분류기도 뒷줄 동일 스케일
-// 국장 풍자 대사(선관위 이슈 위트, 정치 중립)
+// 국장 풍자 대사(개표국 이슈 위트, 정치 중립)
 const GOV_LINES = [
   "한 표만 믿어주세요!", "분류기는 정상입니다.", "소쿠리는 이제 그만…",
   "수검표 환영합니다.", "CCTV 다 공개할게요.", "야근 수당은 대체…",
@@ -528,7 +528,7 @@ export class WorldView {
     const bar = this.scene.add.rectangle(GAME_W / 2, y, GAME_W, 28, 0xb13e53, 0.96).setDepth(200).setScale(1, 0);
     const live = this.scene.add.rectangle(40, y, 52, 28, 0x14121c, 1).setDepth(201).setScale(1, 0);
     const liveTx = this.scene.add.text(40, y, "● 속보", { fontFamily: '"Galmuri9", monospace', fontSize: "9px", color: "#ff6a7c" }).setOrigin(0.5).setDepth(202).setAlpha(0);
-    const tx = this.scene.add.text(96, y, `${title || "선관위 사건"}`, { fontFamily: '"Galmuri9", monospace', fontSize: "10px", color: "#ffffff" }).setOrigin(0, 0.5).setDepth(202).setAlpha(0);
+    const tx = this.scene.add.text(96, y, `${title || "개표국 사건"}`, { fontFamily: '"Galmuri9", monospace', fontSize: "10px", color: "#ffffff" }).setOrigin(0, 0.5).setDepth(202).setAlpha(0);
     this.scene.tweens.add({ targets: [bar, live], scaleY: 1, duration: 150, ease: "Back.easeOut" });
     this.scene.tweens.add({ targets: [tx, liveTx], alpha: 1, duration: 200, delay: 90 });
     this._govGesture();

@@ -77,7 +77,7 @@ export class DOMMapModal {
       ["오프라인 적립", `${offH}시간`],
     ].map(([k, v]) => `<div class="gp-stat-row"><span>${k}</span><b>${v}</b></div>`).join("");
 
-    // 사건 도감 — 겪은(해결한) 선관위 사건 수집 현황(영구). 미수집은 잠금 표시.
+    // 사건 도감 — 겪은(해결한) 개표국 사건 수집 현황(영구). 미수집은 잠금 표시.
     const total = officeEvents.length;
     const seenN = gs.seenEventCount();
     const dexPct = Math.round(gs.dexBonusPct() * 100);
@@ -109,7 +109,7 @@ export class DOMMapModal {
         <div class="gp-dex__tip">수집한 사건을 눌러 다시 읽어보세요</div>
         <div class="gp-dex">${dexCells}</div>
       </div>
-      <div class="gp-map__foot">구역을 정복할수록 더 높은 권위의 개표소로 이동합니다</div>
+      <div class="gp-map__foot">구역을 정복할수록 더 높은 권위의 개표소로 이동합니다<br><span class="gp-disclaimer">※ 창작 픽션 — 실존 기관·인물·단체와 무관하며 비방 의도가 없습니다</span></div>
     </div>`;
   }
 
@@ -127,7 +127,7 @@ export class DOMMapModal {
     el.className = "gp-dexdt";
     el.innerHTML = `<div class="gp-dexdt__card">
       <div class="gp-dexdt__hd">${real ? "🏛 " : "📄 "}${esc(ev.title)}<button class="gp-dexdt__x" aria-label="닫기">✕</button></div>
-      <div class="gp-dexdt__meta">${real ? "실화 모티프 · " : ""}${ev.minStage || 1}구역부터 등장</div>
+      <div class="gp-dexdt__meta">${real ? "영감받은 각색 · " : ""}${ev.minStage || 1}구역부터 등장</div>
       <div class="gp-dexdt__body">${esc(ev.body)}</div>
       <div class="gp-dexdt__opts">${choice(ev.left, "A")}${choice(ev.right, "B")}</div>
       <div class="gp-dexdt__foot">눌러서 닫기</div>

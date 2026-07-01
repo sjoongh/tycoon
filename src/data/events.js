@@ -388,7 +388,7 @@ export const officeEvents = [
     right: ["스피드런", { votes: 1500, trust: -11 }, "최고 속도로 주파합니다. 기록은 남지만 잡음도."],
   },
 
-  // ── 실화 모티프 선관위 풍자(운영·행정 이슈를 위트있게, 정치 중립) ──
+  // ── 실화 모티프 개표국 풍자(운영·행정 이슈를 위트있게, 정치 중립) ──
   {
     id: "basket-incident",
     title: "소쿠리 운반 사태",
@@ -480,7 +480,7 @@ export const officeEvents = [
     right: ["쓰던 용지로", { votes: 320, trust: -6 }, "기존 용지를 고수합니다. 잔소리가 이어집니다."],
   },
 
-  // ── 선관위·개표 실화 모티프 (추가분, 정치 중립) ───────────────
+  // ── 개표국·개표 실화 모티프 (추가분, 정치 중립) ───────────────
   {
     id: "broadcast-bug",
     title: "개표방송 그래픽 사고",
@@ -647,8 +647,8 @@ export const officeEvents = [
   },
   {
     id: "phishing-text",
-    title: "선관위 사칭 문자",
-    body: "'당첨! 개표 결과 미리보기 ▶ 클릭' 선관위를 사칭한 스미싱 문자가 전국에 살포됐습니다.",
+    title: "개표국 사칭 문자",
+    body: "'당첨! 개표 결과 미리보기 ▶ 클릭' 개표국를 사칭한 스미싱 문자가 전국에 살포됐습니다.",
     weight: 5,
     minStage: 6,
     left: ["공식채널 공지", { explain: -18, trust: 12 }, "'우리는 링크를 보내지 않습니다' 전 국민 공지를 띄웁니다. 신뢰가 오릅니다."],
@@ -665,7 +665,7 @@ export const officeEvents = [
   },
 ];
 
-// "실화 모티프" 사건 — UI에서 🏛 배지로 구분(실제 선관위/개표 이슈를 위트로 각색, 정치 중립)
+// "실화 모티프" 사건 — UI에서 🏛 배지로 구분(실제 개표국/개표 이슈를 위트로 각색, 정치 중립)
 export const realEventIds = new Set([
   "recount-demand", "observer-note", "rumor-online",
   "basket-incident", "hand-recount-system", "nepotism-hire", "security-audit",

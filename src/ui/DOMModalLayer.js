@@ -82,6 +82,7 @@ export class DOMModalLayer {
         <div class="gp-dots">${dots}</div>
         <button class="gp-btn gp-btn--gold" data-next>${last ? "분류 시작!" : "다음"}</button>
         ${last ? "" : `<button class="gp-skip" data-skip>건너뛰기</button>`}
+        <div class="gp-disclaimer">※ 본 게임은 창작 픽션입니다. 등장하는 기관·사건·인물은 실존과 무관하며 특정 대상을 비방할 의도가 없습니다. 일부는 공개된 사회 이슈에서 영감받아 위트있게 각색했습니다.</div>
       </div>`;
     };
     ov.addEventListener("click", (e) => {

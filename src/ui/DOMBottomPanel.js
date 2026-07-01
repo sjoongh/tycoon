@@ -258,7 +258,7 @@ export class DOMBottomPanel {
     const ev = this.currentEvent;
     if (ev) {
       const real = realEventIds.has(ev.id);
-      const realBadge = real ? `<div class="gp-event__real">🏛 실화 모티프</div>` : "";
+      const realBadge = real ? `<div class="gp-event__real">🏛 영감받은 각색</div>` : "";
       this.panel.innerHTML = `<div class="gp-event${real ? " gp-event--real" : ""}">${realBadge}<div class="gp-event__title">${ev.title}</div><div class="gp-event__body">${ev.body}</div>
         <div class="gp-event__choices">
           <button class="gp-btn gp-event__c" data-action="eventChoice" data-id="${ev.id}" data-side="left">${ev.left[0]}<small>${ev.left[2]}</small></button>

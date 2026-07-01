@@ -373,3 +373,5 @@ body { background-color: var(--bg-deep); background-image: repeating-linear-grad
 .gp-rank__area { font-family: var(--f-bold); color: var(--gold-hi); }
 .gp-rank__msg { padding: 30px 16px; text-align: center; font-family: var(--f-small); font-size: 11px; color: var(--ink-soft); }
 .gp-nickinput { width: 100%; margin-top: 10px; padding: 10px; font-family: var(--f-body); font-size: 13px; background: var(--panel-sunk); color: var(--ink); border: 2px solid var(--line); box-sizing: border-box; }
+/* 창작 픽션 면책 문구 */
+.gp-disclaimer { display: block; margin-top: 8px; font-family: var(--f-small); font-size: 8px; line-height: 1.5; color: var(--ink-faint, #6b5d52); opacity: 0.85; }

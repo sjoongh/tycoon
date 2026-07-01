@@ -8,9 +8,9 @@ export const regions = [
   { name: "도청 대광장", desc: "재검표 요구 빗발", icon: "📢" },
   { name: "광역시 체육관", desc: "수만 표가 쏟아진다", icon: "🏟" },
   { name: "국회 앞 광장", desc: "전국이 주목", icon: "🏛" },
-  { name: "중앙선관위", desc: "권위의 본진", icon: "⚖️" },
+  { name: "중앙개표청", desc: "권위의 본진", icon: "⚖️" },
   { name: "전국 통합 개표소", desc: "역사적 동시 개표", icon: "🗳" },
-  { name: "청와대 영빈관", desc: "최고위층 방문", icon: "🏯" },
+  { name: "중앙 관저 영빈관", desc: "최고위층 방문", icon: "🏯" },
   { name: "국제 참관 개표장", desc: "세계가 지켜본다", icon: "🌐" },
   { name: "우주정거장 개표국", desc: "은하 표심까지", icon: "🛰" },
 ];
