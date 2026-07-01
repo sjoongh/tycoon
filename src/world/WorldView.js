@@ -581,6 +581,11 @@ export class WorldView {
 
   // 외신 반응 배너 — 믿음 상태에 따라 톤이 바뀜(극찬=사이다 / 조롱=블랙코미디). 전부 가상 매체.
   _pressFlash(forced) {
+    // 겹침 방지 — 이미 뜬 외신 배너가 있으면 즉시 제거하고 새 배너로 교체(강제 트리거 우선)
+    if (this._pressEls) {
+      this._pressEls.forEach((el) => el.destroy());
+      this._pressEls = null;
+    }
     const state = this.gameState.trustState ? this.gameState.trustState() : "normal";
     const comm = this.gameState.commGaugePct ? this.gameState.commGaugePct() : 0;
     const item = forced || pickPress(state, comm);
@@ -591,9 +596,11 @@ export class WorldView {
     const bar = this.scene.add.rectangle(GAME_W / 2, y, GAME_W, 42, col, 0.95).setDepth(200).setScale(1, 0);
     const top = this.scene.add.text(12, y - 10, `📰 외신 · ${item.outlet}`, { fontFamily: '"Galmuri9", monospace', fontSize: "9px", color: accent }).setOrigin(0, 0.5).setDepth(202).setAlpha(0);
     const head = this.scene.add.text(12, y + 8, item.text, { fontFamily: '"Galmuri9", monospace', fontSize: "10px", color: "#ffffff", wordWrap: { width: GAME_W - 24 } }).setOrigin(0, 0.5).setDepth(202).setAlpha(0);
+    this._pressEls = [bar, top, head];
     this.scene.tweens.add({ targets: bar, scaleY: 1, duration: 140, ease: "Back.easeOut" });
     this.scene.tweens.add({ targets: [top, head], alpha: 1, duration: 200, delay: 80 });
     this.scene.time.delayedCall(3400, () => {
+      if (this._pressEls && this._pressEls[0] === bar) this._pressEls = null;
       this.scene.tweens.add({
         targets: [bar, top, head], alpha: 0, duration: 300, ease: "Quad.easeIn",
         onComplete: () => { bar.destroy(); top.destroy(); head.destroy(); },
