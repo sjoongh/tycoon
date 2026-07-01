@@ -37,7 +37,7 @@ const DEX_MILESTONES = [
   { n: 25, pct: 0.07 },
   { n: 40, pct: 0.12 },
   { n: 55, pct: 0.18 },
-  { n: 72, pct: 0.25 }, // 전종 수집 완성(officeEvents 총수와 일치 — 사건 추가 시 함께 갱신)
+  { n: 75, pct: 0.25 }, // 전종 수집 완성(officeEvents 총수와 일치 — 사건 추가 시 함께 갱신)
 ];
 
 const SAVE_VERSION = 3;
