@@ -23,9 +23,9 @@ async function boot() {
 const fails = [];
 const expect = (cond, msg) => { if (!cond) fails.push(msg); };
 
-await p.goto(URL, { waitUntil: "networkidle", timeout: 30000 });
+await p.goto(URL, { waitUntil:"domcontentloaded", timeout: 30000 });
 await p.evaluate(() => localStorage.clear());
-await p.reload({ waitUntil: "networkidle" }); await boot();
+await p.reload({ waitUntil:"domcontentloaded" }); await boot();
 
 // 1) 수집 + 저장 → localStorage에 seenEvents/titles 기록
 const s1 = await p.evaluate((KEY) => {
@@ -43,7 +43,7 @@ expect(s1.savedTitleKeys === 2, `저장된 titles 2 기대, 실제 ${s1.savedTit
 expect(s1.savedDraws === 9, `저장된 titleDraws 9 기대, 실제 ${s1.savedDraws}`);
 
 // 2) 리로드 후 복원
-await p.reload({ waitUntil: "networkidle" }); await boot();
+await p.reload({ waitUntil:"domcontentloaded" }); await boot();
 const s2 = await p.evaluate(() => {
   const gs = window.__game.registry.get("gameState");
   return { afterReload: gs.seenEventCount(), hasPhishing: gs.hasSeenEvent("phishing-text"), titlesOwned: gs.ownedTitleCount(), draws: gs.data.titleDraws, eq: gs.data.equippedTitle, cos: gs.ownedCosmeticCount(), char: gs.currentCharacter().id };

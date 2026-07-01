@@ -1,7 +1,7 @@
 import { chromium } from "playwright";
 const b = await chromium.launch({ args:["--use-gl=angle","--use-angle=swiftshader","--enable-unsafe-swiftshader","--ignore-gpu-blocklist","--enable-webgl"] });
 const p = await b.newPage({ viewport:{width:390,height:844} });
-await p.goto("http://localhost:5178/",{waitUntil:"networkidle"});
+await p.goto("http://localhost:5178/",{waitUntil:"domcontentloaded"});
 // wait until GameScene active
 for (let i=0;i<30;i++){ const ok=await p.evaluate(()=>{const g=window.__game;const s=g&&g.scene.getScene("GameScene");return s&&s.scene.isActive();}); if(ok)break; await p.waitForTimeout(300); }
 const st = () => p.evaluate(()=>{const d=window.__game.registry.get("gameState").data;return {votes:Math.round(d.votes),explain:Math.round(d.explain),trust:Math.round(d.trust),area:d.stage.area,prog:Math.round(d.stage.progress),target:d.stage.target,desk:d.facilities.desk,clicks:d.stats.totalClicks};});

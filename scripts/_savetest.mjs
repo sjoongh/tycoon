@@ -14,7 +14,7 @@ for(const [name,raw] of Object.entries(cases)){
   const p=await ctx.newPage();
   const errs=[]; p.on("pageerror",e=>errs.push(e.message)); p.on("console",m=>{if(m.type()==="error")errs.push("C:"+m.text());});
   await p.addInitScript(([k,v])=>{try{localStorage.setItem(k,v);}catch(e){}}, [KEY,raw]);
-  await p.goto("http://localhost:5178/",{waitUntil:"networkidle",timeout:30000});
+  await p.goto("http://localhost:5178/",{waitUntil:"domcontentloaded",timeout:30000});
   await p.waitForTimeout(1800);
   const d=await p.evaluate(()=>{const g=window.__game?.registry.get("gameState")?.data; if(!g)return null; return {votes:g.votes,trust:g.trust,area:g.stage.area,prog:g.stage.progress,items:g.daily.items,ti:g.stats.totalItems,days:g.days};});
   const ok = d && d.votes>=0 && d.trust>=0 && d.trust<=100 && d.area>=1 && Number.isFinite(d.votes) && Number.isFinite(d.ti) && errs.length===0;
