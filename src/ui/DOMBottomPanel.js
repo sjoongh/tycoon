@@ -65,9 +65,29 @@ export class DOMBottomPanel {
     parent.appendChild(this.root);
     this.gameState.on("changed", this._refresh);
     this.refresh();
+
+    // 패널 실높이를 게임좌표로 환산해 브로드캐스트 — 월드 카메라가 따라 올라가
+    // 어떤 탭/기기에서도 국장·시설·초당표가 패널에 잘리지 않게 한다(BUG2).
+    this._panelParent = parent;
+    this._ro = new ResizeObserver(() => this._emitSheetTop());
+    this._ro.observe(this.root);
+    this._emitSheetTop();
+  }
+
+  _emitSheetTop() {
+    try {
+      const ui = this._panelParent.getBoundingClientRect();
+      if (!ui.height) return;
+      const t = this.root.getBoundingClientRect().top;
+      const topGame = (t - ui.top) * (844 / ui.height); // FIT 스케일 대응
+      // FAB(러시/브리핑) 동적 앵커용 — 패널 실높이를 CSS 변수로 기록
+      this._panelParent.style.setProperty("--panel-h", `${Math.round(ui.bottom - t)}px`);
+      document.dispatchEvent(new CustomEvent("gp:sheet-top", { detail: { topGame } }));
+    } catch {}
   }
 
   destroy() {
+    this._ro?.disconnect();
     this.gameState.off("changed", this._refresh);
     // Clean up world overlays injected in mount() to avoid orphaned DOM on prestige reset
     this._scanlines?.remove();
@@ -111,6 +131,7 @@ export class DOMBottomPanel {
       case "buyPrestige": gs.buyPrestigeUpgrade(id); break;
       case "prestigeReset": document.dispatchEvent(new CustomEvent("gp:prestige-confirm")); break;
       case "claimDaily": gs.claimDailyQuest(id); this.refresh(); break;
+      case "claimAttendance": gs.claimDaily(); this.refresh(); break;
       case "claimWeekly": gs.claimWeekly(); this.refresh(); break;
     }
   }
@@ -154,7 +175,7 @@ export class DOMBottomPanel {
     if (eventDot) eventDot.hidden = !(gs.eventReady() && activeTab !== "events");
     // 목표 탭: 일일 퀘스트 수령 가능 시 알림 점
     const goalDot = this.root.querySelector('[data-dot="goals"]');
-    const goalClaimable = (gs.anyDailyQuestClaimable && gs.anyDailyQuestClaimable()) || (gs.weeklyClaimable && gs.weeklyClaimable());
+    const goalClaimable = (gs.anyDailyQuestClaimable && gs.anyDailyQuestClaimable()) || (gs.weeklyClaimable && gs.weeklyClaimable()) || (gs.dailyStatus && gs.dailyStatus().available);
     if (goalDot) goalDot.hidden = !(goalClaimable && activeTab !== "goals");
   }
 
@@ -259,10 +280,20 @@ export class DOMBottomPanel {
     if (ev) {
       const real = realEventIds.has(ev.id);
       const realBadge = real ? `<div class="gp-event__real">🏛 영감받은 각색</div>` : "";
+      // 선택 결과 수치 미리보기 — 신규 유저도 결과 예측 가능(사이다 예고 포함)
+      const fx = (eff) => {
+        const scale = gs.eventRewardScale ? gs.eventRewardScale() : 1;
+        const parts = [];
+        if (eff.votes) parts.push(`<i class="${eff.votes > 0 ? "gp-fx--up" : "gp-fx--dn"}">표 ${eff.votes > 0 ? "+" : ""}${shortNumber(Math.round(eff.votes > 0 ? eff.votes * scale : eff.votes))}</i>`);
+        if (eff.explain) parts.push(`<i class="${eff.explain > 0 ? "gp-fx--up" : "gp-fx--dn"}">해명 ${eff.explain > 0 ? "+" : ""}${shortNumber(Math.round(eff.explain > 0 ? eff.explain * scale : eff.explain))}</i>`);
+        if (eff.trust) parts.push(`<i class="${eff.trust > 0 ? "gp-fx--up" : "gp-fx--dn"}">믿음 ${eff.trust > 0 ? "+" : ""}${eff.trust}</i>`);
+        if ((eff.trust || 0) >= 12) parts.push(`<i class="gp-fx--cider">🔥사이다</i>`);
+        return `<span class="gp-event__fx">${parts.join("")}</span>`;
+      };
       this.panel.innerHTML = `<div class="gp-event${real ? " gp-event--real" : ""}">${realBadge}<div class="gp-event__title">${ev.title}</div><div class="gp-event__body">${ev.body}</div>
         <div class="gp-event__choices">
-          <button class="gp-btn gp-event__c" data-action="eventChoice" data-id="${ev.id}" data-side="left">${ev.left[0]}<small>${ev.left[2]}</small></button>
-          <button class="gp-btn gp-event__c" data-action="eventChoice" data-id="${ev.id}" data-side="right">${ev.right[0]}<small>${ev.right[2]}</small></button>
+          <button class="gp-btn gp-event__c" data-action="eventChoice" data-id="${ev.id}" data-side="left">${ev.left[0]}<small>${ev.left[2]}</small>${fx(ev.left[1])}</button>
+          <button class="gp-btn gp-event__c" data-action="eventChoice" data-id="${ev.id}" data-side="right">${ev.right[0]}<small>${ev.right[2]}</small>${fx(ev.right[1])}</button>
         </div></div>`;
     } else {
       const log = (gs.data.log || []).slice(0, 3).map((l) => `<div class="gp-logline">${l}</div>`).join("");
@@ -295,6 +326,14 @@ export class DOMBottomPanel {
 
   _renderGoals() {
     const gs = this.gameState;
+    // 출석 보상 회수 행 — 모달을 실수로 닫아도 여기서 받기(스트릭 파손 방지)
+    let dailyRow = "";
+    if (gs.dailyStatus) {
+      const st = gs.dailyStatus();
+      if (st.available) {
+        dailyRow = `<div class="gp-goal gp-goal--active"><div class="gp-goal__head"><span class="gp-goal__title">📅 출석 보상 ${st.streak}일차</span><button class="gp-btn gp-btn--sm gp-btn--gold" data-action="claimAttendance">받기</button></div><div class="gp-goal__desc">해명 +${st.reward.explain} · 표 +${shortNumber(st.reward.votes)}${st.reward.seals ? " · 인장 +1" : ""}</div></div>`;
+      }
+    }
     const active = gs.nextQuest();
     const doneCount = questDefinitions.filter((q) => gs.data.quests[q.id]).length;
 
@@ -386,6 +425,7 @@ export class DOMBottomPanel {
       ? `<button class="gp-btn gp-btn--sm gp-rankbtn" data-action="openRank">🏆 랭킹</button>` : "";
     this.panel.innerHTML = `<div class="gp-paneltitle">운영 목표 · ${titleProgress}${rankBtn}</div>
       <div class="gp-goallist-wrap"><div class="gp-stafflist gp-goallist">
+      ${dailyRow}
       ${weeklyRow ? `<div class="gp-goal__section">&#9733; 주간 한정 · 일요일 종료</div>${weeklyRow}` : ""}
       <div class="gp-goal__section">&#9670; 일일 퀘스트 ${dailyClaimed}/${dailyQuestDefinitions.length} · 자정 초기화</div>${dailyRows}
       <div class="gp-goal__section">운영 목표</div>${questRows}

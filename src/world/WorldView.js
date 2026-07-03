@@ -158,6 +158,17 @@ export class WorldView {
     this._onCider = (p) => this._ciderMoment(p);
     gameState.on("cider", this._onCider);
 
+    // 하단 패널 높이에 맞춰 카메라를 위로 스크롤 — 국장·시설·초당표가 패널에 절대 안 잘리게(BUG2).
+    // WORLD_BOTTOM = cps 라벨 하단(GROUND_Y+34). 패널 top이 그보다 위면 그 차이만큼 카메라를 올린다.
+    this._onSheetTop = (e) => {
+      const WORLD_BOTTOM = GROUND_Y + 34;
+      const target = Math.max(0, WORLD_BOTTOM - e.detail.topGame + 6);
+      if (Math.abs((this._camTarget ?? -1) - target) < 1) return;
+      this._camTarget = target;
+      scene.tweens.add({ targets: scene.cameras.main, scrollY: target, duration: 180, ease: "Quad.easeOut" });
+    };
+    document.addEventListener("gp:sheet-top", this._onSheetTop);
+
     // 실화 모티프 사건 해결 시 월드에 "📺 속보" 배너 연출
     this._onEventResolved = (e) => {
       if (!e.detail) return;
@@ -496,6 +507,7 @@ export class WorldView {
       targets: b, y: ty - 34, duration: 220, yoyo: true, ease: "Sine.easeOut",
       onComplete: () => {
         this._flying = Math.max(0, (this._flying || 1) - 1);
+        this.scene.tweens.killTweensOf(b); // 동시 x/scale 트윈이 파괴된 오브젝트를 만지지 않게(BUG-08)
         b.destroy();
         // 투표함이 표를 받아 살짝 들썩
         if (this.ballotbox && this.ballotbox.active) {
@@ -843,6 +855,7 @@ export class WorldView {
     this.gameState.off("upgraded", this._onUpgraded);
     this.gameState.off("celebrate", this._onCelebrate);
     this.gameState.off("cider", this._onCider);
+    document.removeEventListener("gp:sheet-top", this._onSheetTop);
     this.scene.input.off("pointerdown", this._onPointer);
     document.removeEventListener("gp:event-resolved", this._onEventResolved);
     this._incomeTimer?.remove();
@@ -855,6 +868,9 @@ export class WorldView {
     this._speakTimer?.remove();
     this._despawnGolden();
     this._despawnItem();
+    // 무한 반복 트윈 정리 — 파괴된 오브젝트를 계속 갱신하지 않게(BUG-04)
+    if (this.titleHint) this.scene.tweens.killTweensOf(this.titleHint);
+    if (this.board) this.scene.tweens.killTweensOf(this.board);
     this.scene.tweens.killTweensOf(this.gov);
     this.gov?.destroy();
     this.bigNum?.destroy();

@@ -184,6 +184,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     data.daily.claimed = (data.daily.claimed && typeof data.daily.claimed === "object") ? data.daily.claimed : {};
     data.commGauge = Phaser.Math.Clamp(Number(data.commGauge) || 0, 0, COMM_LIMIT);
     data.stats.collapses = Math.max(0, Math.floor(Number(data.stats.collapses) || 0));
+    data.stats.ciders = Math.max(0, Math.floor(Number(data.stats.ciders) || 0));
     // 누적 통계 숫자 정규화(손상/NaN 방지 — 통계 화면·업적 metric이 의존)
     ["totalVotes", "totalClicks", "totalUpgrades", "totalEvents", "totalOfflineMs", "totalItems"].forEach((k) => {
       data.stats[k] = Math.max(0, Number(data.stats[k]) || 0);
@@ -250,7 +251,19 @@ export class GameState extends Phaser.Events.EventEmitter {
     document.addEventListener("freeze", () => this.save(false));
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "hidden") this.save(false);
+      else if (document.visibilityState === "visible") this.resumeOfflineProgress();
     });
+  }
+
+  // 백그라운드에서 복귀했을 때 자리 비운 시간을 오프라인 생산으로 정산(모바일 앱 리줌 대응).
+  resumeOfflineProgress() {
+    const now = Date.now();
+    const reward = this.applyOfflineProgress(this.data, now);
+    this.data.lastSeenAt = now;
+    if (reward) {
+      this.addLog(`복귀 정산: +${Math.round(reward.votes)}표`);
+      this.emit("changed");
+    }
   }
 
   applyOfflineProgress(data, now) {
@@ -296,7 +309,13 @@ export class GameState extends Phaser.Events.EventEmitter {
     const now = Date.now();
     this.data.lastSavedAt = now;
     this.data.lastSeenAt = now;
-    localStorage.setItem(SAVE_KEY, JSON.stringify(this.data));
+    try {
+      localStorage.setItem(SAVE_KEY, JSON.stringify(this.data));
+    } catch (e) {
+      // 저장 실패(용량/프라이빗 모드)로 게임 루프가 죽지 않게 — 1회만 경고
+      if (!this._saveWarned) { this._saveWarned = true; console.warn("save failed:", e); }
+      return;
+    }
     if (notify) this.emit("saved");
   }
 

@@ -47,7 +47,7 @@
 .gp-chip--explain { flex-grow: 1.2; }
 .gp-chip--trust  { flex-grow: 0.9; }
 .gp-chip__ic { width: 18px; height: 18px; flex: none; background-size: contain; background-repeat: no-repeat; background-position: center; image-rendering: pixelated; }
-.gp-chip__val { font-family: var(--f-bold); font-size: 13px; color: var(--cyan, var(--gem)); line-height: 1.1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gp-chip__val { font-family: var(--f-bold); font-size: 14px; color: var(--cyan, var(--gem)); line-height: 1.1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .gp-chip__label { font-family: var(--f-small); font-size: 9px; color: var(--ink-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .gp-progress { height: 14px; background: var(--bg2); overflow: hidden; border: 3px solid var(--line); box-shadow: var(--px-out-sm); }
 .gp-progress__fill { height: 100%; width: 0%; background: var(--gold); box-shadow: inset 0 -3px 0 rgba(0,0,0,0.22); transition: width .3s steps(8, end); }
@@ -76,7 +76,7 @@
 .gp-bell { position: absolute; top: max(9px, env(safe-area-inset-top)); right: 50px; pointer-events: auto; width: 36px; height: 36px; border: 3px solid var(--line); background: var(--panel); box-shadow: var(--px-out-sm); font-size: 15px; cursor: pointer; z-index: 10; display: none; align-items: center; justify-content: center; }
 
 /* 긴급 개표(러시) FAB */
-.gp-rush { position: absolute; right: 12px; bottom: 310px; z-index: 9; pointer-events: auto; border: 3px solid var(--line); padding: 8px 12px; cursor: pointer;
+.gp-rush { position: absolute; right: 12px; bottom: calc(var(--panel-h, 300px) + 10px); z-index: 9; pointer-events: auto; border: 3px solid var(--line); padding: 8px 12px; cursor: pointer;
   display: flex; flex-direction: column; align-items: center; gap: 1px; min-width: 92px; font-family: var(--f-bold); line-height: 1.25; box-shadow: var(--px-drop); }
 .gp-rush b { font-size: 12px; }
 .gp-rush small { font-family: var(--f-small); font-size: 9px; opacity: 0.92; }
@@ -85,10 +85,10 @@
 .gp-rush--active { background: linear-gradient(0deg, rgba(0,0,0,0.32) var(--rush-pct,100%), transparent var(--rush-pct,100%)), var(--event); color: #fff; }
 .gp-rush--cd { background: var(--panel2); color: var(--ink-soft); cursor: not-allowed; opacity: 0.85; }
 @keyframes gp-rush-pulse { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
-@media (max-height: 700px) { .gp-rush { bottom: 250px; transform: scale(0.85); transform-origin: bottom right; } }
+@media (max-height: 700px) { .gp-rush { transform: scale(0.85); transform-origin: bottom right; } }
 
 /* 긴급 브리핑 FAB(좌측) */
-.gp-brief { position: absolute; left: 12px; bottom: 310px; z-index: 9; pointer-events: auto; border: 3px solid var(--line); padding: 8px 12px; cursor: pointer;
+.gp-brief { position: absolute; left: 12px; bottom: calc(var(--panel-h, 300px) + 10px); z-index: 9; pointer-events: auto; border: 3px solid var(--line); padding: 8px 12px; cursor: pointer;
   display: flex; flex-direction: column; align-items: center; gap: 1px; min-width: 92px; font-family: var(--f-bold); line-height: 1.25; box-shadow: var(--px-drop); }
 .gp-brief b { font-size: 12px; }
 .gp-brief small { font-family: var(--f-small); font-size: 9px; opacity: 0.92; }
@@ -96,7 +96,7 @@
 .gp-brief--ready:active { transform: translateY(4px); box-shadow: 0 0 0 #000; animation: none; }
 .gp-brief--active { background: #1f9e49; color: #fff; }
 .gp-brief--cd, .gp-brief--poor { background: var(--panel2); color: var(--ink-soft); cursor: not-allowed; opacity: 0.85; }
-@media (max-height: 700px) { .gp-brief { bottom: 250px; transform: scale(0.85); transform-origin: bottom left; } }
+@media (max-height: 700px) { .gp-brief { transform: scale(0.85); transform-origin: bottom left; } }
 
 /* ---------- bottom sheet ---------- */
 .gp-bottom { position: absolute; left: 0; right: 0; bottom: 0; pointer-events: auto;
@@ -128,7 +128,7 @@
 .gp-btn--danger { background: var(--red); color: #fff; }
 .gp-btn--event { position: relative; overflow: hidden; width: 100%; padding: 13px; font-size: 15px; color: #fff; margin-top: 8px; background: var(--event); }
 .gp-btn--event.gp-btn--disabled::before { content: ''; position: absolute; inset: 0; background: rgba(255,160,80,0.3); width: var(--cd-pct, 0%); transition: width 1s linear; pointer-events: none; }
-.gp-btn--upgrade { display: flex; flex-direction: column; align-items: center; gap: 1px; min-width: 72px; flex-shrink: 0; white-space: nowrap; padding: 8px 11px; font-size: 12px; line-height: 1.25; }
+.gp-btn--upgrade { display: flex; flex-direction: column; align-items: center; gap: 1px; min-width: 72px; flex-shrink: 0; white-space: nowrap; padding: 8px 11px; font-family: var(--f-body); font-size: 11px; line-height: 1.3; }
 .gp-btn--upgrade small { font-family: var(--f-small); font-size: 9px; opacity: 0.9; }
 
 /* ---------- 일괄구매 수량 토글 ---------- */
@@ -189,7 +189,7 @@
 .gp-seal--locked { cursor: not-allowed; opacity: 0.45; }
 
 /* ---------- tabs ---------- */
-.gp-tabs { display: flex; gap: 5px; flex: none; margin-top: 8px; }
+.gp-tabs { display: flex; gap: 5px; flex: none; margin-top: 8px; position: relative; z-index: 6; }
 .gp-tab { position: relative; flex: 1; pointer-events: auto; border: 3px solid var(--line); padding: 6px 4px 7px; font-family: var(--f-small); font-size: 11px; background: var(--panel2); color: var(--ink-soft); cursor: pointer; box-shadow: var(--px-out-sm); text-align: center; }
 .gp-tab__ic { display: block; width: 18px; height: 18px; margin: 0 auto 3px; background-size: contain; background-repeat: no-repeat; background-position: center; image-rendering: pixelated; }
 .gp-tab__dot { position: absolute; top: 4px; right: 6px; width: 9px; height: 9px; background: #ff5a5a; border: 1px solid #000; animation: gp-dot-pulse 1.1s steps(2) infinite; }
@@ -221,7 +221,7 @@
 .gp-goal--locked .gp-goal__desc, .gp-goal--locked .gp-goal__foot { color: #6a7a8a; }
 .gp-goal--locked .gp-progress__fill { background: var(--ink-soft); opacity: 0.5; }
 .gp-goal__head { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; }
-.gp-goal__title { font-family: var(--f-bold); color: var(--ink); font-size: 13px; }
+.gp-goal__title { font-family: var(--f-bold); color: var(--ink); font-size: 14px; }
 .gp-goal__badge { font-family: var(--f-small); font-size: 9px; padding: 2px 6px; background: var(--ink-soft); color: #000; flex: none; border: 1px solid #000; }
 .gp-goal--active .gp-goal__badge { background: var(--gold); }
 .gp-goal--done .gp-goal__badge { background: var(--buy); }
@@ -271,7 +271,7 @@
 
 /* ---------- modal layer / onboarding / juice ---------- */
 .gp-modal-layer { position: absolute; inset: 0; pointer-events: none; }
-.gp-modal-ov { position: absolute; inset: 0; pointer-events: auto; background: rgba(8,8,18,0.78); display: flex; align-items: center; justify-content: center; animation: gpFade .2s steps(3); }
+.gp-modal-ov { position: absolute; inset: 0; z-index: 30; pointer-events: auto; background: rgba(8,8,18,0.78); display: flex; align-items: center; justify-content: center; animation: gpFade .2s steps(3); }
 .gp-modal { width: 84%; max-width: 320px; background: var(--bg); border: 4px solid var(--line); padding: 20px 18px; text-align: center; box-shadow: var(--px-out), 0 0 0 3px var(--gold); animation: gpPop .2s steps(4); max-height: 90dvh; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
 .gp-modal__badge { font-size: 48px; }
 .gp-modal__art { width: 112px; height: 112px; margin: 4px auto 8px; background-size: contain; background-repeat: no-repeat; background-position: center; image-rendering: pixelated; background-color: var(--bg2); border: 3px solid var(--line); box-shadow: var(--px-out-sm); }
@@ -285,12 +285,12 @@
 .gp-mbig span { font-family: var(--f-bold); font-size: 14px; color: #6fe89a; }
 .gp-modal .gp-btn { width: 100%; }
 .gp-hint { position: absolute; left: 0; right: 0; top: 42%; display: flex; flex-direction: column; align-items: center; gap: 8px; pointer-events: none; z-index: 5; }
-.gp-hint--bottom { top: auto; bottom: 64px; }
+.gp-hint--bottom { top: auto; bottom: calc(max(10px, env(safe-area-inset-bottom)) + 76px); }
 .gp-hint--bottom .gp-hint__txt { animation: gp-coach-bob 1.1s steps(2) infinite; }
-@keyframes gp-coach-bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(4px); } }
+@keyframes gp-coach-bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
 .gp-hint__hand { width: 60px; height: 60px; background: url('/art/tutorial-hand.webp') center/contain no-repeat; animation: gpTap 1s steps(2) infinite; image-rendering: pixelated; }
-.gp-hint__txt { font-family: var(--f-bold); background: var(--gold); color: #4a2600; font-size: 13px; padding: 8px 14px; border: 3px solid var(--line); box-shadow: var(--px-drop); }
-.gp-toast { position: absolute; left: 50%; top: 120px; transform: translate(-50%, -14px); opacity: 0; pointer-events: none; font-family: var(--f-bold); background: var(--bg2); color: var(--gold); font-size: 13px; padding: 10px 18px; border: 3px solid var(--gold); transition: all .2s steps(4); white-space: nowrap; }
+.gp-hint__txt { font-family: var(--f-bold); background: var(--gold); color: #4a2600; font-size: 14px; padding: 8px 14px; border: 3px solid var(--line); box-shadow: var(--px-drop); }
+.gp-toast { position: absolute; left: 50%; top: 210px; transform: translate(-50%, -14px); opacity: 0; pointer-events: none; font-family: var(--f-bold); background: var(--bg2); color: var(--gold); font-size: 14px; padding: 10px 18px; border: 3px solid var(--gold); transition: all .2s steps(4); white-space: nowrap; }
 .gp-toast--in { opacity: 1; transform: translate(-50%, 0); }
 .gp-flash { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(circle at 50% 45%, rgba(255,205,117,0.55), transparent 60%); animation: gpFlash .42s steps(4); }
 @keyframes gpFade { from { opacity: 0; } }
@@ -321,7 +321,7 @@ body { background-color: var(--bg-deep); background-image: repeating-linear-grad
 .gp-map-ov[hidden] { display: none; }
 .gp-map { width: 92%; max-width: 340px; max-height: 82vh; display: flex; flex-direction: column; background: var(--bg); border: 4px solid var(--line); box-shadow: var(--px-out), 0 0 0 3px var(--gem); }
 .gp-map__hd { display: flex; justify-content: space-between; align-items: center; background: var(--panel); border-bottom: 3px solid var(--line); padding: 10px 12px; font-family: var(--f-bold); font-size: 15px; color: var(--gold-hi); }
-.gp-map__x { pointer-events: auto; border: 3px solid var(--line); background: var(--red); color: #fff; width: 30px; height: 30px; font-family: var(--f-bold); font-size: 13px; cursor: pointer; box-shadow: var(--px-out-sm); }
+.gp-map__x { pointer-events: auto; border: 3px solid var(--line); background: var(--red); color: #fff; width: 30px; height: 30px; font-family: var(--f-bold); font-size: 14px; cursor: pointer; box-shadow: var(--px-out-sm); }
 .gp-map__sub { padding: 8px 12px; font-family: var(--f-small); font-size: 10px; color: var(--ink-soft); border-bottom: 2px solid var(--panel2); }
 .gp-map__list { flex: 1; overflow-y: auto; padding: 10px 12px; display: flex; flex-direction: column; gap: 7px; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
 .gp-mapnode { display: flex; align-items: center; gap: 10px; padding: 8px 9px; background: var(--panel); border: 3px solid var(--line); box-shadow: var(--px-out-sm); }
@@ -350,7 +350,7 @@ body { background-color: var(--bg-deep); background-image: repeating-linear-grad
 .gp-dex__cell[data-dexid]:active { transform: translateY(1px); filter: brightness(1.2); }
 .gp-dexdt { position: absolute; inset: 0; background: rgba(0,0,0,0.62); display: flex; align-items: center; justify-content: center; padding: 18px; z-index: 5; }
 .gp-dexdt__card { width: 100%; max-width: 330px; background: var(--panel); border: 3px solid var(--gold-hi); box-shadow: var(--px-out); padding: 0 0 10px; }
-.gp-dexdt__hd { display: flex; align-items: center; gap: 6px; font-family: var(--f-bold); font-size: 13px; color: var(--gold-hi); background: var(--panel-sunk); padding: 10px 12px; border-bottom: 2px solid var(--line); }
+.gp-dexdt__hd { display: flex; align-items: center; gap: 6px; font-family: var(--f-bold); font-size: 14px; color: var(--gold-hi); background: var(--panel-sunk); padding: 10px 12px; border-bottom: 2px solid var(--line); }
 .gp-dexdt__x { margin-left: auto; background: var(--bad, #c0566a); color: #fff; border: 2px solid var(--line); font-family: var(--f-bold); font-size: 12px; width: 26px; height: 26px; cursor: pointer; }
 .gp-dexdt__meta { font-family: var(--f-small); font-size: 9px; color: var(--ink-soft); padding: 7px 12px 0; }
 .gp-dexdt__body { font-family: var(--f-body); font-size: 11px; line-height: 1.6; color: var(--ink); padding: 6px 12px 10px; }
@@ -375,3 +375,24 @@ body { background-color: var(--bg-deep); background-image: repeating-linear-grad
 .gp-nickinput { width: 100%; margin-top: 10px; padding: 10px; font-family: var(--f-body); font-size: 13px; background: var(--panel-sunk); color: var(--ink); border: 2px solid var(--line); box-sizing: border-box; }
 /* 창작 픽션 면책 문구 */
 .gp-disclaimer { display: block; margin-top: 8px; font-family: var(--f-small); font-size: 8px; line-height: 1.5; color: var(--ink-faint, #6b5d52); opacity: 0.85; }
+
+/* 좁은 화면(360w 이하급) — HUD 칩 값 잘림 방지 */
+@media (max-width: 375px) {
+  .gp-hud__row { padding-right: 60px; }
+  .gp-chip { padding: 6px 5px; gap: 4px; }
+}
+
+/* ---------- 설정 모달 ---------- */
+.gp-set__list { display: flex; flex-direction: column; gap: 8px; }
+.gp-set__row { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-family: var(--f-body); font-size: 11px; color: var(--ink); padding: 4px 2px; }
+.gp-set__row b { font-family: var(--f-bold); font-size: 14px; color: var(--gold); }
+.gp-set__ok { color: #6fe89a !important; font-size: 11px !important; font-family: var(--f-body) !important; }
+.gp-set__danger { background: var(--red); color: #fff; }
+.gp-set__note { font-family: var(--f-small); font-size: 9px; line-height: 1.6; color: var(--ink-soft); margin-top: 2px; }
+
+/* 사건 선택지 효과 미리보기 칩 */
+.gp-event__fx { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 3px; }
+.gp-event__fx i { font-style: normal; font-family: var(--f-small); font-size: 9px; padding: 2px 5px; border: 1px solid var(--line); background: var(--bg2); }
+.gp-fx--up { color: #6fe89a; }
+.gp-fx--dn { color: #ff8a8a; }
+.gp-fx--cider { color: var(--gold); border-color: var(--gold) !important; }

@@ -21,11 +21,9 @@ export class DOMHud {
     // preventing overlap with the 믿음 chip on the right side.
     this._muteBtn = document.createElement("button");
     this._muteBtn.className = "gp-mute";
-    this._muteBtn.setAttribute("aria-label", "소리");
-    this._muteBtn.textContent = "🔊";
-    this._muteBtn.addEventListener("click", () => document.dispatchEvent(new CustomEvent("gp:toggle-mute")));
-    this._onMute = (e) => { this._muteBtn.textContent = e.detail ? "🔇" : "🔊"; };
-    document.addEventListener("gp:mute-changed", this._onMute);
+    this._muteBtn.setAttribute("aria-label", "설정");
+    this._muteBtn.textContent = "⚙️";
+    this._muteBtn.addEventListener("click", () => document.dispatchEvent(new CustomEvent("gp:open-settings")));
 
     // 긴급 개표(러시) 부스트 FAB — 액티브 플레이 비트
     this._rushBtn = document.createElement("button");
@@ -45,34 +43,14 @@ export class DOMHud {
       if (wasReady) document.dispatchEvent(new CustomEvent("gp:sfx", { detail: "powerup" }));
     });
 
-    // 알림 토글 벨 — 알림 권한을 허용한 경우에만 노출(켜기/끄기). mute 옆.
-    this._bellBtn = document.createElement("button");
-    this._bellBtn.className = "gp-bell";
-    this._bellBtn.setAttribute("aria-label", "알림");
-    this._bellBtn.addEventListener("click", () => {
-      const n = this.notifications;
-      if (!n) return;
-      n.setMuted(!n.muted());
-      this._refreshBell();
-    });
-  }
-
-  _refreshBell() {
-    const n = this.notifications;
-    const btn = this._bellBtn;
-    if (!n || !n.supported || !n.supported() || !n.granted()) { btn.style.display = "none"; return; }
-    btn.style.display = "flex";
-    btn.textContent = n.muted() ? "🔕" : "🔔";
   }
 
   mount(parent) {
     parent.appendChild(this.root);
     // Attach mute to the .gp-ui container (parent), not inside the HUD flex row
     parent.appendChild(this._muteBtn);
-    parent.appendChild(this._bellBtn);
     parent.appendChild(this._rushBtn);
     parent.appendChild(this._briefBtn);
-    this._refreshBell();
     this.gameState.on("changed", this._refresh);
     this.refresh();
   }
@@ -123,7 +101,6 @@ export class DOMHud {
 
     this._refreshRush();
     this._refreshBrief();
-    this._refreshBell();
   }
 
   // 탭 학습 단계(첫 업그레이드 전)에는 액티브 FAB 숨김 — 첫 60초 CTA 과부하 방지
@@ -187,9 +164,7 @@ export class DOMHud {
 
   destroy() {
     this.gameState.off("changed", this._refresh);
-    document.removeEventListener("gp:mute-changed", this._onMute);
     this._muteBtn.remove();
-    this._bellBtn.remove();
     this._rushBtn.remove();
     this._briefBtn.remove();
     this.root.remove();

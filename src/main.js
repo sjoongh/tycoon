@@ -9,6 +9,7 @@ import { DOMHud } from "./ui/DOMHud.js";
 import { DOMBottomPanel } from "./ui/DOMBottomPanel.js";
 import { DOMModalLayer } from "./ui/DOMModalLayer.js";
 import { DOMMapModal } from "./ui/DOMMapModal.js";
+import { DOMSettings } from "./ui/DOMSettings.js";
 import { GameState } from "./state/GameState.js";
 import { Sfx } from "./audio/sfx.js";
 import { Notifications } from "./notifications.js";
@@ -29,6 +30,10 @@ if ("serviceWorker" in navigator && import.meta.env.PROD) {
 const scheduleReengage = () => { notifications.schedule().catch(() => {}); };
 window.addEventListener("pagehide", scheduleReengage);
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") scheduleReengage(); });
+// 웹에서도 클라우드 저장이 실제로 올라가도록 — 화면 이탈 시 + 5분 주기(스로틀)
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") { try { saveCloud(); } catch {} } });
+window.addEventListener("pagehide", () => { try { saveCloud(); } catch {} });
+setInterval(() => { try { saveCloud(); } catch {} }, 5 * 60 * 1000);
 
 const config = {
   type: Phaser.AUTO,
@@ -68,6 +73,7 @@ game.events.once("ready", () => {
   new DOMBottomPanel(gameState).mount(uiLayer);
   new DOMModalLayer(gameState, notifications).mount(uiLayer);
   new DOMMapModal(gameState).mount(uiLayer);
+  new DOMSettings(gameState, notifications).mount(uiLayer);
   sfx.mount();
   // 네이티브(안드로이드) 통합 — 웹에서는 no-op
   initNative();
