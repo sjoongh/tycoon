@@ -396,3 +396,13 @@ body { background-color: var(--bg-deep); background-image: repeating-linear-grad
 .gp-fx--up { color: #6fe89a; }
 .gp-fx--dn { color: #ff8a8a; }
 .gp-fx--cider { color: var(--gold); border-color: var(--gold) !important; }
+
+/* 좁은 화면 — 사건 선택지 설명 3줄 허용(결과문구 잘림 방지) */
+@media (max-width: 375px) { .gp-event__c small { -webkit-line-clamp: 3; } }
+
+/* 가챠 확률/천장/10연차 */
+.gp-gacha__odds { font-family: var(--f-small); font-size: 9px; color: var(--ink-soft); margin: 4px 0 6px; }
+.gp-gacha__btns { display: flex; gap: 6px; }
+.gp-gacha__btns .gp-btn { flex: 1; }
+.gp-g10 { display: flex; flex-direction: column; gap: 4px; margin: 8px 0 12px; max-height: 300px; overflow-y: auto; }
+.gp-g10__row { font-family: var(--f-body); font-size: 11px; text-align: left; padding: 3px 6px; background: var(--bg2); border: 1px solid var(--line); }

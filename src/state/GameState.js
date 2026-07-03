@@ -2,6 +2,7 @@ import Phaser from "phaser";
 import { SAVE_KEY } from "../config.js";
 import { facilities } from "../data/facilities.js";
 import { prestigeUpgrades, medalUpgrades, allPrestigeUpgrades } from "../data/prestige.js";
+import { officeEvents } from "../data/events.js";
 import { govTitles, titleById, RARITY_ORDER } from "../data/titles.js";
 import { cosmetics, cosmeticById } from "../data/cosmetics.js";
 import { characters, characterById } from "../data/characters.js";
@@ -16,6 +17,7 @@ const DAY_MS = 86400000;
 const DAILY_STREAK_CAP = 7;
 const TRUST_CRISIS = 20; // 이 미만이면 불신 위기(생산 페널티)
 const TRUST_BONUS = 90; // 이 이상이면 신뢰 보너스(생산 서지)
+const GACHA_PITY = 30; // 소프트 천장 — 이 횟수 내 희귀 미출현 시 다음 뽑기 희귀 확정
 const CIDER_TRUST = 12; // 사건 선택으로 믿음이 이만큼(+) 오르면 '사이다!' 정의구현 순간
 const COMM_THRESHOLD = 5; // 믿음이 이 이하로 바닥나면 '공산화' 게이지 누적
 const COMM_LIMIT = 40; // 게이지가 이 값(≈40초)에 도달하면 체제 전복(하드 리셋)
@@ -185,6 +187,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     data.commGauge = Phaser.Math.Clamp(Number(data.commGauge) || 0, 0, COMM_LIMIT);
     data.stats.collapses = Math.max(0, Math.floor(Number(data.stats.collapses) || 0));
     data.stats.ciders = Math.max(0, Math.floor(Number(data.stats.ciders) || 0));
+    data.gachaPity = Math.max(0, Math.floor(Number(data.gachaPity) || 0));
     // 누적 통계 숫자 정규화(손상/NaN 방지 — 통계 화면·업적 metric이 의존)
     ["totalVotes", "totalClicks", "totalUpgrades", "totalEvents", "totalOfflineMs", "totalItems"].forEach((k) => {
       data.stats[k] = Math.max(0, Number(data.stats[k]) || 0);
@@ -394,9 +397,32 @@ export class GameState extends Phaser.Events.EventEmitter {
     // 홍보(notice) 패시브 회복은 믿음이 높을수록 둔화 → 100%에 고정되지 않고 평형점에 수렴(위기/보너스 긴장 유지, 보너스는 능동 브리핑으로 진입).
     this.data.trust = Phaser.Math.Clamp(this.data.trust - this.trustDecay() + this.level("notice") * 0.035 * (1 - this.data.trust / 100), 0, 100);
     this._tickCommunism();
+    this._tickAutoAide();
     this.reduceDays();
     this.checkProgression();
     this.emit("changed");
+  }
+
+  // 사건 자동 대응(비서 Lv1) — 사건 준비 후 8초 유예(수동 사이다 노림 기회) 뒤 안전 선택 자동 처리.
+  _tickAutoAide() {
+    // 유저가 사건 카드를 열어둔 동안은 개입하지 않음(수동 사이다 선택 존중)
+    if (this.uiEventOpen) { this._autoEvtWait = 0; return; }
+    if (this.autoAideLevel() < 1 || !this.eventReady()) { this._autoEvtWait = 0; return; }
+    this._autoEvtWait = (this._autoEvtWait || 0) + 1;
+    if (this._autoEvtWait < 8) return;
+    this._autoEvtWait = 0;
+    const avail = officeEvents.filter((ev) => this.data.stage.area >= (ev.minStage || 1));
+    if (!avail.length) return;
+    const w = (ev) => (ev.weight || 1) * (this.hasSeenEvent(ev.id) ? 1 : 2.5); // 도감 미수집 우선
+    const total = avail.reduce((sum, ev) => sum + w(ev), 0);
+    let roll = Math.random() * total;
+    let ev = avail[avail.length - 1];
+    for (const e of avail) { roll -= w(e); if (roll < 0) { ev = e; break; } }
+    const side = (ev.left[1].trust || 0) >= (ev.right[1].trust || 0) ? ev.left : ev.right; // 안전(믿음) 선택
+    this.applyEffect(side[1]);
+    const firstSeen = this.markEventSeen(ev.id);
+    this.addLog(`🤖 비서 자동 대응: ${ev.title}`);
+    document.dispatchEvent(new CustomEvent("gp:event-resolved", { detail: { id: ev.id, title: ev.title, real: false, firstSeen } }));
   }
 
   // 공산화 게이지 — 믿음이 바닥(≤5%)에 머물면 누적, 회복하면 빠르게 감소. 한계 도달 시 체제 전복(하드 리셋).
@@ -1038,13 +1064,16 @@ export class GameState extends Phaser.Events.EventEmitter {
   }
 
   // 필드 황금 투표함 수령: 약 90초치 생산을 즉시 지급(액티브 손맛). 기존 addVotes 경유(주간/업적/구역 진행에 자연 반영).
-  collectGoldenBallot() {
-    const reward = Math.max(50, Math.round(this.cps() * 90));
+  collectGoldenBallot(factor = 1) {
+    const reward = Math.max(50, Math.round(this.cps() * 90 * factor));
     this.addVotes(reward);
     this.emit("celebrate", { text: `🌟 황금 투표함! +${shortNumber(reward)}표` });
     this.emit("changed");
     return reward;
   }
+
+  // ----- 자동 대응 비서(훈장 자동화) -----
+  autoAideLevel() { return this.data.prestige.medalUpgrades?.autoAide || 0; }
 
   // ----- 한정 시즌(주간) 목표 (date-seeded, 주차 변경 시 자동 교체) -----
   _weekIndex() {
@@ -1405,14 +1434,37 @@ export class GameState extends Phaser.Events.EventEmitter {
   }
 
   _pickGachaTitle() {
+    // 소프트 천장: 30뽑 내 희귀 미출현 시 다음 뽑기는 희귀 확정
+    if ((this.data.gachaPity || 0) >= GACHA_PITY - 1) {
+      const rares = govTitles.filter((t) => t.rarity === "rare");
+      return rares[(Math.random() * rares.length) | 0];
+    }
     const total = govTitles.reduce((s, t) => s + (t.weight || 1), 0);
     let roll = Math.random() * total;
     for (const t of govTitles) { roll -= (t.weight || 1); if (roll < 0) return t; }
     return govTitles[govTitles.length - 1];
   }
 
+  // 천장까지 남은 뽑기 수(UI 표기용)
+  gachaPityLeft() { return Math.max(0, GACHA_PITY - (this.data.gachaPity || 0)); }
+
+  // 10연차 — 비용 절감 없이 연속 10회(부족하면 가능한 만큼). 결과 배열 반환.
+  drawGacha10() {
+    const results = [];
+    for (let i = 0; i < 10; i++) {
+      if (!this.canDrawGacha()) break;
+      const r = this.drawGacha(true);
+      if (r) results.push(r);
+    }
+    if (results.length) {
+      const best = results.reduce((a, b) => (RARITY_ORDER[b.rarity] > RARITY_ORDER[a.rarity] ? b : a));
+      this.emit("celebrate", { text: `🎰 ${results.length}연차 완료 · 최고 ${best.emoji}${best.name}` });
+    }
+    return results;
+  }
+
   // 인사 발령 뽑기 1회 — 해명 차감, 칭호 획득(중복=레벨업), 대표 칭호 갱신. 결과 객체 반환(없으면 null).
-  drawGacha() {
+  drawGacha(quiet = false) {
     const cost = this.gachaDrawCost();
     if (this.data.explain < cost) {
       this.emit("float", { text: "해명 부족", x: 195, y: 720, color: "#ff8e8e" });
@@ -1421,6 +1473,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     this.data.explain -= cost;
     this.data.titleDraws = (this.data.titleDraws || 0) + 1;
     const def = this._pickGachaTitle();
+    this.data.gachaPity = def.rarity === "rare" ? 0 : (this.data.gachaPity || 0) + 1;
     if (!this.data.titles || typeof this.data.titles !== "object") this.data.titles = {};
     const prev = this.data.titles[def.id] || 0;
     const isNew = prev === 0;
@@ -1428,7 +1481,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     const level = prev + 1;
     // 대표 칭호 갱신(더 높은 등급/레벨이면 자동 장착)
     this.data.equippedTitle = this.bestTitleId();
-    this.emit("celebrate", { text: `${isNew ? "🎉 신규 발령" : "⬆️ 승진"} · ${def.name}${isNew ? "" : ` Lv.${level}`}` });
+    if (!quiet) this.emit("celebrate", { text: `${isNew ? "🎉 신규 발령" : "⬆️ 승진"} · ${def.name}${isNew ? "" : ` Lv.${level}`}` });
     this.checkProgression();
     this.emit("changed");
     this.save(false);

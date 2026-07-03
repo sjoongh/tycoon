@@ -153,4 +153,18 @@ export const medalUpgrades = [
 ];
 
 // 인장+훈장 통합 목록 — permanentEffectFor가 두 통화 효과를 한 번에 합산하기 위함.
+// 후반 자동화 — 사건/아이템/황금함 잡일을 훈장으로 위임(수동 대응은 사이다 선택권 유지로 여전히 우위)
+export const AUTO_UPGRADE = {
+  id: "autoAide",
+  name: "자동 대응 비서",
+  shortName: "비서",
+  currency: "medal",
+  baseCost: 2,
+  costMul: 2.2,
+  maxLevel: 3,
+  desc: "Lv1 사건 자동 대응(안전 선택) · Lv2 아이템 자동 줍기 · Lv3 황금 투표함 자동 수령(80%)",
+  effect: {},
+};
+medalUpgrades.push(AUTO_UPGRADE);
+
 export const allPrestigeUpgrades = [...prestigeUpgrades, ...medalUpgrades];

@@ -106,7 +106,7 @@ export class DOMBottomPanel {
       case "advanceStage": gs.advanceStage(); break;
       case "hire": gs.bulkHire(id, this.buyQty); break;
       case "setBuyQty": this.buyQty = (id === "max" ? "max" : Number(id)); this.refresh(); break;
-      case "getEvent": if (gs.eventReady()) { this.currentEvent = this._pickEvent(); this.refresh(); } break;
+      case "getEvent": if (gs.eventReady()) { this.currentEvent = this._pickEvent(); gs.uiEventOpen = true; this.refresh(); } break;
       case "eventChoice": {
         const ev = officeEvents.find((v) => v.id === id);
         let firstSeen = false;
@@ -116,12 +116,19 @@ export class DOMBottomPanel {
         }
         document.dispatchEvent(new CustomEvent("gp:event-resolved", { detail: { id: ev?.id, title: ev?.title, real: ev ? realEventIds.has(ev.id) : false, firstSeen } }));
         this.currentEvent = null;
+        gs.uiEventOpen = false;
         this.refresh();
         break;
       }
       case "drawGacha": {
         const res = gs.drawGacha();
         if (res) document.dispatchEvent(new CustomEvent("gp:gacha-result", { detail: res }));
+        this.refresh();
+        break;
+      }
+      case "drawGacha10": {
+        const list = gs.drawGacha10 ? gs.drawGacha10() : [];
+        if (list.length) document.dispatchEvent(new CustomEvent("gp:gacha-result10", { detail: list }));
         this.refresh();
         break;
       }
@@ -507,11 +514,21 @@ export class DOMBottomPanel {
     const chips = govTitles.filter((t) => (gs.data.titles[t.id] || 0) > 0)
       .map((t) => `<span class="gp-gacha__chip" style="border-color:${RARITY_COLOR[t.rarity]};color:${RARITY_COLOR[t.rarity]}" title="${t.name} · ${t.per}">${t.emoji}${(gs.data.titles[t.id] || 0)}</span>`)
       .join("");
+    // 확률 표기(weight 합산) + 소프트 천장 카운터 — 투명한 뽑기
+    const wSum = (r) => govTitles.filter((t) => t.rarity === r).reduce((a, t) => a + (t.weight || 1), 0);
+    const total = govTitles.reduce((a, t) => a + (t.weight || 1), 0);
+    const pct = (r) => Math.round((wSum(r) / total) * 100);
+    const pityLeft = gs.gachaPityLeft ? gs.gachaPityLeft() : null;
+    const oddsLine = `<div class="gp-gacha__odds">일반 ${pct("common")}% · 고급 ${pct("uncommon")}% · 희귀 ${pct("rare")}%${pityLeft !== null ? ` · 희귀 확정까지 ${pityLeft}회` : ""}</div>`;
     return `<div class="gp-gacha">
       <div class="gp-gacha__hd">🎰 인사 발령 뽑기 <span class="gp-gacha__count">보유 ${owned}/${govTitles.length}</span></div>
       <div class="gp-gacha__eq">${eqLine}</div>
       ${chips ? `<div class="gp-gacha__chips">${chips}</div>` : ""}
-      <button class="gp-btn gp-btn--sm ${can ? "gp-btn--ready gp-btn--gold" : "gp-btn--disabled"}" data-action="drawGacha">뽑기 · 해명 ${shortNumber(cost)}</button>
+      ${oddsLine}
+      <div class="gp-gacha__btns">
+        <button class="gp-btn gp-btn--sm ${can ? "gp-btn--ready gp-btn--gold" : "gp-btn--disabled"}" data-action="drawGacha">뽑기 · 해명 ${shortNumber(cost)}</button>
+        <button class="gp-btn gp-btn--sm ${can ? "gp-btn--gold" : "gp-btn--disabled"}" data-action="drawGacha10">10연차</button>
+      </div>
     </div>`;
   }
 

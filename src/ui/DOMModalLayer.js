@@ -18,6 +18,7 @@ export class DOMModalLayer {
     this._onPrestigeConfirm = () => this._confirmPrestige();
     this._onCelebrate = (p) => { this._toast(p.text); this._flash(); };
     this._onGachaResult = (e) => this._showGachaResult(e.detail);
+    this._onGachaResult10 = (e) => this._showGachaResult10(e.detail);
     this._onCommWarning = (p) => { this._banner(p.text); document.dispatchEvent(new CustomEvent("gp:sfx", { detail: "crisis" })); };
     this._onCommCollapse = (p) => this._showCollapse(p);
   }
@@ -31,12 +32,26 @@ export class DOMModalLayer {
     this.gameState.on("comm-collapse", this._onCommCollapse);
     document.addEventListener("gp:prestige-confirm", this._onPrestigeConfirm);
     document.addEventListener("gp:gacha-result", this._onGachaResult);
+    document.addEventListener("gp:gacha-result10", this._onGachaResult10);
     if (!this._maybeOpening()) {
       // 오프라인 정산을 먼저 보여주고, 닫은 뒤에 출석 보상(겹쳐 가려지지 않게 체인)
       if (this.gameState.offlineReward) this._showOfflineReward(() => this._maybeDaily());
       else this._maybeDaily();
     }
     this._maybeHint();
+  }
+
+  // 10연차 결과 — 등급색 리스트로 한 번에(신규는 🎉, 중복은 Lv 승진 표시)
+  _showGachaResult10(list) {
+    if (!list || !list.length) return;
+    const COLOR = { common: "#d8c4a0", uncommon: "#7fd9a0", rare: "#ffcd75" };
+    const rows = list.map((r) => `<div class="gp-g10__row" style="color:${COLOR[r.rarity] || "#fff"}">${r.emoji} ${r.name} ${r.isNew ? "🎉신규" : `Lv.${r.level}`}</div>`).join("");
+    this._openModal(`
+      <div class="gp-modal__badge">🎰</div>
+      <div class="gp-mtitle">${list.length}연차 결과</div>
+      <div class="gp-g10">${rows}</div>
+      <button class="gp-btn gp-btn--gold" data-confirm>확인</button>`);
+    document.dispatchEvent(new CustomEvent("gp:sfx", { detail: "achieve" }));
   }
 
   // 일일 출석 보상: 신규 첫 세션(오프닝)에는 건너뛰고 재방문부터 노출
@@ -65,7 +80,7 @@ export class DOMModalLayer {
     this.gameState.save && this.gameState.save(false);
     const cards = [
       { art: dotSvgUri(GOV_MAPS[0]), t: "믿어주세요, 개표국", s: "오늘부터 당신이 개표국장입니다. 믿음도 바닥, 서류도 엉망. 밑바닥에서 시작합니다." },
-      { art: dotSvgUri(PROP_MAPS["prop-sorter"]), t: "표를 처리하라", s: "화면을 탭해 표를 처리하고, 시설을 키우고, 직원을 채용하세요." },
+      { art: dotSvgUri(PROP_MAPS["prop-sorter"]), t: "표를 처리하라", s: "화면을 탭해 표를 처리하고, 시설을 키우고, 직원을 채용하세요. 해명 서류는 사건 대응·브리핑·뽑기에 쓰는 두 번째 자원입니다." },
       { art: dotSvgUri(PROP_MAPS["prop-board"]), t: "사건에 대응하라", s: "터지는 사건마다 믿음이 걸려 있습니다. 전국이 지켜봅니다. 자, 분류 시작!" },
     ];
     let i = 0;
@@ -317,6 +332,7 @@ export class DOMModalLayer {
     this.gameState.off("comm-collapse", this._onCommCollapse);
     document.removeEventListener("gp:prestige-confirm", this._onPrestigeConfirm);
     document.removeEventListener("gp:gacha-result", this._onGachaResult);
+    document.removeEventListener("gp:gacha-result10", this._onGachaResult10);
     this.root.remove();
   }
 }

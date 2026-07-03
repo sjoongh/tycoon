@@ -698,6 +698,16 @@ export class WorldView {
       this._despawnGolden();
       this._scheduleGolden(60000 + Math.random() * 60000);
     });
+    // 비서 Lv3 — 잠시 후 자동 수령(80%). 직접 탭하면 100%라 수동이 여전히 이득.
+    if (this.gameState.autoAideLevel && this.gameState.autoAideLevel() >= 3) {
+      this.scene.time.delayedCall(2600, () => {
+        if (!this._golden || this._golden !== disc) return;
+        const reward = this.gameState.collectGoldenBallot(0.8);
+        this.effects.float({ text: `🤖 +${shortNumber(reward)}`, x, y: y - 28, color: "#ffd34d" });
+        this._despawnGolden();
+        this._scheduleGolden(60000 + Math.random() * 60000);
+      });
+    }
     this._goldenLife = this.scene.time.delayedCall(9000, () => {
       this._despawnGolden();
       this._scheduleGolden(60000 + Math.random() * 60000);
@@ -753,6 +763,16 @@ export class WorldView {
     txt.setScale(0);
     this.scene.tweens.add({ targets: txt, scale: 1, duration: 260, ease: "Back.easeOut" });
     this._itemBob = this.scene.tweens.add({ targets: txt, y: y - 10, yoyo: true, repeat: -1, duration: 900, ease: "Sine.easeInOut", delay: 270 });
+    // 비서 Lv2 — 필드 아이템 자동 줍기
+    if (this.gameState.autoAideLevel && this.gameState.autoAideLevel() >= 2) {
+      this.scene.time.delayedCall(2200, () => {
+        if (!this._item || this._item !== txt) return;
+        const res = this.gameState.applyRandomItem(def.id);
+        this.effects.float({ text: `🤖 ${res.text}`, x, y: y - 30, color: "#ffe3a8" });
+        this._despawnItem();
+        this._scheduleItem(25000 + Math.random() * 20000);
+      });
+    }
     txt.on("pointerdown", () => {
       if (!this._item) return;
       const res = this.gameState.applyRandomItem(def.id);
