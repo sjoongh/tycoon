@@ -72,6 +72,9 @@ export class DOMBottomPanel {
     this._ro = new ResizeObserver(() => this._emitSheetTop());
     this._ro.observe(this.root);
     this._emitSheetTop();
+    // WorldView가 늦게 준비되면(씬 로드 후) 재브로드캐스트 — 초기 이벤트 유실 방지
+    this._onWorldReady = () => this._emitSheetTop();
+    document.addEventListener("gp:world-ready", this._onWorldReady);
   }
 
   _emitSheetTop() {
@@ -82,12 +85,14 @@ export class DOMBottomPanel {
       const topGame = (t - ui.top) * (844 / ui.height); // FIT 스케일 대응
       // FAB(러시/브리핑) 동적 앵커용 — 패널 실높이를 CSS 변수로 기록
       this._panelParent.style.setProperty("--panel-h", `${Math.round(ui.bottom - t)}px`);
+      this.gameState.uiSheetTopGame = topGame; // 늦게 생성되는 WorldView가 초기값을 읽어가도록 기록
       document.dispatchEvent(new CustomEvent("gp:sheet-top", { detail: { topGame } }));
     } catch {}
   }
 
   destroy() {
     this._ro?.disconnect();
+    document.removeEventListener("gp:world-ready", this._onWorldReady);
     this.gameState.off("changed", this._refresh);
     // Clean up world overlays injected in mount() to avoid orphaned DOM on prestige reset
     this._scanlines?.remove();

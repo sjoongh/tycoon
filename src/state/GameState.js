@@ -2,7 +2,7 @@ import Phaser from "phaser";
 import { SAVE_KEY } from "../config.js";
 import { facilities } from "../data/facilities.js";
 import { prestigeUpgrades, medalUpgrades, allPrestigeUpgrades } from "../data/prestige.js";
-import { officeEvents } from "../data/events.js";
+import { officeEvents, realEventIds } from "../data/events.js";
 import { govTitles, titleById, RARITY_ORDER } from "../data/titles.js";
 import { cosmetics, cosmeticById } from "../data/cosmetics.js";
 import { characters, characterById } from "../data/characters.js";
@@ -309,6 +309,7 @@ export class GameState extends Phaser.Events.EventEmitter {
   }
 
   save(notify = true) {
+    if (this._suspendPersist) return; // 초기화/가져오기 직후 reload 시 pagehide 저장이 되살리는 것 방지
     const now = Date.now();
     this.data.lastSavedAt = now;
     this.data.lastSeenAt = now;
@@ -422,7 +423,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     this.applyEffect(side[1]);
     const firstSeen = this.markEventSeen(ev.id);
     this.addLog(`🤖 비서 자동 대응: ${ev.title}`);
-    document.dispatchEvent(new CustomEvent("gp:event-resolved", { detail: { id: ev.id, title: ev.title, real: false, firstSeen } }));
+    document.dispatchEvent(new CustomEvent("gp:event-resolved", { detail: { id: ev.id, title: ev.title, real: realEventIds.has(ev.id), firstSeen } }));
   }
 
   // 공산화 게이지 — 믿음이 바닥(≤5%)에 머물면 누적, 회복하면 빠르게 감소. 한계 도달 시 체제 전복(하드 리셋).

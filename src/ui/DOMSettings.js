@@ -73,14 +73,26 @@ export class DOMSettings {
     } else if (act === "export") {
       try {
         this.gameState.save(false);
-        await navigator.clipboard.writeText(localStorage.getItem(SAVE_KEY) || "");
+        const txt = localStorage.getItem(SAVE_KEY) || "";
+        if (navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(txt);
+        } else {
+          // Android WebView 폴백 — Async Clipboard 미지원
+          const ta = document.createElement("textarea");
+          ta.value = txt; ta.style.cssText = "position:fixed;opacity:0";
+          document.body.appendChild(ta); ta.select();
+          document.execCommand("copy"); ta.remove();
+        }
         btn.textContent = "복사됨!";
       } catch { btn.textContent = "실패"; }
     } else if (act === "import") {
       try {
-        const txt = await navigator.clipboard.readText();
+        let txt = "";
+        if (navigator.clipboard?.readText) txt = await navigator.clipboard.readText();
+        if (!txt) txt = window.prompt("세이브 데이터를 붙여넣으세요") || ""; // WebView 폴백
         const parsed = JSON.parse(txt); // 유효성 검사
         if (!parsed || typeof parsed !== "object" || !parsed.stage) throw new Error("bad save");
+        this.gameState._suspendPersist = true; // pagehide 저장이 덮어쓰지 않게
         localStorage.setItem(SAVE_KEY, txt);
         btn.textContent = "적용됨! 재시작…";
         setTimeout(() => location.reload(), 600);
@@ -91,6 +103,7 @@ export class DOMSettings {
         this._resetArmed = true;
         this._render();
       } else {
+        this.gameState._suspendPersist = true; // pagehide 저장이 세이브를 되살리지 않게
         try { localStorage.removeItem(SAVE_KEY); } catch {}
         location.reload();
       }

@@ -168,6 +168,9 @@ export class WorldView {
       scene.tweens.add({ targets: scene.cameras.main, scrollY: target, duration: 180, ease: "Quad.easeOut" });
     };
     document.addEventListener("gp:sheet-top", this._onSheetTop);
+    // 패널이 먼저 브로드캐스트한 초기값을 즉시 반영(초기 이벤트 유실 방지) + 재브로드캐스트 요청
+    if (typeof gameState.uiSheetTopGame === "number") this._onSheetTop({ detail: { topGame: gameState.uiSheetTopGame } });
+    document.dispatchEvent(new CustomEvent("gp:world-ready"));
 
     // 실화 모티프 사건 해결 시 월드에 "📺 속보" 배너 연출
     this._onEventResolved = (e) => {
@@ -553,10 +556,10 @@ export class WorldView {
   // 실화 사건 해결 속보 배너 — 상단에서 붉은 띠가 펼쳐지며 사건명을 흘린다
   _newsFlash(title) {
     const y = 150;
-    const bar = this.scene.add.rectangle(GAME_W / 2, y, GAME_W, 28, 0xb13e53, 0.96).setDepth(200).setScale(1, 0);
-    const live = this.scene.add.rectangle(40, y, 52, 28, 0x14121c, 1).setDepth(201).setScale(1, 0);
-    const liveTx = this.scene.add.text(40, y, "● 속보", { fontFamily: '"Galmuri9", monospace', fontSize: "9px", color: "#ff6a7c" }).setOrigin(0.5).setDepth(202).setAlpha(0);
-    const tx = this.scene.add.text(96, y, `${title || "개표국 사건"}`, { fontFamily: '"Galmuri9", monospace', fontSize: "10px", color: "#ffffff" }).setOrigin(0, 0.5).setDepth(202).setAlpha(0);
+    const bar = this.scene.add.rectangle(GAME_W / 2, y, GAME_W, 28, 0xb13e53, 0.96).setDepth(200).setScale(1, 0).setScrollFactor(0);
+    const live = this.scene.add.rectangle(40, y, 52, 28, 0x14121c, 1).setDepth(201).setScale(1, 0).setScrollFactor(0);
+    const liveTx = this.scene.add.text(40, y, "● 속보", { fontFamily: '"Galmuri9", monospace', fontSize: "9px", color: "#ff6a7c" }).setOrigin(0.5).setDepth(202).setAlpha(0).setScrollFactor(0);
+    const tx = this.scene.add.text(96, y, `${title || "개표국 사건"}`, { fontFamily: '"Galmuri9", monospace', fontSize: "10px", color: "#ffffff" }).setOrigin(0, 0.5).setDepth(202).setAlpha(0).setScrollFactor(0);
     this.scene.tweens.add({ targets: [bar, live], scaleY: 1, duration: 150, ease: "Back.easeOut" });
     this.scene.tweens.add({ targets: [tx, liveTx], alpha: 1, duration: 200, delay: 90 });
     this._govGesture();
@@ -572,7 +575,7 @@ export class WorldView {
   _ciderMoment(p) {
     const cx = GAME_W / 2;
     // 큰 사이다 텍스트(금색, 팝)
-    const big = this.scene.add.text(cx, 262, "🔥 사이다!", { fontFamily: '"Galmuri14", monospace', fontSize: "26px", color: "#ffd34d" }).setOrigin(0.5).setDepth(210).setScale(0.4);
+    const big = this.scene.add.text(cx, 262, "🔥 사이다!", { fontFamily: '"Galmuri14", monospace', fontSize: "26px", color: "#ffd34d" }).setOrigin(0.5).setDepth(210).setScale(0.4).setScrollFactor(0);
     big.setShadow(3, 3, "#b13e53", 0, true, true);
     this.scene.tweens.add({ targets: big, scale: 1, duration: 300, ease: "Back.easeOut" });
     this.scene.tweens.add({ targets: big, alpha: 0, y: 232, duration: 500, delay: 900, onComplete: () => big.destroy() });
@@ -587,7 +590,7 @@ export class WorldView {
     this._pressFlash({ outlet: "글로벌 데일리", text: "'통쾌한 정면돌파' 세계가 박수", tone: "praise" });
     document.dispatchEvent(new CustomEvent("gp:sfx", { detail: "achieve" }));
     // 화면 골드 플래시(짧게)
-    const fl = this.scene.add.rectangle(cx, 422, GAME_W, 844, 0xffe9a8, 0.22).setDepth(205);
+    const fl = this.scene.add.rectangle(cx, 422, GAME_W, 844, 0xffe9a8, 0.22).setDepth(205).setScrollFactor(0);
     this.scene.tweens.add({ targets: fl, alpha: 0, duration: 260, ease: "Quad.easeOut", onComplete: () => fl.destroy() });
   }
 
@@ -605,9 +608,9 @@ export class WorldView {
     const col = item.tone === "praise" ? 0x1f9e49 : item.tone === "mock" ? 0x8a2836 : 0x244055;
     const accent = item.tone === "praise" ? "#8df0b0" : item.tone === "mock" ? "#ff9a8e" : "#9fd0e0";
     // 2줄 레이아웃 — 위: 📰 외신 · 매체명 / 아래: 헤드라인. 가독성↑
-    const bar = this.scene.add.rectangle(GAME_W / 2, y, GAME_W, 42, col, 0.95).setDepth(200).setScale(1, 0);
-    const top = this.scene.add.text(12, y - 10, `📰 외신 · ${item.outlet}`, { fontFamily: '"Galmuri9", monospace', fontSize: "9px", color: accent }).setOrigin(0, 0.5).setDepth(202).setAlpha(0);
-    const head = this.scene.add.text(12, y + 8, item.text, { fontFamily: '"Galmuri9", monospace', fontSize: "10px", color: "#ffffff", wordWrap: { width: GAME_W - 24 } }).setOrigin(0, 0.5).setDepth(202).setAlpha(0);
+    const bar = this.scene.add.rectangle(GAME_W / 2, y, GAME_W, 42, col, 0.95).setDepth(200).setScale(1, 0).setScrollFactor(0);
+    const top = this.scene.add.text(12, y - 10, `📰 외신 · ${item.outlet}`, { fontFamily: '"Galmuri9", monospace', fontSize: "9px", color: accent }).setOrigin(0, 0.5).setDepth(202).setAlpha(0).setScrollFactor(0);
+    const head = this.scene.add.text(12, y + 8, item.text, { fontFamily: '"Galmuri9", monospace', fontSize: "10px", color: "#ffffff", wordWrap: { width: GAME_W - 24 } }).setOrigin(0, 0.5).setDepth(202).setAlpha(0).setScrollFactor(0);
     this._pressEls = [bar, top, head];
     this.scene.tweens.add({ targets: bar, scaleY: 1, duration: 140, ease: "Back.easeOut" });
     this.scene.tweens.add({ targets: [top, head], alpha: 1, duration: 200, delay: 80 });
@@ -678,7 +681,7 @@ export class WorldView {
   _spawnGolden() {
     if (this._golden) return;
     const x = 70 + Math.random() * 250;
-    const y = 180 + Math.random() * 200;
+    const y = 180 + Math.random() * 200 + (this._camTarget || 0); // 카메라 스크롤 보정 — 화면 안 스폰 보장
     const key = "decor/ballotbox";
     const halo = this.scene.add.image(x, y, key).setDepth(4999).setTint(0xffe9a8).setAlpha(0.3).setScale(1.5);
     this._goldenHalo = halo;
@@ -754,7 +757,7 @@ export class WorldView {
     if (this._item) return;
     const def = pickRandomItem();
     const x = 70 + Math.random() * 250;
-    const y = 170 + Math.random() * 160;
+    const y = 170 + Math.random() * 160 + (this._camTarget || 0); // 카메라 스크롤 보정
     const halo = this.scene.add.circle(x, y, 22, 0xffe9a8, 0.18).setDepth(4998);
     this._itemHalo = halo;
     this._itemHaloT = this.scene.tweens.add({ targets: halo, scale: 1.4, alpha: 0.05, yoyo: true, repeat: -1, duration: 700, ease: "Sine.easeInOut" });
