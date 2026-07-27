@@ -76,8 +76,8 @@ async function maybeLoadCloud() {
     if (!json) return;
     const cloud = JSON.parse(json);
     if ((cloud.lastSavedAt || 0) > (_gs.data.lastSavedAt || 0)) {
-      _gs.data = _gs.normalize(cloud, Date.now());
-      _gs.emit("changed");
+      // 클라우드 채택은 GameState 단일 경로로 — 오프라인 보상 재계산 + 즉시 로컬 저장(중복/경합 방지)
+      _gs.adoptCloudData(cloud, Date.now());
     }
   } catch {}
 }

@@ -200,8 +200,14 @@ export class GameState extends Phaser.Events.EventEmitter {
 
     data.votes = Math.max(0, Number(data.votes) || 0);
     data.explain = Math.max(0, Number(data.explain) || 0);
-    data.trust = Phaser.Math.Clamp(Number(data.trust) || fallbackState.trust, 0, 100);
-    data.days = Math.max(0, Number(data.days) || fallbackState.days);
+    // 0은 유효값 — `|| fallback`은 믿음 0%를 72%로, 잔여일 0을 30으로 되살리는 버그(P0-1)
+    const finiteOr = (value, fallback) => {
+      if (value === null || value === undefined || value === "") return fallback; // JSON은 Infinity/NaN을 null로 저장
+      const n = Number(value);
+      return Number.isFinite(n) ? n : fallback;
+    };
+    data.trust = Phaser.Math.Clamp(finiteOr(data.trust, fallbackState.trust), 0, 100);
+    data.days = Math.max(0, finiteOr(data.days, fallbackState.days));
     data.endless = Math.max(0, Math.floor(Number(data.endless) || 0));
     data.eventReadyAt = Math.max(0, Number(data.eventReadyAt) || 0);
     data.rushReadyAt = Math.max(0, Number(data.rushReadyAt) || 0);
@@ -241,7 +247,7 @@ export class GameState extends Phaser.Events.EventEmitter {
       data.facilities[facility.id] = Phaser.Math.Clamp(level, 0, facility.maxLevel || 99);
     });
     staffDefinitions.forEach((staff) => {
-      data.staff[staff.id] = Phaser.Math.Clamp(Number(data.staff[staff.id]) || 0, 0, 20);
+      data.staff[staff.id] = Phaser.Math.Clamp(Number(data.staff[staff.id]) || 0, 0, staff.maxLevel ?? 20);
     });
 
     return data;
@@ -500,6 +506,26 @@ export class GameState extends Phaser.Events.EventEmitter {
     this.data.stats.totalVotes += value;
   }
 
+  // 모든 양수 표 보상의 단일 지급 경로(P0-4) — 표는 addVotes 경유로 구역 진행·누적 통계에 함께 반영.
+  // 구역 완료/업적/출석/일일퀘스트/목표 보상이 전부 이 함수를 쓴다.
+  grantReward(reward = {}) {
+    const r = reward || {};
+    if (r.votes > 0) this.addVotes(r.votes);
+    if (r.explain > 0) this.data.explain += r.explain;
+    if (r.trust) this.data.trust = Phaser.Math.Clamp(this.data.trust + r.trust, 0, 100);
+    if (r.seals > 0) this.data.prestige.seals += r.seals;
+  }
+
+  // 클라우드 세이브 채택(P0-3) — 정규화→오프라인 정산을 클라우드 스냅샷 기준으로 딱 1회 수행.
+  // 낡은 로컬 오프라인 보상은 폐기(중복 지급 방지)하고 즉시 로컬 저장(다음 시작 때 재경합 방지).
+  adoptCloudData(parsed, now = Date.now()) {
+    const data = this.normalize(parsed, now);
+    this.offlineReward = this.applyOfflineProgress(data, now);
+    this.data = data;
+    this.save(false);
+    this.emit("changed");
+  }
+
   // 사건 보상의 양수 votes/explain은 현재 구역 규모에 맞춰 스케일(후반에도 의미있게). 비용(음수)은 그대로.
   eventRewardScale() {
     const base = Math.min(50, this.stageTarget(this.data.stage.area) / this.stageTarget(1));
@@ -654,9 +680,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     this.data.stage.progress = 0;
     this.data.stage.target = this.stageTarget(this.data.stage.area);
     this.data.days = 30;
-    this.data.votes += rewardVotes;
-    this.data.explain += rewardExplain;
-    this.data.trust = Phaser.Math.Clamp(this.data.trust + 5, 0, 100);
+    this.grantReward({ votes: rewardVotes, explain: rewardExplain, trust: 5 });
     this.addLog(`${this.data.stage.area - 1}구역 완료`);
     this.emit("float", { text: `지역 ${this.data.stage.area} 개표`, x: 195, y: 188, color: "#bba2ff" });
     this.checkProgression();
@@ -664,10 +688,19 @@ export class GameState extends Phaser.Events.EventEmitter {
     return true;
   }
 
+  // 직원 레벨 상한 — 로드 시 클램프와 동일한 단일 기준(P0-2): 채용·일괄채용·정규화가 모두 이 값을 쓴다
+  staffMaxLevel(id) {
+    return this.staff(id)?.maxLevel ?? 20;
+  }
+
   hireStaff(id) {
     const staff = this.staff(id);
     if (!staff) return false;
     const level = this.staffLevel(id);
+    if (level >= this.staffMaxLevel(id)) {
+      this.emit("float", { text: "최대 레벨", x: 195, y: 720, color: "#ff8e8e" });
+      return false;
+    }
     const voteCost = this.staffCost(id);
     const explainCost = this.staffExplainCost(id);
     if (this.data.votes < voteCost || this.data.explain < explainCost) {
@@ -706,9 +739,10 @@ export class GameState extends Phaser.Events.EventEmitter {
   staffBulkPlan(id, qty) {
     const staff = this.staff(id);
     if (!staff) return { levels: 0, voteCost: 0, explainCost: 0 };
+    const maxLv = this.staffMaxLevel(id);
     const want = qty === "max" ? Infinity : Math.max(1, qty);
     let lv = this.staffLevel(id), v = 0, e = 0, n = 0, bv = this.data.votes, be = this.data.explain;
-    while (n < want && n < 2000) {
+    while (n < want && lv < maxLv && n < 2000) {
       const cv = Math.floor(staff.cost * 1.62 ** lv);
       const ce = Math.floor(staff.explain * 1.24 ** lv);
       if (qty === "max") { if (bv < cv || be < ce) break; bv -= cv; be -= ce; }
@@ -944,11 +978,7 @@ export class GameState extends Phaser.Events.EventEmitter {
       if (this.data.achievements[a.id]) return;
       if (this.achievementProgress(a.metric) < a.target) return;
       this.data.achievements[a.id] = true;
-      const r = a.reward || {};
-      this.data.explain += r.explain || 0;
-      this.data.votes += r.votes || 0;
-      if (r.trust) this.data.trust = Phaser.Math.Clamp(this.data.trust + r.trust, 0, 100);
-      if (r.seals) this.data.prestige.seals += r.seals;
+      this.grantReward(a.reward);
       this.emit("float", { text: `업적 ${a.name}`, x: 195, y: 210, color: "#bba2ff" });
       this.emit("celebrate", { text: `🏅 업적 달성 · ${a.name}` });
     });
@@ -1005,9 +1035,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     this.data.daily.streak = status.streak;
     this.data.daily.day = today;
     const r = status.reward;
-    this.data.explain += r.explain;
-    this.data.votes += r.votes;
-    if (r.seals) this.data.prestige.seals += r.seals;
+    this.grantReward(r);
     this.save(false);
     this.emit("changed");
     return r;
@@ -1053,10 +1081,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     if (!this.dailyQuestClaimable(id)) return null;
     const q = dailyQuestDefinitions.find((d) => d.id === id);
     const r = q.reward || {};
-    this.data.explain += r.explain || 0;
-    this.data.votes += r.votes || 0;
-    if (r.trust) this.data.trust = Phaser.Math.Clamp(this.data.trust + r.trust, 0, 100);
-    if (r.seals) this.data.prestige.seals += r.seals;
+    this.grantReward(r);
     this.data.daily.claimed[id] = true;
     this.emit("celebrate", { text: `📅 일일 완료 · ${q.title}` });
     this.emit("changed");
@@ -1128,9 +1153,7 @@ export class GameState extends Phaser.Events.EventEmitter {
 
   checkQuests() {
     const grant = (quest) => {
-      this.data.votes += quest.reward.votes || 0;
-      this.data.explain += quest.reward.explain || 0;
-      this.data.trust = Phaser.Math.Clamp(this.data.trust + (quest.reward.trust || 0), 0, 100);
+      this.grantReward(quest.reward);
       this.emit("float", { text: `목표완료 ${quest.title}`, x: 195, y: 244, color: "#bba2ff" });
       this.emit("celebrate", { text: `✅ 목표 완료 · ${quest.title}` });
     };
