@@ -1,0 +1,39 @@
+date: 2026-08-04
+mode: incremental
+target: operation-fever
+duration_ms: 9825
+unit:
+  total: 45
+  passed: 45
+  failed: 0
+  skipped: 0
+  log_file: unit-log.txt
+integration:
+  total: 1
+  passed: 1
+  failed: 0
+  skipped: 0
+  log_file: build-log.txt
+e2e:
+  total: 1
+  passed: 1
+  failed: 0
+  screenshots:
+    - screenshots/SC-OPF-002-step-1-mobile-draft.png
+    - screenshots/SC-OPF-002-step-2-mobile-selected.png
+    - screenshots/SC-OPF-002-step-4-mobile-fever.png
+    - screenshots/SC-OPF-002-desktop-draft.png
+validation:
+  source_detector:
+    passed_for_changed_code: true
+    existing_findings: 8
+  rendered_detector:
+    passed: false
+    reason: "30s navigation timeout from long-lived Firebase/Analytics connections"
+environment:
+  target_url: "http://localhost:5178"
+  target_guard_passed: true
+  matched_allowed_host: localhost
+  provider: none
+  lifecycle: preexisting
+  started_by_skill: false

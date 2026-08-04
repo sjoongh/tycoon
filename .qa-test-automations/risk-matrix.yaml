@@ -1,0 +1,17 @@
+weights:
+  files_changed_frequency: 1
+  dependency_depth: 2
+  schema_change: 5
+  public_api_change: 4
+  shared_module: 3
+  auth_security: 5
+  payment_critical: 5
+thresholds:
+  low: 0-5
+  medium: 6-12
+  high: 13+
+overrides:
+  - path: src/state/GameState.js
+    min_level: high
+  - path: src/ui/DOMModalLayer.js
+    min_level: high

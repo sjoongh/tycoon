@@ -1,0 +1,10 @@
+runs:
+  - date: 2026-08-04
+    mode: incremental
+    target: operation-fever
+    total: 47
+    passed: 47
+    failed: 0
+    skipped: 0
+    coverage_lines: null
+    duration_ms: 9825

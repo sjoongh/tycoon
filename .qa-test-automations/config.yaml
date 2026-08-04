@@ -1,0 +1,39 @@
+adapter:
+  runner: vitest
+  framework: vite-phaser
+  test_dir: test/
+  e2e_tool: playwright
+  commands:
+    unit: npm test
+    integration: null
+    e2e: node scripts/_operationfevertest.mjs
+project:
+  src_root: src/
+  specs_dir: null
+  lessons_dir: null
+infrastructure:
+  provider: none
+  lifecycle: preexisting
+env:
+  target_guard:
+    url_env_var: QA_BASE_URL
+    allowed_hosts: [localhost, 127.0.0.1]
+    blocked_patterns: [.firebaseapp.com, .web.app, .supabase.co, .rds.amazonaws.com, .neon.tech]
+    reject_message: "REFUSING to run: QA_BASE_URL resolves to a non-local target."
+  env_overrides:
+    QA_BASE_URL: http://localhost:5178
+  preflight:
+    - name: local-game-running
+      check: "curl --fail --silent http://localhost:5178/ > /dev/null"
+      fix_hint: "Run npm run dev before E2E."
+dev_server:
+  command: npm run dev
+  port: 5178
+  ready_url: http://localhost:5178
+  auto_start: false
+  auto_stop: false
+data_lifecycle:
+  seed_command: null
+  reset_command: null
+  namespace_prefix: ztest-qa-gaepyo
+  sweep_command: null

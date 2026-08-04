@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "taskId": "2026-08-04_operation-fever",
+  "title": "작전 카드와 개표 피버",
+  "goal": "구역 돌파 3택1 작전과 10초 피버가 저장·감사·모바일 플레이에서 정상 동작한다",
+  "root": "/Users/manager/aidp/gaepyo-master",
+  "startedAt": "2026-08-04T12:26:42+09:00",
+  "baseSha": "b57b1bfca245e2e1cb5625f60bd47fd152a820f5",
+  "branch": "main",
+  "dirtyAtStart": true,
+  "requiredChecks": [
+    "npm-test",
+    "npm-run-build"
+  ],
+  "status": "active",
+  "latestEvidence": null,
+  "latestEvidenceSha256": null,
+  "closedAt": null
+}

@@ -52,6 +52,15 @@
 .gp-progress { height: 14px; background: var(--bg2); overflow: hidden; border: 3px solid var(--line); box-shadow: var(--px-out-sm); }
 .gp-progress__fill { height: 100%; width: 0%; background: var(--gold); box-shadow: inset 0 -3px 0 rgba(0,0,0,0.22); transition: width .3s steps(8, end); }
 .gp-stage { align-self: center; display: inline-block; background: var(--panel-sunk); padding: 4px 11px; font-family: var(--f-small); font-size: 10px; color: var(--gold-hi); border: 2px solid var(--line); }
+.gp-fever { position: relative; align-self: center; width: min(278px, calc(100% - 28px)); min-height: 24px; overflow: hidden; background: var(--panel-sunk); border: 2px solid var(--line); box-shadow: var(--px-out-sm); }
+.gp-fever__fill { position: absolute; inset: 0; background: var(--event); opacity: 0.38; transform: scaleX(0); transform-origin: left center; transition: transform .18s steps(6, end); }
+.gp-fever__text { position: relative; z-index: 1; min-height: 20px; padding: 3px 7px 2px; display: flex; align-items: center; justify-content: space-between; gap: 8px; font-family: var(--f-small); font-size: 9px; color: var(--gold-hi); text-shadow: 1px 1px 0 #000; }
+.gp-fever__text span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gp-fever__text b { flex: none; font-family: var(--f-num); font-size: 9px; color: var(--gold); }
+.gp-fever--active { border-color: var(--gold); background: #5a241c; animation: gp-fever-pulse .55s steps(2) infinite; }
+.gp-fever--active .gp-fever__fill { background: var(--gold); opacity: 0.52; }
+.gp-fever--active .gp-fever__text { color: #fff; }
+@keyframes gp-fever-pulse { 0%,100% { box-shadow: var(--px-out-sm), 0 0 0 0 var(--gold); } 50% { box-shadow: var(--px-out-sm), 0 0 0 3px var(--gold); } }
 .gp-cps { display: inline-block; }
 .gp-cps--up { animation: gp-cps-pop 0.5s steps(3); }
 @keyframes gp-cps-pop { 0% { transform: scale(1); } 30% { transform: scale(1.4); color: #8df0b0; } 100% { transform: scale(1); color: inherit; } }
@@ -270,7 +279,7 @@
 .gp-logline { font-family: var(--f-small); font-size: 10px; color: var(--ink-soft); padding: 2px 0; }
 
 /* ---------- modal layer / onboarding / juice ---------- */
-.gp-modal-layer { position: absolute; inset: 0; pointer-events: none; }
+.gp-modal-layer { position: absolute; inset: 0; z-index: 20; pointer-events: none; }
 .gp-modal-ov { position: absolute; inset: 0; z-index: 30; pointer-events: auto; background: rgba(8,8,18,0.78); display: flex; align-items: center; justify-content: center; animation: gpFade .2s steps(3); }
 .gp-modal { width: 84%; max-width: 320px; background: var(--bg); border: 4px solid var(--line); padding: 20px 18px; text-align: center; box-shadow: var(--px-out), 0 0 0 3px var(--gold); animation: gpPop .2s steps(4); max-height: 90dvh; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
 .gp-modal__badge { font-size: 48px; }
@@ -284,6 +293,21 @@
 .gp-mbig { font-family: var(--f-num); font-size: 20px; color: var(--gold); line-height: 1.4; margin-bottom: 16px; }
 .gp-mbig span { font-family: var(--f-bold); font-size: 14px; color: #6fe89a; }
 .gp-modal .gp-btn { width: 100%; }
+.gp-modal--operation { width: 90%; max-width: 350px; padding: 17px 14px 15px; }
+.gp-modal--operation .gp-msub { margin-bottom: 9px; }
+.gp-oplist { display: flex; flex-direction: column; gap: 8px; }
+.gp-opcard { width: 100%; min-height: 76px; display: grid; grid-template-columns: 42px minmax(0, 1fr) auto; align-items: center; gap: 9px; padding: 8px; text-align: left; color: var(--ink); background: var(--panel); border: 3px solid var(--line); box-shadow: var(--px-out-sm), var(--px-drop); cursor: pointer; font-family: var(--f-body); }
+.gp-opcard:active { transform: translateY(4px); box-shadow: var(--px-out-sm); }
+.gp-opcard__icon { display: flex; align-items: center; justify-content: center; width: 42px; height: 42px; font-size: 23px; background: var(--bg2); border: 2px solid var(--line); image-rendering: pixelated; }
+.gp-opcard__body { display: flex; flex-direction: column; min-width: 0; gap: 2px; }
+.gp-opcard__family { align-self: flex-start; padding: 1px 5px; font-family: var(--f-small); font-size: 8px; color: #211400; background: var(--gold); border: 1px solid var(--line); }
+.gp-opcard--build .gp-opcard__family { color: #031b0c; background: #6fe89a; }
+.gp-opcard--response .gp-opcard__family { color: #2b0800; background: #ff9a7a; }
+.gp-opcard__body b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--f-bold); font-size: 13px; color: var(--ink); }
+.gp-opcard__body small { font-family: var(--f-small); font-size: 9px; line-height: 1.35; color: var(--ink-soft); }
+.gp-opcard__level { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; font-family: var(--f-num); font-size: 9px; color: var(--ink-soft); white-space: nowrap; }
+.gp-opcard__level i { font-style: normal; color: var(--gold); }
+.gp-opnote { margin-top: 11px; padding: 6px 8px; background: var(--panel-sunk); border: 2px solid var(--line); font-family: var(--f-small); font-size: 9px; color: var(--gold-hi); }
 .gp-hint { position: absolute; left: 0; right: 0; top: 42%; display: flex; flex-direction: column; align-items: center; gap: 8px; pointer-events: none; z-index: 5; }
 .gp-hint--bottom { top: auto; bottom: calc(max(10px, env(safe-area-inset-bottom)) + 76px); }
 .gp-hint--bottom .gp-hint__txt { animation: gp-coach-bob 1.1s steps(2) infinite; }
@@ -302,6 +326,21 @@
 .gp-banner--in { opacity: 1; transform: translateY(0); }
 .gp-confirm-row { display: flex; gap: 10px; }
 .gp-confirm-row .gp-btn { flex: 1; }
+
+.gp-opcard:focus-visible, .gp-mute:focus-visible, .gp-bell:focus-visible, .gp-rush:focus-visible, .gp-brief:focus-visible { outline: 3px solid var(--gem); outline-offset: 2px; }
+
+#game.gp-game--fever { box-shadow: 0 0 0 3px #000, 0 0 0 7px var(--gold), 0 0 40px rgba(255,205,117,0.42); }
+#game.gp-game--fever canvas { filter: saturate(1.25) brightness(1.08); }
+
+@media (hover: hover) {
+  .gp-opcard:hover { background: var(--panel3); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gp-fever, .gp-fever__fill, .gp-opcard { transition: none; }
+  .gp-fever--active { animation: none; box-shadow: var(--px-out-sm), 0 0 0 2px var(--gold); }
+  #game.gp-game--fever canvas { filter: brightness(1.05); }
+}
 
 /* world overlays */
 .gp-world-vignette { position: absolute; left: 0; right: 0; pointer-events: none; }
