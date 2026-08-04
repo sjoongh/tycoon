@@ -14,7 +14,7 @@ export class DOMModalLayer {
     this._hint = null;
     this._prevArea = gameState.data.stage.area;
     this._onUpgraded = (f) => this._checkMilestone(f);
-    this._onChanged = () => { this._maybeHint(); this._checkStage(); this._maybeNotifPrompt(); };
+    this._onChanged = () => { this._maybeHint(); this._checkStage(); this._maybeOperationDraft(); this._maybeNotifPrompt(); };
     this._onPrestigeConfirm = () => this._confirmPrestige();
     this._onCelebrate = (p) => { this._toast(p.text); this._flash(); };
     this._onGachaResult = (e) => this._showGachaResult(e.detail);
@@ -39,6 +39,7 @@ export class DOMModalLayer {
       else this._maybeDaily();
     }
     this._maybeHint();
+    this._maybeOperationDraft();
   }
 
   // 10연차 결과 — 등급색 리스트로 한 번에(신규는 🎉, 중복은 Lv 승진 표시)
@@ -121,6 +122,49 @@ export class DOMModalLayer {
     } else if (a < this._prevArea) {
       this._prevArea = a; // prestige reset
     }
+  }
+
+  // 구역 완료 직후 현장/운영/대응 3축 중 하나를 고르는 런 작전 드래프트.
+  // 다른 보상 모달이 열려 있으면 다음 changed 틱까지 기다려 모달 중첩을 피한다.
+  _maybeOperationDraft() {
+    if (this._operationModal?.isConnected || this.root.querySelector(".gp-modal-ov")) return;
+    const draft = this.gameState.data.operations?.draft;
+    const choices = this.gameState.operationDraftDefinitions ? this.gameState.operationDraftDefinitions() : [];
+    if (!draft || choices.length !== 3) return;
+
+    const familyLabel = { tap: "현장 작전", build: "운영 작전", response: "대응 작전" };
+    const cards = choices.map((operation) => {
+      const level = this.gameState.operationLevel(operation.id);
+      return `<button type="button" class="gp-opcard gp-opcard--${operation.family}" data-operation="${operation.id}" aria-label="${operation.name} 레벨 ${level + 1} 선택">
+        <span class="gp-opcard__icon" aria-hidden="true">${operation.icon}</span>
+        <span class="gp-opcard__body">
+          <span class="gp-opcard__family">${familyLabel[operation.family] || "개표 작전"}</span>
+          <b>${operation.name}</b>
+          <small>${operation.benefit}</small>
+        </span>
+        <span class="gp-opcard__level">Lv.${level}<i>→ ${level + 1}</i></span>
+      </button>`;
+    }).join("");
+
+    const ov = document.createElement("div");
+    ov.className = "gp-modal-ov";
+    ov.innerHTML = `<div class="gp-modal gp-modal--operation" role="dialog" aria-modal="true" aria-labelledby="gp-operation-title">
+      <div class="gp-mtitle" id="gp-operation-title">${draft.area}구역 돌파 · 작전 회의</div>
+      <div class="gp-msub">이번 감사 런의 방향을 하나 고르세요.<br>선택한 행동은 <b>열기</b>를 더 빨리 채웁니다.</div>
+      <div class="gp-oplist">${cards}</div>
+      <div class="gp-opnote">열기 100% → 10초간 생산·탭 ×2</div>
+    </div>`;
+    ov.addEventListener("click", (event) => {
+      const card = event.target.closest("[data-operation]");
+      if (!card) return;
+      if (!this.gameState.chooseOperation(card.dataset.operation)) return;
+      document.dispatchEvent(new CustomEvent("gp:sfx", { detail: "powerup" }));
+      ov.remove();
+      this._operationModal = null;
+    });
+    this._operationModal = ov;
+    this.root.appendChild(ov);
+    requestAnimationFrame(() => ov.querySelector("[data-operation]")?.focus({ preventScroll: true }));
   }
 
   _confirmPrestige() {
@@ -233,6 +277,7 @@ export class DOMModalLayer {
   _maybeNotifPrompt() {
     const n = this.notifications;
     if (!n || this._notifPromptShown) return;
+    if (this.root.querySelector(".gp-modal-ov")) return;
     if (!n.supported() || n.asked() || n.permission() !== "default") return;
     if ((this.gameState.data.prestige?.runs || 0) < 1) return;
     this._notifPromptShown = true;
@@ -333,6 +378,7 @@ export class DOMModalLayer {
     document.removeEventListener("gp:prestige-confirm", this._onPrestigeConfirm);
     document.removeEventListener("gp:gacha-result", this._onGachaResult);
     document.removeEventListener("gp:gacha-result10", this._onGachaResult10);
+    this._operationModal?.remove();
     this.root.remove();
   }
 }

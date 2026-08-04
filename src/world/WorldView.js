@@ -705,7 +705,7 @@ export class WorldView {
     if (this.gameState.autoAideLevel && this.gameState.autoAideLevel() >= 3) {
       this.scene.time.delayedCall(2600, () => {
         if (!this._golden || this._golden !== disc) return;
-        const reward = this.gameState.collectGoldenBallot(0.8);
+        const reward = this.gameState.collectGoldenBallot(0.8, { fever: false });
         this.effects.float({ text: `🤖 +${shortNumber(reward)}`, x, y: y - 28, color: "#ffd34d" });
         this._despawnGolden();
         this._scheduleGolden(60000 + Math.random() * 60000);
@@ -770,7 +770,7 @@ export class WorldView {
     if (this.gameState.autoAideLevel && this.gameState.autoAideLevel() >= 2) {
       this.scene.time.delayedCall(2200, () => {
         if (!this._item || this._item !== txt) return;
-        const res = this.gameState.applyRandomItem(def.id);
+        const res = this.gameState.applyRandomItem(def.id, { fever: false });
         this.effects.float({ text: `🤖 ${res.text}`, x, y: y - 30, color: "#ffe3a8" });
         this._despawnItem();
         this._scheduleItem(25000 + Math.random() * 20000);
@@ -815,7 +815,18 @@ export class WorldView {
     }
     this.bigNum.setText(shortNumber(d.votes));
     const cps = this.gameState.cps ? this.gameState.cps() : 0;
-    this.cpsText.setText(`▶ 초당 ${cps < 10000 ? cps.toFixed(0) : shortNumber(cps)}표`);
+    const fever = this.gameState.feverActive ? this.gameState.feverActive() : false;
+    this.bigNum.setColor(fever ? "#ffd34d" : "#ffffff");
+    this.bigNum.setShadow(3, 3, fever ? "#ef7d57" : "#b13e53", 0, true, true);
+    this.cpsText
+      .setText(`${fever ? "🔥 피버 ×2" : "▶"} · 초당 ${cps < 10000 ? cps.toFixed(0) : shortNumber(cps)}표`)
+      .setColor(fever ? "#ffe3a8" : "#bcd0e0");
+    if (fever && !this._feverWasActive) {
+      this.scene.tweens.killTweensOf(this.bigNum);
+      this.bigNum.setScale(1.25);
+      this.scene.tweens.add({ targets: this.bigNum, scale: 1, duration: 240, ease: "Back.easeOut" });
+    }
+    this._feverWasActive = fever;
     this._syncTitlePlate(d);
     this._syncCosmetics(d);
     this._syncWorkers();

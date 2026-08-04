@@ -5,3 +5,6 @@ dist/
 .firebase/
 .omc/sessions/
 .omc/state/
+.qa-test-automations/evidence/*/screenshots/
+.qa-test-automations/evidence/*/coverage.json
+.qa-test-automations/evidence/*/*-log.txt

@@ -14,6 +14,10 @@ export class DOMHud {
       </div>
       <div class="gp-progress"><div class="gp-progress__fill" data-k="progress"></div></div>
       <div class="gp-stage" data-k="stage"></div>
+      <div class="gp-fever" data-k="fever" hidden>
+        <div class="gp-fever__fill" data-k="fever-fill"></div>
+        <div class="gp-fever__text"><span data-k="fever-label">작전 열기</span><b data-k="fever-value">0%</b></div>
+      </div>
       <div class="gp-truststate" data-k="truststate" hidden></div>
       <div class="gp-commgauge" data-k="commgauge" hidden><div class="gp-commgauge__fill"></div><span class="gp-commgauge__txt"></span></div>`;
     this._refresh = () => this.refresh();
@@ -101,6 +105,35 @@ export class DOMHud {
 
     this._refreshRush();
     this._refreshBrief();
+    this._refreshFever();
+  }
+
+  _refreshFever() {
+    const gs = this.gameState;
+    const fever = this.root.querySelector('[data-k="fever"]');
+    const game = document.getElementById("game");
+    if (!fever || !gs.feverUnlocked || !gs.feverUnlocked()) {
+      if (fever) fever.hidden = true;
+      game?.classList.remove("gp-game--fever");
+      return;
+    }
+
+    fever.hidden = false;
+    const active = gs.feverActive();
+    const pct = Math.max(0, Math.min(1, gs.feverProgressPct()));
+    const last = gs.lastOperation ? gs.lastOperation() : null;
+    fever.classList.toggle("gp-fever--active", active);
+    fever.querySelector('[data-k="fever-fill"]').style.transform = `scaleX(${pct})`;
+    fever.querySelector('[data-k="fever-label"]').textContent = active
+      ? "🔥 개표 피버 ×2"
+      : `작전 열기 · ${last ? `${last.name} Lv.${gs.operationLevel(last.id)}` : "작전 수행"}`;
+    fever.querySelector('[data-k="fever-value"]').textContent = active
+      ? `${Math.max(1, Math.ceil(gs.feverRemainingMs() / 1000))}초`
+      : `${Math.round(gs.feverCharge())}%`;
+    fever.setAttribute("aria-label", active
+      ? `개표 피버 발동 중, ${Math.ceil(gs.feverRemainingMs() / 1000)}초 남음`
+      : `작전 열기 ${Math.round(gs.feverCharge())}퍼센트`);
+    game?.classList.toggle("gp-game--fever", active);
   }
 
   // 탭 학습 단계(첫 업그레이드 전)에는 액티브 FAB 숨김 — 첫 60초 CTA 과부하 방지
@@ -167,6 +200,7 @@ export class DOMHud {
     this._muteBtn.remove();
     this._rushBtn.remove();
     this._briefBtn.remove();
+    document.getElementById("game")?.classList.remove("gp-game--fever");
     this.root.remove();
   }
 }

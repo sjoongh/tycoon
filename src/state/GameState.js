@@ -11,6 +11,13 @@ import { staffDefinitions } from "../data/staff.js";
 import { achievementDefinitions } from "../data/achievements.js";
 import { dailyQuestDefinitions } from "../data/dailyQuests.js";
 import { weeklyGoalDefinitions } from "../data/weeklyGoals.js";
+import {
+  OPERATION_MAX_LEVEL,
+  normalizeOperationPicks,
+  operationById,
+  operationChoices,
+  operationDefinitions,
+} from "../data/operations.js";
 import { shortNumber } from "../utils/format.js";
 
 const DAY_MS = 86400000;
@@ -31,6 +38,9 @@ const BRIEF_COOLDOWN_MS = 90000; // 긴급 브리핑 재사용 90초
 const BRIEF_BUFF_MS = 15000; // 브리핑 생산 버프 15초
 const BRIEF_TRUST = 12; // 브리핑 시 믿음 +12(능동적 트러스트 관리 — 위기 탈출/보너스 진입)
 const BRIEF_BUFF_MULT = 1.5; // 브리핑 버프 중 초당 생산 ×1.5
+const FEVER_TARGET = 100; // 작전 행동으로 채우는 열기 목표
+const FEVER_DURATION_MS = 10000; // 개표 피버 지속 10초
+const FEVER_MULT = 2; // 피버 중 실시간 생산·탭 위력 ×2
 
 // 사건 도감 수집 보상 — 누적 수집 종수가 마일스톤을 넘으면 영구 생산 보너스(프레스티지에도 유지되는 메타 진척).
 // pct는 '도달한 최고 마일스톤'의 값(누적 합산 아님). 도감을 모을 동기 + 디스크리트한 해금 비트.
@@ -126,6 +136,8 @@ const fallbackState = {
   rushEndsAt: 0,
   briefReadyAt: 0,
   briefEndsAt: 0,
+  operations: { picks: {}, draft: null, lastId: null }, // 감사 런 전용 3택1 작전
+  fever: { charge: 0, endsAt: 0 }, // 실시간 행동 열기(감사 시 초기화)
   offline2xDay: 0,
   log: ["개표국 개국"],
 };
@@ -174,6 +186,12 @@ export class GameState extends Phaser.Events.EventEmitter {
       prestige: { ...fallbackState.prestige, ...(parsed?.prestige || {}) },
       tutorial: { ...fallbackState.tutorial, ...(parsed?.tutorial || {}) },
       daily: { ...fallbackState.daily, ...(parsed?.daily || {}) },
+      operations: {
+        ...fallbackState.operations,
+        ...(parsed?.operations || {}),
+        picks: normalizeOperationPicks(parsed?.operations?.picks),
+      },
+      fever: { ...fallbackState.fever, ...(parsed?.fever || {}) },
     };
     data.daily.day = Math.max(0, Math.floor(Number(data.daily.day) || 0));
     data.daily.streak = Math.max(0, Math.floor(Number(data.daily.streak) || 0));
@@ -197,6 +215,19 @@ export class GameState extends Phaser.Events.EventEmitter {
     data.weekly.baseVotes = Math.max(0, Number(data.weekly.baseVotes) || 0);
     data.weekly.target = Math.max(0, Number(data.weekly.target) || 0);
     data.weekly.claimed = !!data.weekly.claimed;
+
+    data.operations.lastId = operationById(data.operations.lastId)?.id || null;
+    const draft = data.operations.draft;
+    const draftChoices = Array.isArray(draft?.choices)
+      ? [...new Set(draft.choices.filter((id) => operationById(id)))].slice(0, 3)
+      : [];
+    data.operations.draft = draftChoices.length === 3
+      ? { area: Math.max(1, Math.floor(Number(draft.area) || 1)), choices: draftChoices }
+      : null;
+    data.fever.charge = Phaser.Math.Clamp(Number(data.fever.charge) || 0, 0, FEVER_TARGET);
+    const feverEndsAt = Math.max(0, Number(data.fever.endsAt) || 0);
+    data.fever.endsAt = feverEndsAt > now ? feverEndsAt : 0;
+    if (data.fever.endsAt > 0) data.fever.charge = 0;
 
     data.votes = Math.max(0, Number(data.votes) || 0);
     data.explain = Math.max(0, Number(data.explain) || 0);
@@ -368,12 +399,16 @@ export class GameState extends Phaser.Events.EventEmitter {
   }
 
   processClick(x, y) {
-    // 연타 콤보: 600ms 안에 이어 누르면 콤보 누적, 5콤보마다 +0.5배(최대 ×3)
+    // 연타 콤보: 기본 600ms 안에 이어 누르면 콤보 누적. 작전으로 유지시간·보너스를 확장한다.
     const now = (typeof performance !== "undefined" ? performance.now() : Date.now());
-    if (now - (this._lastClickAt || 0) < 600) this._clickCombo = (this._clickCombo || 0) + 1;
+    const comboWindowMs = 600 + this.operationEffectFor(this.data, "comboWindowMs");
+    if (now - (this._lastClickAt || 0) < comboWindowMs) this._clickCombo = (this._clickCombo || 0) + 1;
     else this._clickCombo = 1;
     this._lastClickAt = now;
-    const comboMult = 1 + Math.min(4, Math.floor(this._clickCombo / 5)) * 0.5;
+    const comboBonus = Math.min(4, Math.floor(this._clickCombo / 5)) * 0.5;
+    const comboMult = 1 + comboBonus * (1 + this.operationEffectFor(this.data, "comboBonusPct"));
+    // 열기를 가득 채운 바로 그 탭부터 피버 배율이 적용되어 임계점의 손맛이 즉시 느껴진다.
+    this.addFever("tap", 2);
     const amount = Math.round(this.clickPower() * comboMult);
     this.addVotes(amount);
     this.data.stats.totalClicks += 1;
@@ -384,7 +419,8 @@ export class GameState extends Phaser.Events.EventEmitter {
     // 콤보 마일스톤: 25/50/100 연타 도달 시 표 폭발 보너스 + 축포(액티브 손맛 절정)
     const msBonus = { 25: 40, 50: 120, 100: 300 }[this._clickCombo];
     if (msBonus) {
-      const bonus = Math.round(this.clickPower() * msBonus);
+      this.addFever("combo", 12);
+      const bonus = Math.round(this.clickPower() * msBonus * (1 + this.operationEffectFor(this.data, "comboBonusPct")));
       this.addVotes(bonus);
       this.emit("celebrate", { text: `🔥 ${this._clickCombo} 콤보! +${shortNumber(bonus)}표!` });
       this.emit("float", { text: `🔥 +${shortNumber(bonus)}`, x, y: y - 62, color: "#ff7a3c" });
@@ -396,6 +432,94 @@ export class GameState extends Phaser.Events.EventEmitter {
 
   // 현재 클릭 콤보 수(WorldView 표시용)
   clickCombo() { return this._clickCombo || 0; }
+
+  // ----- 감사 런 전용 작전 카드 -----
+  operationLevel(id, data = this.data) {
+    return Math.max(0, Math.floor(Number(data?.operations?.picks?.[id]) || 0));
+  }
+
+  operationEffectFor(data, key) {
+    return operationDefinitions.reduce((sum, operation) => {
+      return sum + this.operationLevel(operation.id, data) * (operation.effects?.[key] || 0);
+    }, 0);
+  }
+
+  operationCount(data = this.data) {
+    return operationDefinitions.reduce((sum, operation) => sum + this.operationLevel(operation.id, data), 0);
+  }
+
+  lastOperation() {
+    return operationById(this.data.operations?.lastId);
+  }
+
+  operationDraftDefinitions() {
+    return (this.data.operations?.draft?.choices || []).map(operationById).filter(Boolean);
+  }
+
+  chooseOperation(id) {
+    const draft = this.data.operations?.draft;
+    const operation = operationById(id);
+    if (!operation || !draft?.choices?.includes(id)) return false;
+    const level = this.operationLevel(id);
+    if (level >= OPERATION_MAX_LEVEL) return false;
+    this.data.operations.picks[id] = level + 1;
+    this.data.operations.lastId = id;
+    this.data.operations.draft = null;
+    this.addLog(`작전 채택: ${operation.name} Lv.${level + 1}`);
+    this.addFever("choice", 12);
+    this.emit("float", { text: `${operation.name} Lv.${level + 1}`, x: 195, y: 210, color: "#ffd34d" });
+    this.emit("celebrate", { text: `${operation.icon} 작전 채택 · ${operation.name} Lv.${level + 1}` });
+    this.emit("changed");
+    this.save(false);
+    return true;
+  }
+
+  // ----- 개표 피버: 선택한 작전 행동으로 열기를 채워 10초간 실시간 생산·탭 ×2 -----
+  feverUnlocked(data = this.data) {
+    return this.operationCount(data) > 0;
+  }
+
+  feverActive(now = Date.now()) {
+    return now < (this.data.fever?.endsAt || 0);
+  }
+
+  feverRemainingMs(now = Date.now()) {
+    return Math.max(0, (this.data.fever?.endsAt || 0) - now);
+  }
+
+  feverDurationMs() { return FEVER_DURATION_MS; }
+  feverMultiplier(now = Date.now()) { return this.feverActive(now) ? FEVER_MULT : 1; }
+  feverCharge() { return Phaser.Math.Clamp(Number(this.data.fever?.charge) || 0, 0, FEVER_TARGET); }
+
+  feverProgressPct(now = Date.now()) {
+    if (this.feverActive(now)) return this.feverRemainingMs(now) / FEVER_DURATION_MS;
+    return this.feverCharge() / FEVER_TARGET;
+  }
+
+  addFever(source, baseAmount, now = Date.now()) {
+    if (!this.feverUnlocked() || this.feverActive(now)) return { added: 0, started: false };
+    const heatKeys = {
+      tap: "tapHeat",
+      combo: "comboHeat",
+      upgrade: "upgradeHeat",
+      brief: "briefHeat",
+      event: "eventHeat",
+      field: "fieldHeat",
+    };
+    const added = Math.max(0, Number(baseAmount) || 0)
+      + (heatKeys[source] ? this.operationEffectFor(this.data, heatKeys[source]) : 0);
+    if (added <= 0) return { added: 0, started: false };
+    const next = this.feverCharge() + added;
+    if (next >= FEVER_TARGET) {
+      this.data.fever.charge = 0;
+      this.data.fever.endsAt = now + FEVER_DURATION_MS;
+      this.emit("fever-start", { durationMs: FEVER_DURATION_MS, multiplier: FEVER_MULT });
+      this.emit("celebrate", { text: "🔥 개표 피버! 10초간 생산·탭 ×2" });
+      return { added, started: true };
+    }
+    this.data.fever.charge = next;
+    return { added, started: false };
+  }
 
   tick() {
     if (this.data.paused) return;
@@ -426,7 +550,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     let ev = avail[avail.length - 1];
     for (const e of avail) { roll -= w(e); if (roll < 0) { ev = e; break; } }
     const side = (ev.left[1].trust || 0) >= (ev.right[1].trust || 0) ? ev.left : ev.right; // 안전(믿음) 선택
-    this.applyEffect(side[1]);
+    this.applyEffect(side[1], { fever: false });
     const firstSeen = this.markEventSeen(ev.id);
     this.addLog(`🤖 비서 자동 대응: ${ev.title}`);
     document.dispatchEvent(new CustomEvent("gp:event-resolved", { detail: { id: ev.id, title: ev.title, real: realEventIds.has(ev.id), firstSeen } }));
@@ -529,10 +653,10 @@ export class GameState extends Phaser.Events.EventEmitter {
   // 사건 보상의 양수 votes/explain은 현재 구역 규모에 맞춰 스케일(후반에도 의미있게). 비용(음수)은 그대로.
   eventRewardScale() {
     const base = Math.min(50, this.stageTarget(this.data.stage.area) / this.stageTarget(1));
-    return base * (1 + this.permanentEffectFor(this.data, "eventPct") + this.titleEffectFor(this.data, "eventPct") + this.charEffectFor("eventPct")); // 특별 대응반 + 칭호(서기관) + 캐릭터 특성
+    return base * (1 + this.permanentEffectFor(this.data, "eventPct") + this.titleEffectFor(this.data, "eventPct") + this.charEffectFor("eventPct") + this.operationEffectFor(this.data, "eventPct")); // 특별 대응반 + 칭호(서기관) + 캐릭터 특성 + 런 작전
   }
 
-  applyEffect(effect) {
+  applyEffect(effect, { fever = true } = {}) {
     const scale = this.eventRewardScale();
     const rawVotes = effect.votes || 0;
     const votes = rawVotes > 0 ? Math.round(rawVotes * scale) : rawVotes;
@@ -550,6 +674,7 @@ export class GameState extends Phaser.Events.EventEmitter {
       this.data.trust = Phaser.Math.Clamp(this.data.trust + this.staffLevel("speaker") * 0.3, 0, 100);
     }
     this.data.stats.totalEvents += 1;
+    if (fever) this.addFever("event", 28);
     this._bumpDaily("events");
     this.data.eventReadyAt = Date.now() + EVENT_COOLDOWN_MS;
     this.advanceTutorial("event");
@@ -663,6 +788,7 @@ export class GameState extends Phaser.Events.EventEmitter {
       y: facility.y - 60,
       color: "#ffc857",
     });
+    this.addFever("upgrade", 8);
     this.emit("upgraded", facility);
     this.checkProgression();
     this.emit("changed");
@@ -670,9 +796,10 @@ export class GameState extends Phaser.Events.EventEmitter {
   }
 
   advanceStage() {
-    if (this.data.stage.progress < this.data.stage.target) return false;
-    const rewardVotes = Math.floor(450 * this.data.stage.area ** 1.35);
-    const rewardExplain = Math.floor(30 + this.data.stage.area * 14);
+    if (this.data.stage.progress < this.data.stage.target || this.data.operations?.draft) return false;
+    const completedArea = this.data.stage.area;
+    const rewardVotes = Math.floor(450 * completedArea ** 1.35);
+    const rewardExplain = Math.floor(30 + completedArea * 14);
     this.data.stage.completed += 1;
     this.advanceTutorial("stage");
     this.data.stage.area += 1;
@@ -680,11 +807,16 @@ export class GameState extends Phaser.Events.EventEmitter {
     this.data.stage.progress = 0;
     this.data.stage.target = this.stageTarget(this.data.stage.area);
     this.data.days = 30;
+    this.data.operations.draft = {
+      area: completedArea,
+      choices: operationChoices(completedArea, this.data.prestige.runs, this.data.operations.picks),
+    };
     this.grantReward({ votes: rewardVotes, explain: rewardExplain, trust: 5 });
     this.addLog(`${this.data.stage.area - 1}구역 완료`);
     this.emit("float", { text: `지역 ${this.data.stage.area} 개표`, x: 195, y: 188, color: "#bba2ff" });
     this.checkProgression();
     this.emit("changed");
+    this.save(false);
     return true;
   }
 
@@ -714,6 +846,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     this.data.trust = Phaser.Math.Clamp(this.data.trust + (staff.trustBonus || 0) * 20, 0, 100);
     this.addLog(`${staff.name} Lv.${this.staffLevel(id)}`);
     this.emit("float", { text: `${staff.name} Lv.${this.staffLevel(id)}`, x: 195, y: 604, color: "#7fc8ff" });
+    this.addFever("upgrade", 8);
     this.checkProgression();
     this.emit("changed");
     return true;
@@ -767,6 +900,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     this.data.trust = Phaser.Math.Clamp(this.data.trust + (fac.trust || 0) * plan.levels, 0, 100);
     this.addLog(`${fac.name} Lv.${this.level(id)}${plan.levels > 1 ? ` (+${plan.levels})` : ""}`);
     this.emit("float", { text: `${fac.name} +${plan.levels}Lv`, x: 195, y: 300, color: "#ffc857" });
+    this.addFever("upgrade", Math.min(24, 6 + plan.levels * 2));
     this.emit("upgraded", fac);
     this.checkProgression();
     this.emit("changed");
@@ -787,13 +921,14 @@ export class GameState extends Phaser.Events.EventEmitter {
     this.data.trust = Phaser.Math.Clamp(this.data.trust + (staff.trustBonus || 0) * 20 * plan.levels, 0, 100);
     this.addLog(`${staff.name} Lv.${this.staffLevel(id)}${plan.levels > 1 ? ` (+${plan.levels})` : ""}`);
     this.emit("float", { text: `${staff.name} +${plan.levels}Lv`, x: 195, y: 300, color: "#7fc8ff" });
+    this.addFever("upgrade", Math.min(24, 6 + plan.levels * 2));
     this.checkProgression();
     this.emit("changed");
     return true;
   }
 
   // 랜덤 아이템 효과 — 종류별 즉시 보상. cps에 비례해 후반에도 의미있게.
-  applyRandomItem(id) {
+  applyRandomItem(id, { fever = true } = {}) {
     const cps = this.cps();
     let r = { icon: "📦", text: "" };
     switch (id) {
@@ -854,6 +989,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     }
     this.data.stats.totalItems = (this.data.stats.totalItems || 0) + 1;
     this._bumpDaily("items");
+    if (fever) this.addFever("field", 24);
     this.addLog(r.text);
     this.emit("changed");
     return r;
@@ -1090,9 +1226,11 @@ export class GameState extends Phaser.Events.EventEmitter {
   }
 
   // 필드 황금 투표함 수령: 약 90초치 생산을 즉시 지급(액티브 손맛). 기존 addVotes 경유(주간/업적/구역 진행에 자연 반영).
-  collectGoldenBallot(factor = 1) {
-    const reward = Math.max(50, Math.round(this.cps() * 90 * factor));
+  collectGoldenBallot(factor = 1, { fever = true } = {}) {
+    const operationFactor = 1 + this.operationEffectFor(this.data, "goldenPct");
+    const reward = Math.max(50, Math.round(this.cps() * 90 * factor * operationFactor));
     this.addVotes(reward);
+    if (fever) this.addFever("field", 30);
     this.emit("celebrate", { text: `🌟 황금 투표함! +${shortNumber(reward)}표` });
     this.emit("changed");
     return reward;
@@ -1221,8 +1359,11 @@ export class GameState extends Phaser.Events.EventEmitter {
   }
 
   cps() {
-    // 러시·브리핑 버프는 실시간 생산에만 적용(오프라인 정산엔 미적용 — cpsFor를 직접 쓰는 경로)
-    return this.cpsFor(this.data) * (this.rushActive() ? RUSH_MULT : 1) * (this.briefActive() ? BRIEF_BUFF_MULT : 1);
+    // 러시·브리핑·피버는 실시간 생산에만 적용(오프라인 정산엔 미적용 — cpsFor를 직접 쓰는 경로)
+    return this.cpsFor(this.data)
+      * (this.rushActive() ? RUSH_MULT : 1)
+      * (this.briefActive() ? BRIEF_BUFF_MULT : 1)
+      * this.feverMultiplier();
   }
 
   // ----- 긴급 브리핑(액티브 트러스트 액션): 해명 소비 → 믿음 회복 + 짧은 생산 버프 -----
@@ -1249,8 +1390,9 @@ export class GameState extends Phaser.Events.EventEmitter {
     const now = Date.now();
     this.data.explain -= this.briefCost();
     this.data.trust = Phaser.Math.Clamp(this.data.trust + BRIEF_TRUST, 0, 100);
-    this.data.briefEndsAt = now + BRIEF_BUFF_MS;
+    this.data.briefEndsAt = now + BRIEF_BUFF_MS + this.operationEffectFor(this.data, "briefDurationMs");
     this.data.briefReadyAt = now + BRIEF_COOLDOWN_MS;
+    this.addFever("brief", 18, now);
     this.emit("float", { text: `긴급 브리핑! 믿음 +${BRIEF_TRUST}`, x: 195, y: 330, color: "#8df0b0" });
     this.emit("celebrate", { text: `📢 긴급 브리핑! 믿음 +${BRIEF_TRUST}` }); // 토스트+플래시 스파이크
     this.emit("changed");
@@ -1289,7 +1431,7 @@ export class GameState extends Phaser.Events.EventEmitter {
       const lv = data.facilities[item.id] || 0;
       return sum + lv * item.cps * this.facilityMilestoneFactor(lv);
     }, 0);
-    return raw * (0.9 + data.trust / 230) * this.trustModifier(data.trust) * this.staffMultiplierFor(data) * this.prestigeMultiplierFor(data) * (1 + this.permanentEffectFor(data, "cpsPct") + this.titleEffectFor(data, "cpsPct") + this.charEffectFor("cpsPct")) * (1 + this.dexBonusPct(data));
+    return raw * (0.9 + data.trust / 230) * this.trustModifier(data.trust) * this.staffMultiplierFor(data) * this.prestigeMultiplierFor(data) * (1 + this.permanentEffectFor(data, "cpsPct") + this.titleEffectFor(data, "cpsPct") + this.charEffectFor("cpsPct") + this.operationEffectFor(data, "cpsPct")) * (1 + this.dexBonusPct(data));
   }
 
   // 시설 레벨이 마일스톤을 넘을 때마다 해당 시설 생산 ×2 누적(AdVenture Capitalist식 영구 보너스)
@@ -1360,7 +1502,7 @@ export class GameState extends Phaser.Events.EventEmitter {
 
   explainPerSecondFor(data) {
     const raw = 0.55 + (data.facilities.notice || 0) * 0.2 + (data.facilities.server || 0) * 0.16 + (data.facilities.studio || 0) * 0.12;
-    return raw * (1 + this.permanentEffectFor(data, "explainPct") + this.titleEffectFor(data, "explainPct"));
+    return raw * (1 + this.permanentEffectFor(data, "explainPct") + this.titleEffectFor(data, "explainPct") + this.operationEffectFor(data, "explainPct"));
   }
 
   clickPower() {
@@ -1373,8 +1515,8 @@ export class GameState extends Phaser.Events.EventEmitter {
       return sum + s;
     }, 0);
     const clerkSkill = Math.floor(this.staffLevel("clerk") / 5);
-    const raw = 1 + facilityPower + staffPower + clerkSkill;
-    return Math.round(raw * (1 + this.permanentEffectFor(this.data, "clickPct") + this.titleEffectFor(this.data, "clickPct") + this.charEffectFor("clickPct"))); // round: 작은 raw에서 clickPct 보너스가 floor로 0이 되던 문제 보정
+    const raw = 1 + facilityPower + staffPower + clerkSkill + this.operationEffectFor(this.data, "clickFlat");
+    return Math.round(raw * (1 + this.permanentEffectFor(this.data, "clickPct") + this.titleEffectFor(this.data, "clickPct") + this.charEffectFor("clickPct") + this.operationEffectFor(this.data, "clickPct")) * this.feverMultiplier());
   }
 
   trustDecay() {
