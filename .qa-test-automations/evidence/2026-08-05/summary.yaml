@@ -1,0 +1,80 @@
+date: 2026-08-05
+mode: incremental
+target: operation-fever-strategy
+duration_ms: 433700
+unit:
+  total: 51
+  passed: 51
+  failed: 0
+  skipped: 0
+integration:
+  total: 1
+  passed: 1
+  failed: 0
+  skipped: 0
+  check: npm-run-build
+e2e:
+  total: 4
+  passed: 4
+  failed: 0
+  screenshots:
+    - screenshots/SC-OPF-002-step-1-mobile-draft.png
+    - screenshots/SC-OPF-002-step-2-mobile-selected.png
+    - screenshots/SC-OPF-002-step-3-mobile-status.png
+    - screenshots/SC-OPF-003-step-4-mobile-fever.png
+    - screenshots/SC-OPF-003-step-5-mobile-finisher.png
+    - screenshots/SC-OPF-003-step-6-mobile-report.png
+    - screenshots/SC-OPF-002-step-1-desktop-draft.png
+    - screenshots/SC-OPF-004-hands-on-180s.png
+    - screenshots/SC-OPF-004-hands-on-build-120s.png
+    - screenshots/SC-OPF-004-hands-on-response-120s.png
+hands_on:
+  pace: high-intensity-power-user-stress
+  duration_sec: 180
+  game_state_injection: false
+  taps: 1452
+  upgrades: 92
+  events: 4
+  completed_areas: 27
+  operation_choices: 9
+  fever_cycles: 4
+  recovery_cycles: 4
+  finisher_uses: 4
+  errors: 0
+hands_on_profiles:
+  build:
+    duration_sec: 120
+    game_state_injection: false
+    reached_area: 21
+    operation_choices: 6
+    fever_cycles: 2
+    recovery_cycles: 2
+    finisher_uses: 2
+    errors: 0
+  response:
+    duration_sec: 120
+    game_state_injection: false
+    reached_area: 18
+    operation_choices: 5
+    fever_cycles: 2
+    recovery_cycles: 2
+    finisher_uses: 2
+    errors: 0
+validation:
+  source_detector:
+    passed_for_changed_code: true
+    existing_findings: 8
+  rendered_detector:
+    passed: false
+    reason: "30s navigation timeout from long-lived Firebase/Analytics connections"
+  reduced_motion: passed
+  mobile_overflow: false
+  desktop_overflow: false
+  operation_card_touch_targets_min_px: 84.89
+environment:
+  target_url: "http://localhost:5178"
+  target_guard_passed: true
+  matched_allowed_host: localhost
+  provider: none
+  lifecycle: preexisting
+  started_by_skill: false

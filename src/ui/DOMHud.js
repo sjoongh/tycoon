@@ -14,13 +14,17 @@ export class DOMHud {
       </div>
       <div class="gp-progress"><div class="gp-progress__fill" data-k="progress"></div></div>
       <div class="gp-stage" data-k="stage"></div>
-      <div class="gp-fever" data-k="fever" hidden>
+      <button type="button" class="gp-fever" data-k="fever" hidden>
         <div class="gp-fever__fill" data-k="fever-fill"></div>
         <div class="gp-fever__text"><span data-k="fever-label">작전 열기</span><b data-k="fever-value">0%</b></div>
-      </div>
+        <small class="gp-fever__hint">눌러서 작전 현황 보기</small>
+      </button>
       <div class="gp-truststate" data-k="truststate" hidden></div>
       <div class="gp-commgauge" data-k="commgauge" hidden><div class="gp-commgauge__fill"></div><span class="gp-commgauge__txt"></span></div>`;
     this._refresh = () => this.refresh();
+    this.root.querySelector('[data-k="fever"]').addEventListener("click", () => {
+      document.dispatchEvent(new CustomEvent("gp:open-operations"));
+    });
     // FIX #1: mute button created separately so it mounts on .gp-ui root (above HUD),
     // preventing overlap with the 믿음 chip on the right side.
     this._muteBtn = document.createElement("button");
@@ -29,12 +33,12 @@ export class DOMHud {
     this._muteBtn.textContent = "⚙️";
     this._muteBtn.addEventListener("click", () => document.dispatchEvent(new CustomEvent("gp:open-settings")));
 
-    // 긴급 개표(러시) 부스트 FAB — 액티브 플레이 비트
+    // 긴급 개표는 독립 버프가 아니라 피버 마지막 4초의 1회 피니셔다.
     this._rushBtn = document.createElement("button");
     this._rushBtn.className = "gp-rush";
     this._rushBtn.addEventListener("click", () => {
-      const wasReady = this.gameState.rushReady && this.gameState.rushReady();
-      if (this.gameState.activateRush) this.gameState.activateRush();
+      const wasReady = this.gameState.feverFinisherAvailable && this.gameState.feverFinisherAvailable();
+      if (this.gameState.activateFeverFinisher) this.gameState.activateFeverFinisher();
       if (wasReady) document.dispatchEvent(new CustomEvent("gp:sfx", { detail: "powerup" }));
     });
 
@@ -120,19 +124,30 @@ export class DOMHud {
 
     fever.hidden = false;
     const active = gs.feverActive();
+    const recovering = gs.feverRecovering ? gs.feverRecovering() : false;
     const pct = Math.max(0, Math.min(1, gs.feverProgressPct()));
-    const last = gs.lastOperation ? gs.lastOperation() : null;
+    const profile = gs.feverProfile ? gs.feverProfile() : { icon: "🔥", name: "개표 피버", summary: "생산·탭 강화" };
     fever.classList.toggle("gp-fever--active", active);
+    fever.classList.toggle("gp-fever--recovery", recovering);
+    ["tap", "build", "response"].forEach((family) => {
+      fever.classList.toggle(`gp-fever--${family}`, gs.feverFamily && gs.feverFamily() === family);
+    });
     fever.querySelector('[data-k="fever-fill"]').style.transform = `scaleX(${pct})`;
     fever.querySelector('[data-k="fever-label"]').textContent = active
-      ? "🔥 개표 피버 ×2"
-      : `작전 열기 · ${last ? `${last.name} Lv.${gs.operationLevel(last.id)}` : "작전 수행"}`;
+      ? `${profile.icon} ${profile.name} · ${profile.summary}`
+      : recovering
+        ? "재정비 중 · 다음 피버 준비"
+        : `${profile.icon} ${profile.name} 열기`;
     fever.querySelector('[data-k="fever-value"]').textContent = active
       ? `${Math.max(1, Math.ceil(gs.feverRemainingMs() / 1000))}초`
-      : `${Math.round(gs.feverCharge())}%`;
+      : recovering
+        ? `${Math.max(1, Math.ceil(gs.feverRecoveryRemainingMs() / 1000))}초`
+        : `${Math.round(gs.feverCharge())}%`;
     fever.setAttribute("aria-label", active
-      ? `개표 피버 발동 중, ${Math.ceil(gs.feverRemainingMs() / 1000)}초 남음`
-      : `작전 열기 ${Math.round(gs.feverCharge())}퍼센트`);
+      ? `${profile.name} 발동 중, ${Math.ceil(gs.feverRemainingMs() / 1000)}초 남음. 작전 현황 보기`
+      : recovering
+        ? `피버 재정비 ${Math.ceil(gs.feverRecoveryRemainingMs() / 1000)}초 남음. 작전 현황 보기`
+        : `${profile.name} 열기 ${Math.round(gs.feverCharge())}퍼센트. 작전 현황 보기`);
     game?.classList.toggle("gp-game--fever", active);
   }
 
@@ -169,29 +184,23 @@ export class DOMHud {
 
   _refreshRush() {
     const gs = this.gameState;
-    if (!gs.rushReady) return;
+    if (!gs.feverFinisherAvailable) return;
     const btn = this._rushBtn;
-    btn.style.display = this._fabsHidden() ? "none" : "flex";
-    if (this._fabsHidden()) return;
-    if (gs.rushActive()) {
+    const hidden = this._fabsHidden() || !gs.feverActive() || (!gs.feverFinisherAvailable() && !gs.feverFinisherUsed());
+    btn.style.display = hidden ? "none" : "flex";
+    if (hidden) return;
+    const remMs = gs.feverRemainingMs();
+    if (gs.feverFinisherUsed()) {
       btn.className = "gp-rush gp-rush--active";
       btn.disabled = true;
-      const remMs = gs.rushRemainingMs();
-      const totalMs = gs.rushTotalMs ? gs.rushTotalMs() : 20000;
-      // FIX P1: drive conic-gradient countdown ring via --rush-pct (100% = full, 0% = expired)
-      const rushPct = Math.round(Math.max(0, Math.min(100, (remMs / totalMs) * 100)));
+      const rushPct = Math.round(Math.max(0, Math.min(100, (remMs / gs.feverFinisherWindowMs()) * 100)));
       btn.style.setProperty("--rush-pct", `${rushPct}%`);
-      btn.innerHTML = `<b>개표 폭주!</b><small>×5 · ${Math.ceil(remMs / 1000)}초</small>`;
-    } else if (gs.rushReady()) {
+      btn.innerHTML = `<b>⚡ 막판 총력!</b><small>추가 ×2 · ${Math.ceil(remMs / 1000)}초</small>`;
+    } else {
       btn.className = "gp-rush gp-rush--ready";
       btn.disabled = false;
       btn.style.removeProperty("--rush-pct");
-      btn.innerHTML = `<b>&#9889; 긴급 개표</b><small>20초 ×5</small>`;
-    } else {
-      btn.className = "gp-rush gp-rush--cd";
-      btn.disabled = true;
-      btn.style.removeProperty("--rush-pct");
-      btn.innerHTML = `<b>충전 중</b><small>${Math.ceil(gs.rushCooldownRemainingMs() / 1000)}초</small>`;
+      btn.innerHTML = `<b>⚡ 막판 총력</b><small>남은 피버 추가 ×2</small>`;
     }
   }
 

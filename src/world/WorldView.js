@@ -816,10 +816,12 @@ export class WorldView {
     this.bigNum.setText(shortNumber(d.votes));
     const cps = this.gameState.cps ? this.gameState.cps() : 0;
     const fever = this.gameState.feverActive ? this.gameState.feverActive() : false;
+    const feverProfile = fever && this.gameState.feverProfile ? this.gameState.feverProfile() : null;
+    const finisher = fever && this.gameState.feverFinisherUsed ? this.gameState.feverFinisherUsed() : false;
     this.bigNum.setColor(fever ? "#ffd34d" : "#ffffff");
     this.bigNum.setShadow(3, 3, fever ? "#ef7d57" : "#b13e53", 0, true, true);
     this.cpsText
-      .setText(`${fever ? "🔥 피버 ×2" : "▶"} · 초당 ${cps < 10000 ? cps.toFixed(0) : shortNumber(cps)}표`)
+      .setText(`${fever ? `${finisher ? "⚡ 막판 총력" : `${feverProfile.icon} ${feverProfile.name}`}` : "▶"} · 초당 ${cps < 10000 ? cps.toFixed(0) : shortNumber(cps)}표`)
       .setColor(fever ? "#ffe3a8" : "#bcd0e0");
     if (fever && !this._feverWasActive) {
       this.scene.tweens.killTweensOf(this.bigNum);

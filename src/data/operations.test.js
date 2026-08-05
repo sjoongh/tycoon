@@ -4,6 +4,7 @@ import {
   normalizeOperationPicks,
   operationById,
   operationChoices,
+  operationDefinitions,
 } from "./operations.js";
 
 describe("operationChoices", () => {
@@ -18,6 +19,13 @@ describe("operationChoices", () => {
     expect(ids).toHaveLength(3);
     expect(new Set(ids).size).toBe(3);
     expect(new Set(definitions.map((operation) => operation.family))).toEqual(new Set(Object.keys(OPERATION_FAMILIES)));
+  });
+
+  it("각 계열 네 장씩 총 12종의 작전을 제공한다", () => {
+    expect(operationDefinitions).toHaveLength(12);
+    Object.keys(OPERATION_FAMILIES).forEach((family) => {
+      expect(operationDefinitions.filter((operation) => operation.family === family)).toHaveLength(4);
+    });
   });
 });
 

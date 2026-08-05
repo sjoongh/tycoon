@@ -12,6 +12,7 @@ import { achievementDefinitions } from "../data/achievements.js";
 import { dailyQuestDefinitions } from "../data/dailyQuests.js";
 import { weeklyGoalDefinitions } from "../data/weeklyGoals.js";
 import {
+  FEVER_FAMILY_PROFILES,
   OPERATION_MAX_LEVEL,
   normalizeOperationPicks,
   operationById,
@@ -31,16 +32,15 @@ const COMM_LIMIT = 40; // 게이지가 이 값(≈40초)에 도달하면 체제 
 const COMM_RECOVER = 3; // 믿음 회복 시 게이지가 1틱당 이만큼 감소(짧은 하락은 안전)
 const EVENT_COOLDOWN_MS = 45000; // 사건 대응 후 재대기 시간(스팸 방지 + 주기적 참여 비트)
 const FACILITY_MILESTONES = [25, 50, 100]; // 시설 레벨 마일스톤: 도달 시 해당 시설 생산 ×2(영구, 누적). Lv25 미만은 영향 0 → 초반 곡선 보존
-const RUSH_DURATION_MS = 20000; // 긴급 개표(러시) 지속 20초
-const RUSH_COOLDOWN_MS = 180000; // 재사용 대기 3분
-const RUSH_MULT = 5; // 러시 중 초당 생산 ×5(액티브 플레이 비트)
 const BRIEF_COOLDOWN_MS = 90000; // 긴급 브리핑 재사용 90초
 const BRIEF_BUFF_MS = 15000; // 브리핑 생산 버프 15초
 const BRIEF_TRUST = 12; // 브리핑 시 믿음 +12(능동적 트러스트 관리 — 위기 탈출/보너스 진입)
 const BRIEF_BUFF_MULT = 1.5; // 브리핑 버프 중 초당 생산 ×1.5
 const FEVER_TARGET = 100; // 작전 행동으로 채우는 열기 목표
-const FEVER_DURATION_MS = 10000; // 개표 피버 지속 10초
-const FEVER_MULT = 2; // 피버 중 실시간 생산·탭 위력 ×2
+const FEVER_DURATION_MS = 12000; // 계열별 개표 피버 지속 12초
+const FEVER_RECOVERY_MS = 30000; // 피버 종료 후 열기가 다시 차기 전 회복 시간
+const FEVER_FINISHER_WINDOW_MS = 4000; // 마지막 4초에 긴급 개표 피니셔 사용 가능
+const FEVER_FINISHER_MULT = 2; // 피니셔 사용 시 남은 피버 효과 추가 ×2
 
 // 사건 도감 수집 보상 — 누적 수집 종수가 마일스톤을 넘으면 영구 생산 보너스(프레스티지에도 유지되는 메타 진척).
 // pct는 '도달한 최고 마일스톤'의 값(누적 합산 아님). 도감을 모을 동기 + 디스크리트한 해금 비트.
@@ -52,7 +52,7 @@ const DEX_MILESTONES = [
   { n: 75, pct: 0.25 }, // 전종 수집 완성(officeEvents 총수와 일치 — 사건 추가 시 함께 갱신)
 ];
 
-const SAVE_VERSION = 3;
+const SAVE_VERSION = 4;
 
 const fallbackState = {
   version: SAVE_VERSION,
@@ -137,7 +137,16 @@ const fallbackState = {
   briefReadyAt: 0,
   briefEndsAt: 0,
   operations: { picks: {}, draft: null, lastId: null }, // 감사 런 전용 3택1 작전
-  fever: { charge: 0, endsAt: 0 }, // 실시간 행동 열기(감사 시 초기화)
+  fever: {
+    charge: 0,
+    startsAt: 0,
+    endsAt: 0,
+    recoveryEndsAt: 0,
+    family: null,
+    finisherUsed: false,
+    session: null,
+    report: null,
+  }, // 준비→계열 피버→피니셔→회복(감사 시 초기화)
   offline2xDay: 0,
   log: ["개표국 개국"],
 };
@@ -225,9 +234,54 @@ export class GameState extends Phaser.Events.EventEmitter {
       ? { area: Math.max(1, Math.floor(Number(draft.area) || 1)), choices: draftChoices }
       : null;
     data.fever.charge = Phaser.Math.Clamp(Number(data.fever.charge) || 0, 0, FEVER_TARGET);
-    const feverEndsAt = Math.max(0, Number(data.fever.endsAt) || 0);
-    data.fever.endsAt = feverEndsAt > now ? feverEndsAt : 0;
-    if (data.fever.endsAt > 0) data.fever.charge = 0;
+    data.fever.startsAt = Math.max(0, Number(data.fever.startsAt) || 0);
+    data.fever.endsAt = Math.max(0, Number(data.fever.endsAt) || 0);
+    data.fever.recoveryEndsAt = Math.max(0, Number(data.fever.recoveryEndsAt) || 0);
+    data.fever.family = FEVER_FAMILY_PROFILES[data.fever.family]
+      ? data.fever.family
+      : this.dominantOperationFamily(data);
+    data.fever.finisherUsed = !!data.fever.finisherUsed;
+    const session = data.fever.session;
+    data.fever.session = session && typeof session === "object"
+      ? {
+          startVotes: Math.max(0, Number(session.startVotes) || 0),
+          actions: Math.max(0, Math.floor(Number(session.actions) || 0)),
+          bestCombo: Math.max(0, Math.floor(Number(session.bestCombo) || 0)),
+        }
+      : null;
+    const report = data.fever.report;
+    data.fever.report = report && FEVER_FAMILY_PROFILES[report.family]
+      ? {
+          family: report.family,
+          votes: Math.max(0, Math.round(Number(report.votes) || 0)),
+          actions: Math.max(0, Math.floor(Number(report.actions) || 0)),
+          bestCombo: Math.max(0, Math.floor(Number(report.bestCombo) || 0)),
+          finisherUsed: !!report.finisherUsed,
+        }
+      : null;
+    if (data.fever.endsAt > now) {
+      data.fever.charge = 0;
+      if (!data.fever.startsAt) data.fever.startsAt = Math.max(0, data.fever.endsAt - FEVER_DURATION_MS);
+      if (!data.fever.session) {
+        data.fever.session = { startVotes: data.stats.totalVotes || 0, actions: 0, bestCombo: 0 };
+      }
+    } else if (data.fever.endsAt > 0) {
+      if (data.fever.session) {
+        data.fever.report = {
+          family: data.fever.family || this.dominantOperationFamily(data),
+          votes: Math.max(0, Math.round((data.stats.totalVotes || 0) - data.fever.session.startVotes)),
+          actions: data.fever.session.actions,
+          bestCombo: data.fever.session.bestCombo,
+          finisherUsed: data.fever.finisherUsed,
+        };
+      }
+      data.fever.recoveryEndsAt = Math.max(data.fever.recoveryEndsAt, data.fever.endsAt + FEVER_RECOVERY_MS);
+      data.fever.startsAt = 0;
+      data.fever.endsAt = 0;
+      data.fever.session = null;
+      data.fever.finisherUsed = false;
+    }
+    if (data.fever.recoveryEndsAt <= now) data.fever.recoveryEndsAt = 0;
 
     data.votes = Math.max(0, Number(data.votes) || 0);
     data.explain = Math.max(0, Number(data.explain) || 0);
@@ -411,6 +465,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     this.addFever("tap", 2);
     const amount = Math.round(this.clickPower() * comboMult);
     this.addVotes(amount);
+    this.trackFeverAction(this._clickCombo);
     this.data.stats.totalClicks += 1;
     this._bumpDaily("clicks");
     this.advanceTutorial("click");
@@ -420,7 +475,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     const msBonus = { 25: 40, 50: 120, 100: 300 }[this._clickCombo];
     if (msBonus) {
       this.addFever("combo", 12);
-      const bonus = Math.round(this.clickPower() * msBonus * (1 + this.operationEffectFor(this.data, "comboBonusPct")));
+      const bonus = Math.round(this.clickPower() * msBonus * (1 + this.operationEffectFor(this.data, "comboBonusPct") + this.operationEffectFor(this.data, "comboRewardPct")));
       this.addVotes(bonus);
       this.emit("celebrate", { text: `🔥 ${this._clickCombo} 콤보! +${shortNumber(bonus)}표!` });
       this.emit("float", { text: `🔥 +${shortNumber(bonus)}`, x, y: y - 62, color: "#ff7a3c" });
@@ -446,6 +501,44 @@ export class GameState extends Phaser.Events.EventEmitter {
 
   operationCount(data = this.data) {
     return operationDefinitions.reduce((sum, operation) => sum + this.operationLevel(operation.id, data), 0);
+  }
+
+  operationFamilyCounts(data = this.data) {
+    return Object.keys(FEVER_FAMILY_PROFILES).reduce((counts, family) => {
+      counts[family] = operationDefinitions
+        .filter((operation) => operation.family === family)
+        .reduce((sum, operation) => sum + this.operationLevel(operation.id, data), 0);
+      return counts;
+    }, {});
+  }
+
+  dominantOperationFamily(data = this.data) {
+    const counts = this.operationFamilyCounts(data);
+    const max = Math.max(...Object.values(counts));
+    if (max <= 0) return null;
+    const tied = Object.keys(counts).filter((family) => counts[family] === max);
+    const lastFamily = operationById(data?.operations?.lastId)?.family;
+    return tied.includes(lastFamily) ? lastFamily : tied[0];
+  }
+
+  operationRecommendationFamily(data = this.data) {
+    const stats = data.stats || {};
+    const scores = {
+      tap: (Number(stats.totalClicks) || 0) / 40,
+      build: (Number(stats.totalUpgrades) || 0) / 4,
+      response: ((Number(stats.totalEvents) || 0) + (Number(stats.totalItems) || 0)) / 2,
+    };
+    return Object.entries(scores).sort((a, b) => b[1] - a[1])[0]?.[0] || "tap";
+  }
+
+  operationRecommendationText(family) {
+    const recommended = this.operationRecommendationFamily();
+    if (family !== recommended) return "";
+    return {
+      tap: "이번 런은 연타 성향이에요",
+      build: "이번 런은 증설 성향이에요",
+      response: "이번 런은 사건·수거 성향이에요",
+    }[family];
   }
 
   lastOperation() {
@@ -474,7 +567,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     return true;
   }
 
-  // ----- 개표 피버: 선택한 작전 행동으로 열기를 채워 10초간 실시간 생산·탭 ×2 -----
+  // ----- 개표 피버: 계열 우세가 피버의 성격을 바꾸고, 종료 뒤 30초 회복한다. -----
   feverUnlocked(data = this.data) {
     return this.operationCount(data) > 0;
   }
@@ -483,21 +576,160 @@ export class GameState extends Phaser.Events.EventEmitter {
     return now < (this.data.fever?.endsAt || 0);
   }
 
+  feverRecovering(now = Date.now()) {
+    return !this.feverActive(now) && now < (this.data.fever?.recoveryEndsAt || 0);
+  }
+
+  feverRecoveryRemainingMs(now = Date.now()) {
+    return Math.max(0, (this.data.fever?.recoveryEndsAt || 0) - now);
+  }
+
+  feverRecoveryDurationMs() { return FEVER_RECOVERY_MS; }
+
+  feverFamily(now = Date.now()) {
+    const stored = this.data.fever?.family;
+    if ((this.feverActive(now) || this.feverRecovering(now)) && FEVER_FAMILY_PROFILES[stored]) return stored;
+    return this.dominantOperationFamily() || (FEVER_FAMILY_PROFILES[stored] ? stored : null);
+  }
+
+  feverProfile(family = this.feverFamily()) {
+    return FEVER_FAMILY_PROFILES[family] || FEVER_FAMILY_PROFILES.tap;
+  }
+
   feverRemainingMs(now = Date.now()) {
     return Math.max(0, (this.data.fever?.endsAt || 0) - now);
   }
 
   feverDurationMs() { return FEVER_DURATION_MS; }
-  feverMultiplier(now = Date.now()) { return this.feverActive(now) ? FEVER_MULT : 1; }
+  feverFinisherWindowMs() { return FEVER_FINISHER_WINDOW_MS; }
+  feverFinisherUsed() { return !!this.data.fever?.finisherUsed; }
+
+  feverFinisherAvailable(now = Date.now()) {
+    const remaining = this.feverRemainingMs(now);
+    return this.feverActive(now)
+      && !this.feverFinisherUsed()
+      && remaining > 0
+      && remaining <= FEVER_FINISHER_WINDOW_MS;
+  }
+
+  feverProductionMultiplier(now = Date.now()) {
+    if (!this.feverActive(now)) return 1;
+    const base = this.feverProfile().productionMult;
+    return base * (this.feverFinisherUsed() ? FEVER_FINISHER_MULT : 1);
+  }
+
+  feverClickMultiplier(now = Date.now()) {
+    if (!this.feverActive(now)) return 1;
+    const base = this.feverProfile().clickMult;
+    return base * (this.feverFinisherUsed() ? FEVER_FINISHER_MULT : 1);
+  }
+
+  feverResponseRewardMultiplier(now = Date.now()) {
+    if (!this.feverActive(now) || this.feverFamily() !== "response") return 1;
+    return this.feverProfile("response").responseRewardMult
+      * (this.feverFinisherUsed() ? FEVER_FINISHER_MULT : 1);
+  }
+
+  feverPurchaseDiscountPct(now = Date.now()) {
+    if (!this.feverActive(now) || this.feverFamily() !== "build") return 0;
+    return this.feverProfile("build").discountPct || 0;
+  }
+
+  // 이전 호출부 호환: 일반 배율을 묻는 코드는 생산 배율을 받는다.
+  feverMultiplier(now = Date.now()) { return this.feverProductionMultiplier(now); }
   feverCharge() { return Phaser.Math.Clamp(Number(this.data.fever?.charge) || 0, 0, FEVER_TARGET); }
 
   feverProgressPct(now = Date.now()) {
     if (this.feverActive(now)) return this.feverRemainingMs(now) / FEVER_DURATION_MS;
+    if (this.feverRecovering(now)) return 1 - this.feverRecoveryRemainingMs(now) / FEVER_RECOVERY_MS;
     return this.feverCharge() / FEVER_TARGET;
   }
 
+  _startFever(now) {
+    const family = this.dominantOperationFamily() || "tap";
+    this.data.fever.charge = 0;
+    this.data.fever.startsAt = now;
+    this.data.fever.endsAt = now + FEVER_DURATION_MS;
+    this.data.fever.recoveryEndsAt = 0;
+    this.data.fever.family = family;
+    this.data.fever.finisherUsed = false;
+    this.data.fever.session = {
+      startVotes: this.data.stats.totalVotes || 0,
+      actions: 0,
+      bestCombo: 0,
+    };
+    this.data.fever.report = null;
+    if (family === "response") {
+      this.data.eventReadyAt = Math.min(this.data.eventReadyAt || now, now);
+      this.data.briefReadyAt = Math.min(this.data.briefReadyAt || now, now);
+    }
+    const profile = this.feverProfile(family);
+    this.emit("fever-start", { durationMs: FEVER_DURATION_MS, family, profile });
+    this.emit("celebrate", { text: `${profile.icon} ${profile.name}! ${profile.summary}` });
+  }
+
+  _finishFever(now = Date.now()) {
+    const fever = this.data.fever;
+    if (!fever?.endsAt) return null;
+    const endedAt = fever.endsAt;
+    const session = fever.session || { startVotes: this.data.stats.totalVotes || 0, actions: 0, bestCombo: 0 };
+    const report = {
+      family: fever.family || this.dominantOperationFamily() || "tap",
+      votes: Math.max(0, Math.round((this.data.stats.totalVotes || 0) - session.startVotes)),
+      actions: session.actions || 0,
+      bestCombo: session.bestCombo || 0,
+      finisherUsed: !!fever.finisherUsed,
+    };
+    fever.startsAt = 0;
+    fever.endsAt = 0;
+    const recoveryEndsAt = endedAt + FEVER_RECOVERY_MS;
+    fever.recoveryEndsAt = recoveryEndsAt > now ? recoveryEndsAt : 0;
+    fever.finisherUsed = false;
+    fever.session = null;
+    fever.report = report;
+    this.emit("fever-end", report);
+    this.emit("changed");
+    this.save(false);
+    return report;
+  }
+
+  syncFever(now = Date.now()) {
+    if ((this.data.fever?.endsAt || 0) > 0 && now >= this.data.fever.endsAt) return this._finishFever(now);
+    if ((this.data.fever?.recoveryEndsAt || 0) > 0 && now >= this.data.fever.recoveryEndsAt) {
+      this.data.fever.recoveryEndsAt = 0;
+    }
+    return null;
+  }
+
+  trackFeverAction(combo = 0, now = Date.now()) {
+    if (!this.feverActive(now) || !this.data.fever.session) return;
+    this.data.fever.session.actions += 1;
+    this.data.fever.session.bestCombo = Math.max(this.data.fever.session.bestCombo, Math.floor(combo || 0));
+  }
+
+  activateFeverFinisher(now = Date.now()) {
+    if (!this.feverFinisherAvailable(now)) return false;
+    this.data.fever.finisherUsed = true;
+    const instant = Math.max(25, Math.round(this.cpsFor(this.data) * 4 + this.clickPower() * 12));
+    this.addVotes(instant);
+    this.trackFeverAction(this.clickCombo(), now);
+    this.emit("float", { text: `막판 총력! +${shortNumber(instant)}표`, x: 195, y: 300, color: "#ffd34d" });
+    this.emit("celebrate", { text: `⚡ 막판 총력! 남은 피버 ×${FEVER_FINISHER_MULT}` });
+    this.emit("changed");
+    return true;
+  }
+
+  dismissFeverReport() {
+    if (!this.data.fever?.report) return false;
+    this.data.fever.report = null;
+    this.emit("changed");
+    this.save(false);
+    return true;
+  }
+
   addFever(source, baseAmount, now = Date.now()) {
-    if (!this.feverUnlocked() || this.feverActive(now)) return { added: 0, started: false };
+    this.syncFever(now);
+    if (!this.feverUnlocked() || this.feverActive(now) || this.feverRecovering(now)) return { added: 0, started: false };
     const heatKeys = {
       tap: "tapHeat",
       combo: "comboHeat",
@@ -511,10 +743,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     if (added <= 0) return { added: 0, started: false };
     const next = this.feverCharge() + added;
     if (next >= FEVER_TARGET) {
-      this.data.fever.charge = 0;
-      this.data.fever.endsAt = now + FEVER_DURATION_MS;
-      this.emit("fever-start", { durationMs: FEVER_DURATION_MS, multiplier: FEVER_MULT });
-      this.emit("celebrate", { text: "🔥 개표 피버! 10초간 생산·탭 ×2" });
+      this._startFever(now);
       return { added, started: true };
     }
     this.data.fever.charge = next;
@@ -523,6 +752,7 @@ export class GameState extends Phaser.Events.EventEmitter {
 
   tick() {
     if (this.data.paused) return;
+    this.syncFever();
     this.addVotes(this.cps());
     this.data.explain += this.explainPerSecond();
     // 홍보(notice) 패시브 회복은 믿음이 높을수록 둔화 → 100%에 고정되지 않고 평형점에 수렴(위기/보너스 긴장 유지, 보너스는 능동 브리핑으로 진입).
@@ -653,7 +883,9 @@ export class GameState extends Phaser.Events.EventEmitter {
   // 사건 보상의 양수 votes/explain은 현재 구역 규모에 맞춰 스케일(후반에도 의미있게). 비용(음수)은 그대로.
   eventRewardScale() {
     const base = Math.min(50, this.stageTarget(this.data.stage.area) / this.stageTarget(1));
-    return base * (1 + this.permanentEffectFor(this.data, "eventPct") + this.titleEffectFor(this.data, "eventPct") + this.charEffectFor("eventPct") + this.operationEffectFor(this.data, "eventPct")); // 특별 대응반 + 칭호(서기관) + 캐릭터 특성 + 런 작전
+    return base
+      * (1 + this.permanentEffectFor(this.data, "eventPct") + this.titleEffectFor(this.data, "eventPct") + this.charEffectFor("eventPct") + this.operationEffectFor(this.data, "eventPct"))
+      * this.feverResponseRewardMultiplier(); // 특별 대응반 + 칭호 + 캐릭터 + 런 작전 + 대응 피버
   }
 
   applyEffect(effect, { fever = true } = {}) {
@@ -676,7 +908,8 @@ export class GameState extends Phaser.Events.EventEmitter {
     this.data.stats.totalEvents += 1;
     if (fever) this.addFever("event", 28);
     this._bumpDaily("events");
-    this.data.eventReadyAt = Date.now() + EVENT_COOLDOWN_MS;
+    this.data.eventReadyAt = Date.now() + this.eventCooldownTotalMs();
+    this.trackFeverAction();
     this.advanceTutorial("event");
     this.addLog(`사건 대응: 믿음 ${Math.round(this.data.trust)}%`);
     this.emit("float", { text: "대응완료", x: 195, y: 540, color: "#89d98b" });
@@ -745,7 +978,7 @@ export class GameState extends Phaser.Events.EventEmitter {
   }
 
   eventCooldownTotalMs() {
-    return EVENT_COOLDOWN_MS;
+    return Math.max(15000, EVENT_COOLDOWN_MS + this.operationEffectFor(this.data, "eventCooldownMs"));
   }
 
   // 감사(프레스티지) 실행 시 영구 생산 배율이 어떻게 오르는지 미리보기(초기화 공포 완화)
@@ -789,6 +1022,7 @@ export class GameState extends Phaser.Events.EventEmitter {
       color: "#ffc857",
     });
     this.addFever("upgrade", 8);
+    this.trackFeverAction();
     this.emit("upgraded", facility);
     this.checkProgression();
     this.emit("changed");
@@ -807,10 +1041,12 @@ export class GameState extends Phaser.Events.EventEmitter {
     this.data.stage.progress = 0;
     this.data.stage.target = this.stageTarget(this.data.stage.area);
     this.data.days = 30;
-    this.data.operations.draft = {
-      area: completedArea,
-      choices: operationChoices(completedArea, this.data.prestige.runs, this.data.operations.picks),
-    };
+    if (completedArea % 3 === 0) {
+      this.data.operations.draft = {
+        area: completedArea,
+        choices: operationChoices(completedArea, this.data.prestige.runs, this.data.operations.picks),
+      };
+    }
     this.grantReward({ votes: rewardVotes, explain: rewardExplain, trust: 5 });
     this.addLog(`${this.data.stage.area - 1}구역 완료`);
     this.emit("float", { text: `지역 ${this.data.stage.area} 개표`, x: 195, y: 188, color: "#bba2ff" });
@@ -847,6 +1083,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     this.addLog(`${staff.name} Lv.${this.staffLevel(id)}`);
     this.emit("float", { text: `${staff.name} Lv.${this.staffLevel(id)}`, x: 195, y: 604, color: "#7fc8ff" });
     this.addFever("upgrade", 8);
+    this.trackFeverAction();
     this.checkProgression();
     this.emit("changed");
     return true;
@@ -861,8 +1098,8 @@ export class GameState extends Phaser.Events.EventEmitter {
     const want = qty === "max" ? Infinity : Math.max(1, qty);
     let lv = this.level(id), v = 0, e = 0, n = 0, bv = this.data.votes, be = this.data.explain;
     while (n < want && lv < maxLv && n < 2000) {
-      const cv = Math.floor(item.cost * 1.48 ** lv);
-      const ce = Math.floor(item.explain * 1.18 ** lv);
+      const cv = this.facilityCostAt(item, lv);
+      const ce = this.facilityExplainCostAt(item, lv);
       if (qty === "max") { if (bv < cv || be < ce) break; bv -= cv; be -= ce; }
       v += cv; e += ce; lv++; n++;
     }
@@ -876,8 +1113,8 @@ export class GameState extends Phaser.Events.EventEmitter {
     const want = qty === "max" ? Infinity : Math.max(1, qty);
     let lv = this.staffLevel(id), v = 0, e = 0, n = 0, bv = this.data.votes, be = this.data.explain;
     while (n < want && lv < maxLv && n < 2000) {
-      const cv = Math.floor(staff.cost * 1.62 ** lv);
-      const ce = Math.floor(staff.explain * 1.24 ** lv);
+      const cv = this.staffCostAt(staff, lv);
+      const ce = this.staffExplainCostAt(staff, lv);
       if (qty === "max") { if (bv < cv || be < ce) break; bv -= cv; be -= ce; }
       v += cv; e += ce; lv++; n++;
     }
@@ -901,6 +1138,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     this.addLog(`${fac.name} Lv.${this.level(id)}${plan.levels > 1 ? ` (+${plan.levels})` : ""}`);
     this.emit("float", { text: `${fac.name} +${plan.levels}Lv`, x: 195, y: 300, color: "#ffc857" });
     this.addFever("upgrade", Math.min(24, 6 + plan.levels * 2));
+    this.trackFeverAction();
     this.emit("upgraded", fac);
     this.checkProgression();
     this.emit("changed");
@@ -922,6 +1160,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     this.addLog(`${staff.name} Lv.${this.staffLevel(id)}${plan.levels > 1 ? ` (+${plan.levels})` : ""}`);
     this.emit("float", { text: `${staff.name} +${plan.levels}Lv`, x: 195, y: 300, color: "#7fc8ff" });
     this.addFever("upgrade", Math.min(24, 6 + plan.levels * 2));
+    this.trackFeverAction();
     this.checkProgression();
     this.emit("changed");
     return true;
@@ -929,7 +1168,8 @@ export class GameState extends Phaser.Events.EventEmitter {
 
   // 랜덤 아이템 효과 — 종류별 즉시 보상. cps에 비례해 후반에도 의미있게.
   applyRandomItem(id, { fever = true } = {}) {
-    const cps = this.cps();
+    const responseMult = this.feverResponseRewardMultiplier();
+    const cps = this.cps() * responseMult;
     let r = { icon: "📦", text: "" };
     switch (id) {
       case "parcel": {
@@ -990,6 +1230,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     this.data.stats.totalItems = (this.data.stats.totalItems || 0) + 1;
     this._bumpDaily("items");
     if (fever) this.addFever("field", 24);
+    this.trackFeverAction();
     this.addLog(r.text);
     this.emit("changed");
     return r;
@@ -1228,9 +1469,10 @@ export class GameState extends Phaser.Events.EventEmitter {
   // 필드 황금 투표함 수령: 약 90초치 생산을 즉시 지급(액티브 손맛). 기존 addVotes 경유(주간/업적/구역 진행에 자연 반영).
   collectGoldenBallot(factor = 1, { fever = true } = {}) {
     const operationFactor = 1 + this.operationEffectFor(this.data, "goldenPct");
-    const reward = Math.max(50, Math.round(this.cps() * 90 * factor * operationFactor));
+    const reward = Math.max(50, Math.round(this.cps() * 90 * factor * operationFactor * this.feverResponseRewardMultiplier()));
     this.addVotes(reward);
     if (fever) this.addFever("field", 30);
+    this.trackFeverAction();
     this.emit("celebrate", { text: `🌟 황금 투표함! +${shortNumber(reward)}표` });
     this.emit("changed");
     return reward;
@@ -1359,11 +1601,10 @@ export class GameState extends Phaser.Events.EventEmitter {
   }
 
   cps() {
-    // 러시·브리핑·피버는 실시간 생산에만 적용(오프라인 정산엔 미적용 — cpsFor를 직접 쓰는 경로)
+    // 브리핑·피버는 실시간 생산에만 적용(오프라인 정산엔 미적용 — cpsFor를 직접 쓰는 경로)
     return this.cpsFor(this.data)
-      * (this.rushActive() ? RUSH_MULT : 1)
       * (this.briefActive() ? BRIEF_BUFF_MULT : 1)
-      * this.feverMultiplier();
+      * this.feverProductionMultiplier();
   }
 
   // ----- 긴급 브리핑(액티브 트러스트 액션): 해명 소비 → 믿음 회복 + 짧은 생산 버프 -----
@@ -1389,41 +1630,37 @@ export class GameState extends Phaser.Events.EventEmitter {
     if (!this.briefReady() || !this.briefAffordable()) return false;
     const now = Date.now();
     this.data.explain -= this.briefCost();
-    this.data.trust = Phaser.Math.Clamp(this.data.trust + BRIEF_TRUST, 0, 100);
+    const trustGain = BRIEF_TRUST + this.operationEffectFor(this.data, "briefTrustFlat");
+    this.data.trust = Phaser.Math.Clamp(this.data.trust + trustGain, 0, 100);
     this.data.briefEndsAt = now + BRIEF_BUFF_MS + this.operationEffectFor(this.data, "briefDurationMs");
     this.data.briefReadyAt = now + BRIEF_COOLDOWN_MS;
     this.addFever("brief", 18, now);
-    this.emit("float", { text: `긴급 브리핑! 믿음 +${BRIEF_TRUST}`, x: 195, y: 330, color: "#8df0b0" });
-    this.emit("celebrate", { text: `📢 긴급 브리핑! 믿음 +${BRIEF_TRUST}` }); // 토스트+플래시 스파이크
+    this.trackFeverAction(0, now);
+    this.emit("float", { text: `긴급 브리핑! 믿음 +${trustGain}`, x: 195, y: 330, color: "#8df0b0" });
+    this.emit("celebrate", { text: `📢 긴급 브리핑! 믿음 +${trustGain}` }); // 토스트+플래시 스파이크
     this.emit("changed");
     return true;
   }
 
-  // ----- 긴급 개표(러시) 부스트 -----
+  // ----- 긴급 개표 호환 API: 독립 러시를 피버 마지막 4초의 피니셔로 통합 -----
   rushActive() {
-    return Date.now() < (this.data.rushEndsAt || 0);
+    return this.feverActive() && this.feverFinisherUsed();
   }
   rushReady() {
-    return !this.rushActive() && Date.now() >= (this.data.rushReadyAt || 0);
+    return this.feverFinisherAvailable();
   }
   rushRemainingMs() {
-    return Math.max(0, (this.data.rushEndsAt || 0) - Date.now());
+    return this.rushActive() ? this.feverRemainingMs() : 0;
   }
   rushCooldownRemainingMs() {
-    return Math.max(0, (this.data.rushReadyAt || 0) - Date.now());
+    if (this.feverActive()) return Math.max(0, this.feverRemainingMs() - FEVER_FINISHER_WINDOW_MS);
+    return this.feverRecoveryRemainingMs();
   }
   rushTotalMs() {
-    return RUSH_DURATION_MS;
+    return FEVER_FINISHER_WINDOW_MS;
   }
   activateRush() {
-    if (!this.rushReady()) return false;
-    const now = Date.now();
-    this.data.rushEndsAt = now + RUSH_DURATION_MS;
-    this.data.rushReadyAt = now + RUSH_COOLDOWN_MS;
-    this.emit("float", { text: "긴급 개표! ×5", x: 195, y: 300, color: "#ffd34d" });
-    this.emit("celebrate", { text: "⚡ 개표 폭주 시작! ×5" }); // 토스트+플래시 페이오프 스파이크
-    this.emit("changed");
-    return true;
+    return this.activateFeverFinisher();
   }
 
   cpsFor(data) {
@@ -1516,7 +1753,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     }, 0);
     const clerkSkill = Math.floor(this.staffLevel("clerk") / 5);
     const raw = 1 + facilityPower + staffPower + clerkSkill + this.operationEffectFor(this.data, "clickFlat");
-    return Math.round(raw * (1 + this.permanentEffectFor(this.data, "clickPct") + this.titleEffectFor(this.data, "clickPct") + this.charEffectFor("clickPct") + this.operationEffectFor(this.data, "clickPct")) * this.feverMultiplier());
+    return Math.round(raw * (1 + this.permanentEffectFor(this.data, "clickPct") + this.titleEffectFor(this.data, "clickPct") + this.charEffectFor("clickPct") + this.operationEffectFor(this.data, "clickPct")) * this.feverClickMultiplier());
   }
 
   trustDecay() {
@@ -1734,22 +1971,47 @@ export class GameState extends Phaser.Events.EventEmitter {
 
   staffCost(id) {
     const staff = this.staff(id);
-    return Math.floor(staff.cost * 1.62 ** this.staffLevel(id));
+    return this.staffCostAt(staff, this.staffLevel(id));
   }
 
   staffExplainCost(id) {
     const staff = this.staff(id);
-    return Math.floor(staff.explain * 1.24 ** this.staffLevel(id));
+    return this.staffExplainCostAt(staff, this.staffLevel(id));
   }
 
   cost(id) {
     const item = this.facility(id);
-    return Math.floor(item.cost * 1.48 ** this.level(id));
+    return this.facilityCostAt(item, this.level(id));
   }
 
   explainCost(id) {
     const item = this.facility(id);
-    return Math.floor(item.explain * 1.18 ** this.level(id));
+    return this.facilityExplainCostAt(item, this.level(id));
+  }
+
+  purchaseDiscountPct(type) {
+    const operationKey = type === "staff" ? "staffDiscountPct" : "facilityDiscountPct";
+    return Phaser.Math.Clamp(
+      this.operationEffectFor(this.data, operationKey) + this.feverPurchaseDiscountPct(),
+      0,
+      0.65,
+    );
+  }
+
+  facilityCostAt(item, level) {
+    return Math.max(1, Math.floor(item.cost * 1.48 ** level * (1 - this.purchaseDiscountPct("facility"))));
+  }
+
+  facilityExplainCostAt(item, level) {
+    return Math.max(1, Math.floor(item.explain * 1.18 ** level * (1 - this.purchaseDiscountPct("facility"))));
+  }
+
+  staffCostAt(staff, level) {
+    return Math.max(1, Math.floor(staff.cost * 1.62 ** level * (1 - this.purchaseDiscountPct("staff"))));
+  }
+
+  staffExplainCostAt(staff, level) {
+    return Math.max(1, Math.floor(staff.explain * 1.24 ** level * (1 - this.purchaseDiscountPct("staff"))));
   }
 
   prestigeUpgradeLevel(id) {
