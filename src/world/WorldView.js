@@ -125,8 +125,11 @@ export class WorldView {
 
     // 클릭 콤보 카운터(연타 시 등장)
     this.comboText = scene.add
-      .text(GAME_W / 2, 286, "", { fontFamily: '"Galmuri14", monospace', fontSize: "15px", color: "#ffcd75" })
-      .setOrigin(0.5)
+      .text(10, 312, "", {
+        fontFamily: '"Galmuri14", monospace', fontSize: "13px", color: "#ffcd75",
+        backgroundColor: "rgba(20,18,28,0.78)", padding: { x: 4, y: 3 },
+      })
+      .setOrigin(0, 0.5)
       .setDepth(121)
       .setVisible(false);
     this.comboText.setShadow(2, 2, "#000", 0, true, true);
@@ -157,6 +160,12 @@ export class WorldView {
     // 사이다! 정의구현 순간 — 통쾌한 연출
     this._onCider = (p) => this._ciderMoment(p);
     gameState.on("cider", this._onCider);
+    this._onCentralVisual = (event) => {
+      const visible = !event.detail?.active;
+      [this.titleBg, this.titleTop, this.titleMain, this.titleHint].forEach((item) => item?.setVisible(visible));
+      if (this.titleZone?.input) this.titleZone.input.enabled = visible;
+    };
+    document.addEventListener("gp:central-visual", this._onCentralVisual);
 
     // 하단 패널 높이에 맞춰 카메라를 위로 스크롤 — 국장·시설·초당표가 패널에 절대 안 잘리게(BUG2).
     // WORLD_BOTTOM = cps 라벨 하단(GROUND_Y+34). 패널 top이 그보다 위면 그 차이만큼 카메라를 올린다.
@@ -894,6 +903,7 @@ export class WorldView {
     document.removeEventListener("gp:sheet-top", this._onSheetTop);
     this.scene.input.off("pointerdown", this._onPointer);
     document.removeEventListener("gp:event-resolved", this._onEventResolved);
+    document.removeEventListener("gp:central-visual", this._onCentralVisual);
     this._incomeTimer?.remove();
     this._speakTimer?.remove();
     this._pressTimer?.remove();

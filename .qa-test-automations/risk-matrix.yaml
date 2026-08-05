@@ -15,3 +15,5 @@ overrides:
     min_level: high
   - path: src/ui/DOMModalLayer.js
     min_level: high
+  - path: src/ui/dom-ui.css
+    min_level: medium

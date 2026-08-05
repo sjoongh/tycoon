@@ -325,12 +325,12 @@ export class DOMBottomPanel {
         ? `📖 도감 ${dexN}/${dexTotal} · 생산 +${dexPct}% · ${nextM.n}종에서 +${Math.round(nextM.pct * 100)}%`
         : `📖 도감 ${dexN}/${dexTotal} 완성! · 생산 +${dexPct}% 영구`;
       this.panel.innerHTML = `<div class="gp-paneltitle">📋 사건 대응실 · 처리 ${gs.data.stats.totalEvents}건</div><div class="gp-card__sub">사건 대응으로 표·믿음을 얻으세요 · 보상 x${gs.eventRewardScale().toFixed(1)}</div>${btn}<div class="gp-dexline">${dexLine}</div><div class="gp-log">${log}</div>`;
-      // P1 fix: drive cooldown sweep --cd-pct on the disabled button each second
+      // transform 기반 쿨다운 스윕으로 레이아웃 재계산을 피한다.
       if (!ready && totalMs > 0) {
         const btnEl = this.panel.querySelector(".gp-btn--event");
         if (btnEl) {
-          const pct = Math.round((1 - remainMs / totalMs) * 100);
-          btnEl.style.setProperty("--cd-pct", `${pct}%`);
+          const ratio = Math.max(0, Math.min(1, 1 - remainMs / totalMs));
+          btnEl.style.setProperty("--cd-ratio", ratio);
         }
       }
     }
@@ -358,7 +358,7 @@ export class DOMBottomPanel {
       return `<div class="gp-goal ${cls}">
         <div class="gp-goal__head"><span class="gp-goal__title">${q.title}</span><span class="gp-goal__badge">${badge}</span></div>
         <div class="gp-goal__desc">${q.desc}</div>
-        <div class="gp-progress gp-goal__bar"><div class="gp-progress__fill" style="width:${(state === "done" ? 1 : ratio) * 100}%"></div></div>
+        <div class="gp-progress gp-goal__bar"><div class="gp-progress__fill" style="transform:scaleX(${state === "done" ? 1 : ratio})"></div></div>
         <div class="gp-goal__foot"><span>${shortNumber(Math.min(p, q.target))} / ${shortNumber(q.target)}</span><span class="gp-goal__reward">${rewardLabel(q.reward)}</span></div>
       </div>`;
     };
@@ -381,7 +381,7 @@ export class DOMBottomPanel {
       weeklyRow = `<div class="gp-goal gp-goal--weekly ${wclaimed ? "gp-goal--done" : wclaimable ? "gp-goal--active" : ""}">
         <div class="gp-goal__head"><span class="gp-goal__title">&#9733; ${wDef.title}</span>${wright}</div>
         <div class="gp-goal__desc">이번 주 표 ${shortNumber(wt)}장 처리</div>
-        <div class="gp-progress gp-goal__bar"><div class="gp-progress__fill" style="width:${(wdone ? 1 : wratio) * 100}%"></div></div>
+        <div class="gp-progress gp-goal__bar"><div class="gp-progress__fill" style="transform:scaleX(${wdone ? 1 : wratio})"></div></div>
         <div class="gp-goal__foot"><span>${shortNumber(Math.min(wp, wt))} / ${shortNumber(wt)}</span><span class="gp-goal__reward">인장 +${wDef.seals}</span></div>
       </div>`;
     }
@@ -402,7 +402,7 @@ export class DOMBottomPanel {
       return `<div class="gp-goal gp-goal--daily ${claimed ? "gp-goal--done" : claimable ? "gp-goal--active" : ""}">
         <div class="gp-goal__head"><span class="gp-goal__title">${q.title}</span>${right}</div>
         <div class="gp-goal__desc">${q.desc}</div>
-        <div class="gp-progress gp-goal__bar"><div class="gp-progress__fill" style="width:${(done ? 1 : ratio) * 100}%"></div></div>
+        <div class="gp-progress gp-goal__bar"><div class="gp-progress__fill" style="transform:scaleX(${done ? 1 : ratio})"></div></div>
         <div class="gp-goal__foot"><span>${shortNumber(Math.min(p, q.target))} / ${shortNumber(q.target)}</span><span class="gp-goal__reward">${rewardLabel(q.reward)}</span></div>
       </div>`;
     }).join("");

@@ -17,10 +17,10 @@ export class DOMModalLayer {
     this._onUpgraded = (f) => this._checkMilestone(f);
     this._onChanged = () => { this._maybeHint(); this._checkStage(); this._maybeOperationDraft(); this._maybeFeverReport(); this._maybeNotifPrompt(); };
     this._onPrestigeConfirm = () => this._confirmPrestige();
-    this._onCelebrate = (p) => { this._toast(p.text); this._flash(); };
+    this._onCelebrate = (p) => { this._banner(p.text, { priority: 2, tone: "reward" }); this._flash(); };
     this._onGachaResult = (e) => this._showGachaResult(e.detail);
     this._onGachaResult10 = (e) => this._showGachaResult10(e.detail);
-    this._onCommWarning = (p) => { this._banner(p.text); document.dispatchEvent(new CustomEvent("gp:sfx", { detail: "crisis" })); };
+    this._onCommWarning = (p) => { this._banner(p.text, { priority: 4, tone: "danger" }); document.dispatchEvent(new CustomEvent("gp:sfx", { detail: "crisis" })); };
     this._onCommCollapse = (p) => this._showCollapse(p);
     this._onOpenOperations = () => this._showOperationStatus();
   }
@@ -105,10 +105,10 @@ export class DOMModalLayer {
       </div>`;
     };
     ov.addEventListener("click", (e) => {
-      if (e.target.closest("[data-skip]")) { ov.remove(); return; }
+      if (e.target.closest("[data-skip]")) { ov.remove(); this._drainBanners(); return; }
       if (!e.target.closest("[data-next]")) return;
       i += 1;
-      if (i >= cards.length) ov.remove();
+      if (i >= cards.length) { ov.remove(); this._drainBanners(); }
       else render();
     });
     render();
@@ -120,7 +120,7 @@ export class DOMModalLayer {
     const a = this.gameState.data.stage.area;
     if (a > this._prevArea) {
       this._prevArea = a;
-      this._banner(`${a}구역 진입!`);
+      this._banner(`${a}구역 진입!`, { priority: 3, tone: "stage" });
       this._flash();
     } else if (a < this._prevArea) {
       this._prevArea = a; // prestige reset
@@ -167,8 +167,10 @@ export class DOMModalLayer {
       document.dispatchEvent(new CustomEvent("gp:sfx", { detail: "powerup" }));
       ov.remove();
       this._operationModal = null;
+      this._drainBanners();
     });
     this._operationModal = ov;
+    this._clearActiveBanner();
     this.root.appendChild(ov);
     requestAnimationFrame(() => ov.querySelector("[data-operation]")?.focus({ preventScroll: true }));
   }
@@ -205,6 +207,8 @@ export class DOMModalLayer {
     if (this._feverReportEl?.isConnected || this.root.querySelector(".gp-modal-ov")) return;
     const report = this.gameState.data.fever?.report;
     if (!report) return;
+    this._clearActiveBanner({ requeue: true });
+    this._setCentralVisualActive(true);
     const profile = FEVER_FAMILY_PROFILES[report.family] || FEVER_FAMILY_PROFILES.tap;
     const recap = document.createElement("section");
     recap.className = `gp-fever-recap gp-fever-recap--${report.family}`;
@@ -223,7 +227,11 @@ export class DOMModalLayer {
       if (!recap.isConnected) return;
       clearTimeout(this._feverReportTimer);
       recap.classList.remove("gp-fever-recap--in");
-      setTimeout(() => recap.remove(), 180);
+      setTimeout(() => {
+        recap.remove();
+        this._drainBanners();
+        if (!this._bannerActive) this._setCentralVisualActive(false);
+      }, 180);
       this.gameState.dismissFeverReport?.();
     };
     recap.querySelector(".gp-fever-recap__close").addEventListener("click", dismiss);
@@ -249,28 +257,78 @@ export class DOMModalLayer {
       </div>`, () => this.gameState.prestigeReset());
   }
 
-  // 배너는 큐로 1개씩 순차 표시 — 동시에 여러 성취(업적·다중 목표 완료)가 떠도 겹쳐 가려지지 않게.
-  _banner(text) {
+  // 구역·위기·보상을 하나의 우선순위 큐로 직렬화한다.
+  // 같은 changed 틱의 알림을 microtask 동안 모은 뒤 정렬해 중앙 메시지가 겹치지 않게 한다.
+  _banner(text, { priority = 1, tone = "reward" } = {}) {
+    const cleanText = String(text || "").trim();
+    if (!cleanText || this._destroyed) return;
     if (!this._bannerQueue) this._bannerQueue = [];
-    this._bannerQueue.push(text);
-    if (this._bannerQueue.length > 6) this._bannerQueue.length = 6; // 폭주 시 상한(오프라인 다중완료 등)
-    this._drainBanners();
+    if (this._bannerCurrent?.text === cleanText || this._bannerQueue.some((item) => item.text === cleanText)) return;
+
+    this._bannerSequence = (this._bannerSequence || 0) + 1;
+    this._bannerQueue.push({ text: cleanText, priority, tone, sequence: this._bannerSequence });
+    this._bannerQueue.sort((a, b) => b.priority - a.priority || a.sequence - b.sequence);
+    if (this._bannerQueue.length > 8) this._bannerQueue.length = 8;
+
+    if (this._bannerDrainScheduled) return;
+    this._bannerDrainScheduled = true;
+    queueMicrotask(() => {
+      this._bannerDrainScheduled = false;
+      this._drainBanners();
+    });
   }
 
   _drainBanners() {
-    if (this._bannerActive || !this._bannerQueue || !this._bannerQueue.length) return;
+    if (this._destroyed || this._bannerActive || !this._bannerQueue?.length) return;
+    if (this.root.querySelector(".gp-modal-ov") || this._feverReportEl?.isConnected) return;
     this._bannerActive = true;
-    const text = this._bannerQueue.shift();
+    const item = this._bannerQueue.shift();
+    this._bannerCurrent = item;
     const b = document.createElement("div");
-    b.className = "gp-banner";
-    b.textContent = text;
+    b.className = `gp-banner gp-banner--${item.tone}`;
+    b.setAttribute("role", "status");
+    b.setAttribute("aria-live", item.tone === "danger" ? "assertive" : "polite");
+    b.setAttribute("aria-atomic", "true");
+    b.textContent = item.text;
+    this._bannerEl = b;
     this.root.appendChild(b);
+    this._setCentralVisualActive(true);
     requestAnimationFrame(() => b.classList.add("gp-banner--in"));
-    const hold = this._bannerQueue.length ? 1100 : 2000; // 대기 중이면 짧게 흘려 빠르게 소진
-    setTimeout(() => {
+    const hold = this._bannerQueue.length ? 1050 : item.tone === "stage" ? 1900 : 1700;
+    this._bannerHoldTimer = setTimeout(() => {
       b.classList.remove("gp-banner--in");
-      setTimeout(() => { b.remove(); this._bannerActive = false; this._drainBanners(); }, 400);
+      this._bannerExitTimer = setTimeout(() => {
+        b.remove();
+        this._bannerEl = null;
+        this._bannerActive = false;
+        this._bannerCurrent = null;
+        this._drainBanners();
+        if (!this._bannerActive && !this._feverReportEl?.isConnected) this._setCentralVisualActive(false);
+      }, 260);
     }, hold);
+  }
+
+  _clearActiveBanner({ requeue = false } = {}) {
+    if (requeue && this._bannerCurrent && !this._bannerQueue?.some((item) => item.text === this._bannerCurrent.text)) {
+      if (!this._bannerQueue) this._bannerQueue = [];
+      this._bannerSequence = (this._bannerSequence || 0) + 1;
+      this._bannerQueue.push({ ...this._bannerCurrent, sequence: this._bannerSequence });
+      this._bannerQueue.sort((a, b) => b.priority - a.priority || a.sequence - b.sequence);
+      if (this._bannerQueue.length > 8) this._bannerQueue.length = 8;
+    }
+    clearTimeout(this._bannerHoldTimer);
+    clearTimeout(this._bannerExitTimer);
+    this._bannerEl?.remove();
+    this._bannerEl = null;
+    this._bannerActive = false;
+    this._bannerCurrent = null;
+    this._setCentralVisualActive(false);
+  }
+
+  _setCentralVisualActive(active) {
+    if (this._centralVisualActive === active) return;
+    this._centralVisualActive = active;
+    document.dispatchEvent(new CustomEvent("gp:central-visual", { detail: { active } }));
   }
 
   _showOfflineReward(onClose) {
@@ -304,7 +362,7 @@ export class DOMModalLayer {
     if (!f) return;
     const lv = this.gameState.level(f.id);
     if (MILESTONES.includes(lv)) {
-      this._toast(`🎉 ${f.name} Lv.${lv} 마일스톤!`);
+      this._banner(`🎉 ${f.name} Lv.${lv} 마일스톤!`, { priority: 1, tone: "reward" });
       this._flash();
     }
   }
@@ -358,6 +416,7 @@ export class DOMModalLayer {
   }
 
   _openModal(html, onConfirm, onClose) {
+    this._clearActiveBanner({ requeue: true });
     const ov = document.createElement("div");
     ov.className = "gp-modal-ov";
     ov.innerHTML = `<div class="gp-modal">${html}</div>`;
@@ -366,37 +425,14 @@ export class DOMModalLayer {
         if (onConfirm) onConfirm();
         ov.remove();
         if (onClose) onClose();
+        this._drainBanners();
       } else if (e.target.closest("[data-close]") || e.target === ov) {
         ov.remove();
         if (onClose) onClose();
+        this._drainBanners();
       }
     });
     this.root.appendChild(ov);
-  }
-
-  // 토스트는 큐로 1개씩 순차 표시 — 대량 동시 완료(오프라인 복귀·첫 감사 등)에도
-  // 중앙 캐릭터/숫자를 토스트 더미가 덮지 않게(깔끔한 중앙 focus 유지).
-  _toast(text) {
-    if (!this._toastQueue) this._toastQueue = [];
-    this._toastQueue.push(text);
-    if (this._toastQueue.length > 8) this._toastQueue.length = 8; // 폭주 상한
-    this._drainToasts();
-  }
-
-  _drainToasts() {
-    if (this._toastActive || !this._toastQueue || !this._toastQueue.length) return;
-    this._toastActive = true;
-    const text = this._toastQueue.shift();
-    const t = document.createElement("div");
-    t.className = "gp-toast";
-    t.textContent = text;
-    this.root.appendChild(t);
-    requestAnimationFrame(() => t.classList.add("gp-toast--in"));
-    const hold = this._toastQueue.length ? 900 : 2200; // 대기 중이면 짧게 흘려 빠르게 소진
-    setTimeout(() => {
-      t.classList.remove("gp-toast--in");
-      setTimeout(() => { t.remove(); this._toastActive = false; this._drainToasts(); }, 300);
-    }, hold);
   }
 
   _flash() {
@@ -436,6 +472,8 @@ export class DOMModalLayer {
   }
 
   destroy() {
+    this._destroyed = true;
+    this._setCentralVisualActive(false);
     this.gameState.off("upgraded", this._onUpgraded);
     this.gameState.off("changed", this._onChanged);
     this.gameState.off("celebrate", this._onCelebrate);
@@ -447,6 +485,8 @@ export class DOMModalLayer {
     document.removeEventListener("gp:open-operations", this._onOpenOperations);
     this._operationModal?.remove();
     clearTimeout(this._feverReportTimer);
+    clearTimeout(this._bannerHoldTimer);
+    clearTimeout(this._bannerExitTimer);
     this._feverReportEl?.remove();
     this.root.remove();
   }

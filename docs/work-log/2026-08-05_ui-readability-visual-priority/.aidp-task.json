@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "taskId": "2026-08-05_ui-readability-visual-priority",
+  "title": "UI 가독성 및 연출 우선순위 정리",
+  "goal": "모바일·데스크톱에서 중앙 연출 중첩을 제거하고 핵심 텍스트를 읽을 수 있게 하며 기존 게임 동작을 보존한다",
+  "root": "/Users/manager/aidp/gaepyo-master",
+  "startedAt": "2026-08-05T22:49:21+09:00",
+  "baseSha": "49e5611660e0b38f9c7dbfe14642033f7fe0393e",
+  "branch": "refactor/readability-visual-priority",
+  "dirtyAtStart": true,
+  "requiredChecks": [
+    "npm-test-run",
+    "npm-run-build"
+  ],
+  "status": "active",
+  "latestEvidence": null,
+  "latestEvidenceSha256": null,
+  "closedAt": null
+}

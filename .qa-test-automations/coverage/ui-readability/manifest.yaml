@@ -1,0 +1,41 @@
+modules:
+  - source: src/ui/DOMModalLayer.js
+    spec: docs/impl-notes/2026-08-05-ui-readability-visual-priority.md
+    scenario_ref: [SC-UIR-001]
+    tests:
+      - path: scripts/_uireadabilitytest.mjs
+        type: e2e
+        covers: [single-announcement, priority, dedupe, modal-suppression, recap-suppression]
+        case_ref: [TC-UIR-001, TC-UIR-002]
+        flow_ref: [Flow-UIR-1]
+    risk_score: 13
+    last_tested: 2026-08-05
+    last_passed: true
+  - source: src/ui/DOMHud.js
+    spec: docs/impl-notes/2026-08-05-ui-readability-visual-priority.md
+    scenario_ref: [SC-UIR-002, SC-UIR-003]
+    tests:
+      - path: scripts/_uireadabilitytest.mjs
+        type: e2e
+        covers: [type-floor, compact-viewport, touch-target, transform-progress, reduced-motion]
+        case_ref: [TC-UIR-003, TC-UIR-004, TC-UIR-005, TC-UIR-006]
+        flow_ref: [Flow-UIR-1]
+    risk_score: 12
+    last_tested: 2026-08-05
+    last_passed: true
+  - source: src/state/GameState.js
+    spec: docs/impl-notes/2026-08-05-ui-readability-visual-priority.md
+    scenario_ref: [SC-UIR-001, SC-UIR-004]
+    tests:
+      - path: test/
+        type: unit
+        covers: [economy-regression, operation-fever-regression]
+        case_ref: [TC-UIR-007]
+      - path: scripts/_operationfeverplay.mjs
+        type: e2e
+        covers: [fresh-save-high-intensity-play]
+        case_ref: [TC-UIR-008]
+        flow_ref: [Flow-UIR-2]
+    risk_score: 13
+    last_tested: 2026-08-05
+    last_passed: true
