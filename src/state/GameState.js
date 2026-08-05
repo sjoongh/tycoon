@@ -560,7 +560,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     this.data.operations.draft = null;
     this.addLog(`작전 채택: ${operation.name} Lv.${level + 1}`);
     this.addFever("choice", 12);
-    this.emit("float", { text: `${operation.name} Lv.${level + 1}`, x: 195, y: 210, color: "#ffd34d" });
+    // 채택 결과는 중앙 알림 큐에서 한 번만 보여 중복 연출을 피한다.
     this.emit("celebrate", { text: `${operation.icon} 작전 채택 · ${operation.name} Lv.${level + 1}` });
     this.emit("changed");
     this.save(false);
@@ -1049,7 +1049,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     }
     this.grantReward({ votes: rewardVotes, explain: rewardExplain, trust: 5 });
     this.addLog(`${this.data.stage.area - 1}구역 완료`);
-    this.emit("float", { text: `지역 ${this.data.stage.area} 개표`, x: 195, y: 188, color: "#bba2ff" });
+    // 구역 진입은 DOMModalLayer의 우선순위 배너가 담당한다.
     this.checkProgression();
     this.emit("changed");
     this.save(false);
@@ -1136,7 +1136,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     this.advanceTutorial("upgrade");
     this.data.trust = Phaser.Math.Clamp(this.data.trust + (fac.trust || 0) * plan.levels, 0, 100);
     this.addLog(`${fac.name} Lv.${this.level(id)}${plan.levels > 1 ? ` (+${plan.levels})` : ""}`);
-    this.emit("float", { text: `${fac.name} +${plan.levels}Lv`, x: 195, y: 300, color: "#ffc857" });
+    this.emit("float", { text: `${fac.name} +${plan.levels}Lv`, x: 315, y: 300, color: "#ffc857" });
     this.addFever("upgrade", Math.min(24, 6 + plan.levels * 2));
     this.trackFeverAction();
     this.emit("upgraded", fac);
@@ -1158,7 +1158,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     this.advanceTutorial("staff");
     this.data.trust = Phaser.Math.Clamp(this.data.trust + (staff.trustBonus || 0) * 20 * plan.levels, 0, 100);
     this.addLog(`${staff.name} Lv.${this.staffLevel(id)}${plan.levels > 1 ? ` (+${plan.levels})` : ""}`);
-    this.emit("float", { text: `${staff.name} +${plan.levels}Lv`, x: 195, y: 300, color: "#7fc8ff" });
+    this.emit("float", { text: `${staff.name} +${plan.levels}Lv`, x: 75, y: 300, color: "#7fc8ff" });
     this.addFever("upgrade", Math.min(24, 6 + plan.levels * 2));
     this.trackFeverAction();
     this.checkProgression();
@@ -1356,7 +1356,6 @@ export class GameState extends Phaser.Events.EventEmitter {
       if (this.achievementProgress(a.metric) < a.target) return;
       this.data.achievements[a.id] = true;
       this.grantReward(a.reward);
-      this.emit("float", { text: `업적 ${a.name}`, x: 195, y: 210, color: "#bba2ff" });
       this.emit("celebrate", { text: `🏅 업적 달성 · ${a.name}` });
     });
   }
@@ -1534,7 +1533,6 @@ export class GameState extends Phaser.Events.EventEmitter {
   checkQuests() {
     const grant = (quest) => {
       this.grantReward(quest.reward);
-      this.emit("float", { text: `목표완료 ${quest.title}`, x: 195, y: 244, color: "#bba2ff" });
       this.emit("celebrate", { text: `✅ 목표 완료 · ${quest.title}` });
     };
     questDefinitions.forEach((quest) => {

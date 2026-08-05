@@ -69,11 +69,7 @@ export class DOMHud {
     this.root.querySelector('[data-k="explain"]').textContent = shortNumber(d.explain);
     this.root.querySelector('[data-k="trust"]').textContent = `${Math.round(d.trust)}%`;
     const ratio = Math.max(0, Math.min(1, d.stage.progress / d.stage.target));
-    this.root.querySelector('[data-k="progress"]').style.width = `${ratio * 100}%`;
-    const cps = this.gameState.cps ? this.gameState.cps() : 0;
-    // 초당 생산이 의미있게 뛰면(업그레이드/채용/구역) 수치를 팝 연출. 믿음 드리프트(<2%)는 무시.
-    const jumped = this._lastCps != null && cps >= this._lastCps * 1.02;
-    this._lastCps = cps;
+    this.root.querySelector('[data-k="progress"]').style.transform = `scaleX(${ratio})`;
 
     // 믿음 위기/보너스 상태를 믿음 칩과 상태 배지로 노출(테마 시그니처)
     const state = this.gameState.trustState ? this.gameState.trustState() : "normal";
@@ -90,8 +86,8 @@ export class DOMHud {
       : state === "bonus"
       ? ` · <span style="color:#8df0b0">✦ 신뢰보너스</span>`
       : "";
-    stageEl.innerHTML =
-      `${d.stage.area}구역 · D-${d.days} · 초당 <span class="gp-cps${jumped ? " gp-cps--up" : ""}">${cps < 10000 ? cps.toFixed(1) : shortNumber(cps)}</span>표${stateSuffix}`;
+    // 초당 생산은 월드 하단에 상시 노출되므로 HUD에는 진행 맥락만 남긴다.
+    stageEl.innerHTML = `${d.stage.area}구역 · D-${d.days}${stateSuffix}`;
 
     // 공산화(체제 전복) 위험 게이지 — 위험이 쌓일 때만 노출(미리 보이게 = 공정)
     const gauge = this.gameState.commGaugePct ? this.gameState.commGaugePct() : 0;
@@ -99,7 +95,7 @@ export class DOMHud {
     if (gEl) {
       if (gauge > 0) {
         gEl.hidden = false;
-        gEl.querySelector(".gp-commgauge__fill").style.width = `${Math.round(gauge * 100)}%`;
+        gEl.querySelector(".gp-commgauge__fill").style.transform = `scaleX(${gauge})`;
         gEl.querySelector(".gp-commgauge__txt").textContent = `🚩 체제 전복 위기 ${Math.round(gauge * 100)}%`;
         gEl.classList.toggle("gp-commgauge--danger", gauge >= 0.66);
       } else {
@@ -134,10 +130,15 @@ export class DOMHud {
     });
     fever.querySelector('[data-k="fever-fill"]').style.transform = `scaleX(${pct})`;
     fever.querySelector('[data-k="fever-label"]').textContent = active
-      ? `${profile.icon} ${profile.name} · ${profile.summary}`
+      ? `${profile.icon} ${profile.name}`
       : recovering
-        ? "재정비 중 · 다음 피버 준비"
+        ? "재정비 중"
         : `${profile.icon} ${profile.name} 열기`;
+    fever.querySelector(".gp-fever__hint").textContent = active
+      ? `${profile.summary} · 눌러서 작전 현황`
+      : recovering
+        ? "열기 충전 대기 · 눌러서 작전 현황"
+        : "행동으로 충전 · 눌러서 작전 현황";
     fever.querySelector('[data-k="fever-value"]').textContent = active
       ? `${Math.max(1, Math.ceil(gs.feverRemainingMs() / 1000))}초`
       : recovering
