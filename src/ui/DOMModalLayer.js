@@ -1,6 +1,7 @@
 import { shortNumber } from "../utils/format.js";
 import { GOV_MAPS, PROP_MAPS, dotSvgUri } from "../world/dotChar.js";
 import { RARITY_LABEL, RARITY_COLOR } from "../data/titles.js";
+import { FEVER_FAMILY_PROFILES, OPERATION_FAMILIES, operationDefinitions } from "../data/operations.js";
 
 const MILESTONES = [5, 10, 25, 45];
 
@@ -14,13 +15,14 @@ export class DOMModalLayer {
     this._hint = null;
     this._prevArea = gameState.data.stage.area;
     this._onUpgraded = (f) => this._checkMilestone(f);
-    this._onChanged = () => { this._maybeHint(); this._checkStage(); this._maybeOperationDraft(); this._maybeNotifPrompt(); };
+    this._onChanged = () => { this._maybeHint(); this._checkStage(); this._maybeOperationDraft(); this._maybeFeverReport(); this._maybeNotifPrompt(); };
     this._onPrestigeConfirm = () => this._confirmPrestige();
     this._onCelebrate = (p) => { this._toast(p.text); this._flash(); };
     this._onGachaResult = (e) => this._showGachaResult(e.detail);
     this._onGachaResult10 = (e) => this._showGachaResult10(e.detail);
     this._onCommWarning = (p) => { this._banner(p.text); document.dispatchEvent(new CustomEvent("gp:sfx", { detail: "crisis" })); };
     this._onCommCollapse = (p) => this._showCollapse(p);
+    this._onOpenOperations = () => this._showOperationStatus();
   }
 
   mount(parent) {
@@ -33,6 +35,7 @@ export class DOMModalLayer {
     document.addEventListener("gp:prestige-confirm", this._onPrestigeConfirm);
     document.addEventListener("gp:gacha-result", this._onGachaResult);
     document.addEventListener("gp:gacha-result10", this._onGachaResult10);
+    document.addEventListener("gp:open-operations", this._onOpenOperations);
     if (!this._maybeOpening()) {
       // 오프라인 정산을 먼저 보여주고, 닫은 뒤에 출석 보상(겹쳐 가려지지 않게 체인)
       if (this.gameState.offlineReward) this._showOfflineReward(() => this._maybeDaily());
@@ -124,7 +127,7 @@ export class DOMModalLayer {
     }
   }
 
-  // 구역 완료 직후 현장/운영/대응 3축 중 하나를 고르는 런 작전 드래프트.
+  // 3구역을 완료할 때마다 현장/운영/대응 3축 중 하나를 고르는 런 작전 드래프트.
   // 다른 보상 모달이 열려 있으면 다음 changed 틱까지 기다려 모달 중첩을 피한다.
   _maybeOperationDraft() {
     if (this._operationModal?.isConnected || this.root.querySelector(".gp-modal-ov")) return;
@@ -132,15 +135,18 @@ export class DOMModalLayer {
     const choices = this.gameState.operationDraftDefinitions ? this.gameState.operationDraftDefinitions() : [];
     if (!draft || choices.length !== 3) return;
 
-    const familyLabel = { tap: "현장 작전", build: "운영 작전", response: "대응 작전" };
     const cards = choices.map((operation) => {
       const level = this.gameState.operationLevel(operation.id);
+      const family = OPERATION_FAMILIES[operation.family];
+      const profile = FEVER_FAMILY_PROFILES[operation.family];
+      const recommendation = this.gameState.operationRecommendationText?.(operation.family) || "";
       return `<button type="button" class="gp-opcard gp-opcard--${operation.family}" data-operation="${operation.id}" aria-label="${operation.name} 레벨 ${level + 1} 선택">
         <span class="gp-opcard__icon" aria-hidden="true">${operation.icon}</span>
         <span class="gp-opcard__body">
-          <span class="gp-opcard__family">${familyLabel[operation.family] || "개표 작전"}</span>
+          <span class="gp-opcard__meta"><span class="gp-opcard__family">${family?.label || "개표"} 작전</span>${recommendation ? `<em>★ 추천 · ${recommendation}</em>` : ""}</span>
           <b>${operation.name}</b>
           <small>${operation.benefit}</small>
+          <span class="gp-opcard__detail">${operation.detail} · ${profile.name}</span>
         </span>
         <span class="gp-opcard__level">Lv.${level}<i>→ ${level + 1}</i></span>
       </button>`;
@@ -149,10 +155,10 @@ export class DOMModalLayer {
     const ov = document.createElement("div");
     ov.className = "gp-modal-ov";
     ov.innerHTML = `<div class="gp-modal gp-modal--operation" role="dialog" aria-modal="true" aria-labelledby="gp-operation-title">
-      <div class="gp-mtitle" id="gp-operation-title">${draft.area}구역 돌파 · 작전 회의</div>
-      <div class="gp-msub">이번 감사 런의 방향을 하나 고르세요.<br>선택한 행동은 <b>열기</b>를 더 빨리 채웁니다.</div>
+      <div class="gp-mtitle" id="gp-operation-title">${draft.area}구역 완료 · 작전 회의</div>
+      <div class="gp-msub">하나를 골라 이번 감사 런의 <b>다음 피버</b>를 바꾸세요.<br>가장 많이 쌓은 계열이 피버의 성격이 됩니다.</div>
       <div class="gp-oplist">${cards}</div>
-      <div class="gp-opnote">열기 100% → 10초간 생산·탭 ×2</div>
+      <div class="gp-opnote">다음 작전 회의는 3구역 뒤 · 동률이면 방금 고른 계열 우선</div>
     </div>`;
     ov.addEventListener("click", (event) => {
       const card = event.target.closest("[data-operation]");
@@ -165,6 +171,66 @@ export class DOMModalLayer {
     this._operationModal = ov;
     this.root.appendChild(ov);
     requestAnimationFrame(() => ov.querySelector("[data-operation]")?.focus({ preventScroll: true }));
+  }
+
+  _showOperationStatus() {
+    if (this.root.querySelector(".gp-modal-ov")) return;
+    const gs = this.gameState;
+    const counts = gs.operationFamilyCounts ? gs.operationFamilyCounts() : {};
+    const dominant = gs.dominantOperationFamily ? gs.dominantOperationFamily() : "tap";
+    const profile = FEVER_FAMILY_PROFILES[dominant] || FEVER_FAMILY_PROFILES.tap;
+    const familyRows = Object.entries(OPERATION_FAMILIES).map(([family, meta]) => {
+      const active = family === dominant;
+      const fever = FEVER_FAMILY_PROFILES[family];
+      return `<div class="gp-opstatus__family gp-opstatus__family--${family}${active ? " gp-opstatus__family--active" : ""}">
+        <b>${meta.icon} ${meta.label} ${counts[family] || 0}</b><span>${fever.summary}</span>
+      </div>`;
+    }).join("");
+    const picked = operationDefinitions
+      .filter((operation) => gs.operationLevel(operation.id) > 0)
+      .map((operation) => `<div class="gp-opstatus__pick"><span>${operation.icon} ${operation.name}</span><b>Lv.${gs.operationLevel(operation.id)}</b></div>`)
+      .join("") || `<div class="gp-opstatus__empty">3구역을 완료하면 첫 작전 회의가 열립니다.</div>`;
+
+    this._openModal(`
+      <div class="gp-modal__badge">${profile.icon}</div>
+      <div class="gp-mtitle">이번 감사 런 작전</div>
+      <div class="gp-msub">현재 우세는 <b>${profile.name}</b><br>${profile.description}</div>
+      <div class="gp-opstatus__families">${familyRows}</div>
+      <div class="gp-opstatus__picks">${picked}</div>
+      <div class="gp-opnote">열기 100% → 12초 피버 → 마지막 4초 막판 총력 → 30초 재정비</div>
+      <button class="gp-btn gp-btn--gold" data-close>현장으로</button>`);
+  }
+
+  _maybeFeverReport() {
+    if (this._feverReportEl?.isConnected || this.root.querySelector(".gp-modal-ov")) return;
+    const report = this.gameState.data.fever?.report;
+    if (!report) return;
+    const profile = FEVER_FAMILY_PROFILES[report.family] || FEVER_FAMILY_PROFILES.tap;
+    const recap = document.createElement("section");
+    recap.className = `gp-fever-recap gp-fever-recap--${report.family}`;
+    recap.setAttribute("role", "status");
+    recap.setAttribute("aria-live", "polite");
+    recap.innerHTML = `
+      <button type="button" class="gp-fever-recap__close" aria-label="피버 결산 닫기">×</button>
+      <div class="gp-fever-recap__title">${report.finisherUsed ? "⚡" : profile.icon} ${profile.name} 결산</div>
+      <div class="gp-fever-report">
+        <div><span>처리한 표</span><b>+${shortNumber(report.votes)}</b></div>
+        <div><span>피버 행동</span><b>${report.actions}회</b></div>
+        <div><span>최고 콤보</span><b>${report.bestCombo}</b></div>
+      </div>
+      <div class="gp-fever-recap__note">${report.finisherUsed ? "막판 총력 성공" : "다음엔 마지막 4초를 노리세요"} · 30초 재정비</div>`;
+    const dismiss = () => {
+      if (!recap.isConnected) return;
+      clearTimeout(this._feverReportTimer);
+      recap.classList.remove("gp-fever-recap--in");
+      setTimeout(() => recap.remove(), 180);
+      this.gameState.dismissFeverReport?.();
+    };
+    recap.querySelector(".gp-fever-recap__close").addEventListener("click", dismiss);
+    this._feverReportEl = recap;
+    this.root.appendChild(recap);
+    requestAnimationFrame(() => recap.classList.add("gp-fever-recap--in"));
+    this._feverReportTimer = setTimeout(dismiss, 6000);
   }
 
   _confirmPrestige() {
@@ -378,7 +444,10 @@ export class DOMModalLayer {
     document.removeEventListener("gp:prestige-confirm", this._onPrestigeConfirm);
     document.removeEventListener("gp:gacha-result", this._onGachaResult);
     document.removeEventListener("gp:gacha-result10", this._onGachaResult10);
+    document.removeEventListener("gp:open-operations", this._onOpenOperations);
     this._operationModal?.remove();
+    clearTimeout(this._feverReportTimer);
+    this._feverReportEl?.remove();
     this.root.remove();
   }
 }

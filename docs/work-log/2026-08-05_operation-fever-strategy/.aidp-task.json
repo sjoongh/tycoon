@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "taskId": "2026-08-05_operation-fever-strategy",
+  "title": "작전 피버 전략형 재설계",
+  "goal": "3구역 작전 선택과 계열별 피버·피니셔·결산이 저장 호환 및 모바일/데스크톱에서 검증됨",
+  "root": "/Users/manager/aidp/gaepyo-master",
+  "startedAt": "2026-08-05T15:11:26+09:00",
+  "baseSha": "5e7a135db99783366a4a4d04d953aa7e1efdf403",
+  "branch": "main",
+  "dirtyAtStart": true,
+  "requiredChecks": [
+    "npm-test",
+    "npm-run-build"
+  ],
+  "status": "active",
+  "latestEvidence": null,
+  "latestEvidenceSha256": null,
+  "closedAt": null
+}

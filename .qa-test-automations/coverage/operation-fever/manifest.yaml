@@ -1,28 +1,45 @@
 modules:
   - source: src/data/operations.js
-    spec: docs/impl-notes/2026-08-04-operation-fever.md
+    spec: docs/impl-notes/2026-08-05-operation-fever-strategy.md
     scenario_ref: [SC-OPF-001]
     tests:
       - path: src/data/operations.test.js
         type: unit
-        covers: [operationChoices, operationDefinition]
+        covers: [operationChoices, operationDefinitions, normalizeOperationPicks]
         case_ref: [TC-OPF-001, TC-OPF-002]
     risk_score: 5
-    last_tested: 2026-08-04
+    last_tested: 2026-08-05
     last_passed: true
   - source: src/state/GameState.js
-    spec: docs/impl-notes/2026-08-04-operation-fever.md
-    scenario_ref: [SC-OPF-002, SC-OPF-003]
+    spec: docs/impl-notes/2026-08-05-operation-fever-strategy.md
+    scenario_ref: [SC-OPF-002, SC-OPF-003, SC-OPF-004]
     tests:
       - path: src/state/GameState.operationFever.test.js
         type: unit
-        covers: [chooseOperation, addFever, feverActive, normalize, prestigeReset]
-        case_ref: [TC-OPF-003, TC-OPF-004, TC-OPF-005, TC-OPF-006]
+        covers: [chooseOperation, dominantOperationFamily, addFever, feverActive, activateFeverFinisher, syncFever, normalize, prestigeReset]
+        case_ref: [TC-OPF-003, TC-OPF-004, TC-OPF-005, TC-OPF-006, TC-OPF-007, TC-OPF-008, TC-OPF-009, TC-OPF-010, TC-OPF-011, TC-OPF-012, TC-OPF-013, TC-OPF-014]
       - path: scripts/_operationfevertest.mjs
         type: e2e
-        covers: [area-clear-draft, operation-choice, fever-hud, reload]
-        case_ref: [TC-OPF-007]
+        covers: [three-area-draft, recommendation, operation-status, family-fever, finisher, recovery, recap, reload]
+        case_ref: [TC-OPF-015]
         flow_ref: [Flow-1]
     risk_score: 13
-    last_tested: 2026-08-04
+    last_tested: 2026-08-05
+    last_passed: true
+  - source: src/ui/DOMHud.js
+    spec: docs/impl-notes/2026-08-05-operation-fever-strategy.md
+    scenario_ref: [SC-OPF-004, SC-OPF-005]
+    tests:
+      - path: scripts/_operationfevertest.mjs
+        type: e2e
+        covers: [fever-phases, operation-status-button, finisher-button, nonblocking-recap, responsive]
+        case_ref: [TC-OPF-015]
+        flow_ref: [Flow-1]
+      - path: scripts/_operationfeverplay.mjs
+        type: e2e
+        covers: [fresh-save-hands-on-cadence, repeated-fever-recovery]
+        case_ref: [TC-OPF-016]
+        flow_ref: [Flow-2]
+    risk_score: 13
+    last_tested: 2026-08-05
     last_passed: true
