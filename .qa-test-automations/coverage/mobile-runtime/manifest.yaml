@@ -73,3 +73,36 @@ modules:
     risk_score: 17
     last_tested: 2026-08-06
     last_passed: true
+  - source: tools/phaser/custom-entry.cjs
+    spec: docs/impl-notes/2026-08-06-phaser-custom-core-startup.md
+    scenario_ref: [SC-MRT-008]
+    tests:
+      - path: tools/phaser/assert-custom-phaser.mjs
+        type: integration
+        covers: [exact-version, deterministic-build, license-banner, renderer-flags, bundle-ceiling, source-api-audit]
+        case_ref: [TC-MRT-014]
+      - path: scripts/_phasercoretest.mjs
+        type: e2e
+        covers: [webgl-runtime-api, canvas-runtime-api, tap-input, canvas-visual-output]
+        case_ref: [TC-MRT-015, TC-MRT-016]
+        flow_ref: [Flow-MRT-4]
+    risk_score: 18
+    last_tested: 2026-08-06
+    last_passed: true
+  - source: vite.config.js
+    spec: docs/impl-notes/2026-08-06-phaser-custom-core-startup.md
+    scenario_ref: [SC-MRT-009]
+    tests:
+      - path: scripts/_phaserstockrollbacktest.mjs
+        type: integration
+        covers: [stock-rollback-build, poisoned-custom-cache-independence, build-time-switch]
+        case_ref: [TC-MRT-017]
+        flow_ref: [Flow-MRT-4]
+      - path: scripts/_phaserstartupmeasure.mjs
+        type: e2e
+        covers: [custom-transfer, long-task-total, long-task-max, world-ready]
+        case_ref: [TC-MRT-018]
+        flow_ref: [Flow-MRT-4]
+    risk_score: 17
+    last_tested: 2026-08-06
+    last_passed: true

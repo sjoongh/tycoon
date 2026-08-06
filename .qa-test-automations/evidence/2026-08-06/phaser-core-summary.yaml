@@ -1,0 +1,85 @@
+date: 2026-08-06
+mode: incremental
+target: phaser-custom-core-startup
+duration_ms: 270000
+unit:
+  total: 68
+  passed: 68
+  failed: 0
+  skipped: 0
+integration:
+  total: 3
+  passed: 3
+  failed: 0
+  skipped: 0
+  checks: [deterministic-custom-build-and-source-audit, custom-production-build, poisoned-cache-stock-rollback-build]
+e2e:
+  total: 11
+  passed: 11
+  failed: 0
+  screenshots:
+    - screenshots/SC-MRT-008-phaser-webgl.png
+    - screenshots/SC-MRT-008-phaser-canvas.png
+    - screenshots/SC-MRT-008-phaser-stock-webgl.png
+    - screenshots/SC-MRT-008-phaser-stock-canvas.png
+hands_on:
+  total: 1
+  passed: 1
+  failed: 0
+  duration_seconds: 180
+  taps: 1471
+  area: 28
+  operations: 9
+  fever_cycles: 4
+  recovery_cycles: 4
+  finisher_clicks: 4
+  bosses: { attempts: 9, successes: 9, failures: 0 }
+  errors: []
+custom_bundle:
+  raw_bytes: 662162
+  gzip_bytes: 184343
+  production_transfer_bytes: 175588
+  deterministic_sha256: 6dab596158279fa0503ea6149787ec654a7326b3e2281807b2df07465c51933f
+performance_4x_cpu_swiftshader_median_3_runs:
+  methodology: { discarded_warmups_per_build: 1, measured_order: alternating, fresh_browser_per_sample: true }
+  stock:
+    samples:
+      - { dcl_ms: 437.1, hud_ready_ms: 599.1, world_ready_ms: 1325.8, long_task_total_ms: 1183, long_task_max_ms: 576 }
+      - { dcl_ms: 439.3, hud_ready_ms: 608.4, world_ready_ms: 1340.1, long_task_total_ms: 1188, long_task_max_ms: 578 }
+      - { dcl_ms: 440.2, hud_ready_ms: 601.7, world_ready_ms: 1315.1, long_task_total_ms: 1171, long_task_max_ms: 563 }
+    phaser_transfer_bytes: 330076
+    long_task_total_ms: 1183
+    long_task_max_ms: 576
+    hud_ready_ms: 601.7
+    world_ready_ms: 1325.8
+  custom:
+    samples:
+      - { dcl_ms: 384.7, hud_ready_ms: 545.5, world_ready_ms: 1226.5, long_task_total_ms: 568, long_task_max_ms: 354 }
+      - { dcl_ms: 394.1, hud_ready_ms: 562.2, world_ready_ms: 1239.8, long_task_total_ms: 582, long_task_max_ms: 363 }
+      - { dcl_ms: 388.7, hud_ready_ms: 546.0, world_ready_ms: 1235.9, long_task_total_ms: 570, long_task_max_ms: 358 }
+    phaser_transfer_bytes: 175588
+    long_task_total_ms: 570
+    long_task_max_ms: 358
+    hud_ready_ms: 546.0
+    world_ready_ms: 1235.9
+  reduction_pct:
+    phaser_transfer: 46.8
+    long_task_total: 51.8
+    long_task_max: 37.8
+    world_ready: 6.8
+environment:
+  target: localhost
+  target_guard_passed: true
+  matched_allowed_host: 127.0.0.1
+  external_requests_blocked: true
+  browser: chromium-playwright
+  viewport: 390x844
+  cpu_throttle: 4
+  gpu: swiftshader
+  android_device_trace: unverified-adb-unavailable
+notes:
+  - 양 build를 1회씩 warm-up한 결과는 버리고, custom-first와 stock-first를 교차해 순서 편향을 줄였다.
+  - GAEPYO_STOCK_PHASER=1 production build는 고의로 깨뜨린 custom cache를 변경하지 않고 통과했다.
+  - 현재 소스에는 미포함 factory·Math API 및 제외된 Sound·plugin·physics·advanced blend 사용이 없다.
+  - 성능·폰트 E2E는 브라우저 병렬 경합을 피하기 위해 단독 재실행했고 통과했다.
+  - SwiftShader 결과를 Android 실기기 개선 수치로 확대 해석하지 않는다.

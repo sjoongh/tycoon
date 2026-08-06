@@ -27,3 +27,13 @@
 5. Galmuri9·14 정적 표본과 숫자 `101`, 서브셋에 없는 `힣`을 렌더한다.
 6. Chrome 실제 사용 폰트 통계에서 정적 글자는 크기별 subset, 희귀 글자는 Galmuri11 fallback인지 확인한다.
 7. 전체 폰트 요청·전송량과 모바일 스크린샷을 저장한다.
+
+## Flow-MRT-4 — Phaser custom core 기능·rollback·startup 비교
+
+1. custom dev 서버를 외부 요청 차단 localhost에서 열고 WebGL GameScene과 DOM HUD를 기다린다.
+2. Graphics·Text·Rectangle·Image·Circle·Sprite·Zone factory와 input·loader·scale·time·tween을 검사하고 canvas를 실제 탭한다.
+3. 별도 페이지에서 WebGL API를 비활성화해 Canvas renderer를 강제하고 같은 API·탭과 다색상 프레임을 확인한다.
+4. custom bundle을 두 번 생성해 SHA·버전·renderer flag·MIT 배너·크기 ceiling과 현재 소스의 factory·Math·제외 API 사용을 검사한다.
+5. custom cache를 고의로 망가뜨린 뒤 `GAEPYO_STOCK_PHASER=1`로 준비·alias를 우회하는 rollback production build를 만들고, stock dev의 WebGL·강제 Canvas 부팅과 탭도 확인한다.
+6. 각 빌드를 4× CPU + SwiftShader 신규 브라우저에서 3번 로드해 Phaser 전송량·총/최대 long task·HUD/world-ready 중앙값을 비교한다.
+7. 기존 E2E 전체와 상태 주입 없는 180초 직접 플레이로 동적 경로를 회귀 검증한다.
