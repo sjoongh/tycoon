@@ -1,0 +1,47 @@
+cases:
+  - id: TC-OCP-001
+    scenario: SC-OCP-001
+    description: v5 이하 세이브의 미처리 개표값을 0으로 정규화한다
+    type: error
+    expected: { version: 6, offline_carry_votes: 0 }
+  - id: TC-OCP-002
+    scenario: SC-OCP-001
+    description: 1시간 지난 저장 세이브가 신규 게임으로 대체되지 않는다
+    type: error
+    expected: { area_preserved: true, tutorial_preserved: true, offline_reward: present }
+  - id: TC-OCP-003
+    scenario: SC-OCP-002
+    description: 남은 목표 100에 3600표를 정산한다
+    type: boundary
+    input: { stage_room: 100, offline_votes: 3600 }
+    expected: { progress_applied: 100, carry_added: 3500, resource_votes_added: 3600 }
+  - id: TC-OCP-004
+    scenario: SC-OCP-002
+    description: 저장·재접속 후 이월량을 유지하고 감사 시 초기화한다
+    type: normal
+    expected: { reload_preserved: true, prestige_cleared: true }
+  - id: TC-OCP-005
+    scenario: SC-OCP-003
+    description: 하루 1회 2배를 같은 양만큼 추가하고 두 번째 사용을 차단한다
+    type: boundary
+    expected: { resource_multiplier: 2, carry_multiplier: 2, second_claim: null }
+  - id: TC-OCP-006
+    scenario: SC-OCP-004
+    description: 이월이 3구역을 채워도 보스와 작전을 자동 통과하지 않는다
+    type: normal
+    expected: { boss_required: true, operation_draft_area: 3, automatic_skip: false }
+  - id: TC-OCP-007
+    scenario: SC-OCP-003
+    description: 8시간 복귀 전체 흐름을 모바일에서 수행한다
+    type: normal
+    expected: { allocation_visible: true, touch_target_min_px: 44, overflow: false }
+  - id: TC-OCP-008
+    scenario: SC-OCP-005
+    description: 감사 탭과 확인 모달에 상대 증가율·추천을 표시한다
+    type: normal
+    expected: { gain_pct_visible: true, recommendation_visible: true, mobile_overflow: false, desktop_overflow: false }
+  - id: TC-OCP-009
+    scenario: SC-OCP-001
+    description: 정산 직후 자동저장 전에 재접속해도 같은 보상을 다시 지급하지 않는다
+    type: error
+    expected: { second_offline_reward: null, resource_duplicate: false, carry_duplicate: false, cloud_timestamp_preserved: true }

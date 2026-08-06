@@ -1,0 +1,73 @@
+date: 2026-08-06
+mode: incremental
+target: offline-carry-prestige-guidance
+duration_ms: 135000
+unit:
+  total: 68
+  passed: 68
+  failed: 0
+  skipped: 0
+integration:
+  total: 2
+  passed: 2
+  failed: 0
+  skipped: 0
+  checks: [npm-run-build, greedy-balance-simulation]
+e2e:
+  total: 8
+  passed: 8
+  failed: 0
+  screenshots:
+    - screenshots/SC-OFFLINE-001-step-1-allocation-mobile.png
+    - screenshots/SC-OFFLINE-001-step-2-operation-gate-mobile.png
+    - screenshots/SC-PRESTIGE-001-step-1-guidance-panel-mobile.png
+    - screenshots/SC-PRESTIGE-001-step-2-guidance-confirm-mobile.png
+    - screenshots/SC-PRESTIGE-001-step-3-guidance-confirm-desktop.png
+hands_on:
+  total: 1
+  passed: 1
+  game_state_injection: false
+  pace: casual-active
+  duration_sec: 70
+  tap_interval_ms: 420
+  taps: 157
+  area: 4
+  boss_cycles: 1
+  boss_successes: 1
+  operation_choices: 1
+  fever_cycles: 1
+  errors: 0
+offline_carry:
+  save_version: 6
+  eight_hour_reward_votes: 20556
+  current_area_applied: 100
+  carry_added: 20456
+  checkpoint_stop: passed
+  operation_stop: passed
+  double_claim_once: passed
+  persisted_offline_load: passed
+  rapid_reload_duplicate_guard: passed
+prestige_guidance:
+  sample_gain_pct: 28.9
+  sample_advice: strong
+  economic_formula_changed: false
+  mobile_overflow: false
+  desktop_overflow: false
+regression:
+  checkpoint_boss: passed
+  operation_fever: passed
+  ui_readability: passed
+  save_persistence: passed
+  offline_cap_hours: 8
+  offline_rate: 0.72
+  greedy_first_prestige_minutes: 2.9
+validation:
+  diff_check: passed
+  existing_bundle_warning: phaser-and-firebase-chunks-over-500kb
+environment:
+  target_url: "http://localhost:5178"
+  target_guard_passed: true
+  matched_allowed_host: localhost
+  provider: none
+  lifecycle: preexisting
+  started_by_skill: false

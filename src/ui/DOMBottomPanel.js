@@ -210,6 +210,7 @@ export class DOMBottomPanel {
     const cost = gs.cost(sel);
     const ex = gs.explainCost(sel);
     const stageDone = gs.data.stage.progress >= gs.data.stage.target;
+    const offlineCarry = Math.max(0, Number(gs.data.offlineCarryVotes) || 0);
     const bossActive = gs.bossActive?.() || false;
     const bossRequired = gs.bossRequired?.() || false;
     const stageAction = bossActive
@@ -245,7 +246,7 @@ export class DOMBottomPanel {
         // P1 fix: facility picker icon — use webp asset as background-image, color as fallback
       return `<button class="gp-fac ${ff.id === sel ? "gp-fac--active" : ""} ${u ? "" : "gp-fac--locked"}" data-action="selectFac" data-id="${ff.id}"><span class="gp-fac__icon" style="background-image:url('${facilityIconUri(ff.id)}')"></span><span class="gp-fac__role">${ff.role}</span><span class="gp-fac__lv">${u ? `Lv.${gs.level(ff.id)}` : `${ff.unlock}구`}</span></button>`;
       }).join("")}</div>
-      <div class="gp-region"><span>${gs.data.stage.area}구역 · ${shortNumber(gs.data.stage.progress)} / ${shortNumber(gs.data.stage.target)}</span>${
+      <div class="gp-region"><span class="gp-region__progress">${gs.data.stage.area}구역 · ${shortNumber(gs.data.stage.progress)} / ${shortNumber(gs.data.stage.target)}${offlineCarry > 0 ? `<small class="gp-carry">미처리 개표 +${shortNumber(offlineCarry)}</small>` : ""}</span>${
         stageDone
           ? stageAction
           : `<span class="gp-stage-frac">${Math.floor((gs.data.stage.progress / gs.data.stage.target) * 100)}%</span>`
@@ -456,8 +457,11 @@ export class DOMBottomPanel {
 
   _renderPrestige() {
     const gs = this.gameState;
-    const preview = gs.prestigePreview();
+    const projection = gs.prestigeProjection();
+    const preview = projection.earned;
     const can = preview > 0;
+    const advice = projection.advice || { key: "locked", label: "준비 중", detail: "감사 조건을 달성하세요" };
+    const gainLabel = can ? `영구 생산 +${projection.gainPct.toFixed(1)}%` : "영구 상승 계산 중";
     // FIX #8: prestige upgrades use .gp-seal (gem-blue) not .gp-fac (gold) — distinct economy, distinct look
     // FIX P1: track _selectedSeal — default to first affordable, or first upgradeable; apply gp-seal--active
     const firstAffordable = prestigeUpgrades.find((u) => {
@@ -501,6 +505,10 @@ export class DOMBottomPanel {
       <div class="gp-sealgrid">${ups}</div>
       ${detailCard}
       ${medalSection}
+      <div class="gp-prestige-advice gp-prestige-advice--${advice.key}">
+        <span><b>${gainLabel}</b><small>${advice.detail}</small></span>
+        <em>${advice.label}</em>
+      </div>
       <div class="gp-region"><span>예상 획득 +${preview}${gs.medalPreview() > 0 ? ` · &#127894;+${gs.medalPreview()}` : ""}</span><button class="gp-btn gp-btn--sm gp-btn--danger ${can ? "" : "gp-btn--disabled"}" data-action="prestigeReset">감사실행</button></div>`;
 
     // Wire seal + medal selection clicks (re-render with new selection, don't buy immediately)
