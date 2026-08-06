@@ -19,6 +19,13 @@ import {
   operationChoices,
   operationDefinitions,
 } from "../data/operations.js";
+import {
+  BOSS_DURATION_MS,
+  bossForArea,
+  bossRewardBonus,
+  bossTargetFor,
+  isCheckpointArea,
+} from "../data/bosses.js";
 import { shortNumber } from "../utils/format.js";
 
 const DAY_MS = 86400000;
@@ -52,7 +59,7 @@ const DEX_MILESTONES = [
   { n: 75, pct: 0.25 }, // 전종 수집 완성(officeEvents 총수와 일치 — 사건 추가 시 함께 갱신)
 ];
 
-const SAVE_VERSION = 4;
+const SAVE_VERSION = 5;
 
 const fallbackState = {
   version: SAVE_VERSION,
@@ -137,6 +144,16 @@ const fallbackState = {
   briefReadyAt: 0,
   briefEndsAt: 0,
   operations: { picks: {}, draft: null, lastId: null }, // 감사 런 전용 3택1 작전
+  boss: {
+    active: false,
+    area: 0,
+    progress: 0,
+    target: 0,
+    startedAt: 0,
+    endsAt: 0,
+    clearedArea: 0,
+    outcome: null,
+  }, // 3구역 단위 8초 체크포인트 보스(실패·건너뛰기 무페널티)
   fever: {
     charge: 0,
     startsAt: 0,
@@ -200,6 +217,7 @@ export class GameState extends Phaser.Events.EventEmitter {
         ...(parsed?.operations || {}),
         picks: normalizeOperationPicks(parsed?.operations?.picks),
       },
+      boss: { ...fallbackState.boss, ...(parsed?.boss || {}) },
       fever: { ...fallbackState.fever, ...(parsed?.fever || {}) },
     };
     data.daily.day = Math.max(0, Math.floor(Number(data.daily.day) || 0));
@@ -304,6 +322,38 @@ export class GameState extends Phaser.Events.EventEmitter {
     data.stage.area = Math.max(1, Number(data.stage.area) || 1);
     data.stage.target = this.stageTarget(data.stage.area);
     data.stage.progress = Phaser.Math.Clamp(Number(data.stage.progress) || 0, 0, data.stage.target);
+    data.boss.area = Math.max(0, Math.floor(Number(data.boss.area) || 0));
+    data.boss.progress = Math.max(0, Number(data.boss.progress) || 0);
+    data.boss.target = Math.max(0, Number(data.boss.target) || 0);
+    data.boss.startedAt = Math.max(0, Number(data.boss.startedAt) || 0);
+    data.boss.endsAt = Math.max(0, Number(data.boss.endsAt) || 0);
+    data.boss.clearedArea = Math.max(0, Math.floor(Number(data.boss.clearedArea) || 0));
+    data.boss.outcome = ["success", "failed", "skipped"].includes(data.boss.outcome)
+      ? data.boss.outcome
+      : null;
+    const validBossArea = isCheckpointArea(data.boss.area) && data.boss.area === data.stage.area;
+    const validActiveBoss = !!data.boss.active
+      && validBossArea
+      && data.stage.progress >= data.stage.target
+      && data.boss.target > 0
+      && data.boss.startedAt > 0
+      && data.boss.endsAt > data.boss.startedAt;
+    data.boss.active = validActiveBoss;
+    if (validActiveBoss) {
+      data.boss.progress = Phaser.Math.Clamp(data.boss.progress, 0, data.boss.target);
+      if (data.boss.progress >= data.boss.target) {
+        data.boss.active = false;
+        data.boss.clearedArea = data.boss.area;
+        data.boss.outcome = "success";
+      } else if (data.boss.endsAt <= now) {
+        // 백그라운드·재접속 중 끝난 도전은 실패 처리하되 구역 진행을 막지 않는다.
+        data.boss.active = false;
+        data.boss.clearedArea = data.boss.area;
+        data.boss.outcome = "failed";
+      }
+    } else if (data.boss.clearedArea !== data.stage.area) {
+      data.boss = { ...fallbackState.boss };
+    }
     data.lastSavedAt = Number(data.lastSavedAt) || now;
     data.lastSeenAt = Number(data.lastSeenAt) || now;
     data.prestige.seals = Math.max(0, Number(data.prestige.seals) || 0);
@@ -465,6 +515,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     this.addFever("tap", 2);
     const amount = Math.round(this.clickPower() * comboMult);
     this.addVotes(amount);
+    this.addBossProgress(amount);
     this.trackFeverAction(this._clickCombo);
     this.data.stats.totalClicks += 1;
     this._bumpDaily("clicks");
@@ -477,6 +528,7 @@ export class GameState extends Phaser.Events.EventEmitter {
       this.addFever("combo", 12);
       const bonus = Math.round(this.clickPower() * msBonus * (1 + this.operationEffectFor(this.data, "comboBonusPct") + this.operationEffectFor(this.data, "comboRewardPct")));
       this.addVotes(bonus);
+      this.addBossProgress(bonus);
       this.emit("celebrate", { text: `🔥 ${this._clickCombo} 콤보! +${shortNumber(bonus)}표!` });
       this.emit("float", { text: `🔥 +${shortNumber(bonus)}`, x, y: y - 62, color: "#ff7a3c" });
       // 콤보 축하음은 celebrate 이벤트(achieve)로 처리됨 — 중복 디스패치 제거
@@ -487,6 +539,107 @@ export class GameState extends Phaser.Events.EventEmitter {
 
   // 현재 클릭 콤보 수(WorldView 표시용)
   clickCombo() { return this._clickCombo || 0; }
+
+  // ----- 3구역 체크포인트 보스: 짧은 능동 도전, 실패·건너뛰기 무페널티 -----
+  bossDefinition(area = this.data.stage.area) {
+    return bossForArea(area);
+  }
+
+  bossActive() {
+    return !!this.data.boss?.active;
+  }
+
+  bossRequired(area = this.data.stage.area) {
+    return isCheckpointArea(area)
+      && this.data.stage.area === area
+      && this.data.stage.progress >= this.data.stage.target
+      && this.data.boss?.clearedArea !== area;
+  }
+
+  bossRemainingMs(now = Date.now()) {
+    return this.bossActive() ? Math.max(0, (this.data.boss.endsAt || 0) - now) : 0;
+  }
+
+  bossProgressPct() {
+    const target = this.data.boss?.target || 0;
+    return target > 0 ? Phaser.Math.Clamp((this.data.boss.progress || 0) / target, 0, 1) : 0;
+  }
+
+  startBoss(now = Date.now()) {
+    this.syncBoss(now);
+    if (this.bossActive() || !this.bossRequired() || this.data.operations?.draft) return false;
+    const area = this.data.stage.area;
+    const feverClickMult = Math.max(1, this.feverClickMultiplier(now));
+    const baseClickPower = this.clickPower() / feverClickMult;
+    this.data.boss = {
+      active: true,
+      area,
+      progress: 0,
+      target: bossTargetFor({ cps: this.cpsFor(this.data), clickPower: baseClickPower }),
+      startedAt: now,
+      endsAt: now + BOSS_DURATION_MS,
+      clearedArea: 0,
+      outcome: null,
+    };
+    const definition = this.bossDefinition(area);
+    this.addLog(`${definition?.icon || "⚠"} ${definition?.title || "체크포인트 검증"} 시작`);
+    this.emit("boss-start", { area, definition, durationMs: BOSS_DURATION_MS });
+    this.emit("changed");
+    this.save(false);
+    return true;
+  }
+
+  syncBoss(now = Date.now()) {
+    if (!this.bossActive()) return null;
+    if ((this.data.boss.progress || 0) >= (this.data.boss.target || 0)) {
+      return this._finishBoss("success", now);
+    }
+    if (now >= (this.data.boss.endsAt || 0)) return this._finishBoss("failed", now);
+    return null;
+  }
+
+  addBossProgress(amount, now = Date.now()) {
+    if (!this.bossActive()) return 0;
+    if (this.syncBoss(now)) return 0;
+    const added = Math.max(0, Number(amount) || 0);
+    if (added <= 0) return 0;
+    this.data.boss.progress = Math.min(this.data.boss.target, this.data.boss.progress + added);
+    if (this.data.boss.progress >= this.data.boss.target) this._finishBoss("success", now);
+    return added;
+  }
+
+  skipBoss(now = Date.now()) {
+    if (!this.bossActive()) return false;
+    if (this.syncBoss(now)) return false;
+    this._finishBoss("skipped", now);
+    return true;
+  }
+
+  _finishBoss(outcome, now = Date.now()) {
+    if (!this.bossActive()) return null;
+    const area = this.data.boss.area;
+    const success = outcome === "success";
+    this.data.boss.active = false;
+    this.data.boss.progress = Math.min(this.data.boss.progress, this.data.boss.target);
+    this.data.boss.clearedArea = area;
+    this.data.boss.outcome = success ? "success" : outcome === "skipped" ? "skipped" : "failed";
+    const baseReward = this.stageCompletionVotes(area);
+    const result = {
+      area,
+      outcome: this.data.boss.outcome,
+      success,
+      definition: this.bossDefinition(area),
+      progress: this.data.boss.progress,
+      target: this.data.boss.target,
+      elapsedMs: Math.max(0, now - this.data.boss.startedAt),
+      bonusVotes: success ? bossRewardBonus(baseReward) : 0,
+    };
+    this.addLog(success ? `보스 검증 성공: 보상 +${shortNumber(result.bonusVotes)}표` : `보스 검증 ${result.outcome === "skipped" ? "건너뜀" : "종료"}`);
+    this.emit("boss-end", result);
+    this.emit("changed");
+    this.save(false);
+    return result;
+  }
 
   // ----- 감사 런 전용 작전 카드 -----
   operationLevel(id, data = this.data) {
@@ -712,6 +865,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     this.data.fever.finisherUsed = true;
     const instant = Math.max(25, Math.round(this.cpsFor(this.data) * 4 + this.clickPower() * 12));
     this.addVotes(instant);
+    this.addBossProgress(instant, now);
     this.trackFeverAction(this.clickCombo(), now);
     this.emit("float", { text: `막판 총력! +${shortNumber(instant)}표`, x: 195, y: 300, color: "#ffd34d" });
     this.emit("celebrate", { text: `⚡ 막판 총력! 남은 피버 ×${FEVER_FINISHER_MULT}` });
@@ -752,8 +906,12 @@ export class GameState extends Phaser.Events.EventEmitter {
 
   tick() {
     if (this.data.paused) return;
-    this.syncFever();
-    this.addVotes(this.cps());
+    const now = Date.now();
+    this.syncFever(now);
+    this.syncBoss(now);
+    const production = this.cps();
+    this.addVotes(production);
+    this.addBossProgress(production, now);
     this.data.explain += this.explainPerSecond();
     // 홍보(notice) 패시브 회복은 믿음이 높을수록 둔화 → 100%에 고정되지 않고 평형점에 수렴(위기/보너스 긴장 유지, 보너스는 능동 브리핑으로 진입).
     this.data.trust = Phaser.Math.Clamp(this.data.trust - this.trustDecay() + this.level("notice") * 0.035 * (1 - this.data.trust / 100), 0, 100);
@@ -1029,11 +1187,25 @@ export class GameState extends Phaser.Events.EventEmitter {
     return true;
   }
 
+  stageCompletionVotes(area = this.data.stage.area) {
+    return Math.floor(450 * Math.max(1, Number(area) || 1) ** 1.35);
+  }
+
+  stageCompletionExplain(area = this.data.stage.area) {
+    return Math.floor(30 + Math.max(1, Number(area) || 1) * 14);
+  }
+
   advanceStage() {
-    if (this.data.stage.progress < this.data.stage.target || this.data.operations?.draft) return false;
+    if (this.data.stage.progress < this.data.stage.target
+      || this.data.operations?.draft
+      || this.bossActive()
+      || this.bossRequired()) return false;
     const completedArea = this.data.stage.area;
-    const rewardVotes = Math.floor(450 * completedArea ** 1.35);
-    const rewardExplain = Math.floor(30 + completedArea * 14);
+    const rewardVotes = this.stageCompletionVotes(completedArea);
+    const rewardExplain = this.stageCompletionExplain(completedArea);
+    const bossBonusVotes = this.data.boss?.clearedArea === completedArea && this.data.boss.outcome === "success"
+      ? bossRewardBonus(rewardVotes)
+      : 0;
     this.data.stage.completed += 1;
     this.advanceTutorial("stage");
     this.data.stage.area += 1;
@@ -1047,8 +1219,9 @@ export class GameState extends Phaser.Events.EventEmitter {
         choices: operationChoices(completedArea, this.data.prestige.runs, this.data.operations.picks),
       };
     }
-    this.grantReward({ votes: rewardVotes, explain: rewardExplain, trust: 5 });
-    this.addLog(`${this.data.stage.area - 1}구역 완료`);
+    this.data.boss = { ...fallbackState.boss };
+    this.grantReward({ votes: rewardVotes + bossBonusVotes, explain: rewardExplain, trust: 5 });
+    this.addLog(`${this.data.stage.area - 1}구역 완료${bossBonusVotes > 0 ? ` · 보스 +${shortNumber(bossBonusVotes)}표` : ""}`);
     // 구역 진입은 DOMModalLayer의 우선순위 배너가 담당한다.
     this.checkProgression();
     this.emit("changed");

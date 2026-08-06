@@ -26,3 +26,12 @@ runs:
     skipped: 0
     coverage_lines: null
     duration_ms: 112000
+  - date: 2026-08-05
+    mode: incremental
+    target: checkpoint-boss-event
+    total: 67
+    passed: 67
+    failed: 0
+    skipped: 0
+    coverage_lines: null
+    duration_ms: 185000

@@ -61,7 +61,12 @@ await page.evaluate(() => {
   gameState.emit("changed");
 });
 await page.locator('[data-action="advanceStage"]').click();
-await page.waitForTimeout(180);
+await page.locator(".gp-boss--active").waitFor({ state: "visible" });
+await page.evaluate(() => {
+  const gameState = window.__game.registry.get("gameState");
+  gameState.addBossProgress(gameState.data.boss.target);
+});
+await page.locator(".gp-modal--operation").waitFor({ state: "visible", timeout: 3000 });
 
 const operationCards = page.locator("[data-operation]");
 if (await operationCards.count() !== 3) throw new Error("operation draft did not render exactly three choices");
@@ -75,9 +80,13 @@ const touchTargets = await operationCards.evaluateAll((cards) => cards.map((card
 }));
 if (touchTargets.some((target) => target.width < 44 || target.height < 44)) throw new Error("operation card touch target is below 44px");
 await page.screenshot({ path: `${evidenceDir}/SC-OPF-002-step-1-mobile-draft.png` });
+await page.waitForFunction(() => document.querySelector(".gp-modal-ov")?.dataset.ready === "true");
 
 const selectedId = await operationCards.first().getAttribute("data-operation");
 await operationCards.first().click();
+const selectedPressed = await operationCards.first().getAttribute("aria-pressed");
+if (selectedPressed !== "true") throw new Error("operation card did not enter selected state before confirmation");
+await page.locator("[data-operation-confirm]").click();
 await page.waitForTimeout(160);
 const selectedState = await page.evaluate((id) => {
   const gameState = window.__game.registry.get("gameState");
@@ -204,13 +213,21 @@ await page.evaluate(() => {
   gameState.emit("changed");
 });
 await page.locator('[data-action="advanceStage"]').click();
-await page.waitForTimeout(420);
+await page.locator(".gp-boss--active").waitFor({ state: "visible" });
+await page.evaluate(() => {
+  const gameState = window.__game.registry.get("gameState");
+  gameState.addBossProgress(gameState.data.boss.target);
+});
+await page.locator(".gp-modal--operation").waitFor({ state: "visible", timeout: 3000 });
+await page.waitForTimeout(120);
 await page.screenshot({ path: `${evidenceDir}/SC-OPF-002-step-1-desktop-draft.png` });
 const desktopOverflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
 if (desktopOverflow) throw new Error("unexpected horizontal overflow on desktop");
 
 await page.emulateMedia({ reducedMotion: "reduce" });
+await page.waitForFunction(() => document.querySelector(".gp-modal-ov")?.dataset.ready === "true");
 await page.locator("[data-operation]").first().click();
+await page.locator("[data-operation-confirm]").click();
 await page.evaluate(() => {
   const gameState = window.__game.registry.get("gameState");
   gameState.data.fever.charge = 99;

@@ -36,6 +36,8 @@ describe("작전 드래프트", () => {
       expect(gs.data.stage.area).toBe(completedArea + 1);
     }
     gs.data.stage.progress = gs.data.stage.target;
+    expect(gs.startBoss()).toBe(true);
+    gs.addBossProgress(gs.data.boss.target);
     expect(gs.advanceStage()).toBe(true);
     expect(gs.data.operations.draft.area).toBe(3);
     expect(gs.operationDraftDefinitions()).toHaveLength(3);
@@ -46,6 +48,10 @@ describe("작전 드래프트", () => {
     const gs = new GameState();
     for (let i = 0; i < 3; i += 1) {
       gs.data.stage.progress = gs.data.stage.target;
+      if (gs.bossRequired()) {
+        gs.startBoss();
+        gs.skipBoss();
+      }
       gs.advanceStage();
     }
     const id = gs.data.operations.draft.choices[0];

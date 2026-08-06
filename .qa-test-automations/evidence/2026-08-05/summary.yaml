@@ -1,69 +1,80 @@
 date: 2026-08-05
 mode: incremental
-target: ui-readability-visual-priority
-duration_ms: 112000
+target: checkpoint-boss-event
+duration_ms: 185000
 unit:
-  total: 51
-  passed: 51
+  total: 60
+  passed: 60
   failed: 0
   skipped: 0
 integration:
-  total: 1
-  passed: 1
+  total: 2
+  passed: 2
   failed: 0
   skipped: 0
-  check: npm-run-build
+  checks: [npm-run-build, greedy-balance-simulation]
 e2e:
   total: 3
   passed: 3
   failed: 0
   screenshots:
-    - screenshots/SC-UIR-001-step-1-operation-priority.png
+    - screenshots/SC-BOSS-001-step-1-active-mobile.png
+    - screenshots/SC-BOSS-001-step-2-success-mobile.png
+    - screenshots/SC-BOSS-001-step-3-active-desktop.png
+    - screenshots/SC-OPF-002-step-1-mobile-draft.png
+    - screenshots/SC-OPF-003-step-4-mobile-fever.png
     - screenshots/SC-UIR-001-step-2-single-announcement.png
     - screenshots/SC-UIR-001-step-3-compact-360.png
-    - screenshots/SC-OPF-002-step-1-mobile-draft.png
-    - screenshots/SC-OPF-002-step-2-mobile-selected.png
-    - screenshots/SC-OPF-002-step-3-mobile-status.png
-    - screenshots/SC-OPF-003-step-4-mobile-fever.png
-    - screenshots/SC-OPF-003-step-5-mobile-finisher.png
-    - screenshots/SC-OPF-003-step-6-mobile-report.png
-    - screenshots/SC-OPF-002-step-1-desktop-draft.png
-    - screenshots/SC-OPF-004-hands-on-adaptive-90s.png
+    - screenshots/SC-OPF-004-hands-on-adaptive-60s.png
+    - screenshots/SC-OPF-004-hands-on-adaptive-70s.png
 hands_on:
-  pace: high-intensity-power-user-stress
-  duration_sec: 90
   game_state_injection: false
-  taps: 734
-  upgrades: 69
-  events: 2
-  completed_areas: 15
-  operation_choices: 5
-  fever_cycles: 2
-  recovery_cycles: 2
-  finisher_uses: 2
-  errors: 0
-ui_readability:
-  max_simultaneous_central_announcements: 1
-  legacy_toasts: 0
-  modal_announcement_collision: false
-  world_title_suppressed_and_restored: true
-  hud_label_min_px: 10
-  related_body_min_px: 11
-  settings_touch_target_px: 44
-  mobile_viewports: [390x844, 360x740]
+  profiles:
+    - pace: high-intensity-power-user-stress
+      duration_sec: 60
+      tap_interval_ms: 105
+      taps: 487
+      completed_areas: 10
+      boss_cycles: 3
+      boss_successes: 3
+      operation_choices: 3
+      operation_picks: 3
+      errors: 0
+    - pace: casual-active
+      duration_sec: 70
+      tap_interval_ms: 420
+      taps: 159
+      completed_areas: 4
+      boss_cycles: 1
+      boss_successes: 1
+      operation_choices: 1
+      operation_picks: 1
+      errors: 0
+checkpoint_boss:
+  cadence: every-3-areas
+  duration_ms: 8000
+  success_bonus_pct: 35
+  failure_penalty: none
+  skip_penalty: none
+  target_formula: base-cps-8sec-plus-base-click-12
+  mobile_touch_target_min_px: 44
   mobile_overflow: false
   desktop_overflow: false
-  progress_rendering: scaleX
-validation:
-  source_detector:
-    passed_for_changed_code: true
-    existing_findings: 4
-    classification: intentional-pixel-side-accents
-  rendered_detector:
-    passed: null
-    reason: "Known long-lived Firebase/Analytics connections make the detector navigation timeout; Playwright render checks cover the changed UI."
+  world_tap_passthrough: passed
+  operation_modal_collision: false
+  expired_reload_recovery: passed
+  operation_tap_through_guard: passed
+  operation_explicit_confirmation: passed
   reduced_motion: passed
-  operation_card_touch_targets_min_px: 100.91
+regression:
+  operation_fever: passed
+  ui_readability: passed
+  max_simultaneous_central_announcements: 1
+  greedy_first_prestige_minutes: 2.9
+  greedy_final_area: 11
+validation:
+  diff_check: passed
+  existing_bundle_warning: phaser-and-firebase-chunks-over-500kb
 environment:
   target_url: "http://localhost:5178"
   target_guard_passed: true

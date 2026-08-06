@@ -46,6 +46,7 @@ try {
 
   await page.evaluate(() => {
     const gameState = window.__game.registry.get("gameState");
+    gameState.data.paused = true;
     gameState.data.tutorial = { step: 5, done: true, openingSeen: true };
     gameState.data.votes = 500000;
     gameState.data.explain = 50000;
@@ -55,8 +56,15 @@ try {
     gameState.data.operations.draft = null;
     gameState.emit("changed");
   });
+  await page.waitForTimeout(60);
+  await page.locator(".gp-banner").waitFor({ state: "detached", timeout: 5000 });
   await page.locator('[data-action="advanceStage"]').click();
-  await page.waitForTimeout(180);
+  await page.locator(".gp-boss--active").waitFor({ state: "visible" });
+  await page.evaluate(() => {
+    const gameState = window.__game.registry.get("gameState");
+    gameState.addBossProgress(gameState.data.boss.target);
+  });
+  await page.locator(".gp-modal--operation").waitFor({ state: "visible", timeout: 3000 });
 
   const modalCollision = {
     operationModals: await page.locator(".gp-modal--operation").count(),
@@ -68,7 +76,9 @@ try {
   }
   await page.screenshot({ path: `${evidenceDir}/SC-UIR-001-step-1-operation-priority.png` });
 
+  await page.waitForFunction(() => document.querySelector(".gp-modal-ov")?.dataset.ready === "true");
   await page.locator("[data-operation]").first().click();
+  await page.locator("[data-operation-confirm]").click();
   await page.waitForTimeout(120);
   const stageAnnouncement = await page.locator(".gp-banner").textContent();
   if (!stageAnnouncement?.includes("4구역 진입")) {

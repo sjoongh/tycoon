@@ -3,6 +3,7 @@ import { chromium } from "playwright";
 
 const baseUrl = process.env.QA_BASE_URL || "http://localhost:5178";
 const durationMs = Number(process.env.PLAY_DURATION_MS) || 180000;
+const tapDelayMs = Math.max(80, Number(process.env.PLAY_TAP_DELAY_MS) || 105);
 const requestedFamily = process.env.OPERATION_FAMILY || "adaptive";
 if (!["adaptive", "tap", "build", "response"].includes(requestedFamily)) {
   throw new Error(`Unknown OPERATION_FAMILY: ${requestedFamily}`);
@@ -57,6 +58,9 @@ const readState = () => page.evaluate(() => {
     feverActive: gameState.feverActive(),
     feverRecovering: gameState.feverRecovering(),
     feverCharge: Math.round(gameState.feverCharge()),
+    bossActive: gameState.bossActive?.() || false,
+    bossArea: data.boss?.area || 0,
+    bossOutcome: data.boss?.outcome || null,
   };
 });
 
@@ -84,8 +88,12 @@ try {
   let feverCycles = 0;
   let recoveryCycles = 0;
   let finisherClicks = 0;
+  let bossCycles = 0;
+  let bossSuccesses = 0;
+  let bossFailures = 0;
   let lastActive = false;
   let lastRecovering = false;
+  let lastBossActive = false;
   let nextProgressAt = 30000;
   let nextStaffAt = 12000;
   let nextEventAt = 8000;
@@ -99,7 +107,9 @@ try {
       : page.locator(`.gp-opcard--${requestedFamily}`).first();
     if (!(await operationCard.count())) operationCard = page.locator(".gp-opcard").first();
     if (await operationCard.count() && await operationCard.isVisible().catch(() => false)) {
+      await page.waitForFunction(() => document.querySelector(".gp-modal-ov")?.dataset.ready === "true").catch(() => {});
       await operationCard.click().catch(() => {});
+      await clickIfVisible("[data-operation-confirm]");
       operationChoices += 1;
       await page.waitForTimeout(80);
       continue;
@@ -142,16 +152,22 @@ try {
 
     await page.mouse.click(195, 360);
     taps += 1;
-    await page.waitForTimeout(105);
+    await page.waitForTimeout(tapDelayMs);
 
     const state = await readState();
     if (state) {
       if (state.feverActive && !lastActive) feverCycles += 1;
       if (state.feverRecovering && !lastRecovering) recoveryCycles += 1;
+      if (state.bossActive && !lastBossActive) bossCycles += 1;
+      if (!state.bossActive && lastBossActive) {
+        if (state.bossOutcome === "success") bossSuccesses += 1;
+        else if (state.bossOutcome) bossFailures += 1;
+      }
       lastActive = state.feverActive;
       lastRecovering = state.feverRecovering;
+      lastBossActive = state.bossActive;
       if (elapsed >= nextProgressAt) {
-        console.log(JSON.stringify({ kind: "progress", elapsedSec: Math.round(elapsed / 1000), taps, operationChoices, feverCycles, recoveryCycles, finisherClicks, state }));
+        console.log(JSON.stringify({ kind: "progress", elapsedSec: Math.round(elapsed / 1000), taps, operationChoices, feverCycles, recoveryCycles, finisherClicks, bossCycles, bossSuccesses, bossFailures, state }));
         nextProgressAt += 30000;
       }
     }
@@ -161,13 +177,16 @@ try {
   const state = await readState();
   const result = {
     ok: errors.length === 0,
-    pace: `high-intensity power-user stress · ${requestedFamily} operation picks`,
+    pace: `${tapDelayMs <= 140 ? "high-intensity power-user stress" : "casual active"} · ${tapDelayMs}ms tap interval · ${requestedFamily} operation picks`,
     elapsedSec: Math.round((Date.now() - startedAt) / 1000),
     taps,
     operationChoices,
     feverCycles,
     recoveryCycles,
     finisherClicks,
+    bossCycles,
+    bossSuccesses,
+    bossFailures,
     state,
     errors,
   };
