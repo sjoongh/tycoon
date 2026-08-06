@@ -17,3 +17,7 @@ overrides:
     min_level: high
   - path: src/ui/dom-ui.css
     min_level: medium
+  - path: public/sw.js
+    min_level: high
+  - path: firebase.json
+    min_level: high

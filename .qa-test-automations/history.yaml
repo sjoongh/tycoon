@@ -89,3 +89,12 @@ runs:
     skipped: 0
     coverage_lines: null
     duration_ms: 450000
+  - date: 2026-08-06
+    mode: full-release-gate
+    target: game-completion-pass
+    total: 129
+    passed: 129
+    failed: 0
+    skipped: 0
+    coverage_lines: null
+    duration_ms: 1800000

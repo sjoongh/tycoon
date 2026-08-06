@@ -1,54 +1,200 @@
-// 밸런스/페이싱 시뮬 — 신규 플레이어(도감보너스0)가 그리디 전략으로 진행할 때
-// 각 구역 도달까지 걸리는 시뮬 시간을 측정한다. 누적 배율이 곡선을 망가뜨렸는지 점검.
+// 결정적 성장 시뮬레이션: 보통 속도 능동 플레이(초당 3탭, 45초마다 사건 대응,
+// 5초마다 생산 효율이 높은 시설/직원을 구매)로 첫 3회의 감사 도달 시간을 측정한다.
 import { chromium } from "playwright";
-const b = await chromium.launch({ args: ["--use-gl=angle","--use-angle=swiftshader","--enable-unsafe-swiftshader"] });
-const p = await b.newPage({ viewport:{width:390,height:844}, deviceScaleFactor:2 });
-const errs=[]; p.on("pageerror",e=>errs.push(e.message)); p.on("console",m=>{if(m.type()==="error")errs.push("C:"+m.text());});
-await p.goto("http://localhost:5178/",{waitUntil:"domcontentloaded",timeout:30000});
-await p.evaluate(()=>localStorage.clear());
-await p.reload({waitUntil:"domcontentloaded"}); await p.waitForTimeout(1500);
-for(let i=0;i<6;i++){const s=await p.$(".gp-skip");if(s){await s.click().catch(()=>{});await p.waitForTimeout(150);}if(await p.$(".gp-modal-ov")){const b2=await p.$(".gp-modal .gp-btn");if(b2)await b2.click().catch(()=>{});await p.waitForTimeout(150);}else break;}
-const out = await p.evaluate(async ()=>{
-  const gs=window.__game.registry.get("gameState");
-  const facImport=await import("/src/data/facilities.js");
-  const facs=facImport.facilities.map(f=>f.id);
-  const reached={}; let t=0; const MAX=60*60*6; // 최대 6시간 시뮬
-  const tapsPerSec=3; // 가벼운 액티브 탭 가정
-  while(t<MAX && gs.data.stage.area<11){
-    // 1초치 생산
-    const cps=gs.cps();
-    gs.addVotes(cps);
-    // 탭 수동 생산
-    for(let k=0;k<tapsPerSec;k++) gs.addVotes(gs.clickValue?gs.clickValue():1);
-    // 구역 돌파
-    if(gs.data.stage.progress>=gs.data.stage.target){
-      if(gs.bossRequired?.()){ gs.startBoss(); gs.skipBoss(); }
-      gs.advanceStage();
-      if(gs.data.operations?.draft) gs.chooseOperation(gs.data.operations.draft.choices[0]);
-      if(!reached[gs.data.stage.area]) reached[gs.data.stage.area]=t;
-    }
-    // 그리디 구매: 가장 싼 시설 1레벨씩, 표의 60%까지만 소비
-    for(let tries=0;tries<6;tries++){
-      let best=null,bestCost=Infinity;
-      for(const id of facs){ const plan=gs.facilityBulkPlan(id,1); if(plan.levels>=1 && plan.voteCost<bestCost){best=id;bestCost=plan.voteCost;} }
-      if(best && bestCost<=gs.data.votes*0.6){ gs.data.selected=best; gs.bulkUpgrade(best,1); } else break;
-    }
-    t++;
-  }
-  return { reached, finalArea:gs.data.stage.area, finalCps:Math.round(gs.cps()), simSec:t };
-});
-const fmt=s=> s==null?"—": s<60?`${s}s`: s<3600?`${(s/60).toFixed(1)}m`:`${(s/3600).toFixed(2)}h`;
-console.log("errs:",errs.length,"finalArea:",out.finalArea,"finalCps:",out.finalCps,"simSec:",out.simSec);
-for(let a=2;a<=out.finalArea;a++) console.log(`  구역 ${a} 도달:`, fmt(out.reached[a]));
-await b.close();
 
-// 새너티 바운드 — 컴파운딩 배율이 곡선을 망가뜨리면 잡아낸다(절대 임계 아님, 명백한 붕괴 감지용).
-const a4=out.reached[4], a10=out.reached[10];
-const fails=[];
-if(errs.length) fails.push(`콘솔 에러 ${errs.length}건`);
-if(a4==null) fails.push("그리디봇이 4구역(첫 감사)에 도달 못함 — 진행 막힘 의심");
-else if(a4<20) fails.push(`4구역 ${a4}s — 너무 빠름(초반 트리비얼화 의심)`);
-else if(a4>1800) fails.push(`4구역 ${fmt(a4)} — 너무 느림(초반 벽 의심)`);
-if(a10!=null && a10<120) fails.push(`10구역 ${a10}s — 후반까지 2분 미만(배율 폭주 의심)`);
-if(fails.length){ console.log("BALANCE: FAIL"); fails.forEach(f=>console.log("  ✗ "+f)); process.exit(1); }
-console.log("BALANCE OK — 그리디봇 페이싱 정상 범위(첫 감사 "+fmt(a4)+")");
+const baseUrl = process.env.QA_BASE_URL || "http://localhost:5178";
+const calibrationBase = Number(process.env.BALANCE_TARGET_BASE) || null;
+const calibrationRepeatBase = Number(process.env.BALANCE_REPEAT_BASE) || calibrationBase;
+const parsedUrl = new URL(baseUrl);
+if (!["localhost", "127.0.0.1"].includes(parsedUrl.hostname)) {
+  throw new Error(`REFUSING to run balance simulation against non-local host: ${parsedUrl.hostname}`);
+}
+
+const browser = await chromium.launch({ args: ["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"] });
+const page = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1 });
+const errors = [];
+await page.route("**/*", async (route) => {
+  const hostname = new URL(route.request().url()).hostname;
+  if (["localhost", "127.0.0.1"].includes(hostname)) await route.continue();
+  else await route.abort("blockedbyclient");
+});
+page.on("pageerror", (error) => errors.push(error.message));
+page.on("console", (message) => {
+  if (message.type() === "error" && !message.text().includes("firebase_analytics")) errors.push(`CONSOLE ${message.text()}`);
+});
+await page.addInitScript(() => localStorage.clear());
+await page.goto(baseUrl, { waitUntil: "domcontentloaded", timeout: 30000 });
+await page.waitForFunction(() => window.__game?.registry.get("gameState"));
+
+const result = await page.evaluate(async ({ calibrationBase, calibrationRepeatBase }) => {
+  const gameState = window.__game.registry.get("gameState");
+  const [{ facilities }, { staffDefinitions }] = await Promise.all([
+    import("/src/data/facilities.js"),
+    import("/src/data/staff.js"),
+  ]);
+  gameState.data.tutorial = { step: 5, done: true, openingSeen: true };
+  gameState.data.paused = true;
+  if (calibrationBase) {
+    gameState.stageTarget = (area) => Math.floor(
+      (gameState.data?.prestige?.runs > 0 ? calibrationRepeatBase : calibrationBase) * area ** 1.38,
+    );
+    gameState.data.stage.target = gameState.stageTarget(gameState.data.stage.area);
+    gameState.data.stage.progress = 0;
+  }
+
+  // 같은 코드/수치에서 항상 같은 사건 순서가 나오도록 고정한다.
+  let seed = 0x6a09e667;
+  const random = () => {
+    seed = (seed * 1664525 + 1013904223) >>> 0;
+    return seed / 0x100000000;
+  };
+
+  const tapsPerSecond = 3;
+  const comboAverage = 1.55; // 3탭/초를 유지하되 UI 이동·구매로 콤보가 끊기는 보수적 평균
+  const runResults = [];
+
+  const resolveRoutineEvent = () => {
+    const event = gameState.pickNextEvent(random);
+    if (!event) return;
+    const score = (effect) => {
+      const value = effect || {};
+      return (value.votes || 0) + (value.explain || 0) * 18 + (value.trust || 0) * 55;
+    };
+    const side = score(event.left?.[1]) >= score(event.right?.[1]) ? "left" : "right";
+    gameState.resolveEventChoice(event, side, { fever: false });
+  };
+
+  const buyBestAvailable = () => {
+    for (let purchase = 0; purchase < 8; purchase += 1) {
+      const currentCps = gameState.cpsFor(gameState.data);
+      const candidates = [];
+      for (const facility of facilities) {
+        const plan = gameState.facilityBulkPlan(facility.id, 1);
+        if (plan.levels < 1 || plan.voteCost > gameState.data.votes * 0.72 || plan.explainCost > gameState.data.explain * 0.72) continue;
+        const next = structuredClone(gameState.data);
+        next.facilities[facility.id] += 1;
+        const gain = Math.max(0.001, gameState.cpsFor(next) - currentCps);
+        candidates.push({ kind: "facility", id: facility.id, score: gain / (plan.voteCost + plan.explainCost * 12) });
+      }
+      for (const staff of staffDefinitions) {
+        const plan = gameState.staffBulkPlan(staff.id, 1);
+        if (plan.levels < 1 || plan.voteCost > gameState.data.votes * 0.72 || plan.explainCost > gameState.data.explain * 0.72) continue;
+        const next = structuredClone(gameState.data);
+        next.staff[staff.id] += 1;
+        const gain = Math.max(0.001, gameState.cpsFor(next) - currentCps);
+        candidates.push({ kind: "staff", id: staff.id, score: gain / (plan.voteCost + plan.explainCost * 12) });
+      }
+      candidates.sort((a, b) => b.score - a.score || a.id.localeCompare(b.id));
+      const best = candidates[0];
+      if (!best) break;
+      if (best.kind === "facility") gameState.bulkUpgrade(best.id, 1);
+      else gameState.bulkHire(best.id, 1);
+    }
+  };
+
+  const clearReadyStage = () => {
+    if (gameState.data.stage.progress < gameState.data.stage.target) return false;
+    if (gameState.bossRequired()) {
+      gameState.startBoss();
+      gameState.skipBoss();
+    }
+    if (!gameState.advanceStage()) return false;
+    if (gameState.data.operations?.draft) gameState.chooseOperation(gameState.data.operations.draft.choices[0]);
+    return true;
+  };
+
+  const spendPermanentCurrency = () => {
+    const priorities = ["procedure", "manual", "briefing", "procedure", "manual", "procedure"];
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (const id of priorities) {
+        if (gameState.buyPrestigeUpgrade(id)) {
+          changed = true;
+          break;
+        }
+      }
+    }
+  };
+
+  const playUntilArea = (targetArea, startSeconds = 0, maxSeconds = 3600) => {
+    const reached = {};
+    let seconds = startSeconds;
+    while (seconds < maxSeconds && gameState.data.stage.area < targetArea) {
+      seconds += 1;
+      const passive = gameState.cpsFor(gameState.data);
+      const active = gameState.clickPower() * tapsPerSecond * comboAverage;
+      gameState.addVotes(passive + active);
+      gameState.data.explain += gameState.explainPerSecondFor(gameState.data);
+      gameState.data.stats.totalClicks += tapsPerSecond;
+      gameState.data.trust = Math.max(0, Math.min(100,
+        gameState.data.trust - gameState.trustDecay() + gameState.level("notice") * 0.035 * (1 - gameState.data.trust / 100),
+      ));
+      if (seconds % 5 === 0) buyBestAvailable();
+      if (seconds % 45 === 0) resolveRoutineEvent();
+      if (clearReadyStage()) reached[gameState.data.stage.area] = seconds;
+    }
+    return { seconds, reached };
+  };
+
+  let deepRun = null;
+
+  for (let run = 1; run <= 3; run += 1) {
+    const { seconds, reached } = playUntilArea(4);
+
+    runResults.push({
+      run,
+      seconds,
+      reached,
+      sealsPreview: gameState.prestigePreview(),
+      facilityTotal: gameState.facilityTotal(),
+      staffTotal: Object.values(gameState.data.staff).reduce((sum, level) => sum + level, 0),
+      cps: Math.round(gameState.cpsFor(gameState.data) * 10) / 10,
+    });
+    if (run === 1 && gameState.data.stage.area >= 4) {
+      const prestigeSnapshot = structuredClone(gameState.data);
+      const seedAtPrestige = seed;
+      const deep = playUntilArea(11, seconds, 3600);
+      deepRun = {
+        totalSeconds: deep.seconds,
+        reached: deep.reached,
+        area: gameState.data.stage.area,
+        cps: Math.round(gameState.cpsFor(gameState.data) * 10) / 10,
+      };
+      gameState.data = prestigeSnapshot;
+      seed = seedAtPrestige;
+    }
+    if (gameState.data.stage.area < 4 || !gameState.prestigeReset()) break;
+    if (calibrationBase) gameState.data.stage.target = gameState.stageTarget(gameState.data.stage.area);
+    spendPermanentCurrency();
+  }
+
+  return {
+    calibrationBase,
+    calibrationRepeatBase,
+    target: { first: [480, 720], repeat: [300, 480] },
+    model: { tapsPerSecond, comboAverage, eventCadenceSeconds: 45, purchaseCadenceSeconds: 5 },
+    runResults,
+    deepRun,
+  };
+}, { calibrationBase, calibrationRepeatBase });
+await browser.close();
+
+const failures = [];
+if (errors.length) failures.push(`browser errors: ${errors.join(" | ")}`);
+if (result.runResults.length !== 3) failures.push(`expected 3 runs, received ${result.runResults.length}`);
+if (!result.deepRun || result.deepRun.area < 11 || result.deepRun.totalSeconds > 3600) {
+  failures.push(`deep run did not reach area 11 within 3600s: ${JSON.stringify(result.deepRun)}`);
+}
+const [first, ...repeats] = result.runResults;
+if (!first || first.seconds < result.target.first[0] || first.seconds > result.target.first[1]) {
+  failures.push(`first prestige ${first?.seconds ?? "missing"}s outside ${result.target.first.join("-")}s`);
+}
+for (const run of repeats) {
+  if (run.seconds < result.target.repeat[0] || run.seconds > result.target.repeat[1]) {
+    failures.push(`repeat prestige run ${run.run} ${run.seconds}s outside ${result.target.repeat.join("-")}s`);
+  }
+}
+
+console.log(JSON.stringify({ ok: failures.length === 0, ...result, failures }, null, 2));
+if (failures.length && process.env.BALANCE_CALIBRATE !== "1") process.exit(1);

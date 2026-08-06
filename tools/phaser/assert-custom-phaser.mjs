@@ -61,7 +61,7 @@ const gzipBytes = gzipSync(secondBytes, { level: 9 }).byteLength;
 const failures = [];
 if (first.outputSha256 !== second.outputSha256 || !firstBytes.equals(secondBytes)) failures.push("repeated build was not byte-identical");
 if (second.phaserVersion !== "3.90.0") failures.push(`expected Phaser 3.90.0, received ${second.phaserVersion}`);
-if (second.esbuildVersion !== "0.27.7") failures.push(`expected esbuild 0.27.7, received ${second.esbuildVersion}`);
+if (second.esbuildVersion !== "0.28.1") failures.push(`expected esbuild 0.28.1, received ${second.esbuildVersion}`);
 if (!text.startsWith("/*! Phaser v3.90.0") || !text.includes("MIT License")) failures.push("Phaser MIT license banner is missing");
 if (secondBytes.byteLength > 720_000) failures.push(`raw bundle ${secondBytes.byteLength} exceeded 720000 bytes`);
 if (gzipBytes > 200_000) failures.push(`gzip bundle ${gzipBytes} exceeded 200000 bytes`);

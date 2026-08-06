@@ -1,9 +1,24 @@
-const CACHE_NAME = "trust-office-shell-v3";
-const CORE_FILES = ["/", "/index.html", "/manifest.webmanifest", "/icon.svg", "/art/world-office.png"];
+const CACHE_NAME = "trust-office-shell-__BUILD_HASH__";
+const CORE_FILES = [
+  "/",
+  "/index.html",
+  "/manifest.webmanifest",
+  "/icon.svg",
+  "/icons/icon-192.png",
+  "/fonts/fonts.css",
+  "/fonts/Galmuri9.woff2",
+  "/fonts/Galmuri11.woff2",
+  "/fonts/Galmuri14.woff2",
+  "/fonts/PressStart2P.woff2",
+];
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(CORE_FILES)));
-  self.skipWaiting();
+  const freshRequests = CORE_FILES.map((url) => new Request(url, { cache: "reload" }));
+  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(freshRequests)));
+});
+
+self.addEventListener("message", (event) => {
+  if (event.data?.type === "SKIP_WAITING") self.skipWaiting();
 });
 
 self.addEventListener("activate", (event) => {
@@ -24,13 +39,18 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
+  if (url.pathname === "/sw.js") {
+    event.respondWith(fetch(event.request, { cache: "no-store" }));
+    return;
+  }
+
   if (url.pathname.startsWith("/assets/")) {
     event.respondWith(
       caches.open(CACHE_NAME).then(async (cache) => {
         const cached = await cache.match(event.request);
         if (cached) return cached;
         const response = await fetch(event.request);
-        cache.put(event.request, response.clone());
+        if (response.ok) cache.put(event.request, response.clone());
         return response;
       }),
     );
@@ -41,7 +61,7 @@ self.addEventListener("fetch", (event) => {
     fetch(event.request)
       .then((response) => {
         const copy = response.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+        if (response.ok) caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
         return response;
       })
       .catch(() => caches.match(event.request).then((cached) => cached || caches.match("/index.html"))),

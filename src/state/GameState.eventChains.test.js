@@ -32,7 +32,7 @@ describe("사건 체인 저장 정규화", () => {
     store.set(SAVE_KEY, JSON.stringify({ version: 6, lastSeenAt: now, lastSavedAt: now }));
     const gs = new GameState();
 
-    expect(gs.data.version).toBe(7);
+    expect(gs.data.version).toBe(9);
     expect(gs.eventChainStatus()).toMatchObject({ active: false, discovered: 0, totalEndings: 9 });
     expect(gs.data.eventChain.effects).toEqual([]);
     expect(gs.data.eventEndings).toEqual({});
@@ -41,7 +41,7 @@ describe("사건 체인 저장 정규화", () => {
   it("손상된 체인·결말 id와 진행 단계를 제거한다", () => {
     const now = Date.now();
     store.set(SAVE_KEY, JSON.stringify({
-      version: 7,
+      version: 9,
       lastSeenAt: now,
       lastSavedAt: now,
       eventEndings: { unknown: 1, "ghost-log-clean-reboot": 3 },

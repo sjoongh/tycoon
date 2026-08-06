@@ -10,7 +10,9 @@ import { DOMBottomPanel } from "./ui/DOMBottomPanel.js";
 import { DOMModalLayer } from "./ui/DOMModalLayer.js";
 import { DOMMapModal } from "./ui/DOMMapModal.js";
 import { DOMSettings } from "./ui/DOMSettings.js";
+import { DOMUpdatePrompt } from "./ui/DOMUpdatePrompt.js";
 import { GameState } from "./state/GameState.js";
+import { ServiceWorkerUpdateController } from "./pwa/ServiceWorkerUpdateController.js";
 import { Sfx } from "./audio/sfx.js";
 import { Notifications } from "./notifications.js";
 import { initNative } from "./native.js";
@@ -19,6 +21,7 @@ import { initCloud, openLeaderboard, saveCloud, submitScore, logEvt } from "./cl
 const gameState = new GameState();
 const sfx = new Sfx(gameState);
 const notifications = new Notifications(gameState);
+const pwaUpdates = new ServiceWorkerUpdateController({ save: () => gameState.save(false) });
 const CLOUD_START_DEADLINE_MS = 5000;
 const CLOUD_INPUT_SETTLE_MS = 750;
 const CLOUD_IDLE_TIMEOUT_MS = 500;
@@ -67,7 +70,10 @@ cloudDeadlineTimer = setTimeout(startCloud, CLOUD_START_DEADLINE_MS);
 
 if ("serviceWorker" in navigator && import.meta.env.PROD) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/sw.js").catch(() => {});
+    pwaUpdates.register("/sw.js").catch(() => {});
+  });
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") pwaUpdates.check().catch(() => {});
   });
 }
 
@@ -124,6 +130,7 @@ game.events.once("ready", () => {
   new DOMModalLayer(gameState, notifications).mount(uiLayer);
   new DOMMapModal(gameState).mount(uiLayer);
   new DOMSettings(gameState, notifications).mount(uiLayer);
+  new DOMUpdatePrompt(gameState, pwaUpdates).mount(uiLayer);
   sfx.mount();
   // 네이티브(안드로이드) 통합 — 웹에서는 no-op
   initNative();
@@ -144,5 +151,11 @@ game.events.once("ready", () => {
     ending: p?.id,
     route: p?.route,
     first: !!p?.firstDiscovery,
+  }));
+  gameState.on("staff-deployment", (p) => logEvt("staff_deployment", {
+    staff: p?.id,
+    action: p?.action,
+    auto: !!p?.auto,
+    count: p?.slots?.length || 0,
   }));
 });

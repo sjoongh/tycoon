@@ -1,6 +1,11 @@
 import { shortNumber } from "../utils/format.js";
 import { facilities } from "../data/facilities.js";
 import { staffDefinitions, rarityColors } from "../data/staff.js";
+import {
+  STAFF_SLOT_LIMIT,
+  staffDeploymentEffectText,
+  staffRankForLevel,
+} from "../data/staffDeployment.js";
 import { officeEvents, realEventIds } from "../data/events.js";
 import { prestigeUpgrades, medalUpgrades } from "../data/prestige.js";
 import { questDefinitions } from "../data/quests.js";
@@ -161,6 +166,8 @@ export class DOMBottomPanel {
         else gs.advanceStage();
         break;
       case "hire": gs.bulkHire(id, this.buyQty); break;
+      case "deployStaff": gs.deployStaff(id); this.refresh(); break;
+      case "undeployStaff": gs.undeployStaff(id); this.refresh(); break;
       case "setBuyQty": this.buyQty = (id === "max" ? "max" : Number(id)); this.refresh(); break;
       case "getEvent": if (gs.eventReady()) { this.currentEvent = this._pickEvent(); gs.uiEventOpen = true; this.refresh(); } break;
       case "eventChoice": {
@@ -319,6 +326,8 @@ export class DOMBottomPanel {
     };
     const cards = staffDefinitions.map((s) => {
       const lv = gs.staffLevel(s.id);
+      const rank = staffRankForLevel(lv);
+      const deployed = gs.staffDeployed(s.id);
       const plan = gs.staffBulkPlan(s.id, this.buyQty);
       const can = plan.levels > 0 && gs.data.votes >= plan.voteCost && gs.data.explain >= plan.explainCost;
       const skill = s.skill ? (gs.staffSkillActive(s.id) ? s.skill.name : `스킬 Lv.${s.skill.unlockLevel}`) : "";
@@ -328,19 +337,35 @@ export class DOMBottomPanel {
       const synLabel = synFac ? `<span class="gp-staff__syn${synActive ? " gp-staff__syn--on" : ""}">◈ ${synFac.name} 시너지</span>` : "";
       const rarityHex = rarityColors[s.rarity] || 0xd8c4a0;
       const lightRarity = isLightColor(rarityHex) ? " gp-staff--light-rarity" : "";
+      const slotsFull = gs.staffSlots().length >= STAFF_SLOT_LIMIT;
+      const deployButton = lv <= 0
+        ? `<span class="gp-staff__deploy gp-staff__deploy--locked">채용 후 배치</span>`
+        : deployed
+          ? `<button class="gp-staff__deploy gp-staff__deploy--on" data-action="undeployStaff" data-id="${s.id}">현장 근무 · 대기 전환</button>`
+          : `<button class="gp-staff__deploy${slotsFull ? " gp-staff__deploy--locked" : ""}" ${slotsFull ? "disabled aria-disabled=\"true\"" : `data-action="deployStaff" data-id="${s.id}"`}>${slotsFull ? "빈 슬롯 필요" : "현장에 배치"}</button>`;
+      const nextRank = [5, 10, 15, 20].find((level) => level > lv);
       // P0 fix: show 해명 cost in hire button (two-line pattern); add gp-btn--ready glow when affordable
-      return `<div class="gp-staff${lightRarity}" style="--rarity-color:${hex(rarityHex)}">
-        <div class="gp-staff__dot" style="background-color:${hex(s.color)};background-image:url('${workerIconUri()}')"></div>
-        <div class="gp-staff__body"><div class="gp-staff__name">${s.name}<span class="gp-staff__rar">${s.rarityName}</span></div><div class="gp-staff__sub">Lv.${lv} · ${skill}</div><div class="gp-staff__sub">${synLabel}</div></div>
-        <button class="gp-btn gp-btn--sm gp-btn--upgrade ${can ? "gp-btn--ready" : "gp-btn--disabled"}" data-action="hire" data-id="${s.id}">${shortNumber(plan.voteCost)}표<small>${this.buyQty !== 1 ? (this.buyQty === "max" ? (plan.levels > 0 ? `MAX +${plan.levels}` : "MAX") : `×${plan.levels || this.buyQty}`) : `${shortNumber(plan.explainCost)}해명`}</small></button></div>`;
+      return `<div class="gp-staff${lightRarity}${deployed ? " gp-staff--deployed" : ""}" style="--rarity-color:${hex(rarityHex)}">
+        <div class="gp-staff__dot gp-staff__dot--r${rank.tier}" style="background-color:${hex(s.color)};background-image:url('${workerIconUri(rank.tier)}')"><span>${rank.tier || ""}</span></div>
+        <div class="gp-staff__body"><div class="gp-staff__name">${s.name}<span class="gp-staff__rar">${s.rarityName}</span></div><div class="gp-staff__sub">Lv.${lv} · ${rank.name}${nextRank ? ` · Lv.${nextRank} 승급` : " · 최고 직급"}</div><div class="gp-staff__sub">${skill} ${synLabel}</div></div>
+        <button class="gp-btn gp-btn--sm gp-btn--upgrade ${can ? "gp-btn--ready" : "gp-btn--disabled"}" data-action="hire" data-id="${s.id}">${plan.levels > 0 ? `${shortNumber(plan.voteCost)}표` : "최대"}<small>${this.buyQty !== 1 ? (this.buyQty === "max" ? (plan.levels > 0 ? `MAX +${plan.levels}` : "MAX") : `×${plan.levels || this.buyQty}`) : (plan.levels > 0 ? `${shortNumber(plan.explainCost)}해명` : `Lv.${lv}`)}</small></button>
+        <div class="gp-staff__field"><span>${staffDeploymentEffectText(s.id, lv)}</span>${deployButton}</div></div>`;
     }).join("");
     // FIX P2: multiplier shown as "+69% 생산 보너스" sub-label (not "x1.69" debug-looking number in title)
     const mult = gs.staffMultiplierFor(gs.data);
     const multLabel = mult < 10
       ? `<span class="gp-card__gain">+${((mult - 1) * 100).toFixed(0)}% 생산 보너스</span>`
       : `<span class="gp-card__gain">x${mult.toFixed(1)} 생산</span>`;
+    const deployedSlots = gs.staffSlots();
+    const slotCards = Array.from({ length: STAFF_SLOT_LIMIT }, (_, index) => {
+      const id = deployedSlots[index];
+      if (!id) return `<div class="gp-fieldslot gp-fieldslot--empty"><span>${index + 1}</span><b>빈 자리</b><small>직원을 배치하세요</small></div>`;
+      const staff = staffDefinitions.find((item) => item.id === id);
+      const rank = staffRankForLevel(gs.staffLevel(id));
+      return `<button class="gp-fieldslot gp-fieldslot--filled" data-action="undeployStaff" data-id="${id}" aria-label="${staff.role} ${rank.name} 현장 해제 · 대기 전환" style="--staff-color:${hex(staff.color)}"><span>${index + 1}</span><b>${staff.role} · ${rank.name}</b><small>${staffDeploymentEffectText(id, gs.staffLevel(id))}</small></button>`;
+    }).join("");
     // Scroll fade is a real div (not ::after) for reliable WebView support
-    this.panel.innerHTML = `<div class="gp-paneltitle gp-paneltitle--row">직원 채용 ${multLabel}${this._qtyToggle()}</div><div class="gp-stafflist-wrap"><div class="gp-stafflist">${cards}</div><div class="gp-stafflist-fade" aria-hidden="true"></div></div>`;
+    this.panel.innerHTML = `<div class="gp-paneltitle gp-paneltitle--row gp-paneltitle--crew"><span class="gp-crewtitle">현장 개표팀 <span class="gp-fieldcount">${deployedSlots.length}/${STAFF_SLOT_LIMIT}</span></span>${multLabel}${this._qtyToggle()}</div><div class="gp-fieldslots">${slotCards}</div><div class="gp-stafflist-wrap"><div class="gp-stafflist">${cards}</div><div class="gp-stafflist-fade" aria-hidden="true"></div></div>`;
   }
 
   _renderEvents() {
@@ -358,7 +383,11 @@ export class DOMBottomPanel {
         const parts = [];
         if (eff.votes) parts.push(`<i class="${eff.votes > 0 ? "gp-fx--up" : "gp-fx--dn"}">표 ${eff.votes > 0 ? "+" : ""}${shortNumber(Math.round(eff.votes > 0 ? eff.votes * scale : eff.votes))}</i>`);
         if (eff.explain) parts.push(`<i class="${eff.explain > 0 ? "gp-fx--up" : "gp-fx--dn"}">해명 ${eff.explain > 0 ? "+" : ""}${shortNumber(Math.round(eff.explain > 0 ? eff.explain * scale : eff.explain))}</i>`);
-        if (eff.trust) parts.push(`<i class="${eff.trust > 0 ? "gp-fx--up" : "gp-fx--dn"}">믿음 ${eff.trust > 0 ? "+" : ""}${eff.trust}</i>`);
+        if (eff.trust) {
+          const trust = gs.eventTrustEffect ? gs.eventTrustEffect(eff.trust) : eff.trust;
+          const shown = Number.isInteger(trust) ? trust : trust.toFixed(1);
+          parts.push(`<i class="${trust > 0 ? "gp-fx--up" : "gp-fx--dn"}">믿음 ${trust > 0 ? "+" : ""}${shown}</i>`);
+        }
         if ((eff.trust || 0) >= 12) parts.push(`<i class="gp-fx--cider">🔥사이다</i>`);
         return `<span class="gp-event__fx">${parts.join("")}</span>`;
       };

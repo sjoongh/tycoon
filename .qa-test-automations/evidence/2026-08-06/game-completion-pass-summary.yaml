@@ -1,0 +1,120 @@
+date: 2026-08-06
+mode: full-release-gate
+target: game-completion-pass
+duration_ms: 1800000
+unit:
+  files: 19
+  total: 112
+  passed: 112
+  failed: 0
+  skipped: 0
+integration:
+  total: 6
+  passed: 6
+  failed: 0
+  checks:
+    - npm-run-build
+    - custom-phaser-integrity
+    - stock-phaser-rollback
+    - capacitor-android-sync-doctor
+    - production-dependency-audit
+    - _balancesim.mjs
+e2e:
+  total: 10
+  passed: 10
+  failed: 0
+  scripts:
+    - _offlinecarrytest.mjs
+    - _bosschecktest.mjs
+    - _operationfevertest.mjs
+    - _uireadabilitytest.mjs
+    - _mobileperformancetest.mjs
+    - _startupfonttest.mjs
+    - _phasercoretest.mjs
+    - _eventchainplaytest.mjs
+    - _staffdeploymenttest.mjs
+    - _pwaupdatetest.mjs
+hands_on:
+  total: 1
+  passed: 1
+  game_state_injection: false
+  pace: casual-active
+  duration_sec: 600
+  tap_interval_ms: 330
+  taps: 1721
+  first_prestige_eligible_sec: 495.54
+  final_area: 5
+  upgrades: 57
+  events: 12
+  event_chain_endings: 2
+  operation_choices: 1
+  fever_cycles: 2
+  fever_finishers: 2
+  boss_cycles: 1
+  boss_successes: 1
+  boss_failures: 0
+  browser_errors: 0
+balance:
+  first_stage_base: 44000
+  repeat_stage_base: 24000
+  target_first_sec: [480, 720]
+  target_repeat_sec: [300, 480]
+  simulated_runs_sec: [687, 405, 426]
+  deep_run_area: 11
+  deep_run_total_sec: 1395
+  status: passed
+staff:
+  slot_limit: 3
+  rank_boundaries: [5, 10, 15, 20]
+  base_effect_preserved: true
+  compact_min_target_px: 52
+  status: passed
+pwa:
+  local_preview: http://localhost:4178
+  firebase_preview: https://gaepyo-tycoon--game-completion-pass-44eivfl3.web.app
+  firebase_preview_expires_kst: 2026-08-07T23:58:18+09:00
+  manifest_status: 200
+  privacy_status: 200
+  sw_cache_control: no-cache, no-store, must-revalidate
+  save_before_update: true
+  later_without_activation: true
+  duplicate_apply_blocked: true
+  external_controllerchange_forced_reload: false
+  save_failure_recoverable: true
+  activation_timeout_recoverable: true
+  build_version_injected: true
+  shell_http_cache_bypassed: true
+  offline_reload: passed
+security:
+  production_vulnerabilities: 0
+  full_audit_moderate: 3
+  full_audit_high: 0
+  full_audit_critical: 0
+  residual_path: '@capacitor/cli -> xcode -> uuid'
+  forced_breaking_downgrade_applied: false
+phaser:
+  esbuild_exact: 0.28.1
+  raw_bytes: 662199
+  gzip_bytes: 184363
+  sha256: 44eb878cf64162891a6c7804c0709a8caa686f59c0e9fda1ef4afaa8befb74d0
+  unsupported_factories: 0
+  stock_rollback: passed
+cross_review:
+  tier: high
+  panel: 2
+  effort: xhigh
+  provider: anthropic
+  model: claude-fable-5
+  support_model: claude-haiku-4-5-20251001
+  prior_closure_verdict: PASS
+  prior_closure_cost_usd: 2.558219
+  current_head_gate: external-aidp-ledger-is-authoritative
+validation:
+  diff_check: passed
+  firebase_preview: passed
+  production_deploy: pending-pr-ci
+  pr_ci: pending-pr
+known_non_blocking:
+  - Firebase and Phaser output chunks over 500 kB retain the existing Vite warning.
+  - Three moderate dev-only uuid findings require a forced Capacitor CLI downgrade to auto-fix.
+  - Preview URL expires after one day.
