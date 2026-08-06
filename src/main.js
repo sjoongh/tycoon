@@ -19,6 +19,21 @@ import { initCloud, openLeaderboard, saveCloud, submitScore, logEvt } from "./cl
 const gameState = new GameState();
 const sfx = new Sfx(gameState);
 const notifications = new Notifications(gameState);
+let cloudInitPromise = null;
+let cloudStartTimer = null;
+const startCloud = () => {
+  if (cloudInitPromise) return cloudInitPromise;
+  clearTimeout(cloudStartTimer);
+  window.removeEventListener("pointerdown", startCloud, true);
+  window.removeEventListener("keydown", startCloud, true);
+  cloudInitPromise = initCloud(gameState);
+  return cloudInitPromise;
+};
+// Firebase는 첫 화면·폰트와 네트워크를 다투지 않게 첫 사용자 의도에서 시작한다.
+// 사용자가 가만히 있어도 5초 뒤에는 동기화를 시작해 멀티기기 세이브를 계속 보장한다.
+window.addEventListener("pointerdown", startCloud, { once: true, capture: true, passive: true });
+window.addEventListener("keydown", startCloud, { once: true, capture: true });
+cloudStartTimer = setTimeout(startCloud, 5000);
 
 if ("serviceWorker" in navigator && import.meta.env.PROD) {
   window.addEventListener("load", () => {
@@ -64,8 +79,10 @@ document.getElementById("game").appendChild(uiLayer);
 // 안드로이드 앱 백그라운드 전환 시 세이브 보장용 훅(로컬 + 클라우드)
 window.__gpSave = () => { try { gameState.save(false); saveCloud(); } catch {} };
 
-// 랭킹 보기 버튼 → 네이티브 리더보드
-document.addEventListener("gp:open-leaderboard", () => openLeaderboard());
+// 랭킹은 클라우드 준비 후 연다. 첫 입력 전이라도 이 경로가 초기화를 보장한다.
+document.addEventListener("gp:open-leaderboard", () => {
+  openLeaderboard(startCloud());
+});
 
 // gameState는 preBoot에서 registry에 동기 주입되므로 폴링 없이 바로 마운트
 game.events.once("ready", () => {
@@ -77,7 +94,6 @@ game.events.once("ready", () => {
   sfx.mount();
   // 네이티브(안드로이드) 통합 — 웹에서는 no-op
   initNative();
-  initCloud(gameState);
   // 구역이 오를 때 랭킹 점수 갱신 + 분석
   let _prevArea = gameState.data.stage.area;
   gameState.on("changed", () => {

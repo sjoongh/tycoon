@@ -1,0 +1,41 @@
+cases:
+  - id: TC-MRT-001
+    scenario: SC-MRT-001
+    description: 100ms 이상 유휴 뒤 첫 changed 이벤트가 동기적으로 화면에 반영된다
+    type: normal
+    expected: { result: success, leading_immediate: true }
+  - id: TC-MRT-002
+    scenario: SC-MRT-001
+    description: 60회 연속 상태 변경에서 각 일반 탭의 전체 교체가 12회 이하이고 emit p95가 1.8ms 이하다
+    type: boundary
+    expected: { result: success, max_replacements: 12, max_emit_p95_ms: 1.8 }
+  - id: TC-MRT-003
+    scenario: SC-MRT-002
+    description: 숨김 중 만료된 trailing 갱신이 복귀 때 한 번 반영되고 다음 burst도 정상 처리된다
+    type: error
+    expected: { result: success, restore_renders: 1 }
+  - id: TC-MRT-004
+    scenario: SC-MRT-002
+    description: pending 상태의 강제 refresh와 destroy 취소 뒤 예약 렌더가 재실행되지 않는다
+    type: error
+    expected: { result: success, stale_renders: 0 }
+  - id: TC-MRT-005
+    scenario: SC-MRT-003
+    description: 목표 값 변경은 전체 교체 없이 ID별 수치만 갱신하고 구조 변경은 정확히 한 번 재생성한다
+    type: boundary
+    expected: { result: success, value_replacements: 0, structure_replacements: 1, scroll_preserved: true }
+  - id: TC-MRT-006
+    scenario: SC-MRT-003
+    description: HUD 값·ARIA·진행바와 390px 가로 폭이 기존 가독성 회귀를 통과한다
+    type: normal
+    expected: { result: success, overflow: false }
+  - id: TC-MRT-007
+    scenario: SC-MRT-004
+    description: 첫 700ms에는 Firebase SDK 요청이 없고 첫 입력 이후 기존 Firestore SDK가 로드된다
+    type: boundary
+    expected: { result: success, startup_sdk_requests: 0 }
+  - id: TC-MRT-008
+    scenario: SC-MRT-005
+    description: 전체 단위·빌드·오프라인·보스·작전피버·가독성·직접 플레이 회귀가 통과한다
+    type: error
+    expected: { result: success, errors: 0 }

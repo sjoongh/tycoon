@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "taskId": "2026-08-06_mobile-dom-runtime-optimization",
+  "title": "모바일 DOM 런타임 최적화",
+  "goal": "모바일 연타 중 DOM 전체 교체를 제거하고 초기 로드 및 프레임 지연을 측정 가능한 수준으로 개선한다",
+  "root": "/Users/manager/aidp/gaepyo-master",
+  "startedAt": "2026-08-06T11:31:58+09:00",
+  "baseSha": "42b176e9057d61715e5479d1a319a04278922dc2",
+  "branch": "main",
+  "dirtyAtStart": true,
+  "requiredChecks": [
+    "npm-test"
+  ],
+  "status": "active",
+  "latestEvidence": null,
+  "latestEvidenceSha256": null,
+  "closedAt": null
+}

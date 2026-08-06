@@ -4,6 +4,7 @@ import { FIREBASE_CONFIG, cloudEnabled } from "./firebaseConfig.js";
 
 const NICK_KEY = "gp-nick";
 let _fb = null;       // { app, auth, db }
+let _analyticsPromise = null;
 let _uid = null;
 let _gs = null;
 let _ready = false;
@@ -29,22 +30,31 @@ async function fb() {
   const app = initializeApp(FIREBASE_CONFIG);
   const auth = getAuth(app);
   const db = fs.getFirestore(app);
-  // Analytics — 지원 환경에서만(세션·화면 자동 집계 + 커스텀 이벤트)
-  let analytics = null;
-  try {
-    const an = await import("firebase/analytics");
-    if (await an.isSupported()) { analytics = an.getAnalytics(app); _fb_logEvent = an.logEvent; }
-  } catch {}
-  _fb = { app, auth, db, fs, signInAnonymously, analytics };
+  _fb = { app, auth, db, fs, signInAnonymously };
   return _fb;
 }
 let _fb_logEvent = null;
+
+async function analyticsClient() {
+  if (_analyticsPromise) return _analyticsPromise;
+  _analyticsPromise = (async () => {
+    try {
+      const [{ app }, analytics] = await Promise.all([fb(), import("firebase/analytics")]);
+      if (!(await analytics.isSupported())) return null;
+      _fb_logEvent = analytics.logEvent;
+      return analytics.getAnalytics(app);
+    } catch {
+      return null;
+    }
+  })();
+  return _analyticsPromise;
+}
 
 // 게임 이벤트 분석 로깅 — 설정/지원 안 되면 no-op.
 export async function logEvt(name, params) {
   if (!cloudEnabled()) return;
   try {
-    const { analytics } = await fb();
+    const analytics = await analyticsClient();
     if (analytics && _fb_logEvent) _fb_logEvent(analytics, name, params || {});
   } catch {}
 }
@@ -123,8 +133,16 @@ async function fetchTop(n = 50) {
 }
 
 // ── 랭킹 모달 UI ──
-export async function openLeaderboard() {
+export async function openLeaderboard(readyPromise = null) {
   if (!cloudEnabled()) return;
+  if (readyPromise) {
+    renderLeaderboard("클라우드 연결 중…", null);
+    await readyPromise;
+    if (!_ready) {
+      renderLeaderboard("클라우드에 연결하지 못했어요. 네트워크를 확인해 주세요.", null);
+      return;
+    }
+  }
   // 닉네임 없으면 먼저 입력
   if (!getNick()) {
     const ok = await promptNickname();
