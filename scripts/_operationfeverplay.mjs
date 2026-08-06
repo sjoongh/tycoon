@@ -13,7 +13,7 @@ if (!["localhost", "127.0.0.1"].includes(parsedUrl.hostname)) {
   throw new Error(`REFUSING to run hands-on play against non-local host: ${parsedUrl.hostname}`);
 }
 
-const evidenceDir = ".qa-test-automations/evidence/2026-08-05/screenshots";
+const evidenceDir = process.env.PLAY_EVIDENCE_DIR || ".qa-test-automations/evidence/2026-08-05/screenshots";
 await mkdir(evidenceDir, { recursive: true });
 const browser = await chromium.launch({
   args: [
@@ -70,6 +70,7 @@ const readState = () => page.evaluate(() => {
     bossActive: gameState.bossActive?.() || false,
     bossArea: data.boss?.area || 0,
     bossOutcome: data.boss?.outcome || null,
+    bossPattern: gameState.bossPatternStatus?.()?.phase?.type || null,
   };
 });
 
@@ -100,6 +101,7 @@ try {
   let bossCycles = 0;
   let bossSuccesses = 0;
   let bossFailures = 0;
+  const bossPatternsSeen = new Set();
   let lastActive = false;
   let lastRecovering = false;
   let lastBossActive = false;
@@ -108,8 +110,24 @@ try {
   let nextEventAt = 8000;
   let facilityIndex = 0;
 
+  const recordState = (state) => {
+    if (!state) return;
+    if (state.feverActive && !lastActive) feverCycles += 1;
+    if (state.feverRecovering && !lastRecovering) recoveryCycles += 1;
+    if (state.bossActive && !lastBossActive) bossCycles += 1;
+    if (!state.bossActive && lastBossActive) {
+      if (state.bossOutcome === "success") bossSuccesses += 1;
+      else if (state.bossOutcome) bossFailures += 1;
+    }
+    if (state.bossPattern) bossPatternsSeen.add(state.bossPattern);
+    lastActive = state.feverActive;
+    lastRecovering = state.feverRecovering;
+    lastBossActive = state.bossActive;
+  };
+
   while (Date.now() - startedAt < durationMs) {
     const elapsed = Date.now() - startedAt;
+    recordState(await readState());
 
     let operationCard = requestedFamily === "adaptive"
       ? page.locator(".gp-opcard:has(.gp-opcard__meta em)").first()
@@ -121,6 +139,29 @@ try {
       await clickIfVisible("[data-operation-confirm]");
       operationChoices += 1;
       await page.waitForTimeout(80);
+      continue;
+    }
+
+    const rapidBoss = page.locator('.gp-boss [data-boss-action="rapid"]');
+    const expectedBoss = page.locator(".gp-boss .gp-boss__action--expected");
+    const hotTimingBoss = page.locator('.gp-boss__controls--hot [data-boss-action="timing"]');
+    if (await rapidBoss.isVisible().catch(() => false)) {
+      await rapidBoss.click().catch(() => {});
+      await page.waitForTimeout(55);
+      continue;
+    }
+    if (await expectedBoss.isVisible().catch(() => false)) {
+      await expectedBoss.click().catch(() => {});
+      await page.waitForTimeout(55);
+      continue;
+    }
+    if (await hotTimingBoss.isVisible().catch(() => false)) {
+      await hotTimingBoss.click().catch(() => {});
+      await page.waitForTimeout(55);
+      continue;
+    }
+    if (await page.locator('.gp-boss [data-boss-action="timing"]').isVisible().catch(() => false)) {
+      await page.waitForTimeout(45);
       continue;
     }
 
@@ -165,16 +206,7 @@ try {
 
     const state = await readState();
     if (state) {
-      if (state.feverActive && !lastActive) feverCycles += 1;
-      if (state.feverRecovering && !lastRecovering) recoveryCycles += 1;
-      if (state.bossActive && !lastBossActive) bossCycles += 1;
-      if (!state.bossActive && lastBossActive) {
-        if (state.bossOutcome === "success") bossSuccesses += 1;
-        else if (state.bossOutcome) bossFailures += 1;
-      }
-      lastActive = state.feverActive;
-      lastRecovering = state.feverRecovering;
-      lastBossActive = state.bossActive;
+      recordState(state);
       if (elapsed >= nextProgressAt) {
         console.log(JSON.stringify({ kind: "progress", elapsedSec: Math.round(elapsed / 1000), taps, operationChoices, feverCycles, recoveryCycles, finisherClicks, bossCycles, bossSuccesses, bossFailures, state }));
         nextProgressAt += 30000;
@@ -196,6 +228,7 @@ try {
     bossCycles,
     bossSuccesses,
     bossFailures,
+    bossPatternsSeen: [...bossPatternsSeen],
     state,
     errors,
   };

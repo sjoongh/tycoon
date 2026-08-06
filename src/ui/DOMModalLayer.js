@@ -29,6 +29,7 @@ export class DOMModalLayer {
     this._onOpenOperations = () => this._showOperationStatus();
     this._onBossStart = (result) => this._showBossChallenge(result);
     this._onBossEnd = (result) => this._resolveBossChallenge(result);
+    this._onBossAction = (result) => this._showBossActionFeedback(result);
   }
 
   mount(parent) {
@@ -40,6 +41,7 @@ export class DOMModalLayer {
     this.gameState.on("comm-collapse", this._onCommCollapse);
     this.gameState.on("boss-start", this._onBossStart);
     this.gameState.on("boss-end", this._onBossEnd);
+    this.gameState.on("boss-action", this._onBossAction);
     document.addEventListener("gp:prestige-confirm", this._onPrestigeConfirm);
     document.addEventListener("gp:gacha-result", this._onGachaResult);
     document.addEventListener("gp:gacha-result10", this._onGachaResult10);
@@ -172,9 +174,22 @@ export class DOMModalLayer {
       </div>
       <div class="gp-boss__desc" data-boss-desc>${definition.desc || "제한 시간 안에 처리력을 증명하세요."}</div>
       <div class="gp-boss__meter" aria-hidden="true"><span data-boss-fill></span></div>
-      <div class="gp-boss__numbers"><span>처리량 <b data-boss-progress>0</b></span><em>화면 탭 + 초당 생산</em></div>
+      <div class="gp-boss__numbers"><span>검증 <b data-boss-progress>0</b></span><em data-boss-phase-label>직접 조작</em></div>
+      <div class="gp-boss__pattern" data-boss-pattern>
+        <div class="gp-boss__pattern-head"><b data-boss-pattern-label>검증 패턴</b><span data-boss-phase>1 / 1</span></div>
+        <p data-boss-instruction></p>
+        <div class="gp-boss__controls" data-boss-controls></div>
+        <div class="gp-boss__feedback" data-boss-feedback role="status" aria-live="polite">준비!</div>
+      </div>
       <div class="gp-boss__timer" aria-hidden="true"><span data-boss-timer-fill></span></div>
       <button type="button" class="gp-boss__skip" data-boss-skip>기본 보상으로 완료</button>`;
+    boss.addEventListener("click", (event) => {
+      const control = event.target.closest("[data-boss-action]");
+      if (!control) return;
+      event.preventDefault();
+      event.stopPropagation();
+      this.gameState.bossAction?.(control.dataset.bossAction);
+    });
     boss.querySelector("[data-boss-skip]").addEventListener("click", () => this.gameState.skipBoss?.());
     this._bossEl = boss;
     this.root.appendChild(boss);
@@ -198,10 +213,93 @@ export class DOMModalLayer {
     const pct = Math.min(1, progress / target);
     const remaining = this.gameState.bossRemainingMs?.(now) || 0;
     const remainingPct = Math.min(1, remaining / BOSS_DURATION_MS);
+    const pattern = this.gameState.bossPatternStatus?.(now);
     boss.querySelector("[data-boss-fill]").style.transform = `scaleX(${pct})`;
     boss.querySelector("[data-boss-timer-fill]").style.transform = `scaleX(${remainingPct})`;
     boss.querySelector("[data-boss-progress]").textContent = `${shortNumber(progress)} / ${shortNumber(target)}`;
     boss.querySelector("[data-boss-time]").textContent = `${Math.max(0, Math.ceil(remaining / 1000))}초`;
+    this._renderBossPattern(pattern);
+  }
+
+  _renderBossPattern(status) {
+    const boss = this._bossEl;
+    const pattern = boss?.querySelector("[data-boss-pattern]");
+    if (!pattern) return;
+    if (!status) {
+      pattern.hidden = true;
+      const phaseLabel = boss.querySelector("[data-boss-phase-label]");
+      if (phaseLabel) phaseLabel.textContent = "화면 탭 + 초당 생산";
+      return;
+    }
+    pattern.hidden = false;
+    const { phase } = status;
+    const key = `${status.phaseIndex}:${phase.type}`;
+    const controls = boss.querySelector("[data-boss-controls]");
+    boss.querySelector("[data-boss-pattern-label]").textContent = phase.label;
+    boss.querySelector("[data-boss-phase]").textContent = `${status.phaseIndex + 1} / ${status.phaseCount}`;
+    boss.querySelector("[data-boss-instruction]").textContent = phase.instruction;
+    boss.querySelector("[data-boss-phase-label]").textContent = `${status.phaseIndex + 1}단계 · ${status.phaseProgress}/${phase.target}`;
+    if (controls.dataset.phaseKey !== key) {
+      const shouldRestoreFocus = controls.contains(document.activeElement);
+      controls.dataset.phaseKey = key;
+      if (phase.type === "rapid") {
+        controls.innerHTML = `<button type="button" class="gp-boss__action gp-boss__action--rapid" data-boss-action="rapid"><span aria-hidden="true">✦</span> 처리 도장!</button>`;
+      } else if (phase.type === "alternate") {
+        controls.innerHTML = `
+          <button type="button" class="gp-boss__action gp-boss__action--side" data-boss-action="left">← 왼쪽 검인</button>
+          <button type="button" class="gp-boss__action gp-boss__action--side" data-boss-action="right">오른쪽 검인 →</button>`;
+      } else {
+        controls.innerHTML = `
+          <div class="gp-boss__timing" aria-hidden="true">
+            <span class="gp-boss__timing-zone">NOW</span>
+            <i data-boss-timing-marker></i>
+          </div>
+          <button type="button" class="gp-boss__action gp-boss__action--timing" data-boss-action="timing"><span data-boss-timing-status>대기</span> · 지금 봉인!</button>`;
+      }
+      if (shouldRestoreFocus) requestAnimationFrame(() => controls.querySelector("[data-boss-action]")?.focus());
+    }
+    if (phase.type === "alternate") {
+      controls.querySelectorAll("[data-boss-action]").forEach((button) => {
+        const expected = button.dataset.bossAction === status.expectedSide;
+        button.classList.toggle("gp-boss__action--expected", expected);
+        button.setAttribute("aria-label", `${button.textContent.trim()}${expected ? ", 지금 누를 차례" : ""}`);
+      });
+    }
+    if (phase.type === "timing") {
+      const marker = controls.querySelector("[data-boss-timing-marker]");
+      const zone = controls.querySelector(".gp-boss__timing-zone");
+      const timingStatus = controls.querySelector("[data-boss-timing-status]");
+      const windowPct = Math.min(0.8, Math.max(0.1, Number(phase.windowPct) || 0.3));
+      const wasHot = controls.dataset.timingHot === "true";
+      if (marker) marker.style.left = `${Math.min(1, Math.max(0, status.timingPosition)) * 100}%`;
+      if (zone) {
+        zone.style.left = `${(0.5 - windowPct / 2) * 100}%`;
+        zone.style.width = `${windowPct * 100}%`;
+      }
+      if (timingStatus) timingStatus.textContent = status.timingHot ? "NOW" : "대기";
+      if (status.timingHot && !wasHot) {
+        const live = boss.querySelector("[data-boss-live]");
+        if (live) live.textContent = "NOW. 지금 기록을 봉인하세요.";
+      }
+      controls.dataset.timingHot = status.timingHot ? "true" : "false";
+      controls.classList.toggle("gp-boss__controls--hot", status.timingHot);
+    } else {
+      controls.dataset.timingHot = "false";
+      controls.classList.remove("gp-boss__controls--hot");
+    }
+  }
+
+  _showBossActionFeedback(result = {}) {
+    const boss = this._bossEl;
+    const feedback = boss?.querySelector("[data-boss-feedback]");
+    if (!boss || !feedback || !result.accepted) return;
+    feedback.textContent = result.message || (result.correct ? "정확합니다!" : "다시 확인하세요!");
+    boss.classList.toggle("gp-boss--correct", !!result.correct);
+    boss.classList.toggle("gp-boss--wrong", !result.correct);
+    clearTimeout(this._bossFeedbackTimer);
+    this._bossFeedbackTimer = setTimeout(() => {
+      boss.classList.remove("gp-boss--correct", "gp-boss--wrong");
+    }, 260);
   }
 
   _resolveBossChallenge(result) {
@@ -219,6 +317,7 @@ export class DOMModalLayer {
       const timerFill = boss.querySelector("[data-boss-timer-fill]");
       const live = boss.querySelector("[data-boss-live]");
       const skip = boss.querySelector("[data-boss-skip]");
+      const pattern = boss.querySelector("[data-boss-pattern]");
       if (title) title.textContent = result.success ? "정밀 검표 성공!" : result.outcome === "skipped" ? "기본 완료 선택" : "시간 종료";
       if (desc) desc.textContent = result.success
         ? `완료 보상 +${shortNumber(result.bonusVotes)}표 확보`
@@ -230,6 +329,7 @@ export class DOMModalLayer {
         ? `최종 검증 성공. 완료 보상 ${shortNumber(result.bonusVotes)}표 추가.`
         : "최종 검증 기본 완료. 페널티 없이 진행합니다.";
       if (skip) skip.remove();
+      if (pattern) pattern.hidden = true;
       if (result.success) {
         const fill = boss.querySelector("[data-boss-fill]");
         if (fill) fill.style.transform = "scaleX(1)";
@@ -640,6 +740,7 @@ export class DOMModalLayer {
     this.gameState.off("comm-collapse", this._onCommCollapse);
     this.gameState.off("boss-start", this._onBossStart);
     this.gameState.off("boss-end", this._onBossEnd);
+    this.gameState.off("boss-action", this._onBossAction);
     document.removeEventListener("gp:prestige-confirm", this._onPrestigeConfirm);
     document.removeEventListener("gp:gacha-result", this._onGachaResult);
     document.removeEventListener("gp:gacha-result10", this._onGachaResult10);
@@ -649,6 +750,7 @@ export class DOMModalLayer {
     clearTimeout(this._bannerHoldTimer);
     clearTimeout(this._bannerExitTimer);
     clearTimeout(this._bossAdvanceTimer);
+    clearTimeout(this._bossFeedbackTimer);
     clearInterval(this._bossClockTimer);
     this._feverReportEl?.remove();
     this._bossEl?.remove();

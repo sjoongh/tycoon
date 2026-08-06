@@ -7,7 +7,7 @@ if (!["localhost", "127.0.0.1"].includes(parsedUrl.hostname)) {
   throw new Error(`REFUSING to run boss E2E against non-local host: ${parsedUrl.hostname}`);
 }
 
-const evidenceDir = ".qa-test-automations/evidence/2026-08-05/screenshots";
+const evidenceDir = ".qa-test-automations/evidence/2026-08-06/screenshots";
 await mkdir(evidenceDir, { recursive: true });
 const browser = await chromium.launch({
   args: [
@@ -52,6 +52,11 @@ const chooseOperation = async () => {
   await page.waitForTimeout(100);
 };
 
+const waitAndSealTiming = async () => {
+  await page.waitForFunction(() => document.querySelector(".gp-boss__controls")?.classList.contains("gp-boss__controls--hot"));
+  await page.locator('[data-boss-action="timing"]').click();
+};
+
 try {
   await page.addInitScript(() => {
     if (!sessionStorage.getItem("ztest-qa-gaepyo-boss-cleared")) {
@@ -94,31 +99,36 @@ try {
       overflow: document.documentElement.scrollWidth > window.innerWidth,
     };
   });
-  if (activeState.area !== 3 || activeState.target < 40 || activeState.remaining < 7000 || activeState.bossCards !== 1
+  if (activeState.area !== 3 || activeState.target !== 8 || activeState.remaining < 7000 || activeState.bossCards !== 1
     || activeState.operationModals !== 0 || activeState.banners !== 0 || activeState.skip.width < 44 || activeState.skip.height < 44
     || !activeState.worldTitleHidden || activeState.overflow) {
     throw new Error(`active boss UI mismatch: ${JSON.stringify(activeState)}`);
   }
 
   const clicksBefore = await page.evaluate(() => window.__game.registry.get("gameState").data.stats.totalClicks);
-  await page.mouse.click(195, 360);
+  await page.waitForTimeout(250);
+  await page.screenshot({ path: `${evidenceDir}/SC-BOSS-PATTERN-001-rapid-mobile.png` });
+  await page.mouse.click(195, 130);
   await page.waitForTimeout(100);
   const tapState = await page.evaluate(() => {
     const gameState = window.__game.registry.get("gameState");
     return { clicks: gameState.data.stats.totalClicks, progress: gameState.data.boss.progress };
   });
-  if (tapState.clicks !== clicksBefore + 1 || tapState.progress <= 0) throw new Error(`boss overlay blocked world tap: ${JSON.stringify(tapState)}`);
-  await page.screenshot({ path: `${evidenceDir}/SC-BOSS-001-step-1-active-mobile.png` });
-
-  await page.evaluate(() => {
-    const gameState = window.__game.registry.get("gameState");
-    gameState.addBossProgress(gameState.data.boss.target);
+  if (tapState.clicks !== clicksBefore + 1 || tapState.progress !== 1) throw new Error(`boss overlay blocked world tap: ${JSON.stringify(tapState)}`);
+  const rapid = page.locator('[data-boss-action="rapid"]');
+  const rapidSize = await rapid.evaluate((element) => {
+    const rect = element.getBoundingClientRect();
+    return { width: rect.width, height: rect.height };
   });
+  if (rapidSize.width < 44 || rapidSize.height < 44) throw new Error(`rapid target too small: ${JSON.stringify(rapidSize)}`);
+  await rapid.focus();
+  await rapid.press("Enter");
+  for (let index = 0; index < 6; index += 1) await rapid.click();
   await page.locator(".gp-boss--success").waitFor({ state: "visible" });
   await page.waitForTimeout(120);
   const successText = await page.locator(".gp-boss--success").textContent();
   if (!successText?.includes("정밀 검표 성공") || !successText.includes("완료 보상")) throw new Error(`success feedback mismatch: ${successText}`);
-  await page.screenshot({ path: `${evidenceDir}/SC-BOSS-001-step-2-success-mobile.png` });
+  await page.screenshot({ path: `${evidenceDir}/SC-BOSS-PATTERN-002-success-mobile.png` });
   await page.locator(".gp-modal--operation").waitFor({ state: "visible", timeout: 3000 });
   const successState = await page.evaluate(() => {
     const gameState = window.__game.registry.get("gameState");
@@ -146,6 +156,24 @@ try {
   await prepareArea(6);
   await page.locator(".gp-btn--boss").click();
   await page.locator(".gp-boss--active").waitFor({ state: "visible" });
+  if (!await page.locator("[data-boss-pattern-label]").textContent().then((text) => text?.includes("좌우 교대"))) {
+    throw new Error("alternate pattern label missing");
+  }
+  await page.locator('[data-boss-action="right"]').click();
+  const wrongFeedback = await page.locator("[data-boss-feedback]").textContent();
+  if (!wrongFeedback?.includes("반대쪽")) throw new Error(`wrong-side feedback mismatch: ${wrongFeedback}`);
+  await page.locator('[data-boss-action="left"]').click();
+  const alternateState = await page.evaluate(() => {
+    const gameState = window.__game.registry.get("gameState");
+    return {
+      progress: gameState.data.boss.progress,
+      expected: gameState.bossPatternStatus()?.expectedSide,
+      rightHighlighted: document.querySelector('[data-boss-action="right"]')?.classList.contains("gp-boss__action--expected"),
+    };
+  });
+  if (alternateState.progress !== 1 || alternateState.expected !== "right" || !alternateState.rightHighlighted) {
+    throw new Error(`alternate sequence mismatch: ${JSON.stringify(alternateState)}`);
+  }
   await page.evaluate(() => {
     const gameState = window.__game.registry.get("gameState");
     gameState.syncBoss(gameState.data.boss.endsAt);
@@ -160,6 +188,26 @@ try {
 
   await prepareArea(9);
   await page.locator(".gp-btn--boss").click();
+  await page.locator('[data-boss-action="timing"]').click();
+  const earlyTiming = await page.evaluate(() => ({
+    progress: window.__game.registry.get("gameState").data.boss.progress,
+    feedback: document.querySelector("[data-boss-feedback]")?.textContent,
+  }));
+  if (earlyTiming.progress !== 0 || !earlyTiming.feedback?.includes("아직")) throw new Error(`early timing accepted: ${JSON.stringify(earlyTiming)}`);
+  await waitAndSealTiming();
+  await page.waitForFunction(() => !document.querySelector(".gp-boss__controls")?.classList.contains("gp-boss__controls--hot"));
+  await waitAndSealTiming();
+  await page.locator(".gp-boss--success").waitFor({ state: "visible" });
+  await page.screenshot({ path: `${evidenceDir}/SC-BOSS-PATTERN-003-timing-success-mobile.png` });
+  await page.locator(".gp-modal--operation").waitFor({ state: "visible", timeout: 3000 });
+  const timingResult = await page.evaluate(() => window.__bossResults.at(-1));
+  if (timingResult?.area !== 9 || timingResult?.outcome !== "success" || timingResult.bonusVotes <= 0) {
+    throw new Error(`timing result mismatch: ${JSON.stringify(timingResult)}`);
+  }
+  await chooseOperation();
+
+  await prepareArea(12);
+  await page.locator(".gp-btn--boss").click();
   await page.locator(".gp-boss__skip").click();
   await page.locator(".gp-boss--base").waitFor({ state: "visible" });
   const skippedText = await page.locator(".gp-boss--base").textContent();
@@ -170,7 +218,7 @@ try {
   await chooseOperation();
 
   await page.setViewportSize({ width: 1280, height: 900 });
-  await prepareArea(12);
+  await prepareArea(18);
   await page.locator(".gp-btn--boss").click();
   await page.locator(".gp-boss--active").waitFor({ state: "visible" });
   const desktopState = await page.evaluate(() => ({
@@ -178,8 +226,6 @@ try {
     bossWidth: document.querySelector(".gp-boss").getBoundingClientRect().width,
   }));
   if (desktopState.overflow || desktopState.bossWidth > 370) throw new Error(`desktop boss layout mismatch: ${JSON.stringify(desktopState)}`);
-  await page.screenshot({ path: `${evidenceDir}/SC-BOSS-001-step-3-active-desktop.png` });
-
   await page.emulateMedia({ reducedMotion: "reduce" });
   const reducedMotion = await page.evaluate(() => ({
     cardAnimation: getComputedStyle(document.querySelector(".gp-boss")).animationName,
@@ -188,6 +234,42 @@ try {
   if (reducedMotion.cardAnimation !== "none" || reducedMotion.meterTransition !== "0s") {
     throw new Error(`reduced motion mismatch: ${JSON.stringify(reducedMotion)}`);
   }
+
+  for (let index = 0; index < 4; index += 1) await page.locator('[data-boss-action="rapid"]').click();
+  await page.waitForFunction(() => document.activeElement?.dataset?.bossAction === "left");
+  await page.keyboard.press("Enter");
+  await page.keyboard.press("Tab");
+  await page.keyboard.press("Enter");
+  await page.keyboard.press("Shift+Tab");
+  await page.keyboard.press("Enter");
+  await page.keyboard.press("Tab");
+  await page.keyboard.press("Enter");
+  await page.locator('[data-boss-action="timing"]').waitFor({ state: "visible" });
+  await page.waitForFunction(() => document.activeElement?.dataset?.bossAction === "timing");
+  const composedState = await page.evaluate(() => {
+    const gameState = window.__game.registry.get("gameState");
+    return {
+      progress: gameState.data.boss.progress,
+      target: gameState.data.boss.target,
+      phase: gameState.bossPatternStatus()?.phase.type,
+      phaseLabel: document.querySelector("[data-boss-phase]")?.textContent,
+    };
+  });
+  if (composedState.progress !== 8 || composedState.target !== 9 || composedState.phase !== "timing" || !composedState.phaseLabel?.includes("3 / 3")) {
+    throw new Error(`composed phase mismatch: ${JSON.stringify(composedState)}`);
+  }
+  await page.screenshot({ path: `${evidenceDir}/SC-BOSS-PATTERN-004-composed-desktop.png` });
+  await page.waitForFunction(() => document.querySelector(".gp-boss__controls")?.classList.contains("gp-boss__controls--hot"));
+  await page.keyboard.press("Enter");
+  await page.locator(".gp-boss--success").waitFor({ state: "visible" });
+  await page.locator(".gp-modal--operation").waitFor({ state: "visible", timeout: 3000 });
+  const composedResult = await page.evaluate(() => window.__bossResults.at(-1));
+  if (composedResult?.area !== 18 || composedResult?.outcome !== "success") throw new Error(`composed result mismatch: ${JSON.stringify(composedResult)}`);
+  await chooseOperation();
+
+  await prepareArea(15);
+  await page.locator(".gp-btn--boss").click();
+  await page.locator(".gp-boss--active").waitFor({ state: "visible" });
 
   await page.evaluate(() => {
     const gameState = window.__game.registry.get("gameState");
@@ -210,7 +292,7 @@ try {
       completionText: document.querySelector('[data-action="advanceStage"]')?.textContent,
     };
   });
-  if (restored.area !== 12 || restored.active || restored.required || restored.outcome !== "failed" || restored.clearedArea !== 12
+  if (restored.area !== 15 || restored.active || restored.required || restored.outcome !== "failed" || restored.clearedArea !== 15
     || restored.bossCards !== 0 || !restored.completionText?.includes("지역완료")) {
     throw new Error(`expired reload recovery mismatch: ${JSON.stringify(restored)}`);
   }
@@ -224,11 +306,15 @@ try {
     successState,
     guardedDraft,
     failedResult,
+    alternateState,
+    timingResult,
     skippedResult,
     desktopState,
     reducedMotion,
+    composedState,
+    composedResult,
     restored,
-    screenshots: 3,
+    screenshots: 4,
   }, null, 2));
 } finally {
   await browser.close();

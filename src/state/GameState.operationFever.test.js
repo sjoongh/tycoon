@@ -37,7 +37,7 @@ describe("작전 드래프트", () => {
     }
     gs.data.stage.progress = gs.data.stage.target;
     expect(gs.startBoss()).toBe(true);
-    gs.addBossProgress(gs.data.boss.target);
+    for (let index = 0; index < gs.data.boss.target; index += 1) gs.bossAction("rapid");
     expect(gs.advanceStage()).toBe(true);
     expect(gs.data.operations.draft.area).toBe(3);
     expect(gs.operationDraftDefinitions()).toHaveLength(3);

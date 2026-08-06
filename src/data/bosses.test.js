@@ -3,6 +3,7 @@ import {
   BOSS_DURATION_MS,
   BOSS_REWARD_BONUS_PCT,
   bossForArea,
+  bossPatternTarget,
   bossRewardBonus,
   bossTargetFor,
   isCheckpointArea,
@@ -23,6 +24,16 @@ describe("체크포인트 보스 데이터", () => {
     expect(bossTargetFor({ cps: 10, clickPower: 5 })).toBe(140);
     expect(bossTargetFor({ cps: 0, clickPower: 0 })).toBe(40);
     expect(bossTargetFor({ cps: -10, clickPower: Number.NaN })).toBe(40);
+  });
+
+  it("앞의 세 보스는 패턴을 하나씩 가르치고 뒤의 세 보스는 조합한다", () => {
+    expect(bossForArea(3).phases.map((item) => item.type)).toEqual(["rapid"]);
+    expect(bossForArea(6).phases.map((item) => item.type)).toEqual(["alternate"]);
+    expect(bossForArea(9).phases.map((item) => item.type)).toEqual(["timing"]);
+    expect(bossForArea(12).phases.map((item) => item.type)).toEqual(["rapid", "alternate"]);
+    expect(bossForArea(15).phases.map((item) => item.type)).toEqual(["alternate", "timing"]);
+    expect(bossForArea(18).phases.map((item) => item.type)).toEqual(["rapid", "alternate", "timing"]);
+    expect(bossPatternTarget(bossForArea(18))).toBe(9);
   });
 
   it("성공 보너스는 기본 완료 표 보상의 35%를 내림한다", () => {

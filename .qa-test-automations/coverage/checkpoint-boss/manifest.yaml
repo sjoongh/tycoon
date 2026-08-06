@@ -1,41 +1,41 @@
 domain: checkpoint-boss
 modules:
   - source: src/data/bosses.js
-    spec: docs/impl-notes/2026-08-05-checkpoint-boss-event.md
-    scenario_ref: [SC-BOSS-001, SC-BOSS-002]
+    spec: docs/impl-notes/2026-08-06-checkpoint-boss-patterns.md
+    scenario_ref: [SC-BOSS-001, SC-BOSS-002, SC-BOSS-005, SC-BOSS-006]
     tests:
       - path: src/data/bosses.test.js
         type: unit
-        covers: [checkpoint-cycle, target-formula, success-bonus]
-        case_ref: [TC-BOSS-001, TC-BOSS-002]
+        covers: [checkpoint-cycle, legacy-target-formula, pattern-composition, action-targets, success-bonus]
+        case_ref: [TC-BOSS-001, TC-BOSS-002, TC-BOSS-009]
     risk_score: 7
-    last_tested: 2026-08-05
+    last_tested: 2026-08-06
     last_passed: true
   - source: src/state/GameState.js
-    spec: docs/impl-notes/2026-08-05-checkpoint-boss-event.md
-    scenario_ref: [SC-BOSS-001, SC-BOSS-002, SC-BOSS-003]
+    spec: docs/impl-notes/2026-08-06-checkpoint-boss-patterns.md
+    scenario_ref: [SC-BOSS-001, SC-BOSS-002, SC-BOSS-003, SC-BOSS-005, SC-BOSS-006, SC-BOSS-007]
     tests:
       - path: src/state/GameState.checkpointBoss.test.js
         type: unit
-        covers: [start, progress, success, failure, skip, reload-expiry, prestige-reset]
-        case_ref: [TC-BOSS-003, TC-BOSS-004, TC-BOSS-005, TC-BOSS-006]
+        covers: [start, patterned-input, economy-isolation, phase-sequence, success, failure, skip, legacy-save, timing-resume, reload-expiry, prestige-reset]
+        case_ref: [TC-BOSS-003, TC-BOSS-004, TC-BOSS-005, TC-BOSS-006, TC-BOSS-010, TC-BOSS-011, TC-BOSS-012, TC-BOSS-013, TC-BOSS-014]
       - path: scripts/_bosschecktest.mjs
         type: e2e
-        covers: [boss-ui, sequence, tap-through-guard, reload-recovery]
-        case_ref: [TC-BOSS-007, TC-BOSS-008]
-        flow_ref: [Flow-1, Flow-2, Flow-3]
+        covers: [boss-ui, three-patterns, composed-sequence, keyboard-focus, tap-through-guard, reload-recovery]
+        case_ref: [TC-BOSS-007, TC-BOSS-008, TC-BOSS-010, TC-BOSS-011, TC-BOSS-012, TC-BOSS-013, TC-BOSS-015]
+        flow_ref: [Flow-1, Flow-2, Flow-3, Flow-4]
     risk_score: 15
-    last_tested: 2026-08-05
+    last_tested: 2026-08-06
     last_passed: true
   - source: src/ui/DOMModalLayer.js
-    spec: docs/impl-notes/2026-08-05-checkpoint-boss-event.md
-    scenario_ref: [SC-BOSS-004]
+    spec: docs/impl-notes/2026-08-06-checkpoint-boss-patterns.md
+    scenario_ref: [SC-BOSS-004, SC-BOSS-005, SC-BOSS-006]
     tests:
       - path: scripts/_bosschecktest.mjs
         type: e2e
-        covers: [mobile-layout, desktop-layout, operation-sequencing, reduced-motion, tap-through-guard]
-        case_ref: [TC-BOSS-007, TC-BOSS-008]
-        flow_ref: [Flow-1, Flow-2]
+        covers: [mobile-layout, desktop-layout, operation-sequencing, pattern-controls, keyboard-focus, live-feedback, reduced-motion, tap-through-guard]
+        case_ref: [TC-BOSS-007, TC-BOSS-008, TC-BOSS-015]
+        flow_ref: [Flow-1, Flow-2, Flow-4]
     risk_score: 14
-    last_tested: 2026-08-05
+    last_tested: 2026-08-06
     last_passed: true

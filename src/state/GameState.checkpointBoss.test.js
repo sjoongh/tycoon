@@ -56,7 +56,7 @@ describe("체크포인트 보스 상태", () => {
     const now = Date.now();
     gs.startBoss(now);
     const target = gs.data.boss.target;
-    expect(gs.addBossProgress(target, now + 500)).toBe(target);
+    for (let index = 0; index < target; index += 1) gs.bossAction("rapid", now + 100 + index);
     expect(gs.data.boss).toMatchObject({ active: false, clearedArea: 3, outcome: "success" });
 
     const base = gs.stageCompletionVotes(3);
@@ -68,6 +68,80 @@ describe("체크포인트 보스 상태", () => {
     expect(gs.data.operations.draft.area).toBe(3);
     expect(gs.data.boss).toMatchObject({ active: false, clearedArea: 0, outcome: null });
     expect(gs.advanceStage()).toBe(false);
+  });
+
+  it("연타 처리전은 능동 탭만 세고 자동 생산은 대신 진행하지 않는다", () => {
+    const gs = new GameState();
+    readyArea(gs, 3);
+    gs.startBoss(Date.now());
+    const votesBefore = gs.data.votes;
+    gs.tick();
+    expect(gs.data.votes).toBeGreaterThan(votesBefore);
+    expect(gs.data.boss.progress).toBe(0);
+
+    gs.processClick(195, 360);
+    expect(gs.data.boss.progress).toBe(1);
+    expect(gs.bossPatternStatus().phase.type).toBe("rapid");
+    expect(gs.addBossProgress(999)).toBe(0);
+    expect(gs.data.boss.progress).toBe(1);
+  });
+
+  it("좌우 교대 검인은 빛나는 쪽을 맞혀야만 다음 순서로 넘어간다", () => {
+    const gs = new GameState();
+    readyArea(gs, 6);
+    const now = Date.now();
+    gs.startBoss(now);
+    let bossActions = 0;
+    gs.on("boss-action", () => { bossActions += 1; });
+    gs.processClick(195, 360);
+    expect(bossActions).toBe(0);
+    expect(gs.bossPatternStatus(now).expectedSide).toBe("left");
+    expect(gs.bossAction("right", now + 100)).toMatchObject({ accepted: true, correct: false });
+    expect(gs.data.boss.progress).toBe(0);
+    expect(gs.bossAction("left", now + 200)).toMatchObject({ correct: true });
+    expect(gs.bossPatternStatus(now + 200).expectedSide).toBe("right");
+    expect(gs.bossAction("right", now + 300)).toMatchObject({ correct: true });
+    expect(gs.data.boss.progress).toBe(2);
+  });
+
+  it("타이밍 봉인은 NOW 구간에서만 인정하고 성공 뒤 새 주기를 시작한다", () => {
+    const gs = new GameState();
+    readyArea(gs, 9);
+    const now = Date.now();
+    gs.startBoss(now);
+    expect(gs.bossAction("timing", now + 50)).toMatchObject({ correct: false });
+    expect(gs.bossAction("timing", now + 600)).toMatchObject({ correct: true });
+    expect(gs.data.boss.progress).toBe(1);
+    expect(gs.bossAction("timing", now + 1200)).toMatchObject({ correct: true, finalPhase: true });
+    expect(gs.data.boss).toMatchObject({ active: false, clearedArea: 9, outcome: "success" });
+  });
+
+  it("후반 최종 보스는 연타→교대→타이밍 세 단계를 순서대로 조합한다", () => {
+    const gs = new GameState();
+    readyArea(gs, 18);
+    const now = Date.now();
+    gs.startBoss(now);
+    for (let index = 0; index < 4; index += 1) gs.bossAction("rapid", now + 100 + index);
+    expect(gs.bossPatternStatus(now + 200).phase.type).toBe("alternate");
+    ["left", "right", "left", "right"].forEach((side, index) => gs.bossAction(side, now + 300 + index));
+    const timing = gs.bossPatternStatus(now + 400);
+    expect(timing.phase.type).toBe("timing");
+    gs.bossAction("timing", gs.data.boss.phaseStartedAt + timing.phase.periodMs / 2);
+    expect(gs.data.boss).toMatchObject({ active: false, progress: 9, target: 9, outcome: "success" });
+  });
+
+  it("조합 보스의 현재 단계와 부분 진행을 저장 후 그대로 복구한다", () => {
+    const gs = new GameState();
+    readyArea(gs, 12);
+    const now = Date.now();
+    gs.startBoss(now);
+    for (let index = 0; index < 5; index += 1) gs.bossAction("rapid", now + index + 1);
+    gs.bossAction("left", now + 100);
+    gs.save(false);
+
+    const restored = new GameState();
+    expect(restored.data.boss).toMatchObject({ active: true, phaseIndex: 1, phaseProgress: 1, progress: 6, target: 9 });
+    expect(restored.bossPatternStatus().expectedSide).toBe("right");
   });
 
   it("시간 만료와 건너뛰기는 진행을 열되 추가 보상을 주지 않는다", () => {
@@ -101,6 +175,45 @@ describe("체크포인트 보스 상태", () => {
     expect(restored.data.boss).toMatchObject({ active: false, clearedArea: 3, outcome: "failed" });
     expect(restored.bossRequired()).toBe(false);
     expect(restored.advanceStage()).toBe(true);
+  });
+
+  it("구버전 진행 중 보스는 저장된 throughput 목표를 바꾸지 않고 이어간다", () => {
+    const gs = new GameState();
+    readyArea(gs, 3);
+    const now = Date.now();
+    gs.data.boss = {
+      active: true,
+      area: 3,
+      progress: 80,
+      target: 400,
+      startedAt: now - 1000,
+      endsAt: now + 7000,
+      clearedArea: 0,
+      outcome: null,
+    };
+    gs.save(false);
+
+    const restored = new GameState();
+    expect(restored.data.boss).toMatchObject({ active: true, patternVersion: 0, progress: 80, target: 400 });
+    restored.processClick(195, 360);
+    expect(restored.data.boss.progress).toBeGreaterThan(80);
+  });
+
+  it("타이밍 단계 중간 저장은 같은 주기 원점과 남은 시간을 복구한다", () => {
+    const gs = new GameState();
+    readyArea(gs, 9);
+    const now = Date.now();
+    const startedAt = now - 700;
+    gs.startBoss(startedAt);
+    gs.bossAction("timing", startedAt + 600);
+    expect(gs.data.boss.phaseProgress).toBe(1);
+    const phaseStartedAt = gs.data.boss.phaseStartedAt;
+    gs.save(false);
+
+    const restored = new GameState();
+    expect(restored.data.boss).toMatchObject({ active: true, phaseIndex: 0, phaseProgress: 1, phaseStartedAt });
+    expect(restored.bossRemainingMs(now)).toBe(7300);
+    expect(restored.bossPatternStatus(now).timingHot).toBe(false);
   });
 
   it("감사 초기화는 진행 중이던 보스 상태를 제거한다", () => {

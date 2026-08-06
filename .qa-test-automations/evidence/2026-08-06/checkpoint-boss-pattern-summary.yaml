@@ -1,0 +1,65 @@
+date: 2026-08-06
+mode: incremental
+target: checkpoint-boss-patterns
+duration_ms: 385000
+unit:
+  total: 76
+  passed: 76
+  failed: 0
+  skipped: 0
+  files: 13
+e2e:
+  cases: 15
+  passed: 15
+  failed: 0
+  viewports: [390x844, 1280x900]
+  screenshots:
+    - screenshots/SC-BOSS-PATTERN-001-rapid-mobile.png
+    - screenshots/SC-BOSS-PATTERN-002-success-mobile.png
+    - screenshots/SC-BOSS-PATTERN-003-timing-success-mobile.png
+    - screenshots/SC-BOSS-PATTERN-004-composed-desktop.png
+    - screenshots/SC-OPF-004-hands-on-adaptive-240s.png
+hands_on:
+  game_state_injection: false
+  duration_sec: 240
+  tap_interval_ms: 80
+  taps: 2246
+  area: 42
+  operation_choices: 13
+  fever_cycles: 5
+  boss_cycles: 14
+  boss_successes: 13
+  boss_failures: 0
+  boss_patterns_seen: [rapid, alternate, timing]
+  errors: 0
+patterns:
+  rapid: passed
+  alternate: passed
+  timing: passed
+  final_composition: [rapid, alternate, timing]
+accessibility:
+  touch_target_min_px: 44
+  keyboard_only_final_boss: passed
+  focus_handoff: passed
+  live_feedback: passed
+  reduced_motion: passed
+compatibility:
+  legacy_throughput_target_preserved: passed
+  patterned_phase_restore: passed
+  timing_origin_restore: passed
+  expired_restore_unblocks_stage: passed
+economy:
+  automatic_boss_progress: blocked
+  success_bonus_pct: 35
+  failed_bonus_votes: 0
+  skipped_bonus_votes: 0
+validation:
+  build: passed
+  diff_check: pending
+  source_detector_new_findings: 0
+  url_detector: completed_with_existing_global_findings
+environment:
+  target_url: "http://localhost:5178"
+  target_guard_passed: true
+  lifecycle: preexisting
+  started_by_skill: false
