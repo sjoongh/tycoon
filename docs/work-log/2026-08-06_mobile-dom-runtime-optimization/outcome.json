@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "taskId": "2026-08-06_mobile-dom-runtime-optimization",
+  "title": "모바일 DOM 런타임 최적화",
+  "startedAt": "2026-08-06T11:31:58+09:00",
+  "closedAt": "2026-08-06T13:14:33+09:00",
+  "durationMinutes": 102.6,
+  "verificationStatus": "verified",
+  "verificationReason": "verified",
+  "requiredChecks": [
+    "npm-test"
+  ],
+  "firstPass": "no",
+  "humanRevisions": 0,
+  "retries": 1,
+  "reverted": "no",
+  "knowledgeReused": "no",
+  "knowledgeCandidates": [
+    "게임 상태 이벤트는 보존하고 DOM 소비자에서 leading-immediate/trailing-coalesced로 합친다"
+  ],
+  "remainingRisks": [
+    "픽셀 폰트 1.51MB와 지연 로드된 Firestore/Phaser 대형 청크는 별도 최적화 후보다"
+  ]
+}

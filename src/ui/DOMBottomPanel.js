@@ -27,6 +27,9 @@ const TABS = [
 ];
 
 const hex = (c) => "#" + Number(c).toString(16).padStart(6, "0");
+const PANEL_REFRESH_BUDGET_MS = 100;
+
+const nowMs = () => globalThis.performance?.now?.() ?? Date.now();
 
 export class DOMBottomPanel {
   constructor(gameState) {
@@ -49,7 +52,15 @@ export class DOMBottomPanel {
 
     this.panel = this.root.querySelector('[data-k="panel"]');
     this.panel.addEventListener("click", (e) => this._onClick(e));
-    this._refresh = () => this.refresh();
+    this._lastChangedAt = -Infinity;
+    this._lastRenderAt = -Infinity;
+    this._refreshTimer = null;
+    this._refreshFrame = null;
+    this._refreshPending = false;
+    this._refresh = () => this._scheduleRefresh();
+    this._onVisibility = () => {
+      if (document.visibilityState === "visible" && this._refreshPending) this.refresh();
+    };
   }
 
   mount(parent) {
@@ -64,6 +75,7 @@ export class DOMBottomPanel {
 
     parent.appendChild(this.root);
     this.gameState.on("changed", this._refresh);
+    document.addEventListener("visibilitychange", this._onVisibility);
     this.refresh();
 
     // 패널 실높이를 게임좌표로 환산해 브로드캐스트 — 월드 카메라가 따라 올라가
@@ -91,13 +103,49 @@ export class DOMBottomPanel {
   }
 
   destroy() {
+    this._cancelScheduledRefresh();
     this._ro?.disconnect();
     document.removeEventListener("gp:world-ready", this._onWorldReady);
+    document.removeEventListener("visibilitychange", this._onVisibility);
     this.gameState.off("changed", this._refresh);
     // Clean up world overlays injected in mount() to avoid orphaned DOM on prestige reset
     this._scanlines?.remove();
     this._vignette?.remove();
     this.root.remove();
+  }
+
+  _cancelScheduledRefresh() {
+    if (this._refreshTimer !== null) clearTimeout(this._refreshTimer);
+    if (this._refreshFrame !== null) cancelAnimationFrame(this._refreshFrame);
+    this._refreshTimer = null;
+    this._refreshFrame = null;
+    this._refreshPending = false;
+  }
+
+  // 연타의 첫 상태 변경은 즉시 보여주고, 이어지는 변경만 100ms 창으로 합친다.
+  // 패널 버튼이 직접 refresh()를 호출하면 예약 렌더를 취소해 이중 갱신을 막는다.
+  _scheduleRefresh() {
+    const now = nowMs();
+    const idle = now - this._lastChangedAt >= PANEL_REFRESH_BUDGET_MS;
+    this._lastChangedAt = now;
+    if (idle) {
+      this._cancelScheduledRefresh();
+      this._renderNow();
+      return;
+    }
+    if (this._refreshPending) return;
+
+    const remaining = Math.max(0, PANEL_REFRESH_BUDGET_MS - (now - this._lastRenderAt));
+    this._refreshPending = true;
+    this._refreshTimer = setTimeout(() => {
+      this._refreshTimer = null;
+      if (document.visibilityState !== "visible") return;
+      this._refreshFrame = requestAnimationFrame(() => {
+        this._refreshFrame = null;
+        this._refreshPending = false;
+        this._renderNow();
+      });
+    }, remaining);
   }
 
   _onClick(e) {
@@ -168,15 +216,29 @@ export class DOMBottomPanel {
   }
 
   refresh() {
+    this._cancelScheduledRefresh();
+    this._lastChangedAt = -Infinity;
+    this._renderNow();
+  }
+
+  _renderNow() {
+    this._lastRenderAt = nowMs();
     const tab = this.gameState.data.activeTab || "facilities";
     const prevScroll = this.panel.querySelector(".gp-stafflist")?.scrollTop || 0;
-    ({
-      facilities: () => this._renderFacilities(),
-      crew: () => this._renderCrew(),
-      events: () => this._renderEvents(),
-      goals: () => this._renderGoals(),
-      prestige: () => this._renderPrestige(),
-    }[tab] || (() => this._renderFacilities()))();
+    const goalsSignature = tab === "goals" ? this._goalsStructureSignature() : null;
+    if (tab === "goals" && this._renderedTab === "goals" && goalsSignature === this._goalsSignature) {
+      this._patchGoals();
+    } else {
+      ({
+        facilities: () => this._renderFacilities(),
+        crew: () => this._renderCrew(),
+        events: () => this._renderEvents(),
+        goals: () => this._renderGoals(),
+        prestige: () => this._renderPrestige(),
+      }[tab] || (() => this._renderFacilities()))();
+      if (tab === "goals") this._goalsSignature = goalsSignature;
+    }
+    this._renderedTab = tab;
     const list = this.panel.querySelector(".gp-stafflist");
     if (list && prevScroll) list.scrollTop = prevScroll;
     this.root.querySelectorAll(".gp-tab").forEach((el) => el.classList.toggle("gp-tab--active", el.dataset.tab === tab));
@@ -366,7 +428,7 @@ export class DOMBottomPanel {
       const ratio = Math.max(0, Math.min(1, p / q.target));
       const cls = state === "done" ? "gp-goal--done" : state === "active" ? "gp-goal--active" : "gp-goal--locked";
       const badge = state === "done" ? "✓" : state === "active" ? "진행" : "예정";
-      return `<div class="gp-goal ${cls}">
+      return `<div class="gp-goal ${cls}" data-goal-kind="quest" data-goal-id="${q.id}">
         <div class="gp-goal__head"><span class="gp-goal__title">${q.title}</span><span class="gp-goal__badge">${badge}</span></div>
         <div class="gp-goal__desc">${q.desc}</div>
         <div class="gp-progress gp-goal__bar"><div class="gp-progress__fill" style="transform:scaleX(${state === "done" ? 1 : ratio})"></div></div>
@@ -389,7 +451,7 @@ export class DOMBottomPanel {
         : wclaimable
           ? `<button class="gp-btn gp-btn--sm gp-btn--ready" data-action="claimWeekly">받기</button>`
           : `<span class="gp-goal__badge gp-goal__badge--week">D-${gs.weeklyDaysLeft()}</span>`;
-      weeklyRow = `<div class="gp-goal gp-goal--weekly ${wclaimed ? "gp-goal--done" : wclaimable ? "gp-goal--active" : ""}">
+      weeklyRow = `<div class="gp-goal gp-goal--weekly ${wclaimed ? "gp-goal--done" : wclaimable ? "gp-goal--active" : ""}" data-goal-kind="weekly">
         <div class="gp-goal__head"><span class="gp-goal__title">&#9733; ${wDef.title}</span>${wright}</div>
         <div class="gp-goal__desc">이번 주 표 ${shortNumber(wt)}장 처리</div>
         <div class="gp-progress gp-goal__bar"><div class="gp-progress__fill" style="transform:scaleX(${wdone ? 1 : wratio})"></div></div>
@@ -410,7 +472,7 @@ export class DOMBottomPanel {
           ? `<button class="gp-btn gp-btn--sm gp-btn--ready" data-action="claimDaily" data-id="${q.id}">받기</button>`
           : `<span class="gp-goal__badge">오늘</span>`;
       // FIX P1: gp-goal--daily adds green tint to distinguish daily rows from neutral quest cards
-      return `<div class="gp-goal gp-goal--daily ${claimed ? "gp-goal--done" : claimable ? "gp-goal--active" : ""}">
+      return `<div class="gp-goal gp-goal--daily ${claimed ? "gp-goal--done" : claimable ? "gp-goal--active" : ""}" data-goal-kind="daily" data-goal-id="${q.id}">
         <div class="gp-goal__head"><span class="gp-goal__title">${q.title}</span>${right}</div>
         <div class="gp-goal__desc">${q.desc}</div>
         <div class="gp-progress gp-goal__bar"><div class="gp-progress__fill" style="transform:scaleX(${done ? 1 : ratio})"></div></div>
@@ -431,7 +493,7 @@ export class DOMBottomPanel {
       const ratio = Math.max(0, Math.min(1, cur / a.target));
       // P2 fix: replace emoji medals with reliable monochrome unicode (no WebView font-fallback risk)
       const medal = got ? "◆" : "◇";
-      return `<div class="gp-ach ${got ? "gp-ach--got" : ""}">
+      return `<div class="gp-ach ${got ? "gp-ach--got" : ""}" data-achievement-id="${a.id}">
         <span class="gp-ach__medal">${medal}</span>
         <span class="gp-ach__body"><span class="gp-ach__name">${a.name}</span><span class="gp-ach__desc">${got ? a.desc : `${a.desc} (${Math.floor(ratio * 100)}%)`}</span></span>
       </div>`;
@@ -453,6 +515,69 @@ export class DOMBottomPanel {
       <div class="gp-goal__section">&#9670; 일일 퀘스트 ${dailyClaimed}/${dailyQuestDefinitions.length} · 자정 초기화</div>${dailyRows}
       <div class="gp-goal__section">운영 목표</div>${questRows}
       <div class="gp-goal__section">업적 · ${gotCount}/${achievementDefinitions.length}</div>${achRows}</div><div class="gp-goallist-fade" aria-hidden="true"></div></div>`;
+  }
+
+  _goalsStructureSignature() {
+    const gs = this.gameState;
+    const daily = gs.dailyStatus?.();
+    const weekly = gs.weeklyDef?.();
+    const active = gs.nextQuest();
+    return JSON.stringify({
+      attendance: daily?.available ? [daily.streak, daily.reward?.votes, daily.reward?.explain, daily.reward?.seals || 0] : null,
+      weekly: weekly ? [weekly.id, gs.weeklyTarget(), gs.weeklyClaimed(), gs.weeklyClaimable(), gs.weeklyDaysLeft()] : null,
+      daily: dailyQuestDefinitions.map((q) => [q.id, gs.dailyQuestClaimed(q.id), gs.dailyQuestClaimable(q.id)]),
+      active: active ? [active.id, !!active.generated] : null,
+      quests: questDefinitions.map((q) => !!gs.data.quests[q.id]),
+      achievements: achievementDefinitions.map((a) => !!gs.data.achievements[a.id]),
+      rank: cloudEnabled(),
+    });
+  }
+
+  // 긴 목표 목록은 구조가 그대로인 연타 중 수치·막대만 갱신해 포커스와 스크롤 트리를 보존한다.
+  _patchGoals() {
+    const gs = this.gameState;
+    const patchProgress = (row, progress, target, done = false) => {
+      if (!row) return;
+      const ratio = Math.max(0, Math.min(1, progress / target));
+      const fill = row.querySelector(".gp-progress__fill");
+      const value = row.querySelector(".gp-goal__foot > span:first-child");
+      const transform = `scaleX(${done ? 1 : ratio})`;
+      if (fill && fill.style.transform !== transform) fill.style.transform = transform;
+      const text = `${shortNumber(Math.min(progress, target))} / ${shortNumber(target)}`;
+      if (value && value.textContent !== text) value.textContent = text;
+    };
+
+    const weeklyRow = this.panel.querySelector('[data-goal-kind="weekly"]');
+    if (weeklyRow) patchProgress(weeklyRow, gs.weeklyProgress(), gs.weeklyTarget(), gs.weeklyDone());
+
+    dailyQuestDefinitions.forEach((q) => {
+      patchProgress(
+        this.panel.querySelector(`[data-goal-kind="daily"][data-goal-id="${q.id}"]`),
+        gs.dailyQuestProgress(q.id),
+        q.target,
+        gs.dailyQuestDone(q.id),
+      );
+    });
+
+    const active = gs.nextQuest();
+    const definitions = active?.generated ? [...questDefinitions, active] : questDefinitions;
+    definitions.forEach((q) => {
+      patchProgress(
+        this.panel.querySelector(`[data-goal-kind="quest"][data-goal-id="${q.id}"]`),
+        gs.questProgress(q),
+        q.target,
+        !!gs.data.quests[q.id],
+      );
+    });
+
+    achievementDefinitions.forEach((achievement) => {
+      if (gs.data.achievements[achievement.id]) return;
+      const row = this.panel.querySelector(`[data-achievement-id="${achievement.id}"]`);
+      const description = row?.querySelector(".gp-ach__desc");
+      const ratio = Math.max(0, Math.min(1, gs.achievementProgress(achievement.metric) / achievement.target));
+      const text = `${achievement.desc} (${Math.floor(ratio * 100)}%)`;
+      if (description && description.textContent !== text) description.textContent = text;
+    });
   }
 
   _renderPrestige() {

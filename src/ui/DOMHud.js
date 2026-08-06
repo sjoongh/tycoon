@@ -21,8 +21,28 @@ export class DOMHud {
       </button>
       <div class="gp-truststate" data-k="truststate" hidden></div>
       <div class="gp-commgauge" data-k="commgauge" hidden><div class="gp-commgauge__fill"></div><span class="gp-commgauge__txt"></span></div>`;
+    this._els = {
+      votes: this.root.querySelector('[data-k="votes"]'),
+      explain: this.root.querySelector('[data-k="explain"]'),
+      trust: this.root.querySelector('[data-k="trust"]'),
+      progress: this.root.querySelector('[data-k="progress"]'),
+      trustChip: this.root.querySelector(".gp-chip--trust"),
+      trustState: this.root.querySelector('[data-k="truststate"]'),
+      stage: this.root.querySelector('[data-k="stage"]'),
+      commGauge: this.root.querySelector('[data-k="commgauge"]'),
+      commFill: this.root.querySelector(".gp-commgauge__fill"),
+      commText: this.root.querySelector(".gp-commgauge__txt"),
+      fever: this.root.querySelector('[data-k="fever"]'),
+      feverFill: this.root.querySelector('[data-k="fever-fill"]'),
+      feverLabel: this.root.querySelector('[data-k="fever-label"]'),
+      feverHint: this.root.querySelector(".gp-fever__hint"),
+      feverValue: this.root.querySelector('[data-k="fever-value"]'),
+    };
+    this._stageMarkup = "";
+    this._briefMarkupKey = "";
+    this._rushMarkupKey = "";
     this._refresh = () => this.refresh();
-    this.root.querySelector('[data-k="fever"]').addEventListener("click", () => {
+    this._els.fever.addEventListener("click", () => {
       document.dispatchEvent(new CustomEvent("gp:open-operations"));
     });
     // FIX #1: mute button created separately so it mounts on .gp-ui root (above HUD),
@@ -65,38 +85,42 @@ export class DOMHud {
 
   refresh() {
     const d = this.gameState.data;
-    this.root.querySelector('[data-k="votes"]').textContent = shortNumber(d.votes);
-    this.root.querySelector('[data-k="explain"]').textContent = shortNumber(d.explain);
-    this.root.querySelector('[data-k="trust"]').textContent = `${Math.round(d.trust)}%`;
+    this._setText(this._els.votes, shortNumber(d.votes));
+    this._setText(this._els.explain, shortNumber(d.explain));
+    this._setText(this._els.trust, `${Math.round(d.trust)}%`);
     const ratio = Math.max(0, Math.min(1, d.stage.progress / d.stage.target));
-    this.root.querySelector('[data-k="progress"]').style.transform = `scaleX(${ratio})`;
+    this._setStyle(this._els.progress, "transform", `scaleX(${ratio})`);
 
     // 믿음 위기/보너스 상태를 믿음 칩과 상태 배지로 노출(테마 시그니처)
     const state = this.gameState.trustState ? this.gameState.trustState() : "normal";
-    const chip = this.root.querySelector(".gp-chip--trust");
+    const chip = this._els.trustChip;
     chip.classList.toggle("gp-chip--crisis", state === "crisis");
     chip.classList.toggle("gp-chip--bonus", state === "bonus");
     // P1 fix: collapse trust-state badge into .gp-stage pill (saves ~26px HUD height)
     // The separate .gp-truststate row is hidden; inline suffix signals state at zero cost.
-    const badge = this.root.querySelector('[data-k="truststate"]');
+    const badge = this._els.trustState;
     badge.hidden = true;
-    const stageEl = this.root.querySelector('[data-k="stage"]');
+    const stageEl = this._els.stage;
     const stateSuffix = state === "crisis"
       ? ` · <span style="color:#ff9a9a">⚠ 불신위기</span>`
       : state === "bonus"
       ? ` · <span style="color:#8df0b0">✦ 신뢰보너스</span>`
       : "";
     // 초당 생산은 월드 하단에 상시 노출되므로 HUD에는 진행 맥락만 남긴다.
-    stageEl.innerHTML = `${d.stage.area}구역 · D-${d.days}${stateSuffix}`;
+    const stageMarkup = `${d.stage.area}구역 · D-${d.days}${stateSuffix}`;
+    if (stageMarkup !== this._stageMarkup) {
+      this._stageMarkup = stageMarkup;
+      stageEl.innerHTML = stageMarkup;
+    }
 
     // 공산화(체제 전복) 위험 게이지 — 위험이 쌓일 때만 노출(미리 보이게 = 공정)
     const gauge = this.gameState.commGaugePct ? this.gameState.commGaugePct() : 0;
-    const gEl = this.root.querySelector('[data-k="commgauge"]');
+    const gEl = this._els.commGauge;
     if (gEl) {
       if (gauge > 0) {
         gEl.hidden = false;
-        gEl.querySelector(".gp-commgauge__fill").style.transform = `scaleX(${gauge})`;
-        gEl.querySelector(".gp-commgauge__txt").textContent = `🚩 체제 전복 위기 ${Math.round(gauge * 100)}%`;
+        this._setStyle(this._els.commFill, "transform", `scaleX(${gauge})`);
+        this._setText(this._els.commText, `🚩 체제 전복 위기 ${Math.round(gauge * 100)}%`);
         gEl.classList.toggle("gp-commgauge--danger", gauge >= 0.66);
       } else {
         gEl.hidden = true;
@@ -108,9 +132,18 @@ export class DOMHud {
     this._refreshFever();
   }
 
+  _setText(element, value) {
+    const text = String(value);
+    if (element.textContent !== text) element.textContent = text;
+  }
+
+  _setStyle(element, property, value) {
+    if (element.style[property] !== value) element.style[property] = value;
+  }
+
   _refreshFever() {
     const gs = this.gameState;
-    const fever = this.root.querySelector('[data-k="fever"]');
+    const fever = this._els.fever;
     const game = document.getElementById("game");
     if (!fever || !gs.feverUnlocked || !gs.feverUnlocked()) {
       if (fever) fever.hidden = true;
@@ -128,27 +161,28 @@ export class DOMHud {
     ["tap", "build", "response"].forEach((family) => {
       fever.classList.toggle(`gp-fever--${family}`, gs.feverFamily && gs.feverFamily() === family);
     });
-    fever.querySelector('[data-k="fever-fill"]').style.transform = `scaleX(${pct})`;
-    fever.querySelector('[data-k="fever-label"]').textContent = active
+    this._setStyle(this._els.feverFill, "transform", `scaleX(${pct})`);
+    this._setText(this._els.feverLabel, active
       ? `${profile.icon} ${profile.name}`
       : recovering
         ? "재정비 중"
-        : `${profile.icon} ${profile.name} 열기`;
-    fever.querySelector(".gp-fever__hint").textContent = active
+        : `${profile.icon} ${profile.name} 열기`);
+    this._setText(this._els.feverHint, active
       ? `${profile.summary} · 눌러서 작전 현황`
       : recovering
         ? "열기 충전 대기 · 눌러서 작전 현황"
-        : "행동으로 충전 · 눌러서 작전 현황";
-    fever.querySelector('[data-k="fever-value"]').textContent = active
+        : "행동으로 충전 · 눌러서 작전 현황");
+    this._setText(this._els.feverValue, active
       ? `${Math.max(1, Math.ceil(gs.feverRemainingMs() / 1000))}초`
       : recovering
         ? `${Math.max(1, Math.ceil(gs.feverRecoveryRemainingMs() / 1000))}초`
-        : `${Math.round(gs.feverCharge())}%`;
-    fever.setAttribute("aria-label", active
+        : `${Math.round(gs.feverCharge())}%`);
+    const ariaLabel = active
       ? `${profile.name} 발동 중, ${Math.ceil(gs.feverRemainingMs() / 1000)}초 남음. 작전 현황 보기`
       : recovering
         ? `피버 재정비 ${Math.ceil(gs.feverRecoveryRemainingMs() / 1000)}초 남음. 작전 현황 보기`
-        : `${profile.name} 열기 ${Math.round(gs.feverCharge())}퍼센트. 작전 현황 보기`);
+        : `${profile.name} 열기 ${Math.round(gs.feverCharge())}퍼센트. 작전 현황 보기`;
+    if (fever.getAttribute("aria-label") !== ariaLabel) fever.setAttribute("aria-label", ariaLabel);
     game?.classList.toggle("gp-game--fever", active);
   }
 
@@ -162,24 +196,35 @@ export class DOMHud {
     const gs = this.gameState;
     if (!gs.briefReady) return;
     const btn = this._briefBtn;
-    btn.style.display = this._fabsHidden() ? "none" : "flex";
-    if (this._fabsHidden()) return;
+    const hidden = this._fabsHidden();
+    this._setStyle(btn, "display", hidden ? "none" : "flex");
+    if (hidden) return;
+    let className;
+    let disabled;
+    let html;
     if (gs.briefActive()) {
-      btn.className = "gp-brief gp-brief--active";
-      btn.disabled = true;
-      btn.innerHTML = `<b>브리핑 효과</b><small>×1.5 · ${Math.ceil(gs.briefRemainingMs() / 1000)}초</small>`;
+      className = "gp-brief gp-brief--active";
+      disabled = true;
+      html = `<b>브리핑 효과</b><small>×1.5 · ${Math.ceil(gs.briefRemainingMs() / 1000)}초</small>`;
     } else if (!gs.briefReady()) {
-      btn.className = "gp-brief gp-brief--cd";
-      btn.disabled = true;
-      btn.innerHTML = `<b>재정비 중</b><small>${Math.ceil(gs.briefCooldownRemainingMs() / 1000)}초</small>`;
+      className = "gp-brief gp-brief--cd";
+      disabled = true;
+      html = `<b>재정비 중</b><small>${Math.ceil(gs.briefCooldownRemainingMs() / 1000)}초</small>`;
     } else if (!gs.briefAffordable()) {
-      btn.className = "gp-brief gp-brief--poor";
-      btn.disabled = true;
-      btn.innerHTML = `<b>긴급 브리핑</b><small>해명 ${shortNumber(gs.briefCost())} 필요</small>`;
+      className = "gp-brief gp-brief--poor";
+      disabled = true;
+      html = `<b>긴급 브리핑</b><small>해명 ${shortNumber(gs.briefCost())} 필요</small>`;
     } else {
-      btn.className = "gp-brief gp-brief--ready";
-      btn.disabled = false;
-      btn.innerHTML = `<b>📢 긴급 브리핑</b><small>해명 ${shortNumber(gs.briefCost())} · 믿음+12</small>`;
+      className = "gp-brief gp-brief--ready";
+      disabled = false;
+      html = `<b>📢 긴급 브리핑</b><small>해명 ${shortNumber(gs.briefCost())} · 믿음+12</small>`;
+    }
+    const markupKey = `${className}|${disabled}|${html}`;
+    if (markupKey !== this._briefMarkupKey) {
+      this._briefMarkupKey = markupKey;
+      btn.className = className;
+      btn.disabled = disabled;
+      btn.innerHTML = html;
     }
   }
 
@@ -188,20 +233,30 @@ export class DOMHud {
     if (!gs.feverFinisherAvailable) return;
     const btn = this._rushBtn;
     const hidden = this._fabsHidden() || !gs.feverActive() || (!gs.feverFinisherAvailable() && !gs.feverFinisherUsed());
-    btn.style.display = hidden ? "none" : "flex";
+    this._setStyle(btn, "display", hidden ? "none" : "flex");
     if (hidden) return;
     const remMs = gs.feverRemainingMs();
+    let className;
+    let disabled;
+    let html;
     if (gs.feverFinisherUsed()) {
-      btn.className = "gp-rush gp-rush--active";
-      btn.disabled = true;
+      className = "gp-rush gp-rush--active";
+      disabled = true;
       const rushPct = Math.round(Math.max(0, Math.min(100, (remMs / gs.feverFinisherWindowMs()) * 100)));
-      btn.style.setProperty("--rush-pct", `${rushPct}%`);
-      btn.innerHTML = `<b>⚡ 막판 총력!</b><small>추가 ×2 · ${Math.ceil(remMs / 1000)}초</small>`;
+      if (btn.style.getPropertyValue("--rush-pct") !== `${rushPct}%`) btn.style.setProperty("--rush-pct", `${rushPct}%`);
+      html = `<b>⚡ 막판 총력!</b><small>추가 ×2 · ${Math.ceil(remMs / 1000)}초</small>`;
     } else {
-      btn.className = "gp-rush gp-rush--ready";
-      btn.disabled = false;
+      className = "gp-rush gp-rush--ready";
+      disabled = false;
       btn.style.removeProperty("--rush-pct");
-      btn.innerHTML = `<b>⚡ 막판 총력</b><small>남은 피버 추가 ×2</small>`;
+      html = `<b>⚡ 막판 총력</b><small>남은 피버 추가 ×2</small>`;
+    }
+    const markupKey = `${className}|${disabled}|${html}`;
+    if (markupKey !== this._rushMarkupKey) {
+      this._rushMarkupKey = markupKey;
+      btn.className = className;
+      btn.disabled = disabled;
+      btn.innerHTML = html;
     }
   }
 

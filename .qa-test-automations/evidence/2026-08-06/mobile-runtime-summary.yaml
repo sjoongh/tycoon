@@ -1,0 +1,76 @@
+date: 2026-08-06
+mode: incremental
+target: mobile-dom-runtime-optimization
+duration_ms: 120000
+unit:
+  total: 68
+  passed: 68
+  failed: 0
+  skipped: 0
+integration:
+  total: 1
+  passed: 1
+  failed: 0
+  skipped: 0
+  checks: [npm-run-build]
+e2e:
+  total: 5
+  passed: 5
+  failed: 0
+  scripts: [_offlinecarrytest.mjs, _bosschecktest.mjs, _operationfevertest.mjs, _uireadabilitytest.mjs, _mobileperformancetest.mjs]
+hands_on:
+  total: 1
+  passed: 1
+  game_state_injection: false
+  pace: adaptive-active
+  duration_sec: 70
+  tap_interval_ms: 250
+  taps: 258
+  area: 7
+  upgrades: 34
+  events: 2
+  operation_choices: 2
+  fever_cycles: 1
+  fever_finishers: 1
+  boss_cycles: 2
+  boss_successes: 2
+  errors: 0
+performance:
+  viewport: 390x844
+  continuous_events_per_tab: 60
+  replacements:
+    facilities: { before: 60, after: 11 }
+    crew: { before: 60, after: 11 }
+    goals: { before: 60, after: 0 }
+    prestige: { before: 60, after: 11 }
+  final_frame_max_ms: { facilities: 24.7, crew: 25.1, goals: 18.4, prestige: 16.7 }
+  final_emit_p95_ms: { facilities: 0.5, crew: 0.5, goals: 0.5, prestige: 0.4 }
+  leading_refresh_immediate: true
+  structural_goal_replacements: 1
+  scroll_preserved: true
+  scheduler_boundaries: { hidden_restore: passed, subsequent_burst: passed, forced_refresh_cancel: passed, destroy_cancel: passed }
+startup:
+  observation_window_ms: 700
+  firebase_sdk_requests: 0
+  local_firebase_config_bytes: 8254
+  firebase_after_first_intent_bytes: 1406834
+  analytics_loaded_without_event: false
+  firestore_semantics: full-sdk-preserved
+  font_transfer_bytes: 1506654
+regression:
+  checkpoint_boss: passed
+  operation_fever: passed
+  ui_readability: passed
+  offline_carry_prestige: passed
+  mobile_overflow: false
+validation:
+  diff_check: passed
+  claude_review: advice-resolved
+  existing_bundle_warning: phaser-and-firestore-chunks-over-500kb
+environment:
+  target_url: "http://localhost:5178"
+  target_guard_passed: true
+  external_requests_blocked: true
+  provider: none
+  lifecycle: preexisting
+  started_by_skill: false

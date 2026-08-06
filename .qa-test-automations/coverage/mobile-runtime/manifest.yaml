@@ -1,0 +1,54 @@
+modules:
+  - source: src/ui/DOMBottomPanel.js
+    spec: docs/impl-notes/2026-08-06-mobile-dom-runtime-optimization.md
+    scenario_ref: [SC-MRT-001, SC-MRT-002]
+    tests:
+      - path: scripts/_mobileperformancetest.mjs
+        type: e2e
+        covers: [leading-refresh, trailing-coalescing, visibility-flush, forced-refresh-cancel, destroy-cancel, scroll-preservation, goal-partial-patch]
+        case_ref: [TC-MRT-001, TC-MRT-002, TC-MRT-003, TC-MRT-004]
+        flow_ref: [Flow-MRT-1]
+    risk_score: 16
+    last_tested: 2026-08-06
+    last_passed: true
+  - source: src/ui/DOMHud.js
+    spec: docs/impl-notes/2026-08-06-mobile-dom-runtime-optimization.md
+    scenario_ref: [SC-MRT-003]
+    tests:
+      - path: scripts/_mobileperformancetest.mjs
+        type: e2e
+        covers: [emit-cost, frame-budget, no-horizontal-overflow]
+        case_ref: [TC-MRT-005]
+        flow_ref: [Flow-MRT-1]
+      - path: scripts/_uireadabilitytest.mjs
+        type: e2e
+        covers: [hud-values, aria-and-readability-regression]
+        case_ref: [TC-MRT-006]
+        flow_ref: [Flow-MRT-2]
+    risk_score: 12
+    last_tested: 2026-08-06
+    last_passed: true
+  - source: src/main.js
+    spec: docs/impl-notes/2026-08-06-mobile-dom-runtime-optimization.md
+    scenario_ref: [SC-MRT-004]
+    tests:
+      - path: scripts/_mobileperformancetest.mjs
+        type: e2e
+        covers: [startup-firebase-deferral, first-intent-start, local-target-guard]
+        case_ref: [TC-MRT-007]
+        flow_ref: [Flow-MRT-1]
+    risk_score: 15
+    last_tested: 2026-08-06
+    last_passed: true
+  - source: src/cloud.js
+    spec: docs/impl-notes/2026-08-06-mobile-dom-runtime-optimization.md
+    scenario_ref: [SC-MRT-004, SC-MRT-005]
+    tests:
+      - path: scripts/_mobileperformancetest.mjs
+        type: e2e
+        covers: [analytics-on-demand, firestore-semantics-preserved, external-host-block]
+        case_ref: [TC-MRT-007, TC-MRT-008]
+        flow_ref: [Flow-MRT-1, Flow-MRT-2]
+    risk_score: 17
+    last_tested: 2026-08-06
+    last_passed: true
