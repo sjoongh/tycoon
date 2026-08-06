@@ -1,0 +1,70 @@
+domain: event-chain-endings
+modules:
+  - source: src/data/eventChains.js
+    spec: docs/impl-notes/2026-08-06-event-chain-endings.md
+    scenario_ref: [SC-EVC-001]
+    tests:
+      - path: src/data/eventChains.test.js
+        type: unit
+        covers: [chain-shape, unique-ids, route-resolution, effect-deduplication]
+        case_ref: [TC-EVC-001, TC-EVC-002, TC-EVC-003, TC-EVC-009]
+    risk_score: 7
+    last_tested: 2026-08-06
+    last_passed: true
+  - source: src/state/GameState.js
+    spec: docs/impl-notes/2026-08-06-event-chain-endings.md
+    scenario_ref: [SC-EVC-002, SC-EVC-003, SC-EVC-004, SC-EVC-006]
+    tests:
+      - path: src/state/GameState.eventChains.test.js
+        type: unit
+        covers: [save-v7-normalize, pity, guaranteed-followup, auto-aide, ending-reward, run-effects, reload, prestige-reset, collapse-reset]
+        case_ref: [TC-EVC-004, TC-EVC-005, TC-EVC-006, TC-EVC-007, TC-EVC-008, TC-EVC-010, TC-EVC-011, TC-EVC-012]
+      - path: scripts/_eventchainplaytest.mjs
+        type: e2e
+        covers: [three-step-flow, reload, ending-card, effect-status, desktop-layout]
+        case_ref: [TC-EVC-005, TC-EVC-007, TC-EVC-011, TC-EVC-013, TC-EVC-014, TC-EVC-015]
+        flow_ref: [Flow-1, Flow-2]
+      - path: scripts/_operationfeverplay.mjs
+        type: e2e
+        covers: [natural-cadence, post-ending-progression]
+        case_ref: [TC-EVC-016]
+        flow_ref: [Flow-3]
+    risk_score: 15
+    last_tested: 2026-08-06
+    last_passed: true
+  - source: src/ui/DOMBottomPanel.js
+    spec: docs/impl-notes/2026-08-06-event-chain-endings.md
+    scenario_ref: [SC-EVC-002, SC-EVC-005]
+    tests:
+      - path: scripts/_eventchainplaytest.mjs
+        type: e2e
+        covers: [chain-badge, followup-cta, collection-line, run-effect-line, touch-targets]
+        case_ref: [TC-EVC-013, TC-EVC-015]
+        flow_ref: [Flow-1, Flow-2]
+    risk_score: 12
+    last_tested: 2026-08-06
+    last_passed: true
+  - source: src/ui/DOMModalLayer.js
+    spec: docs/impl-notes/2026-08-06-event-chain-endings.md
+    scenario_ref: [SC-EVC-005, SC-EVC-006]
+    tests:
+      - path: scripts/_eventchainplaytest.mjs
+        type: e2e
+        covers: [ending-queue, discovery-copy, reward-copy, effect-copy, touch-target]
+        case_ref: [TC-EVC-014]
+        flow_ref: [Flow-2]
+    risk_score: 14
+    last_tested: 2026-08-06
+    last_passed: true
+  - source: src/ui/dom-ui.css
+    spec: docs/impl-notes/2026-08-06-event-chain-endings.md
+    scenario_ref: [SC-EVC-005]
+    tests:
+      - path: scripts/_eventchainplaytest.mjs
+        type: e2e
+        covers: [mobile-layout, desktop-overlay, touch-target, overflow]
+        case_ref: [TC-EVC-013, TC-EVC-014, TC-EVC-015]
+        flow_ref: [Flow-1, Flow-2]
+    risk_score: 10
+    last_tested: 2026-08-06
+    last_passed: true

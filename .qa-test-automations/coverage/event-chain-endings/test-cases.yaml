@@ -1,0 +1,81 @@
+cases:
+  - id: TC-EVC-001
+    scenario: SC-EVC-001
+    description: 체인 3종이 각각 3단계와 세 갈래 결말을 갖는다
+    type: normal
+    expected: { chains: 3, steps_per_chain: 3, endings_per_chain: 3 }
+  - id: TC-EVC-002
+    scenario: SC-EVC-001
+    description: 체인·결말 id와 런 효과 키가 모두 유효하고 고유하다
+    type: error
+    expected: { duplicate_ids: 0, invalid_effect_keys: 0 }
+  - id: TC-EVC-003
+    scenario: SC-EVC-001
+    description: 전부 왼쪽·전부 오른쪽·혼합 선택을 서로 다른 경로로 판정한다
+    type: boundary
+    expected: { routes: [left, right, mixed] }
+  - id: TC-EVC-004
+    scenario: SC-EVC-002
+    description: 일반 사건 두 번 뒤 다음 사건은 체인 시작을 보장한다
+    type: boundary
+    expected: { pity_limit: 2, next_event_chain: true }
+  - id: TC-EVC-005
+    scenario: SC-EVC-002
+    description: 시작한 체인의 2·3편은 RNG와 무관하게 이어진다
+    type: normal
+    expected: { followup_guaranteed: true, step_order: [1, 2, 3] }
+  - id: TC-EVC-006
+    scenario: SC-EVC-002
+    description: 자동 비서는 안전 선택으로 체인을 진행하되 피버를 채우지 않는다
+    type: normal
+    expected: { step_advanced: true, fever_charge: 0 }
+  - id: TC-EVC-007
+    scenario: SC-EVC-003
+    description: 세 선택 완료 시 경로별 결말과 즉시 보상을 한 번 지급한다
+    type: normal
+    expected: { ending_emits: 1, reward_positive: true }
+  - id: TC-EVC-008
+    scenario: SC-EVC-003
+    description: 생산·탭·해명·사건 보상 효과가 기존 가산식에 반영된다
+    type: boundary
+    expected: { formulas_changed_by_declared_effect_only: true }
+  - id: TC-EVC-009
+    scenario: SC-EVC-003
+    description: 같은 결말 효과 id를 중복 합산하지 않는다
+    type: error
+    expected: { duplicate_effect_stack: false }
+  - id: TC-EVC-010
+    scenario: SC-EVC-004
+    description: v6 이하 저장을 빈 체인 상태의 v7로 정규화한다
+    type: error
+    expected: { version: 7, active_chain: null, endings: 0 }
+  - id: TC-EVC-011
+    scenario: SC-EVC-004
+    description: 진행 중 2/3 체인을 저장·재접속 뒤 복구한다
+    type: normal
+    expected: { step: 2, choices_preserved: true }
+  - id: TC-EVC-012
+    scenario: SC-EVC-004
+    description: 감사와 체제 전복은 런 효과를 지우고 결말 도감을 보존한다
+    type: boundary
+    expected: { run_effects: 0, permanent_ending_preserved: true }
+  - id: TC-EVC-013
+    scenario: SC-EVC-005
+    description: 모바일 사건 카드가 단계와 두 선택을 보여주고 터치 기준을 지킨다
+    type: normal
+    expected: { step_badge: visible, choices: 2, touch_target_min_px: 44, overflow: false }
+  - id: TC-EVC-014
+    scenario: SC-EVC-005
+    description: 결말 카드가 발견 수·효과·즉시 보상을 보여준다
+    type: normal
+    expected: { collection_count: visible, effect: visible, reward: visible }
+  - id: TC-EVC-015
+    scenario: SC-EVC-005
+    description: 데스크톱 DOM UI가 캔버스 위 390×844 프레임에 남는다
+    type: error
+    expected: { panel_top: 475, panel_bottom: 844, horizontal_overflow: false }
+  - id: TC-EVC-016
+    scenario: SC-EVC-006
+    description: 신규 세이브 5분 플레이에서 결말 뒤에도 성장 루프가 계속된다
+    type: normal
+    expected: { ending_completed: 1, progress_continues: true, errors: 0 }

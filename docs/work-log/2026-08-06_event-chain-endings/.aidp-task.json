@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "taskId": "2026-08-06_event-chain-endings",
+  "title": "사건 체인 결말",
+  "goal": "3단계 사건 선택이 런 효과 결말과 영구 수집으로 이어지고 단위·E2E 검증을 통과한다",
+  "root": "/Users/manager/aidp/gaepyo-master",
+  "startedAt": "2026-08-06T18:15:41+09:00",
+  "baseSha": "b21f7fb2692ad5fd3ae29a7f1cbd7b43ca378074",
+  "branch": "main",
+  "dirtyAtStart": true,
+  "requiredChecks": [
+    "npm-test"
+  ],
+  "status": "closed",
+  "latestEvidence": "docs/work-log/2026-08-06_event-chain-endings/evidence/evidence.json",
+  "latestEvidenceSha256": "282766aa32c7f71c521f1dd42d658d3ff2c16f34d5d5cad3ec2d22d30bd338b8",
+  "closedAt": "2026-08-06T20:34:01+09:00",
+  "lastVerifiedAt": "2026-08-06T20:33:54+09:00"
+}

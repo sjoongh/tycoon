@@ -164,13 +164,9 @@ export class DOMBottomPanel {
       case "setBuyQty": this.buyQty = (id === "max" ? "max" : Number(id)); this.refresh(); break;
       case "getEvent": if (gs.eventReady()) { this.currentEvent = this._pickEvent(); gs.uiEventOpen = true; this.refresh(); } break;
       case "eventChoice": {
-        const ev = officeEvents.find((v) => v.id === id);
-        let firstSeen = false;
-        if (ev) {
-          gs.applyEffect((el.dataset.side === "left" ? ev.left : ev.right)[1]);
-          firstSeen = gs.markEventSeen(ev.id); // 사건 도감 — 첫 수집이면 true
-        }
-        document.dispatchEvent(new CustomEvent("gp:event-resolved", { detail: { id: ev?.id, title: ev?.title, real: ev ? realEventIds.has(ev.id) : false, firstSeen } }));
+        const ev = this.currentEvent?.id === id ? this.currentEvent : null;
+        const result = gs.resolveEventChoice?.(ev, el.dataset.side);
+        if (result) document.dispatchEvent(new CustomEvent("gp:event-resolved", { detail: result }));
         this.currentEvent = null;
         gs.uiEventOpen = false;
         this.refresh();
@@ -200,19 +196,7 @@ export class DOMBottomPanel {
   }
 
   _pickEvent() {
-    const gs = this.gameState;
-    const avail = officeEvents.filter((ev) => gs.data.stage.area >= (ev.minStage || 1));
-    if (!avail.length) return null;
-    // 데이터 weight 가중 추첨 + 미수집 사건 가중치 상향(도감 완성이 RNG 그라인드가 되지 않게).
-    // 미수집은 ×2.5로 더 자주 등장하되, 수집한 사건도 계속 나와 다양성/재대응은 유지.
-    const w = (ev) => (ev.weight || 1) * (gs.hasSeenEvent(ev.id) ? 1 : 2.5);
-    const total = avail.reduce((s, ev) => s + w(ev), 0);
-    let roll = Math.random() * total;
-    for (const ev of avail) {
-      roll -= w(ev);
-      if (roll < 0) return ev;
-    }
-    return avail[avail.length - 1];
+    return this.gameState.pickNextEvent?.() || null;
   }
 
   refresh() {
@@ -365,6 +349,9 @@ export class DOMBottomPanel {
     if (ev) {
       const real = realEventIds.has(ev.id);
       const realBadge = real ? `<div class="gp-event__real">🏛 영감받은 각색</div>` : "";
+      const chainBadge = ev.chainId
+        ? `<div class="gp-event__chainbadge">연쇄 사건 · ${ev.chainStep + 1}/${ev.chainStepCount}<b>${ev.chainTitle}</b></div>`
+        : "";
       // 선택 결과 수치 미리보기 — 신규 유저도 결과 예측 가능(사이다 예고 포함)
       const fx = (eff) => {
         const scale = gs.eventRewardScale ? gs.eventRewardScale() : 1;
@@ -375,7 +362,7 @@ export class DOMBottomPanel {
         if ((eff.trust || 0) >= 12) parts.push(`<i class="gp-fx--cider">🔥사이다</i>`);
         return `<span class="gp-event__fx">${parts.join("")}</span>`;
       };
-      this.panel.innerHTML = `<div class="gp-event${real ? " gp-event--real" : ""}">${realBadge}<div class="gp-event__title">${ev.title}</div><div class="gp-event__body">${ev.body}</div>
+      this.panel.innerHTML = `<div class="gp-event${real ? " gp-event--real" : ""}${ev.chainId ? " gp-event--chain" : ""}">${realBadge}${chainBadge}<div class="gp-event__title">${ev.title}</div><div class="gp-event__body">${ev.body}</div>
         <div class="gp-event__choices">
           <button class="gp-btn gp-event__c" data-action="eventChoice" data-id="${ev.id}" data-side="left">${ev.left[0]}<small>${ev.left[2]}</small>${fx(ev.left[1])}</button>
           <button class="gp-btn gp-event__c" data-action="eventChoice" data-id="${ev.id}" data-side="right">${ev.right[0]}<small>${ev.right[2]}</small>${fx(ev.right[1])}</button>
@@ -383,11 +370,15 @@ export class DOMBottomPanel {
     } else {
       const log = (gs.data.log || []).slice(0, 3).map((l) => `<div class="gp-logline">${l}</div>`).join("");
       const ready = gs.eventReady();
+      const chainStatus = gs.eventChainStatus?.();
       const remainMs = gs.eventCooldownRemainingMs ? gs.eventCooldownRemainingMs() : 0;
       const totalMs = gs.eventCooldownTotalMs ? gs.eventCooldownTotalMs() : remainMs;
       const sec = Math.ceil(remainMs / 1000);
+      const readyLabel = chainStatus?.active
+        ? `후속 사건 ${chainStatus.nextStep}/${chainStatus.totalSteps} 받기`
+        : "사건 받기";
       const btn = ready
-        ? `<button class="gp-btn gp-btn--event" data-action="getEvent">사건 받기</button>`
+        ? `<button class="gp-btn gp-btn--event${chainStatus?.active ? " gp-btn--chain" : ""}" data-action="getEvent">${readyLabel}</button>`
         : `<button class="gp-btn gp-btn--event gp-btn--disabled" data-action="getEvent">다음 사건까지 ${sec}초</button>`;
       // 사건 도감 진척을 사건 탭에 노출 — 수집 동기를 사건 발생 지점에 배치
       const dexN = gs.seenEventCount();
@@ -397,7 +388,13 @@ export class DOMBottomPanel {
       const dexLine = nextM
         ? `📖 도감 ${dexN}/${dexTotal} · 생산 +${dexPct}% · ${nextM.n}종에서 +${Math.round(nextM.pct * 100)}%`
         : `📖 도감 ${dexN}/${dexTotal} 완성! · 생산 +${dexPct}% 영구`;
-      this.panel.innerHTML = `<div class="gp-paneltitle">📋 사건 대응실 · 처리 ${gs.data.stats.totalEvents}건</div><div class="gp-card__sub">사건 대응으로 표·믿음을 얻으세요 · 보상 x${gs.eventRewardScale().toFixed(1)}</div>${btn}<div class="gp-dexline">${dexLine}</div><div class="gp-log">${log}</div>`;
+      const chainLine = chainStatus?.active
+        ? `<div class="gp-chainline gp-chainline--active"><b>${chainStatus.chain.title}</b><span>다음은 ${chainStatus.nextStep}/${chainStatus.totalSteps}편 · 후속 사건 보장</span></div>`
+        : `<div class="gp-chainline"><b>사건 결말 ${chainStatus?.discovered || 0}/${chainStatus?.totalEndings || 0}</b><span>이번 런 완료 ${chainStatus?.completedThisRun || 0}건</span></div>`;
+      const effectLine = chainStatus?.effects?.length
+        ? `<div class="gp-chainfx"><b>이번 런 효과</b>${chainStatus.effects.map((ending) => `<span>${ending.title} · ${ending.effectText.replace("이번 런 ", "")}</span>`).join("")}</div>`
+        : "";
+      this.panel.innerHTML = `<div class="gp-paneltitle">📋 사건 대응실 · 처리 ${gs.data.stats.totalEvents}건</div><div class="gp-card__sub">사건 대응으로 표·믿음을 얻으세요 · 보상 x${gs.eventRewardScale().toFixed(1)}</div>${btn}${chainLine}${effectLine}<div class="gp-dexline">${dexLine}</div><div class="gp-log">${log}</div>`;
       // transform 기반 쿨다운 스윕으로 레이아웃 재계산을 피한다.
       if (!ready && totalMs > 0) {
         const btnEl = this.panel.querySelector(".gp-btn--event");

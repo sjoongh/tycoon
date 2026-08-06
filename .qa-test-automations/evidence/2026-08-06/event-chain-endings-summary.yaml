@@ -1,0 +1,73 @@
+date: 2026-08-06
+mode: incremental
+target: event-chain-endings
+duration_ms: 450000
+unit:
+  total: 89
+  passed: 89
+  failed: 0
+  skipped: 0
+integration:
+  total: 2
+  passed: 2
+  failed: 0
+  skipped: 0
+  checks: [npm-run-build, git-diff-check]
+e2e:
+  total: 8
+  passed: 8
+  failed: 0
+  screenshots:
+    - screenshots/SC-EVC-001-step-1-chain-mobile.png
+    - screenshots/SC-EVC-002-step-4-ending-mobile.png
+    - screenshots/SC-EVC-003-step-5-run-effect-mobile.png
+    - screenshots/SC-EVC-003-step-6-persist-desktop.png
+event_chain:
+  chains: 3
+  steps_per_chain: 3
+  endings: 9
+  start_chance: 0.35
+  pity_after_normal_events: 2
+  save_version: 7
+  mobile_touch_target_min_px: 44.2
+  mobile_overflow: false
+  desktop_panel_top: 475
+  desktop_panel_bottom: 844
+  desktop_overflow: false
+hands_on:
+  total: 1
+  passed: 1
+  game_state_injection: false
+  pace: high-intensity-power-user
+  duration_sec: 300
+  tap_interval_ms: 105
+  taps: 2316
+  area: 44
+  events: 6
+  event_chain_endings: 1
+  event_ending_effects: 1
+  boss_cycles: 14
+  boss_successes: 14
+  operation_choices: 14
+  fever_cycles: 7
+  errors: 0
+regression:
+  offline_carry: passed
+  checkpoint_boss: passed
+  operation_fever: passed
+  ui_readability: passed
+  mobile_runtime: passed_on_isolated_retry
+  startup_font: passed
+  phaser_core_webgl_canvas: passed
+validation:
+  impeccable_new_findings: 0
+  impeccable_preexisting_findings: 4
+  build_warning: phaser-and-firebase-chunks-over-500kb
+  transient_observation: first_batched_mobile_runtime_run_had_nonreproducible_frame_spikes
+environment:
+  target_url: "http://localhost:5178"
+  target_guard_passed: true
+  matched_allowed_host: localhost
+  provider: none
+  lifecycle: preexisting
+  started_by_skill: false

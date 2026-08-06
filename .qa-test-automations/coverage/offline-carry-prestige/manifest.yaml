@@ -6,7 +6,7 @@ modules:
     tests:
       - path: src/state/GameState.offlinePrestige.test.js
         type: unit
-        covers: [save-v6-normalize, persisted-offline-load, stage-allocation, carry-forward, double-claim, boss-operation-gates, prestige-guidance, prestige-reset]
+        covers: [save-v7-normalize, persisted-offline-load, stage-allocation, carry-forward, double-claim, boss-operation-gates, prestige-guidance, prestige-reset]
         case_ref: [TC-OCP-001, TC-OCP-002, TC-OCP-003, TC-OCP-004, TC-OCP-005, TC-OCP-006, TC-OCP-009]
       - path: scripts/_offlinecarrytest.mjs
         type: e2e

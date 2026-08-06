@@ -80,3 +80,12 @@ runs:
     skipped: 0
     coverage_lines: null
     duration_ms: 385000
+  - date: 2026-08-06
+    mode: incremental
+    target: event-chain-endings
+    total: 97
+    passed: 97
+    failed: 0
+    skipped: 0
+    coverage_lines: null
+    duration_ms: 450000

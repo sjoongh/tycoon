@@ -30,7 +30,7 @@ describe("체크포인트 보스 상태", () => {
     const now = Date.now();
     store.set(SAVE_KEY, JSON.stringify({ version: 4, lastSeenAt: now, lastSavedAt: now }));
     const gs = new GameState();
-    expect(gs.data.version).toBe(6);
+    expect(gs.data.version).toBe(7);
     expect(gs.data.boss).toMatchObject({ active: false, clearedArea: 0, outcome: null });
   });
 

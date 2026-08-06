@@ -30,6 +30,12 @@ export class DOMModalLayer {
     this._onBossStart = (result) => this._showBossChallenge(result);
     this._onBossEnd = (result) => this._resolveBossChallenge(result);
     this._onBossAction = (result) => this._showBossActionFeedback(result);
+    this._onEventChainEnding = (result) => {
+      if (!result) return;
+      if (!this._eventEndingQueue) this._eventEndingQueue = [];
+      this._eventEndingQueue.push(result);
+      this._drainBanners();
+    };
   }
 
   mount(parent) {
@@ -42,6 +48,7 @@ export class DOMModalLayer {
     this.gameState.on("boss-start", this._onBossStart);
     this.gameState.on("boss-end", this._onBossEnd);
     this.gameState.on("boss-action", this._onBossAction);
+    this.gameState.on("event-chain-ending", this._onEventChainEnding);
     document.addEventListener("gp:prestige-confirm", this._onPrestigeConfirm);
     document.addEventListener("gp:gacha-result", this._onGachaResult);
     document.addEventListener("gp:gacha-result10", this._onGachaResult10);
@@ -528,8 +535,13 @@ export class DOMModalLayer {
   }
 
   _drainBanners() {
-    if (this._destroyed || this._bannerActive || !this._bannerQueue?.length) return;
+    if (this._destroyed || this._bannerActive) return;
     if (this.root.querySelector(".gp-modal-ov") || this._bossEl?.isConnected || this._feverReportEl?.isConnected) return;
+    if (this._eventEndingQueue?.length) {
+      this._showEventChainEnding(this._eventEndingQueue.shift());
+      return;
+    }
+    if (!this._bannerQueue?.length) return;
     this._bannerActive = true;
     const item = this._bannerQueue.shift();
     this._bannerCurrent = item;
@@ -718,6 +730,24 @@ export class DOMModalLayer {
       <button class="gp-btn gp-btn--gold" data-close>확인</button>`);
   }
 
+  _showEventChainEnding(result) {
+    if (!result) return;
+    const reward = result.reward || {};
+    const discovery = result.firstDiscovery ? "새 결말 발견" : "다시 도달한 결말";
+    this._flash();
+    document.dispatchEvent(new CustomEvent("gp:sfx", { detail: "achieve" }));
+    this._openModal(`
+      <div class="gp-ending">
+        <div class="gp-ending__stamp">사건 종결</div>
+        <div class="gp-mtitle">${result.title}</div>
+        <div class="gp-ending__discovery">${discovery} · ${result.discovered}/${result.total}</div>
+        <div class="gp-msub">${result.body}</div>
+        <div class="gp-ending__effect"><small>감사 전까지 적용</small><b>${result.effectText}</b></div>
+        <div class="gp-ending__reward">즉시 보상 · +${shortNumber(reward.votes || 0)}표 · +${shortNumber(reward.explain || 0)} 해명 · 믿음 +${reward.trust || 0}</div>
+      </div>
+      <button class="gp-btn gp-btn--gold" data-close>결말 기록하기</button>`);
+  }
+
   // 체제 전복(공산화) 하드 리셋 연출 — 풍자 모달. 메타 유지 안내로 좌절 완화.
   _showCollapse(p) {
     this._flash();
@@ -741,6 +771,7 @@ export class DOMModalLayer {
     this.gameState.off("boss-start", this._onBossStart);
     this.gameState.off("boss-end", this._onBossEnd);
     this.gameState.off("boss-action", this._onBossAction);
+    this.gameState.off("event-chain-ending", this._onEventChainEnding);
     document.removeEventListener("gp:prestige-confirm", this._onPrestigeConfirm);
     document.removeEventListener("gp:gacha-result", this._onGachaResult);
     document.removeEventListener("gp:gacha-result10", this._onGachaResult10);

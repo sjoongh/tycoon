@@ -71,6 +71,10 @@ const readState = () => page.evaluate(() => {
     bossArea: data.boss?.area || 0,
     bossOutcome: data.boss?.outcome || null,
     bossPattern: gameState.bossPatternStatus?.()?.phase?.type || null,
+    eventChainActive: gameState.eventChainStatus?.().active || false,
+    eventChainStep: gameState.eventChainStatus?.().nextStep || 0,
+    eventEndings: gameState.eventEndingCount?.() || 0,
+    eventEndingEffects: data.eventChain?.effects?.length || 0,
   };
 });
 
@@ -101,6 +105,7 @@ try {
   let bossCycles = 0;
   let bossSuccesses = 0;
   let bossFailures = 0;
+  let eventChainEndings = 0;
   const bossPatternsSeen = new Set();
   let lastActive = false;
   let lastRecovering = false;
@@ -128,6 +133,13 @@ try {
   while (Date.now() - startedAt < durationMs) {
     const elapsed = Date.now() - startedAt;
     recordState(await readState());
+
+    if (await page.locator(".gp-ending").isVisible().catch(() => false)) {
+      eventChainEndings += 1;
+      await clickIfVisible(".gp-ending + [data-close]");
+      await page.waitForTimeout(80);
+      continue;
+    }
 
     let operationCard = requestedFamily === "adaptive"
       ? page.locator(".gp-opcard:has(.gp-opcard__meta em)").first()
@@ -228,6 +240,7 @@ try {
     bossCycles,
     bossSuccesses,
     bossFailures,
+    eventChainEndings,
     bossPatternsSeen: [...bossPatternsSeen],
     state,
     errors,
