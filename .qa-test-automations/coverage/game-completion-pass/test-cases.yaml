@@ -1,0 +1,15 @@
+cases:
+  - { id: TC-GCP-001, scenario: SC-GCP-001, type: boundary, description: 구 세이브 슬롯 정규화와 최대 3명, expected: { slot_limit: 3, base_effect_preserved: true } }
+  - { id: TC-GCP-002, scenario: SC-GCP-002, type: boundary, description: 5레벨 단위 직급 계산, expected: { levels: [5, 10, 15, 20], tiers: [2, 3, 4, 5] } }
+  - { id: TC-GCP-003, scenario: SC-GCP-001, type: normal, description: 첫 세 명 자동배치와 네 번째 대기, expected: { auto_slots: [clerk, auditor, runner], fourth_waiting: true } }
+  - { id: TC-GCP-004, scenario: SC-GCP-001, type: normal, description: 직원 교대와 새로고침 복원, expected: { persisted: true, world_matches_state: true } }
+  - { id: TC-GCP-005, scenario: SC-GCP-002, type: normal, description: Lv.5 카드·월드 주무관 동기화, expected: { world_texture: worker-rank-2, compact_touch_min: 44 } }
+  - { id: TC-GCP-006, scenario: SC-GCP-001, type: boundary, description: 감사 뒤 직원·슬롯 초기화, expected: { staff: 0, slots: 0 } }
+  - { id: TC-GCP-007, scenario: SC-GCP-003, type: boundary, description: 첫/반복 목표 베이스, expected: { first_base: 44000, repeat_base: 24000 } }
+  - { id: TC-GCP-008, scenario: SC-GCP-003, type: migration, description: v8 진행률을 v9에 비율 보존, expected: { version: 9, progress_ratio_preserved: true } }
+  - { id: TC-GCP-009, scenario: SC-GCP-003, type: integration, description: 3회 감사와 11구역 장기 결정적 시뮬레이션, expected: { first_seconds: 480-720, repeat_seconds: 300-480, area_11_max_seconds: 3600 } }
+  - { id: TC-GCP-010, scenario: SC-GCP-004, type: normal, description: 대기 worker 감지와 나중에 선택, expected: { forced_reload: false } }
+  - { id: TC-GCP-011, scenario: SC-GCP-004, type: error, description: 적용 중 중복 클릭 차단과 저장 선행, expected: { save_before_message: true, reload_once: true } }
+  - { id: TC-GCP-012, scenario: SC-GCP-004, type: e2e, description: 실제 서비스워커 교체·활성화, expected: { waiting_before_choice: true, activated_after_choice: true } }
+  - { id: TC-GCP-013, scenario: SC-GCP-004, type: e2e, description: 갱신 뒤 오프라인 재실행, expected: { offline_title: 믿어주세요 개표국 } }
+  - { id: TC-GCP-014, scenario: SC-GCP-005, type: deployment, description: manifest 자산·privacy·sw 헤더, expected: { assets_200: true, privacy_200: true, sw_no_cache: true } }

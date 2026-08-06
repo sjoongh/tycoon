@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "taskId": "2026-08-06_game-completion-pass",
+  "title": "게임 완성도 마감 패스",
+  "goal": "직원 전략 배치·승급, 고레벨 외형, 안전한 PWA 갱신, 균형형 감사 곡선이 저장 호환과 E2E를 통과하고 Firebase 운영에 배포된다",
+  "root": "/Users/manager/aidp/gaepyo-game-completion-pass",
+  "startedAt": "2026-08-06T20:49:33+09:00",
+  "baseSha": "df11a8768e9217da984be86cc8450481fb38837b",
+  "branch": "feat/game-completion-pass",
+  "dirtyAtStart": true,
+  "requiredChecks": [
+    "npm-test",
+    "build",
+    "pwa-e2e"
+  ],
+  "status": "active",
+  "latestEvidence": null,
+  "latestEvidenceSha256": null,
+  "closedAt": null
+}

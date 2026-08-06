@@ -29,7 +29,7 @@ describe("오프라인 구역 진행 이월", () => {
     const now = Date.now();
     store.set(SAVE_KEY, JSON.stringify({ version: 5, offlineCarryVotes: "broken", lastSeenAt: now, lastSavedAt: now }));
     const gs = new GameState();
-    expect(gs.data.version).toBe(7);
+    expect(gs.data.version).toBe(9);
     expect(gs.data.offlineCarryVotes).toBe(0);
   });
 
@@ -129,15 +129,16 @@ describe("오프라인 구역 진행 이월", () => {
     gs.data.stage.area = 2;
     gs.data.stage.target = gs.stageTarget(2);
     gs.data.stage.progress = gs.data.stage.target;
-    gs.data.offlineCarryVotes = 5000;
 
     const area2Reward = gs.stageCompletionVotes(2);
     const area3Target = gs.stageTarget(3);
-    const expectedArea3CarryUse = Math.min(5000, Math.max(0, area3Target - area2Reward));
+    const carryBefore = Math.max(0, area3Target - area2Reward) + 5000;
+    gs.data.offlineCarryVotes = carryBefore;
+    const expectedArea3CarryUse = Math.min(carryBefore, Math.max(0, area3Target - area2Reward));
     expect(gs.advanceStage()).toBe(true);
     expect(gs.data.stage.area).toBe(3);
     expect(gs.data.stage.progress).toBe(Math.min(area3Target, area2Reward + expectedArea3CarryUse));
-    expect(gs.data.offlineCarryVotes).toBe(5000 - expectedArea3CarryUse);
+    expect(gs.data.offlineCarryVotes).toBe(carryBefore - expectedArea3CarryUse);
     expect(gs.bossRequired()).toBe(true);
     expect(gs.advanceStage()).toBe(false);
 

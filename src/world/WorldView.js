@@ -1,6 +1,8 @@
 import { WorldEffects } from "./WorldEffects.js";
-import { govTextureKey, govStageFor } from "./dotChar.js";
+import { facilityPropTextureKey, govTextureKey, govStageFor } from "./dotChar.js";
 import { staffDefinitions } from "../data/staff.js";
+import { staffRankForLevel } from "../data/staffDeployment.js";
+import { tierForLevel } from "./facilityTiers.js";
 import { eraTheme } from "../data/regions.js";
 import { pickRandomItem } from "../data/items.js";
 import { pickPress } from "../data/worldPress.js";
@@ -18,9 +20,9 @@ const BACK_SCALE = PROP_SCALE * 0.74; // 뒤쪽 선반(원근감 위해 작게)
 const SHELF_Y = GROUND_Y - 12;        // 뒤쪽 선반(카운터) 라인 — 국장보다 뒤
 const BACK_DEPTH = 88;                // 국장(100)보다 뒤 → 캐릭터를 절대 안 가림
 // 채용된 직원이 서는 바닥 슬롯 — 설비(선반 x: 46/122/268/344)·국장(195) 사이 빈 곳에 작게
-const WORKER_SLOTS = [84, 160, 230, 306, 40, 350];
-const WORKER_SCALE = 3;
-const WORKER_Y = GROUND_Y + 4; // 바닥선(설비 선반보다 앞·아래)
+const WORKER_SLOTS = [94, 195, 296];
+const WORKER_SCALE = 3.2;
+const WORKER_Y = GROUND_Y + 14; // 국장 앞에 3인 현장팀이 서되 상체를 가리지 않는 낮은 바닥선
 const SORTER_SCALE = BACK_SCALE; // 분류기도 뒷줄 동일 스케일
 // 국장 풍자 대사(개표국 이슈 위트, 정치 중립)
 const GOV_LINES = [
@@ -137,7 +139,7 @@ export class WorldView {
     this._comboLast = 0;
 
     this.effects = new WorldEffects(scene);
-    this._workers = {}; // 채용된 직원 도트(staffId → sprite)
+    this._workers = {}; // 현장 배치 직원 도트(staffId → container)
     this._workerShadows = {};
     this._propTier = {}; // 시설별 시각 티어(승급 색 진화 추적)
 
@@ -408,21 +410,26 @@ export class WorldView {
     this._shelf.fillStyle(0x1f2750, 1); this._shelf.fillRect(0, SHELF_Y, GAME_W, 6);          // 선반 상판
     this._shelf.fillStyle(0x333c57, 1); this._shelf.fillRect(0, SHELF_Y + 6, GAME_W, 2);      // 하이라이트
 
-    const place = (key, px, scale = BACK_SCALE) => {
+    const place = (id, px, scale = BACK_SCALE * 0.82) => {
+      const key = facilityPropTextureKey(id, 1);
       const s = this.scene.add.image(px, SHELF_Y, key).setOrigin(0.5, 1).setScale(scale).setDepth(BACK_DEPTH);
       this.props.push(s);
+      this.propByFacility[id] = s;
       return s;
     };
-    // 한 줄 균등 배치 — 가운데(국장 자리)는 비우고 좌2·우2가 또렷이 보이게
-    this.ballotbox = place("prop-ballotbox", 46);  // 접수 투표함(desk)
-    this.sorter    = place("prop-sorter", 122);    // 투표지 분류기(sorter)
-    this.papers    = place("prop-papers", 268);    // 기록 서류더미(archive)
-    this.board     = place("prop-board", 344);     // 개표 상황판(server)
+    this.propByFacility = {};
+    // 시설 여섯 종을 모두 선반에 배치하고 가운데 국장 실루엣을 위한 간격을 남긴다.
+    this.ballotbox = place("desk", 28);
+    this.sorter = place("sorter", 88);
+    this.notice = place("notice", 148);
+    this.papers = place("archive", 242);
+    this.board = place("server", 302);
+    this.studio = place("studio", 362);
     this._boardBlink = this.scene.tweens.add({ targets: this.board, alpha: 0.8, yoyo: true, repeat: -1, duration: 700, ease: "Sine.easeInOut" });
 
     // 상황판 LED 실시간 개표 현황
     this.boardText = this.scene.add
-      .text(344, SHELF_Y - 42, "", { fontFamily: '"Galmuri9", "Galmuri11", monospace', fontSize: "8px", color: "#73eff7", align: "center" })
+      .text(this.board.x, SHELF_Y - 42, "", { fontFamily: '"Galmuri9", "Galmuri11", monospace', fontSize: "8px", color: "#73eff7", align: "center" })
       .setOrigin(0.5)
       .setDepth(89);
 
@@ -435,47 +442,40 @@ export class WorldView {
         .setDepth(90);
       this.propLabels[id] = t;
     };
-    mkLabel(this.ballotbox, "desk");
-    mkLabel(this.sorter, "sorter");
-    mkLabel(this.papers, "archive");
-    mkLabel(this.board, "server");
+    Object.entries(this.propByFacility).forEach(([id, object]) => mkLabel(object, id));
   }
-
-  // 시설 시각 티어(0~3): 레벨 10/25/40에서 승급 — 색이 기본→은→금으로 진화
-  _propTierFor(l) { return l >= 40 ? 3 : l >= 25 ? 2 : l >= 10 ? 1 : 0; }
-  _tierTint(t) { return t >= 3 ? 0xffe9a8 : t >= 2 ? 0xd8e0ff : 0xffffff; }
 
   // 각 장비를 대응 시설 레벨에 맞춰 키운다(시설 업그레이드가 화면에 보이게)
   //  투표함←접수(desk) · 서류더미←기록(archive) · 상황판←전산(server)
   _syncProps() {
     const lvl = (id) => (this.gameState.level ? this.gameState.level(id) : 0);
     // 뒷줄 선반 기준(BACK_SCALE)에서 레벨에 따라 완만히 성장 — 너무 커져 옆을 침범하지 않게 +0.4 상한
-    const grow = (l) => BACK_SCALE * (1 + Math.min(0.4, l / 50));
-    this._tweenScale(this.ballotbox, grow(lvl("desk")));
-    this._tweenScale(this.papers, grow(lvl("archive")));
-    this._tweenScale(this.board, grow(lvl("server")));
-    this._tweenScale(this.sorter, grow(lvl("sorter")));
+    const grow = (l) => BACK_SCALE * 0.82 * (1 + Math.min(0.24, l / 120));
+    Object.entries(this.propByFacility).forEach(([id, object]) => this._tweenScale(object, grow(lvl(id))));
 
-    // 시설 레벨 뱃지 + 티어 색 진화(승급 시 번쩍 + 알림)
-    const PROP_OF = { desk: this.ballotbox, archive: this.papers, server: this.board, sorter: this.sorter };
-    const TIER_NAME = ["", "은장", "금장", "명품"];
-    Object.entries(PROP_OF).forEach(([id, obj]) => {
+    // 시설 레벨 뱃지 + t1~t5 실루엣 진화(승급 시 번쩍 + 알림)
+    const TIER_NAME = { t1: "기본", t2: "증설", t3: "정예", t4: "특급", t5: "전설" };
+    Object.entries(this.propByFacility).forEach(([id, obj]) => {
       if (!obj) return;
       const l = lvl(id);
       const label = this.propLabels[id];
       if (label) label.setText(l > 0 ? `Lv.${l}` : "");
-      const t = this._propTierFor(l);
+      obj.setVisible(l > 0);
+      const t = tierForLevel(l);
+      const textureTier = t === "locked" ? "t1" : t;
       if (this._propTier[id] === undefined) {
         this._propTier[id] = t;
-        obj.setTint(this._tierTint(t));
+        obj.setTexture(facilityPropTextureKey(id, textureTier));
       } else if (t !== this._propTier[id]) {
-        const up = t > this._propTier[id];
+        const previous = Number(String(this._propTier[id]).replace("t", "")) || 0;
+        const current = Number(String(t).replace("t", "")) || 0;
+        const up = current > previous;
         this._propTier[id] = t;
-        obj.setTint(this._tierTint(t));
-        if (up && t > 0) {
+        obj.setTexture(facilityPropTextureKey(id, textureTier));
+        if (up && current > 1) {
           const s = obj.scaleX;
           this.scene.tweens.add({ targets: obj, scaleX: s * 1.3, scaleY: s * 1.3, yoyo: true, duration: 180, ease: "Back.easeOut" });
-          this.effects.float({ text: `★ ${TIER_NAME[t]} 승급!`, x: obj.x, y: obj.y - 56, color: "#ffd34d" });
+          this.effects.float({ text: `★ ${TIER_NAME[t]} 시설 승급!`, x: obj.x, y: obj.y - 56, color: "#ffd34d" });
         }
       }
     });
@@ -485,6 +485,7 @@ export class WorldView {
       const d = this.gameState.data;
       const pct = Math.min(100, Math.round((d.stage.progress / d.stage.target) * 100));
       this.boardText.setText(`${d.stage.area}구역\n개표 ${pct}%`);
+      this.boardText.setVisible(lvl("server") > 0);
     }
   }
 
@@ -496,8 +497,7 @@ export class WorldView {
 
   // 시설 업그레이드 시 대응 장비가 반짝 커지는 연출
   _pulseProp(facility) {
-    const map = { desk: this.ballotbox, archive: this.papers, server: this.board, sorter: this.sorter };
-    const obj = map[facility && facility.id];
+    const obj = this.propByFacility?.[facility && facility.id];
     if (!obj) return;
     const s = obj.scaleX;
     this.scene.tweens.add({ targets: obj, scaleX: s * 1.22, scaleY: s * 1.22, yoyo: true, duration: 150, ease: "Quad.easeOut" });
@@ -735,23 +735,40 @@ export class WorldView {
     }
   }
 
-  // 채용된 직원을 바닥에 도트 일꾼으로 등장시킨다(직원별 색, 등장 팝 + bob).
+  // 현장 슬롯의 세 직원만 국장 앞에 배치하고, 직급 장식을 별도 오버레이로 유지한다.
   _syncWorkers() {
-    staffDefinitions.forEach((s, i) => {
-      if (i >= WORKER_SLOTS.length) return;
-      const lv = this.gameState.staffLevel ? this.gameState.staffLevel(s.id) : 0;
-      if (lv > 0 && !this._workers[s.id]) {
-        const sx = WORKER_SLOTS[i];
-        const sh = this.scene.add.rectangle(sx, WORKER_Y + 1, 26, 7, 0x000000, 0.4).setDepth(110);
-        this._workerShadows[s.id] = sh;
-        const w = this.scene.add.image(sx, WORKER_Y, "worker-mini")
-          .setOrigin(0.5, 1).setScale(0).setDepth(111).setTint(lightenColor(s.color || 0xffffff, 0.35));
-        this._workers[s.id] = w;
-        this.scene.tweens.add({ targets: w, scaleX: WORKER_SCALE, scaleY: WORKER_SCALE, duration: 280, ease: "Back.easeOut" });
-        this.scene.tweens.add({ targets: w, y: WORKER_Y - 3, yoyo: true, repeat: -1, duration: 640 + i * 70, ease: "Sine.easeInOut", delay: 120 + i * 90 });
-        // 좌우로 살짝 꼼지락(걸어다니는 느낌)
-        this.scene.tweens.add({ targets: w, x: sx + (i % 2 ? 9 : -9), yoyo: true, repeat: -1, duration: 1600 + i * 180, ease: "Sine.easeInOut", delay: 200 + i * 120 });
+    const deployed = this.gameState.staffSlots ? this.gameState.staffSlots() : [];
+    Object.entries(this._workers).forEach(([id, worker]) => {
+      const index = deployed.indexOf(id);
+      if (index >= 0 && worker.slot === index) return;
+      this.scene.tweens.killTweensOf([worker.body, worker.badge]);
+      worker.body.destroy();
+      worker.badge.destroy();
+      worker.shadow.destroy();
+      delete this._workers[id];
+    });
+    deployed.forEach((id, index) => {
+      const staff = staffDefinitions.find((item) => item.id === id);
+      if (!staff) return;
+      const rank = staffRankForLevel(this.gameState.staffLevel(id));
+      let worker = this._workers[id];
+      if (!worker) {
+        const sx = WORKER_SLOTS[index];
+        const shadow = this.scene.add.rectangle(sx, WORKER_Y + 1, 24, 6, 0x000000, 0.4).setDepth(110);
+        const body = this.scene.add.image(sx, WORKER_Y, "worker-mini").setOrigin(0.5, 1).setScale(0).setDepth(111).setTint(lightenColor(staff.color || 0xffffff, 0.35));
+        const badge = this.scene.add.image(sx, WORKER_Y, `worker-rank-${rank.tier}`).setOrigin(0.5, 1).setScale(0).setDepth(112);
+        worker = { slot: index, rank: rank.tier, body, badge, shadow };
+        this._workers[id] = worker;
+        this.scene.tweens.add({ targets: [body, badge], scaleX: WORKER_SCALE, scaleY: WORKER_SCALE, duration: 280, ease: "Back.easeOut" });
+        this.scene.tweens.add({ targets: [body, badge], y: WORKER_Y - 3, yoyo: true, repeat: -1, duration: 640 + index * 70, ease: "Sine.easeInOut", delay: 120 + index * 90 });
+        this.scene.tweens.add({ targets: [body, badge], x: sx + (index % 2 ? 6 : -6), yoyo: true, repeat: -1, duration: 1600 + index * 180, ease: "Sine.easeInOut", delay: 200 + index * 120 });
         this.effects.deskPop(sx, GROUND_Y - 14);
+      } else if (worker.rank !== rank.tier) {
+        worker.rank = rank.tier;
+        worker.badge.setTexture(`worker-rank-${rank.tier}`);
+        const scale = worker.body.scaleX;
+        this.scene.tweens.add({ targets: [worker.body, worker.badge], scaleX: scale * 1.2, scaleY: scale * 1.2, yoyo: true, duration: 180, ease: "Back.easeOut" });
+        this.effects.float({ text: `★ ${rank.name} 승급!`, x: worker.body.x, y: worker.body.y - 40, color: "#ffd34d" });
       }
     });
   }
@@ -932,7 +949,12 @@ export class WorldView {
     this.boardText?.destroy();
     Object.values(this.propLabels || {}).forEach((t) => t.destroy());
     (this.props || []).forEach((p) => p.destroy());
-    Object.values(this._workers || {}).forEach((w) => { this.scene.tweens.killTweensOf(w); w.destroy(); });
+    Object.values(this._workers || {}).forEach((worker) => {
+      this.scene.tweens.killTweensOf([worker.body, worker.badge]);
+      worker.body.destroy();
+      worker.badge.destroy();
+      worker.shadow.destroy();
+    });
     Object.values(this._workerShadows || {}).forEach((s) => s.destroy());
     this.effects.destroy();
   }

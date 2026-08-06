@@ -1,0 +1,30 @@
+domain: game-completion-pass
+modules:
+  - source: src/data/staffDeployment.js
+    scenario_ref: [SC-GCP-001, SC-GCP-002]
+    tests:
+      - { path: src/data/staffDeployment.test.js, type: unit, case_ref: [TC-GCP-001, TC-GCP-002] }
+      - { path: scripts/_staffdeploymenttest.mjs, type: e2e, case_ref: [TC-GCP-003, TC-GCP-004, TC-GCP-005] }
+    risk_score: 12
+    last_tested: 2026-08-06
+  - source: src/state/GameState.js
+    scenario_ref: [SC-GCP-001, SC-GCP-003]
+    tests:
+      - { path: src/state/GameState.staffDeployment.test.js, type: unit, case_ref: [TC-GCP-001, TC-GCP-006] }
+      - { path: src/state/GameState.balancePacing.test.js, type: unit, case_ref: [TC-GCP-007, TC-GCP-008] }
+      - { path: scripts/_balancesim.mjs, type: integration, case_ref: [TC-GCP-009] }
+    risk_score: 16
+    last_tested: 2026-08-06
+  - source: src/pwa/ServiceWorkerUpdateController.js
+    scenario_ref: [SC-GCP-004]
+    tests:
+      - { path: src/pwa/ServiceWorkerUpdateController.test.js, type: unit, case_ref: [TC-GCP-010, TC-GCP-011] }
+      - { path: scripts/_pwaupdatetest.mjs, type: e2e, case_ref: [TC-GCP-012, TC-GCP-013] }
+    risk_score: 15
+    last_tested: 2026-08-06
+  - source: firebase.json
+    scenario_ref: [SC-GCP-005]
+    tests:
+      - { path: scripts/_pwaupdatetest.mjs, type: e2e, case_ref: [TC-GCP-012, TC-GCP-014] }
+    risk_score: 15
+    last_tested: 2026-08-06

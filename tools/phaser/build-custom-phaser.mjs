@@ -13,7 +13,7 @@ export const CUSTOM_PHASER_PATH = resolve(CACHE_DIR, "phaser-custom.mjs");
 
 const BUILD_SCHEMA = 1;
 const EXPECTED_PHASER_VERSION = "3.90.0";
-const EXPECTED_ESBUILD_VERSION = "0.27.7";
+const EXPECTED_ESBUILD_VERSION = "0.28.1";
 const LICENSE_BANNER = "/*! Phaser v3.90.0 (c) 2013-2025 Phaser Studio Inc. — MIT License: https://opensource.org/licenses/MIT */";
 const CANVAS_FEATURES_STUB = "module.exports = { supportInverseAlpha: false, supportNewBlendModes: false };";
 const FEATURE_FLAGS = Object.freeze({

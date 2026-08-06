@@ -6,8 +6,9 @@ adapter:
   execution: sequential
   commands:
     unit: npm test
-    integration: null
-    e2e: node scripts/_offlinecarrytest.mjs && node scripts/_bosschecktest.mjs && node scripts/_operationfevertest.mjs && node scripts/_uireadabilitytest.mjs && node scripts/_mobileperformancetest.mjs && node scripts/_startupfonttest.mjs && node scripts/_phasercoretest.mjs
+    integration: node scripts/_balancesim.mjs
+    e2e: node scripts/_offlinecarrytest.mjs && node scripts/_bosschecktest.mjs && node scripts/_operationfevertest.mjs && node scripts/_uireadabilitytest.mjs && node scripts/_mobileperformancetest.mjs && node scripts/_startupfonttest.mjs && node scripts/_phasercoretest.mjs && node scripts/_eventchainplaytest.mjs && node scripts/_staffdeploymenttest.mjs
+    release_e2e: npm run test:pwa
 project:
   src_root: src/
   specs_dir: null

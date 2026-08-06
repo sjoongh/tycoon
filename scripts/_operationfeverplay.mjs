@@ -5,9 +5,11 @@ const baseUrl = process.env.QA_BASE_URL || "http://localhost:5178";
 const durationMs = Number(process.env.PLAY_DURATION_MS) || 180000;
 const tapDelayMs = Math.max(80, Number(process.env.PLAY_TAP_DELAY_MS) || 105);
 const requestedFamily = process.env.OPERATION_FAMILY || "adaptive";
+const scenarioId = process.env.PLAY_SCENARIO_ID || "SC-OPF-004";
 if (!["adaptive", "tap", "build", "response"].includes(requestedFamily)) {
   throw new Error(`Unknown OPERATION_FAMILY: ${requestedFamily}`);
 }
+if (!/^[A-Z0-9-]+$/.test(scenarioId)) throw new Error(`Invalid PLAY_SCENARIO_ID: ${scenarioId}`);
 const parsedUrl = new URL(baseUrl);
 if (!["localhost", "127.0.0.1"].includes(parsedUrl.hostname)) {
   throw new Error(`REFUSING to run hands-on play against non-local host: ${parsedUrl.hostname}`);
@@ -106,6 +108,7 @@ try {
   let bossSuccesses = 0;
   let bossFailures = 0;
   let eventChainEndings = 0;
+  let firstPrestigeEligibleAtMs = null;
   const bossPatternsSeen = new Set();
   let lastActive = false;
   let lastRecovering = false;
@@ -117,6 +120,7 @@ try {
 
   const recordState = (state) => {
     if (!state) return;
+    if (firstPrestigeEligibleAtMs === null && state.area >= 4) firstPrestigeEligibleAtMs = Date.now() - startedAt;
     if (state.feverActive && !lastActive) feverCycles += 1;
     if (state.feverRecovering && !lastRecovering) recoveryCycles += 1;
     if (state.bossActive && !lastBossActive) bossCycles += 1;
@@ -226,7 +230,7 @@ try {
     }
   }
 
-  await page.screenshot({ path: `${evidenceDir}/SC-OPF-004-hands-on-${requestedFamily}-${Math.round(durationMs / 1000)}s.png` });
+  await page.screenshot({ path: `${evidenceDir}/${scenarioId}-hands-on-${requestedFamily}-${Math.round(durationMs / 1000)}s.png` });
   const state = await readState();
   const result = {
     ok: errors.length === 0,
@@ -241,6 +245,9 @@ try {
     bossSuccesses,
     bossFailures,
     eventChainEndings,
+    firstPrestigeEligibleSec: firstPrestigeEligibleAtMs === null
+      ? null
+      : Number((firstPrestigeEligibleAtMs / 1000).toFixed(2)),
     bossPatternsSeen: [...bossPatternsSeen],
     state,
     errors,

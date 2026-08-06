@@ -19,6 +19,12 @@ import { cosmetics, cosmeticById } from "../data/cosmetics.js";
 import { characters, characterById } from "../data/characters.js";
 import { questDefinitions } from "../data/quests.js";
 import { staffDefinitions } from "../data/staff.js";
+import {
+  STAFF_SLOT_LIMIT,
+  normalizeStaffSlots,
+  staffDeploymentEffectFor,
+  staffRankForLevel,
+} from "../data/staffDeployment.js";
 import { achievementDefinitions } from "../data/achievements.js";
 import { dailyQuestDefinitions } from "../data/dailyQuests.js";
 import { weeklyGoalDefinitions } from "../data/weeklyGoals.js";
@@ -71,7 +77,9 @@ const DEX_MILESTONES = [
   { n: 75, pct: 0.25 }, // 전종 수집 완성(officeEvents 총수와 일치 — 사건 추가 시 함께 갱신)
 ];
 
-const SAVE_VERSION = 7;
+const SAVE_VERSION = 9;
+const FIRST_RUN_STAGE_BASE = 44000;
+const REPEAT_RUN_STAGE_BASE = 24000;
 
 const fallbackState = {
   version: SAVE_VERSION,
@@ -104,10 +112,11 @@ const fallbackState = {
     analyst: 0,
     speaker: 0,
   },
+  staffSlots: [], // 이번 감사 런의 현장 배치(최대 3명). 기존 직원 기본 효과는 배치와 무관하게 유지.
   stage: {
     area: 1,
     progress: 0,
-    target: 2200,
+    target: FIRST_RUN_STAGE_BASE,
     completed: 0,
   },
   prestige: {
@@ -224,12 +233,14 @@ export class GameState extends Phaser.Events.EventEmitter {
   }
 
   normalize(parsed, now) {
+    const parsedVersion = Math.max(0, Math.floor(Number(parsed?.version) || 0));
     const data = {
       ...structuredClone(fallbackState),
       ...(parsed || {}),
       version: SAVE_VERSION,
       facilities: { ...fallbackState.facilities, ...(parsed?.facilities || {}) },
       staff: { ...fallbackState.staff, ...(parsed?.staff || {}) },
+      staffSlots: Array.isArray(parsed?.staffSlots) ? [...parsed.staffSlots] : [],
       achievements: { ...fallbackState.achievements, ...(parsed?.achievements || {}) },
       quests: { ...fallbackState.quests, ...(parsed?.quests || {}) },
       seenEvents: (parsed?.seenEvents && typeof parsed.seenEvents === "object") ? { ...parsed.seenEvents } : {},
@@ -387,8 +398,13 @@ export class GameState extends Phaser.Events.EventEmitter {
     // 미래값으로 변조되면 2배 보상이 영구 비활성되므로 오늘 인덱스로 상한 클램프
     data.offline2xDay = Phaser.Math.Clamp(Math.floor(Number(data.offline2xDay) || 0), 0, this._todayIndex());
     data.stage.area = Math.max(1, Number(data.stage.area) || 1);
-    data.stage.target = this.stageTarget(data.stage.area);
-    data.stage.progress = Phaser.Math.Clamp(Number(data.stage.progress) || 0, 0, data.stage.target);
+    const savedStageTarget = Math.max(0, Number(data.stage.target) || 0);
+    const savedStageProgress = Math.max(0, Number(data.stage.progress) || 0);
+    data.stage.target = this.stageTarget(data.stage.area, data.prestige?.runs);
+    // v8 이하의 짧은 구역 목표에서 v9 페이싱으로 옮길 때 진행률을 그대로 보존한다.
+    data.stage.progress = parsedVersion < SAVE_VERSION && savedStageTarget > 0
+      ? data.stage.target * Phaser.Math.Clamp(savedStageProgress / savedStageTarget, 0, 1)
+      : Phaser.Math.Clamp(savedStageProgress, 0, data.stage.target);
     data.boss.area = Math.max(0, Math.floor(Number(data.boss.area) || 0));
     data.boss.progress = Math.max(0, Number(data.boss.progress) || 0);
     data.boss.target = Math.max(0, Number(data.boss.target) || 0);
@@ -474,6 +490,10 @@ export class GameState extends Phaser.Events.EventEmitter {
     });
     staffDefinitions.forEach((staff) => {
       data.staff[staff.id] = Phaser.Math.Clamp(Number(data.staff[staff.id]) || 0, 0, staff.maxLevel ?? 20);
+    });
+    data.staffSlots = normalizeStaffSlots(data.staffSlots, data.staff, {
+      // v8 이하의 기존 세이브는 첫 세 명을 자동 배치해 업데이트 직후 새 기능을 바로 보여준다.
+      autofill: parsedVersion < SAVE_VERSION && !Array.isArray(parsed?.staffSlots),
     });
 
     return data;
@@ -1099,8 +1119,9 @@ export class GameState extends Phaser.Events.EventEmitter {
       event: "eventHeat",
       field: "fieldHeat",
     };
-    const added = Math.max(0, Number(baseAmount) || 0)
+    const rawAdded = Math.max(0, Number(baseAmount) || 0)
       + (heatKeys[source] ? this.operationEffectFor(this.data, heatKeys[source]) : 0);
+    const added = rawAdded * (1 + this.staffDeploymentEffectFor(this.data, "feverChargePct"));
     if (added <= 0) return { added: 0, started: false };
     const next = this.feverCharge() + added;
     if (next >= FEVER_TARGET) {
@@ -1414,8 +1435,15 @@ export class GameState extends Phaser.Events.EventEmitter {
   eventRewardScale() {
     const base = Math.min(50, this.stageTarget(this.data.stage.area) / this.stageTarget(1));
     return base
-      * (1 + this.permanentEffectFor(this.data, "eventPct") + this.titleEffectFor(this.data, "eventPct") + this.charEffectFor("eventPct") + this.operationEffectFor(this.data, "eventPct") + this.eventChainEffectFor(this.data, "eventPct"))
+      * (1 + this.permanentEffectFor(this.data, "eventPct") + this.titleEffectFor(this.data, "eventPct") + this.charEffectFor("eventPct") + this.operationEffectFor(this.data, "eventPct") + this.eventChainEffectFor(this.data, "eventPct") + this.staffDeploymentEffectFor(this.data, "eventPct"))
       * this.feverResponseRewardMultiplier(); // 특별 대응반 + 칭호 + 캐릭터 + 런 작전 + 대응 피버
+  }
+
+  eventTrustEffect(rawTrust, data = this.data) {
+    const trust = Number(rawTrust) || 0;
+    if (trust >= 0) return trust;
+    const guard = Phaser.Math.Clamp(this.staffDeploymentEffectFor(data, "eventGuardPct"), 0, 0.6);
+    return trust * (1 - guard);
   }
 
   applyEffect(effect, { fever = true } = {}) {
@@ -1431,7 +1459,8 @@ export class GameState extends Phaser.Events.EventEmitter {
       this.data.stats.totalVotes += votes;
     }
     this.data.explain = Math.max(0, this.data.explain + explain);
-    this.data.trust = Phaser.Math.Clamp(this.data.trust + (effect.trust || 0), 0, 100);
+    const trustEffect = this.eventTrustEffect(effect.trust || 0);
+    this.data.trust = Phaser.Math.Clamp(this.data.trust + trustEffect, 0, 100);
     if ((effect.trust || 0) > 0) {
       this.data.trust = Phaser.Math.Clamp(this.data.trust + this.staffLevel("speaker") * 0.3, 0, 100);
     }
@@ -1640,6 +1669,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     this.data.votes -= voteCost;
     this.data.explain -= explainCost;
     this.data.staff[id] = level + 1;
+    this._autoDeployNewStaff(id, level);
     this.advanceTutorial("staff");
     this.data.trust = Phaser.Math.Clamp(this.data.trust + (staff.trustBonus || 0) * 20, 0, 100);
     this.addLog(`${staff.name} Lv.${this.staffLevel(id)}`);
@@ -1714,9 +1744,11 @@ export class GameState extends Phaser.Events.EventEmitter {
       return false;
     }
     const staff = this.staff(id);
+    const previousLevel = this.staffLevel(id);
     this.data.votes -= plan.voteCost;
     this.data.explain -= plan.explainCost;
-    this.data.staff[id] = this.staffLevel(id) + plan.levels;
+    this.data.staff[id] = previousLevel + plan.levels;
+    this._autoDeployNewStaff(id, previousLevel);
     this.advanceTutorial("staff");
     this.data.trust = Phaser.Math.Clamp(this.data.trust + (staff.trustBonus || 0) * 20 * plan.levels, 0, 100);
     this.addLog(`${staff.name} Lv.${this.staffLevel(id)}${plan.levels > 1 ? ` (+${plan.levels})` : ""}`);
@@ -2229,7 +2261,7 @@ export class GameState extends Phaser.Events.EventEmitter {
       const lv = data.facilities[item.id] || 0;
       return sum + lv * item.cps * this.facilityMilestoneFactor(lv);
     }, 0);
-    return raw * (0.9 + data.trust / 230) * this.trustModifier(data.trust) * this.staffMultiplierFor(data) * this.prestigeMultiplierFor(data) * (1 + this.permanentEffectFor(data, "cpsPct") + this.titleEffectFor(data, "cpsPct") + this.charEffectFor("cpsPct", data) + this.operationEffectFor(data, "cpsPct") + this.eventChainEffectFor(data, "cpsPct")) * (1 + this.dexBonusPct(data));
+    return raw * (0.9 + data.trust / 230) * this.trustModifier(data.trust) * this.staffMultiplierFor(data) * this.prestigeMultiplierFor(data) * (1 + this.permanentEffectFor(data, "cpsPct") + this.titleEffectFor(data, "cpsPct") + this.charEffectFor("cpsPct", data) + this.operationEffectFor(data, "cpsPct") + this.eventChainEffectFor(data, "cpsPct") + this.staffDeploymentEffectFor(data, "cpsPct")) * (1 + this.dexBonusPct(data));
   }
 
   // 시설 레벨이 마일스톤을 넘을 때마다 해당 시설 생산 ×2 누적(AdVenture Capitalist식 영구 보너스)
@@ -2280,6 +2312,53 @@ export class GameState extends Phaser.Events.EventEmitter {
     return (this.staffLevel(id) || 0) * (this.level(staff.synergy.facility) || 0) * staff.synergy.per;
   }
 
+  staffSlots() {
+    return normalizeStaffSlots(this.data.staffSlots, this.data.staff);
+  }
+
+  _autoDeployNewStaff(id, previousLevel) {
+    if (previousLevel > 0 || this.staffDeployed(id) || (this.data.staffSlots?.length || 0) >= STAFF_SLOT_LIMIT) return false;
+    this.data.staffSlots.push(id);
+    this.emit("staff-deployment", { id, action: "deploy", auto: true, slots: this.staffSlots() });
+    return true;
+  }
+
+  staffDeployed(id) {
+    return this.data.staffSlots?.includes(id) || false;
+  }
+
+  staffRank(id) {
+    return staffRankForLevel(this.staffLevel(id));
+  }
+
+  staffDeploymentEffectFor(data, key) {
+    return staffDeploymentEffectFor(data, key);
+  }
+
+  deployStaff(id, { auto = false } = {}) {
+    if (!this.staff(id) || this.staffLevel(id) <= 0 || this.staffDeployed(id)) return false;
+    if ((this.data.staffSlots?.length || 0) >= STAFF_SLOT_LIMIT) {
+      this.emit("float", { text: "현장 슬롯이 가득 찼어요", x: 195, y: 610, color: "#ff8e8e" });
+      return false;
+    }
+    this.data.staffSlots.push(id);
+    this.addLog(`${this.staff(id).name} 현장 배치`);
+    this.emit("staff-deployment", { id, action: "deploy", auto, slots: this.staffSlots() });
+    this.emit("changed");
+    this.save(false);
+    return true;
+  }
+
+  undeployStaff(id) {
+    if (!this.staffDeployed(id)) return false;
+    this.data.staffSlots = this.data.staffSlots.filter((staffId) => staffId !== id);
+    this.addLog(`${this.staff(id).name} 대기 전환`);
+    this.emit("staff-deployment", { id, action: "undeploy", auto: false, slots: this.staffSlots() });
+    this.emit("changed");
+    this.save(false);
+    return true;
+  }
+
   // 인장은 가산, 감사 횟수는 가산항과 곱해지는 복리식(매 감사가 누적 인장을 증폭 → "다음 감사가 더 빨라진다" 감각).
   // 감사 횟수 보너스는 소프트캡(runs/40)으로 후반 과인플레 방지. seals=0,runs=0 → 1.0 (기존과 연속).
   prestigeMultiplierRaw(totalSeals, runs, runsMult = 0) {
@@ -2300,7 +2379,7 @@ export class GameState extends Phaser.Events.EventEmitter {
 
   explainPerSecondFor(data) {
     const raw = 0.55 + (data.facilities.notice || 0) * 0.2 + (data.facilities.server || 0) * 0.16 + (data.facilities.studio || 0) * 0.12;
-    return raw * (1 + this.permanentEffectFor(data, "explainPct") + this.titleEffectFor(data, "explainPct") + this.operationEffectFor(data, "explainPct") + this.eventChainEffectFor(data, "explainPct"));
+    return raw * (1 + this.permanentEffectFor(data, "explainPct") + this.titleEffectFor(data, "explainPct") + this.operationEffectFor(data, "explainPct") + this.eventChainEffectFor(data, "explainPct") + this.staffDeploymentEffectFor(data, "explainPct"));
   }
 
   clickPower() {
@@ -2313,7 +2392,7 @@ export class GameState extends Phaser.Events.EventEmitter {
       return sum + s;
     }, 0);
     const clerkSkill = Math.floor(this.staffLevel("clerk") / 5);
-    const raw = 1 + facilityPower + staffPower + clerkSkill + this.operationEffectFor(this.data, "clickFlat") + this.eventChainEffectFor(this.data, "clickFlat");
+    const raw = 1 + facilityPower + staffPower + clerkSkill + this.operationEffectFor(this.data, "clickFlat") + this.eventChainEffectFor(this.data, "clickFlat") + this.staffDeploymentEffectFor(this.data, "clickFlat");
     return Math.round(raw * (1 + this.permanentEffectFor(this.data, "clickPct") + this.titleEffectFor(this.data, "clickPct") + this.charEffectFor("clickPct") + this.operationEffectFor(this.data, "clickPct")) * this.feverClickMultiplier());
   }
 
@@ -2593,8 +2672,12 @@ export class GameState extends Phaser.Events.EventEmitter {
     return base + flat;
   }
 
-  stageTarget(area) {
-    // 초반 가속: base/지수 완화로 1구역을 빠르게 클리어(후반은 지수로 난도 유지)
-    return Math.floor(1100 * area ** 1.38);
+  stageTarget(area, prestigeRuns = this.data?.prestige?.runs || 0) {
+    // 첫 감사 전에는 핵심 루프를 충분히 익히고, 감사 뒤에는 목표량 자체도 낮아져
+    // 영구 배율과 함께 반복 런의 가속을 즉시 체감하게 한다.
+    const base = Math.max(0, Number(prestigeRuns) || 0) > 0
+      ? REPEAT_RUN_STAGE_BASE
+      : FIRST_RUN_STAGE_BASE;
+    return Math.floor(base * Math.max(1, Number(area) || 1) ** 1.38);
   }
 }

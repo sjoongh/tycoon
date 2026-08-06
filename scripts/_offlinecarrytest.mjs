@@ -96,7 +96,12 @@ const results = {};
 
 try {
   const now = Date.now();
-  const offlineSeed = baseSeed(now, { lastSavedAt: now - 8 * 3600000, lastSeenAt: now - 8 * 3600000 });
+  const offlineSeed = baseSeed(now, {
+    lastSavedAt: now - 8 * 3600000,
+    lastSeenAt: now - 8 * 3600000,
+    // v9의 긴 구역에서도 이월분이 보스·작전 관문까지 도달하도록 생산력을 명시한다.
+    facilities: { desk: 20, sorter: 15, notice: 8, server: 10, archive: 0, studio: 0 },
+  });
   const first = await makePage(offlineSeed);
   const { page } = first;
 
@@ -118,8 +123,9 @@ try {
       carry: Math.round(gs.data.offlineCarryVotes || 0),
     };
   });
-  if (results.initial.version !== 7 || results.initial.progress !== results.initial.target
-    || results.initial.progressApplied !== 100 || results.initial.carryAdded <= 0
+  if (results.initial.version !== 9 || results.initial.progress !== results.initial.target
+    || results.initial.progressApplied <= 0 || results.initial.progressApplied >= results.initial.rewardVotes
+    || results.initial.carryAdded <= 0
     || results.initial.carry !== results.initial.carryAdded) {
     throw new Error(`initial offline allocation mismatch: ${JSON.stringify(results.initial)}`);
   }

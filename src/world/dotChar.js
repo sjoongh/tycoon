@@ -266,6 +266,32 @@ const WORKER_MINI = [
   ".kk....kk.",
 ];
 
+const EMPTY_WORKER_OVERLAY = Array.from({ length: 10 }, () => "..........");
+const WORKER_RANK_OVERLAYS = {
+  1: EMPTY_WORKER_OVERLAY,
+  2: [
+    "..........", "..........", "..........", "..........", "..........",
+    "..........", "......Y...", "..........", "..........", "..........",
+  ],
+  3: [
+    "..........", "..........", "..........", "..........", "..........",
+    ".Y......Y.", "......Y...", "..........", "..........", "..........",
+  ],
+  4: [
+    "..cccccc..", "..........", "..........", "..........", "..........",
+    ".Y......Y.", "......Y...", "..........", "..........", "..........",
+  ],
+  5: [
+    ".Y.Y..Y.Y.", "..YYYYYY..", "..........", "..........", "..........",
+    ".Y......Y.", "......Y...", "..........", "..........", "..........",
+  ],
+};
+
+function workerRankMap(tier) {
+  const overlay = WORKER_RANK_OVERLAYS[Math.max(1, Math.min(5, Number(tier) || 1))];
+  return WORKER_MINI.map((row, y) => row.split("").map((pixel, x) => overlay[y][x] === "." ? pixel : overlay[y][x]).join(""));
+}
+
 // 도트맵 1장을 off-screen graphics로 굽는다.
 function bakeTexture(scene, key, map, size = GOV_SIZE) {
   if (scene.textures.exists(key)) return;
@@ -362,18 +388,64 @@ export function buildCosmeticTextures(scene) {
 // 개표소 소품 텍스처(prop-ballotbox / prop-papers / prop-board).
 export function buildPropTextures(scene) {
   Object.entries(PROP_MAPS).forEach(([key, map]) => bakeTexture(scene, key, map));
+  Object.entries(FAC_ICON_KEY).forEach(([id, key]) => {
+    for (let tier = 1; tier <= 5; tier += 1) bakePropTierTexture(scene, facilityPropTextureKey(id, tier), PROP_MAPS[key], tier);
+  });
+}
+
+function bakePropTierTexture(scene, key, map, tier) {
+  if (scene.textures.exists(key)) return;
+  const g = scene.make.graphics({ x: 0, y: 0, add: false });
+  for (let y = 0; y < map.length; y += 1) {
+    for (let x = 0; x < map[y].length; x += 1) {
+      const color = PAL[map[y][x]];
+      if (color == null) continue;
+      g.fillStyle(color, 1);
+      g.fillRect(x, y, 1, 1);
+    }
+  }
+  if (tier >= 2) {
+    g.fillStyle(0xb3bccc, 1);
+    g.fillRect(2, 14, 12, 1);
+  }
+  if (tier >= 3) {
+    g.fillStyle(PAL.Y, 1);
+    g.fillRect(2, 2, 2, 1);
+    g.fillRect(12, 2, 2, 1);
+  }
+  if (tier >= 4) {
+    g.fillStyle(PAL.c, 1);
+    g.fillRect(1, 7, 1, 3);
+    g.fillRect(14, 7, 1, 3);
+  }
+  if (tier >= 5) {
+    g.fillStyle(PAL.Y, 1);
+    g.fillRect(5, 0, 1, 2);
+    g.fillRect(8, 0, 1, 2);
+    g.fillRect(11, 0, 1, 2);
+    g.fillRect(5, 1, 7, 1);
+  }
+  g.generateTexture(key, 16, 16);
+  g.destroy();
+}
+
+export function facilityPropTextureKey(id, tier) {
+  const normalizedTier = Math.max(1, Math.min(5, Number(String(tier).replace("t", "")) || 1));
+  return `prop-${id}-t${normalizedTier}`;
 }
 
 // 미니 일꾼 텍스처(worker-mini, 10x10) — tint로 직원별 색 입힘.
 export function buildWorkerTexture(scene) {
   bakeTexture(scene, "worker-mini", WORKER_MINI, 10);
+  for (let tier = 1; tier <= 5; tier += 1) bakeTexture(scene, `worker-rank-${tier}`, WORKER_RANK_OVERLAYS[tier], 10);
 }
 
 // 직원 카드용 도트 일꾼 아이콘(흰/회색 실루엣) — 카드 배경의 직원색 위에 얹어 화풍 통일. 캐시.
-let _workerUri = null;
-export function workerIconUri() {
-  if (!_workerUri) _workerUri = dotSvgUri(WORKER_MINI);
-  return _workerUri;
+const _workerUri = {};
+export function workerIconUri(tier = 1) {
+  const normalizedTier = Math.max(1, Math.min(5, Number(tier) || 1));
+  if (!_workerUri[normalizedTier]) _workerUri[normalizedTier] = dotSvgUri(workerRankMap(normalizedTier));
+  return _workerUri[normalizedTier];
 }
 
 // 탭바 아이콘 도트(사건=경고, 목표=깃발, 감사=도장)
