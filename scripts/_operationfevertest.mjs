@@ -64,7 +64,7 @@ await page.locator('[data-action="advanceStage"]').click();
 await page.locator(".gp-boss--active").waitFor({ state: "visible" });
 await page.evaluate(() => {
   const gameState = window.__game.registry.get("gameState");
-  gameState.addBossProgress(gameState.data.boss.target);
+  gameState.skipBoss();
 });
 await page.locator(".gp-modal--operation").waitFor({ state: "visible", timeout: 3000 });
 
@@ -216,7 +216,7 @@ await page.locator('[data-action="advanceStage"]').click();
 await page.locator(".gp-boss--active").waitFor({ state: "visible" });
 await page.evaluate(() => {
   const gameState = window.__game.registry.get("gameState");
-  gameState.addBossProgress(gameState.data.boss.target);
+  gameState.skipBoss();
 });
 await page.locator(".gp-modal--operation").waitFor({ state: "visible", timeout: 3000 });
 await page.waitForTimeout(120);

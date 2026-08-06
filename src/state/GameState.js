@@ -3,6 +3,17 @@ import { SAVE_KEY } from "../config.js";
 import { facilities } from "../data/facilities.js";
 import { prestigeUpgrades, medalUpgrades, allPrestigeUpgrades } from "../data/prestige.js";
 import { officeEvents, realEventIds } from "../data/events.js";
+import {
+  EVENT_CHAIN_PITY,
+  EVENT_CHAIN_START_CHANCE,
+  allEventEndings,
+  eventChainById,
+  eventChainStepEvent,
+  eventChains,
+  eventEndingById,
+  eventEndingEffectFor,
+  resolveEventChainEnding,
+} from "../data/eventChains.js";
 import { govTitles, titleById, RARITY_ORDER } from "../data/titles.js";
 import { cosmetics, cosmeticById } from "../data/cosmetics.js";
 import { characters, characterById } from "../data/characters.js";
@@ -60,7 +71,7 @@ const DEX_MILESTONES = [
   { n: 75, pct: 0.25 }, // 전종 수집 완성(officeEvents 총수와 일치 — 사건 추가 시 함께 갱신)
 ];
 
-const SAVE_VERSION = 6;
+const SAVE_VERSION = 7;
 
 const fallbackState = {
   version: SAVE_VERSION,
@@ -130,6 +141,15 @@ const fallbackState = {
   achievements: {},
   quests: {},
   seenEvents: {}, // 사건 도감 — 겪은(해결한) 사건 id 기록(영구, 프레스티지에도 유지)
+  eventEndings: {}, // 사건 체인 결말 도감 — 발견한 결말 id 기록(감사·전복에도 영구 유지)
+  eventChain: {
+    activeId: null,
+    step: 0,
+    choices: [],
+    completed: {},
+    effects: [],
+    pity: 0,
+  }, // 감사 런 전용 연쇄 사건 진행·완료·결말 효과
   titles: {}, // 국장 칭호 — { titleId: level }. 뽑기로 획득, 중복=레벨업. 영구(프레스티지 유지)
   titleDraws: 0, // 누적 뽑기 횟수(비용 곡선용)
   equippedTitle: null, // 대표 칭호 id(월드 표시·자동 = 최고 희귀/레벨)
@@ -213,6 +233,14 @@ export class GameState extends Phaser.Events.EventEmitter {
       achievements: { ...fallbackState.achievements, ...(parsed?.achievements || {}) },
       quests: { ...fallbackState.quests, ...(parsed?.quests || {}) },
       seenEvents: (parsed?.seenEvents && typeof parsed.seenEvents === "object") ? { ...parsed.seenEvents } : {},
+      eventEndings: (parsed?.eventEndings && typeof parsed.eventEndings === "object") ? { ...parsed.eventEndings } : {},
+      eventChain: {
+        ...fallbackState.eventChain,
+        ...(parsed?.eventChain || {}),
+        choices: Array.isArray(parsed?.eventChain?.choices) ? [...parsed.eventChain.choices] : [],
+        completed: (parsed?.eventChain?.completed && typeof parsed.eventChain.completed === "object") ? { ...parsed.eventChain.completed } : {},
+        effects: Array.isArray(parsed?.eventChain?.effects) ? [...parsed.eventChain.effects] : [],
+      },
       titles: (parsed?.titles && typeof parsed.titles === "object") ? { ...parsed.titles } : {},
       titleDraws: Math.max(0, Math.floor(Number(parsed?.titleDraws) || 0)),
       equippedTitle: (parsed?.equippedTitle && titleById(parsed.equippedTitle)) ? parsed.equippedTitle : null,
@@ -241,6 +269,32 @@ export class GameState extends Phaser.Events.EventEmitter {
     data.daily.items = Math.max(0, Math.floor(Number(data.daily.items) || 0));
     data.daily.newdex = Math.max(0, Math.floor(Number(data.daily.newdex) || 0));
     data.daily.claimed = (data.daily.claimed && typeof data.daily.claimed === "object") ? data.daily.claimed : {};
+    const endingIds = new Set(allEventEndings.map((ending) => ending.id));
+    data.eventEndings = Object.fromEntries(
+      Object.keys(data.eventEndings || {}).filter((id) => endingIds.has(id)).map((id) => [id, 1]),
+    );
+    data.eventChain.completed = Object.fromEntries(
+      Object.keys(data.eventChain.completed || {}).filter((id) => eventChainById(id)).map((id) => [id, 1]),
+    );
+    data.eventChain.effects = [...new Set(data.eventChain.effects.filter((id) => {
+      const ending = eventEndingById(id);
+      return ending && data.eventEndings[id] && data.eventChain.completed[ending.chainId];
+    }))];
+    data.eventChain.pity = Phaser.Math.Clamp(Math.floor(Number(data.eventChain.pity) || 0), 0, EVENT_CHAIN_PITY);
+    const activeChain = eventChainById(data.eventChain.activeId);
+    if (!activeChain || data.eventChain.completed[activeChain.id]) {
+      data.eventChain.activeId = null;
+      data.eventChain.step = 0;
+      data.eventChain.choices = [];
+    } else {
+      const choices = data.eventChain.choices.filter((side) => side === "left" || side === "right");
+      data.eventChain.step = Phaser.Math.Clamp(
+        Math.min(Math.floor(Number(data.eventChain.step) || 0), choices.length),
+        0,
+        activeChain.steps.length - 1,
+      );
+      data.eventChain.choices = choices.slice(0, data.eventChain.step);
+    }
     data.commGauge = Phaser.Math.Clamp(Number(data.commGauge) || 0, 0, COMM_LIMIT);
     data.stats.collapses = Math.max(0, Math.floor(Number(data.stats.collapses) || 0));
     data.stats.ciders = Math.max(0, Math.floor(Number(data.stats.ciders) || 0));
@@ -1083,18 +1137,13 @@ export class GameState extends Phaser.Events.EventEmitter {
     this._autoEvtWait = (this._autoEvtWait || 0) + 1;
     if (this._autoEvtWait < 8) return;
     this._autoEvtWait = 0;
-    const avail = officeEvents.filter((ev) => this.data.stage.area >= (ev.minStage || 1));
-    if (!avail.length) return;
-    const w = (ev) => (ev.weight || 1) * (this.hasSeenEvent(ev.id) ? 1 : 2.5); // 도감 미수집 우선
-    const total = avail.reduce((sum, ev) => sum + w(ev), 0);
-    let roll = Math.random() * total;
-    let ev = avail[avail.length - 1];
-    for (const e of avail) { roll -= w(e); if (roll < 0) { ev = e; break; } }
-    const side = (ev.left[1].trust || 0) >= (ev.right[1].trust || 0) ? ev.left : ev.right; // 안전(믿음) 선택
-    this.applyEffect(side[1], { fever: false });
-    const firstSeen = this.markEventSeen(ev.id);
+    const ev = this.pickNextEvent();
+    if (!ev) return;
+    const side = (ev.left[1].trust || 0) >= (ev.right[1].trust || 0) ? "left" : "right"; // 안전(믿음) 선택
+    const result = this.resolveEventChoice(ev, side, { fever: false });
+    if (!result) return;
     this.addLog(`🤖 비서 자동 대응: ${ev.title}`);
-    document.dispatchEvent(new CustomEvent("gp:event-resolved", { detail: { id: ev.id, title: ev.title, real: realEventIds.has(ev.id), firstSeen } }));
+    document.dispatchEvent(new CustomEvent("gp:event-resolved", { detail: result }));
   }
 
   // 공산화 게이지 — 믿음이 바닥(≤5%)에 머물면 누적, 회복하면 빠르게 감소. 한계 도달 시 체제 전복(하드 리셋).
@@ -1124,6 +1173,7 @@ export class GameState extends Phaser.Events.EventEmitter {
       prestige: { ...this.data.prestige }, // 인장·훈장·업그레이드 유지(보상 추가 없음)
       achievements: this.data.achievements,
       seenEvents: this.data.seenEvents,
+      eventEndings: this.data.eventEndings,
       titles: this.data.titles,
       titleDraws: this.data.titleDraws,
       equippedTitle: this.data.equippedTitle,
@@ -1191,11 +1241,180 @@ export class GameState extends Phaser.Events.EventEmitter {
     this.emit("changed");
   }
 
+  // ----- 3단계 사건 체인: 후속 사건 보장 → 경로별 결말 → 이번 감사 런 효과 -----
+  activeEventChain() {
+    return eventChainById(this.data.eventChain?.activeId);
+  }
+
+  currentEventChainEvent() {
+    const chain = this.activeEventChain();
+    return chain ? eventChainStepEvent(chain, this.data.eventChain.step || 0) : null;
+  }
+
+  availableEventChains() {
+    const completed = this.data.eventChain?.completed || {};
+    return eventChains.filter((chain) => this.data.stage.area >= chain.minStage && !completed[chain.id]);
+  }
+
+  _weightedPick(list, weightFor, random = Math.random) {
+    if (!list.length) return null;
+    const weights = list.map((item) => Math.max(0, Number(weightFor(item)) || 0));
+    const total = weights.reduce((sum, weight) => sum + weight, 0);
+    if (total <= 0) return list[list.length - 1];
+    const unit = Math.min(0.999999999, Math.max(0, Number(random()) || 0));
+    let roll = unit * total;
+    for (let index = 0; index < list.length; index += 1) {
+      roll -= weights[index];
+      if (roll < 0) return list[index];
+    }
+    return list[list.length - 1];
+  }
+
+  pickNextEvent(random = Math.random) {
+    const followup = this.currentEventChainEvent();
+    if (followup) return followup;
+
+    const chains = this.availableEventChains();
+    const pity = this.data.eventChain?.pity || 0;
+    const shouldStartChain = chains.length > 0
+      && (pity >= EVENT_CHAIN_PITY || (Number(random()) || 0) < EVENT_CHAIN_START_CHANCE);
+    if (shouldStartChain) {
+      const chain = this._weightedPick(chains, (item) => item.weight || 1, random);
+      this.data.eventChain.activeId = chain.id;
+      this.data.eventChain.step = 0;
+      this.data.eventChain.choices = [];
+      this.data.eventChain.pity = 0;
+      this.addLog(`연쇄 사건 시작: ${chain.title}`);
+      this.emit("event-chain-progress", { chainId: chain.id, step: 1, total: chain.steps.length });
+      this.emit("changed");
+      this.save(false);
+      return eventChainStepEvent(chain, 0);
+    }
+
+    const available = officeEvents.filter((event) => this.data.stage.area >= (event.minStage || 1));
+    return this._weightedPick(
+      available,
+      (event) => (event.weight || 1) * (this.hasSeenEvent(event.id) ? 1 : 2.5),
+      random,
+    );
+  }
+
+  resolveEventChoice(event, side, { fever = true } = {}) {
+    if (side !== "left" && side !== "right") return null;
+    const choiceSide = side;
+    let resolvedEvent = null;
+    if (event?.chainId) {
+      const current = this.currentEventChainEvent();
+      if (current?.id === event.id) resolvedEvent = current;
+    } else {
+      resolvedEvent = officeEvents.find((item) => item.id === event?.id) || null;
+    }
+    const choiceData = resolvedEvent?.[choiceSide];
+    if (!choiceData) return null;
+
+    this.applyEffect(choiceData[1], { fever });
+    let firstSeen = false;
+    let ending = null;
+    if (resolvedEvent.chainId) {
+      ending = this._advanceEventChain(resolvedEvent, choiceSide);
+    } else {
+      firstSeen = this.markEventSeen(resolvedEvent.id);
+      this.data.eventChain.pity = Math.min(EVENT_CHAIN_PITY, (this.data.eventChain.pity || 0) + 1);
+      this.emit("changed");
+    }
+    return {
+      id: resolvedEvent.id,
+      title: resolvedEvent.title,
+      real: !resolvedEvent.chainId && realEventIds.has(resolvedEvent.id),
+      chain: !!resolvedEvent.chainId,
+      firstSeen,
+      ending,
+    };
+  }
+
+  _advanceEventChain(event, side) {
+    const chain = this.activeEventChain();
+    const state = this.data.eventChain;
+    if (!chain || event.chainId !== chain.id || event.chainStep !== state.step) return null;
+    const choices = [...state.choices, side];
+    if (choices.length < chain.steps.length) {
+      state.choices = choices;
+      state.step = choices.length;
+      const progress = { chainId: chain.id, chainTitle: chain.title, step: state.step + 1, total: chain.steps.length };
+      this.addLog(`연쇄 사건 ${state.step}/${chain.steps.length}: ${chain.title}`);
+      this.emit("event-chain-progress", progress);
+      this.emit("changed");
+      this.save(false);
+      return null;
+    }
+
+    const ending = resolveEventChainEnding(chain, choices);
+    if (!ending) return null;
+    const firstDiscovery = !this.data.eventEndings[ending.id];
+    this.data.eventEndings[ending.id] = 1;
+    if (!state.effects.includes(ending.id)) state.effects.push(ending.id);
+    state.completed[chain.id] = 1;
+    state.activeId = null;
+    state.step = 0;
+    state.choices = [];
+    state.pity = 0;
+
+    const reward = {
+      votes: Math.max(300, Math.round(this.data.stage.target * (ending.reward.stagePct || 0))),
+      explain: Math.max(0, Math.round(ending.reward.explain || 0)),
+      trust: Number(ending.reward.trust) || 0,
+    };
+    this.grantReward(reward);
+    this.addLog(`사건 결말: ${ending.title} · ${ending.effectText}`);
+    this.checkProgression();
+    const result = {
+      ...ending,
+      firstDiscovery,
+      reward,
+      discovered: this.eventEndingCount(),
+      total: this.eventEndingTotal(),
+    };
+    this.emit("event-chain-ending", result);
+    this.emit("changed");
+    this.save(false);
+    return result;
+  }
+
+  eventChainEffectFor(data = this.data, key) {
+    return eventEndingEffectFor(data?.eventChain?.effects, key);
+  }
+
+  activeEventEndingEffects() {
+    return (this.data.eventChain?.effects || []).map(eventEndingById).filter(Boolean);
+  }
+
+  eventEndingCount() {
+    return Object.keys(this.data.eventEndings || {}).filter((id) => eventEndingById(id)).length;
+  }
+
+  eventEndingTotal() {
+    return allEventEndings.length;
+  }
+
+  eventChainStatus() {
+    const chain = this.activeEventChain();
+    return {
+      active: !!chain,
+      chain,
+      nextStep: chain ? (this.data.eventChain.step || 0) + 1 : 0,
+      totalSteps: chain?.steps.length || 0,
+      completedThisRun: Object.keys(this.data.eventChain?.completed || {}).length,
+      discovered: this.eventEndingCount(),
+      totalEndings: this.eventEndingTotal(),
+      effects: this.activeEventEndingEffects(),
+    };
+  }
+
   // 사건 보상의 양수 votes/explain은 현재 구역 규모에 맞춰 스케일(후반에도 의미있게). 비용(음수)은 그대로.
   eventRewardScale() {
     const base = Math.min(50, this.stageTarget(this.data.stage.area) / this.stageTarget(1));
     return base
-      * (1 + this.permanentEffectFor(this.data, "eventPct") + this.titleEffectFor(this.data, "eventPct") + this.charEffectFor("eventPct") + this.operationEffectFor(this.data, "eventPct"))
+      * (1 + this.permanentEffectFor(this.data, "eventPct") + this.titleEffectFor(this.data, "eventPct") + this.charEffectFor("eventPct") + this.operationEffectFor(this.data, "eventPct") + this.eventChainEffectFor(this.data, "eventPct"))
       * this.feverResponseRewardMultiplier(); // 특별 대응반 + 칭호 + 캐릭터 + 런 작전 + 대응 피버
   }
 
@@ -1622,6 +1841,7 @@ export class GameState extends Phaser.Events.EventEmitter {
       },
       achievements: this.data.achievements,
       seenEvents: this.data.seenEvents, // 사건 도감은 평생 수집 기록 — 감사(프레스티지)에도 영구 유지
+      eventEndings: this.data.eventEndings, // 사건 체인 결말 도감도 평생 수집 기록으로 유지
       titles: this.data.titles, // 국장 칭호(인사 발령)는 평생 컬렉션 — 감사에도 유지
       titleDraws: this.data.titleDraws,
       equippedTitle: this.data.equippedTitle,
@@ -2009,7 +2229,7 @@ export class GameState extends Phaser.Events.EventEmitter {
       const lv = data.facilities[item.id] || 0;
       return sum + lv * item.cps * this.facilityMilestoneFactor(lv);
     }, 0);
-    return raw * (0.9 + data.trust / 230) * this.trustModifier(data.trust) * this.staffMultiplierFor(data) * this.prestigeMultiplierFor(data) * (1 + this.permanentEffectFor(data, "cpsPct") + this.titleEffectFor(data, "cpsPct") + this.charEffectFor("cpsPct", data) + this.operationEffectFor(data, "cpsPct")) * (1 + this.dexBonusPct(data));
+    return raw * (0.9 + data.trust / 230) * this.trustModifier(data.trust) * this.staffMultiplierFor(data) * this.prestigeMultiplierFor(data) * (1 + this.permanentEffectFor(data, "cpsPct") + this.titleEffectFor(data, "cpsPct") + this.charEffectFor("cpsPct", data) + this.operationEffectFor(data, "cpsPct") + this.eventChainEffectFor(data, "cpsPct")) * (1 + this.dexBonusPct(data));
   }
 
   // 시설 레벨이 마일스톤을 넘을 때마다 해당 시설 생산 ×2 누적(AdVenture Capitalist식 영구 보너스)
@@ -2080,7 +2300,7 @@ export class GameState extends Phaser.Events.EventEmitter {
 
   explainPerSecondFor(data) {
     const raw = 0.55 + (data.facilities.notice || 0) * 0.2 + (data.facilities.server || 0) * 0.16 + (data.facilities.studio || 0) * 0.12;
-    return raw * (1 + this.permanentEffectFor(data, "explainPct") + this.titleEffectFor(data, "explainPct") + this.operationEffectFor(data, "explainPct"));
+    return raw * (1 + this.permanentEffectFor(data, "explainPct") + this.titleEffectFor(data, "explainPct") + this.operationEffectFor(data, "explainPct") + this.eventChainEffectFor(data, "explainPct"));
   }
 
   clickPower() {
@@ -2093,7 +2313,7 @@ export class GameState extends Phaser.Events.EventEmitter {
       return sum + s;
     }, 0);
     const clerkSkill = Math.floor(this.staffLevel("clerk") / 5);
-    const raw = 1 + facilityPower + staffPower + clerkSkill + this.operationEffectFor(this.data, "clickFlat");
+    const raw = 1 + facilityPower + staffPower + clerkSkill + this.operationEffectFor(this.data, "clickFlat") + this.eventChainEffectFor(this.data, "clickFlat");
     return Math.round(raw * (1 + this.permanentEffectFor(this.data, "clickPct") + this.titleEffectFor(this.data, "clickPct") + this.charEffectFor("clickPct") + this.operationEffectFor(this.data, "clickPct")) * this.feverClickMultiplier());
   }
 

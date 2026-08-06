@@ -139,4 +139,10 @@ game.events.once("ready", () => {
   // 주요 게임 이벤트 분석 로깅
   gameState.on("comm-collapse", () => logEvt("communist_collapse", {}));
   gameState.on("dex-milestone", (p) => logEvt("dex_milestone", { n: p?.n }));
+  gameState.on("event-chain-ending", (p) => logEvt("event_chain_ending", {
+    chain: p?.chainId,
+    ending: p?.id,
+    route: p?.route,
+    first: !!p?.firstDiscovery,
+  }));
 });

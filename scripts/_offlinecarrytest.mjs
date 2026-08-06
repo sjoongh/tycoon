@@ -118,7 +118,7 @@ try {
       carry: Math.round(gs.data.offlineCarryVotes || 0),
     };
   });
-  if (results.initial.version !== 6 || results.initial.progress !== results.initial.target
+  if (results.initial.version !== 7 || results.initial.progress !== results.initial.target
     || results.initial.progressApplied !== 100 || results.initial.carryAdded <= 0
     || results.initial.carry !== results.initial.carryAdded) {
     throw new Error(`initial offline allocation mismatch: ${JSON.stringify(results.initial)}`);
