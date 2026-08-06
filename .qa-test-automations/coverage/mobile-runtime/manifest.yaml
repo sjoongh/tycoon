@@ -29,15 +29,36 @@ modules:
     last_tested: 2026-08-06
     last_passed: true
   - source: src/main.js
-    spec: docs/impl-notes/2026-08-06-mobile-dom-runtime-optimization.md
-    scenario_ref: [SC-MRT-004]
+    spec: docs/impl-notes/2026-08-06-first-interaction-font-subset.md
+    scenario_ref: [SC-MRT-004, SC-MRT-006]
     tests:
       - path: scripts/_mobileperformancetest.mjs
         type: e2e
         covers: [startup-firebase-deferral, first-intent-start, local-target-guard]
         case_ref: [TC-MRT-007]
         flow_ref: [Flow-MRT-1]
+      - path: scripts/_startupfonttest.mjs
+        type: e2e
+        covers: [continuous-input-idle, five-second-deadline, leaderboard-immediate]
+        case_ref: [TC-MRT-009, TC-MRT-010]
+        flow_ref: [Flow-MRT-3]
     risk_score: 15
+    last_tested: 2026-08-06
+    last_passed: true
+  - source: public/fonts/Galmuri9.woff2
+    spec: docs/impl-notes/2026-08-06-first-interaction-font-subset.md
+    scenario_ref: [SC-MRT-007]
+    tests:
+      - path: scripts/_startupfonttest.mjs
+        type: e2e
+        covers: [font-transfer, small-pixel-font, static-glyph-coverage, rare-hangul-fallback]
+        case_ref: [TC-MRT-011, TC-MRT-012]
+        flow_ref: [Flow-MRT-3]
+      - path: scripts/_subsetfonts.mjs
+        type: integration
+        covers: [deterministic-font-generation, source-font-preservation]
+        case_ref: [TC-MRT-013]
+    risk_score: 16
     last_tested: 2026-08-06
     last_passed: true
   - source: src/cloud.js

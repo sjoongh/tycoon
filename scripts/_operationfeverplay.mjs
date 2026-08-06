@@ -27,10 +27,19 @@ const browser = await chromium.launch({
 const context = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1 });
 const page = await context.newPage();
 page.setDefaultTimeout(500);
+await page.route("**/*", async (route) => {
+  const hostname = new URL(route.request().url()).hostname;
+  if (["localhost", "127.0.0.1"].includes(hostname)) await route.continue();
+  else await route.abort("blockedbyclient");
+});
 const errors = [];
 page.on("pageerror", (error) => errors.push(`PAGEERR ${error.message}`));
 page.on("console", (message) => {
-  if (message.type() === "error" && !message.text().includes("navigator.vibrate")) errors.push(`CONSOLE ${message.text()}`);
+  if (message.type() !== "error") return;
+  const text = message.text();
+  const expectedExternalBlock = text.includes("ERR_BLOCKED_BY_CLIENT")
+    || (text.includes("Failed to fetch") && text.includes("firebase_analytics.js"));
+  if (!text.includes("navigator.vibrate") && !expectedExternalBlock) errors.push(`CONSOLE ${text}`);
 });
 page.on("requestfailed", (request) => {
   const requestUrl = new URL(request.url());
