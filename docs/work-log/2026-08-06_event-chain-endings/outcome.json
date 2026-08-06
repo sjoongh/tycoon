@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "taskId": "2026-08-06_event-chain-endings",
+  "title": "사건 체인 결말",
+  "startedAt": "2026-08-06T18:15:41+09:00",
+  "closedAt": "2026-08-06T20:34:01+09:00",
+  "durationMinutes": 138.3,
+  "verificationStatus": "verified",
+  "verificationReason": "verified",
+  "requiredChecks": [
+    "npm-test"
+  ],
+  "firstPass": "unknown",
+  "humanRevisions": 0,
+  "retries": 1,
+  "reverted": "no",
+  "knowledgeReused": "unknown",
+  "knowledgeCandidates": [],
+  "remainingRisks": []
+}

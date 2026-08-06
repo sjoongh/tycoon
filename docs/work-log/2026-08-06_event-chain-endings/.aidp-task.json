@@ -11,8 +11,9 @@
   "requiredChecks": [
     "npm-test"
   ],
-  "status": "active",
-  "latestEvidence": null,
-  "latestEvidenceSha256": null,
-  "closedAt": null
+  "status": "closed",
+  "latestEvidence": "docs/work-log/2026-08-06_event-chain-endings/evidence/evidence.json",
+  "latestEvidenceSha256": "282766aa32c7f71c521f1dd42d658d3ff2c16f34d5d5cad3ec2d22d30bd338b8",
+  "closedAt": "2026-08-06T20:34:01+09:00",
+  "lastVerifiedAt": "2026-08-06T20:33:54+09:00"
 }
