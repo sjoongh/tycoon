@@ -11,8 +11,9 @@
   "requiredChecks": [
     "npm-test"
   ],
-  "status": "active",
-  "latestEvidence": null,
-  "latestEvidenceSha256": null,
-  "closedAt": null
+  "status": "closed",
+  "latestEvidence": "docs/work-log/2026-08-06_first-interaction-font-subset/evidence/evidence.json",
+  "latestEvidenceSha256": "e0716872b505995c06e9dc7208b21600a0a6be942f30dd175fccfa46f6bc0654",
+  "closedAt": "2026-08-06T14:03:19+09:00",
+  "lastVerifiedAt": "2026-08-06T14:03:13+09:00"
 }

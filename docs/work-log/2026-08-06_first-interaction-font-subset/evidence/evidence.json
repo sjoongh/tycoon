@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "taskId": "2026-08-06_first-interaction-font-subset",
+  "generatedAt": "2026-08-06T14:03:13+09:00",
+  "baseSha": "59d3ff3a733422955a66bc9a82dafacc34fe5c26",
+  "headSha": "4bff92519b8e24b3d18f3baa89e88a757327ab62",
+  "repositoryStateDigest": "aeb85491ce14d4621e30841655ac5940daad402e969e531ae1f597a9c70c8f99",
+  "branch": "perf/first-interaction-font-subset",
+  "changedFiles": [
+    ".impeccable/critique/2026-08-05T04-59-31Z__src-ui-domhud-js.md",
+    ".omc/artifacts/ask/codex-phaser-3-vite-pwa-src-6800-3-play-1-0-1-src-1-2-phaser-3-4-u-2026-07-24T09-00-51-332Z.md",
+    ".omc/project-memory.json",
+    ".qa-test-automations/_index.md",
+    ".qa-test-automations/config.yaml",
+    ".qa-test-automations/coverage/mobile-runtime/e2e-flows.md",
+    ".qa-test-automations/coverage/mobile-runtime/manifest.yaml",
+    ".qa-test-automations/coverage/mobile-runtime/scenarios.md",
+    ".qa-test-automations/coverage/mobile-runtime/test-cases.yaml",
+    ".qa-test-automations/evidence/2026-08-06/startup-font-summary.yaml",
+    ".qa-test-automations/history.yaml",
+    ".qa-test-automations/reports/2026-08-06-startup-font-report.md",
+    "docs/impl-notes/2026-08-06-first-interaction-font-subset.md",
+    "package-lock.json",
+    "package.json",
+    "public/fonts/Galmuri14.woff2",
+    "public/fonts/Galmuri9.woff2",
+    "scripts/_operationfeverplay.mjs",
+    "scripts/_startupfonttest.mjs",
+    "scripts/_subsetfonts.mjs",
+    "src/main.js",
+    "src/world/WorldView.js",
+    "tools/font-source/Galmuri14.full.woff2",
+    "tools/font-source/Galmuri9.full.woff2",
+    "tools/font-source/README.md"
+  ],
+  "checks": [
+    {
+      "name": "npm-test",
+      "command": "npm test",
+      "exitCode": 0,
+      "durationMs": 765,
+      "timedOut": false,
+      "status": "pass",
+      "logPath": "docs/work-log/2026-08-06_first-interaction-font-subset/evidence/logs/20260806T140308-npm-test.log",
+      "tail": "> trust-counting-office@0.1.0 test\n> vitest run\n\n\n RUN  v4.1.9 /Users/manager/aidp/gaepyo-master\n\n\n Test Files  13 passed (13)\n      Tests  68 passed (68)\n   Start at  14:03:08\n   Duration  341ms (transform 419ms, setup 0ms, import 657ms, tests 119ms, environment 1ms)"
+    },
+    {
+      "name": "build",
+      "command": "npm run build",
+      "exitCode": 0,
+      "durationMs": 4067,
+      "timedOut": false,
+      "status": "pass",
+      "logPath": "docs/work-log/2026-08-06_first-interaction-font-subset/evidence/logs/20260806T140308-build.log",
+      "tail": "dist/assets/index-BgmRw_32.css        46.60 kB │ gzip:   8.61 kB\ndist/assets/web-D4AC8E7F.js            0.15 kB │ gzip:   0.15 kB\ndist/assets/index-Bgnl7Eak.js          0.35 kB │ gzip:   0.26 kB\ndist/assets/index-yO7l9xxi.js          0.39 kB │ gzip:   0.26 kB\ndist/assets/index-DnXUh9HL.js          0.41 kB │ gzip:   0.27 kB\ndist/assets/index.esm-B51NKrAC.js      0.74 kB │ gzip:   0.41 kB\ndist/assets/web-C-MPlypr.js            0.87 kB │ gzip:   0.42 kB\ndist/assets/index.esm-DMTODEH0.js     19.12 kB │ gzip:   6.62 kB\ndist/assets/index.esm-CA25eeTZ.js     32.36 kB │ gzip:  10.62 kB\ndist/assets/index.esm-D_etj9Ak.js    127.44 kB │ gzip:  36.16 kB\ndist/assets/index-fPdM0k8w.js        249.65 kB │ gzip:  76.70 kB\ndist/assets/index.esm-B_jPSg6Z.js    573.29 kB │ gzip: 169.27 kB\ndist/assets/phaser-DFK5Ua9d.js     1,208.06 kB │ gzip: 330.08 kB\n✓ built in 2.70s\n\n\n(!) Some chunks are larger than 500 kB after minification. Consider:\n- Using dynamic import() to code-split the application\n- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks\n- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit."
+    }
+  ],
+  "verdict": "PASS",
+  "workingTreeDirty": true
+}
