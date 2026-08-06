@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "taskId": "2026-08-06_mobile-dom-runtime-optimization",
+  "generatedAt": "2026-08-06T13:14:21+09:00",
+  "baseSha": "42b176e9057d61715e5479d1a319a04278922dc2",
+  "headSha": "2177ffb7644007770b8be607a84a47dca78b0cd2",
+  "repositoryStateDigest": "08191e00ca275d5b6f8314f9acee97620104b6f9aff502475d9baabdf01dfd6a",
+  "branch": "perf/mobile-dom-startup",
+  "changedFiles": [
+    ".impeccable/critique/2026-08-05T04-59-31Z__src-ui-domhud-js.md",
+    ".omc/artifacts/ask/codex-phaser-3-vite-pwa-src-6800-3-play-1-0-1-src-1-2-phaser-3-4-u-2026-07-24T09-00-51-332Z.md",
+    ".omc/project-memory.json",
+    ".qa-test-automations/_index.md",
+    ".qa-test-automations/config.yaml",
+    ".qa-test-automations/coverage/mobile-runtime/e2e-flows.md",
+    ".qa-test-automations/coverage/mobile-runtime/manifest.yaml",
+    ".qa-test-automations/coverage/mobile-runtime/scenarios.md",
+    ".qa-test-automations/coverage/mobile-runtime/test-cases.yaml",
+    ".qa-test-automations/evidence/2026-08-06/mobile-runtime-summary.yaml",
+    ".qa-test-automations/history.yaml",
+    ".qa-test-automations/reports/2026-08-06-mobile-runtime-report.md",
+    "docs/impl-notes/2026-08-06-mobile-dom-runtime-optimization.md",
+    "scripts/_mobileperformancetest.mjs",
+    "src/cloud.js",
+    "src/main.js",
+    "src/ui/DOMBottomPanel.js",
+    "src/ui/DOMHud.js"
+  ],
+  "checks": [
+    {
+      "name": "npm-test",
+      "command": "npm test",
+      "exitCode": 0,
+      "durationMs": 1072,
+      "timedOut": false,
+      "status": "pass",
+      "logPath": "docs/work-log/2026-08-06_mobile-dom-runtime-optimization/evidence/logs/20260806T131417-npm-test.log",
+      "tail": "> trust-counting-office@0.1.0 test\n> vitest run\n\n\n RUN  v4.1.9 /Users/manager/aidp/gaepyo-master\n\n\n Test Files  13 passed (13)\n      Tests  68 passed (68)\n   Start at  13:14:17\n   Duration  349ms (transform 424ms, setup 0ms, import 657ms, tests 122ms, environment 1ms)"
+    },
+    {
+      "name": "build",
+      "command": "npm run build",
+      "exitCode": 0,
+      "durationMs": 2799,
+      "timedOut": false,
+      "status": "pass",
+      "logPath": "docs/work-log/2026-08-06_mobile-dom-runtime-optimization/evidence/logs/20260806T131417-build.log",
+      "tail": "dist/assets/index-BgmRw_32.css        46.60 kB │ gzip:   8.61 kB\ndist/assets/web-D-NF0u3a.js            0.15 kB │ gzip:   0.15 kB\ndist/assets/index-CON0e7qN.js          0.35 kB │ gzip:   0.26 kB\ndist/assets/index-BFoGnroi.js          0.39 kB │ gzip:   0.26 kB\ndist/assets/index-Gil5Fjt_.js          0.41 kB │ gzip:   0.27 kB\ndist/assets/index.esm-B51NKrAC.js      0.74 kB │ gzip:   0.41 kB\ndist/assets/web-KJxXsqgB.js            0.87 kB │ gzip:   0.42 kB\ndist/assets/index.esm-DMTODEH0.js     19.12 kB │ gzip:   6.62 kB\ndist/assets/index.esm-CA25eeTZ.js     32.36 kB │ gzip:  10.62 kB\ndist/assets/index.esm-D_etj9Ak.js    127.44 kB │ gzip:  36.16 kB\ndist/assets/index-7ZBkU82V.js        249.09 kB │ gzip:  76.58 kB\ndist/assets/index.esm-B_jPSg6Z.js    573.29 kB │ gzip: 169.27 kB\ndist/assets/phaser-DFK5Ua9d.js     1,208.06 kB │ gzip: 330.08 kB\n✓ built in 2.48s\n\n\n(!) Some chunks are larger than 500 kB after minification. Consider:\n- Using dynamic import() to code-split the application\n- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks\n- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit."
+    }
+  ],
+  "verdict": "PASS",
+  "workingTreeDirty": true
+}

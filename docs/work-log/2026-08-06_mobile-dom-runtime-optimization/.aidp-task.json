@@ -11,8 +11,9 @@
   "requiredChecks": [
     "npm-test"
   ],
-  "status": "active",
-  "latestEvidence": null,
-  "latestEvidenceSha256": null,
-  "closedAt": null
+  "status": "closed",
+  "latestEvidence": "docs/work-log/2026-08-06_mobile-dom-runtime-optimization/evidence/evidence.json",
+  "latestEvidenceSha256": "058e32446e1677f2f255bb4916d3b7b7c7d5877b4dee5700d515784ae55b5b75",
+  "closedAt": "2026-08-06T13:14:33+09:00",
+  "lastVerifiedAt": "2026-08-06T13:14:21+09:00"
 }
