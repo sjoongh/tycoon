@@ -1,0 +1,42 @@
+domain: offline-carry-prestige
+modules:
+  - source: src/state/GameState.js
+    spec: docs/impl-notes/2026-08-06-offline-carry-prestige-guidance.md
+    scenario_ref: [SC-OCP-001, SC-OCP-002, SC-OCP-003, SC-OCP-004]
+    tests:
+      - path: src/state/GameState.offlinePrestige.test.js
+        type: unit
+        covers: [save-v6-normalize, persisted-offline-load, stage-allocation, carry-forward, double-claim, boss-operation-gates, prestige-guidance, prestige-reset]
+        case_ref: [TC-OCP-001, TC-OCP-002, TC-OCP-003, TC-OCP-004, TC-OCP-005, TC-OCP-006, TC-OCP-009]
+      - path: scripts/_offlinecarrytest.mjs
+        type: e2e
+        covers: [eight-hour-return, rapid-reload-deduplication, allocation-ui, double-claim, checkpoint-stop, operation-stop, prestige-guidance]
+        case_ref: [TC-OCP-003, TC-OCP-004, TC-OCP-005, TC-OCP-007, TC-OCP-008]
+        flow_ref: [Flow-1, Flow-2, Flow-3]
+    risk_score: 16
+    last_tested: 2026-08-06
+    last_passed: true
+  - source: src/ui/DOMModalLayer.js
+    spec: docs/impl-notes/2026-08-06-offline-carry-prestige-guidance.md
+    scenario_ref: [SC-OCP-003, SC-OCP-005]
+    tests:
+      - path: scripts/_offlinecarrytest.mjs
+        type: e2e
+        covers: [allocation-copy, carry-copy, touch-target, prestige-confirmation, mobile-desktop-overflow]
+        case_ref: [TC-OCP-007, TC-OCP-008]
+        flow_ref: [Flow-1, Flow-3]
+    risk_score: 14
+    last_tested: 2026-08-06
+    last_passed: true
+  - source: src/ui/DOMBottomPanel.js
+    spec: docs/impl-notes/2026-08-06-offline-carry-prestige-guidance.md
+    scenario_ref: [SC-OCP-002, SC-OCP-005]
+    tests:
+      - path: scripts/_offlinecarrytest.mjs
+        type: e2e
+        covers: [pending-carry-label, prestige-relative-gain, recommendation-label]
+        case_ref: [TC-OCP-007, TC-OCP-008]
+        flow_ref: [Flow-1, Flow-3]
+    risk_score: 12
+    last_tested: 2026-08-06
+    last_passed: true

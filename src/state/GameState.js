@@ -59,7 +59,7 @@ const DEX_MILESTONES = [
   { n: 75, pct: 0.25 }, // 전종 수집 완성(officeEvents 총수와 일치 — 사건 추가 시 함께 갱신)
 ];
 
-const SAVE_VERSION = 5;
+const SAVE_VERSION = 6;
 
 const fallbackState = {
   version: SAVE_VERSION,
@@ -164,6 +164,7 @@ const fallbackState = {
     session: null,
     report: null,
   }, // 준비→계열 피버→피니셔→회복(감사 시 초기화)
+  offlineCarryVotes: 0, // 이미 지급된 오프라인 표 중 다음 구역 진행에만 쓸 미처리 크레딧
   offline2xDay: 0,
   log: ["개표국 개국"],
 };
@@ -184,6 +185,12 @@ export class GameState extends Phaser.Events.EventEmitter {
       const parsed = JSON.parse(localStorage.getItem(SAVE_KEY));
       const data = this.normalize(parsed, now);
       const offlineReward = this.applyOfflineProgress(data, now);
+      if (offlineReward) {
+        // 자동저장(10초) 전에 새로고침해도 같은 부재 시간을 다시 지급하지 않도록 즉시 체크포인트한다.
+        // lastSavedAt은 클라우드 최신성 비교 기준이므로 건드리지 않고, 소비한 시간의 lastSeenAt만 전진시킨다.
+        data.lastSeenAt = now;
+        try { localStorage.setItem(SAVE_KEY, JSON.stringify(data)); } catch {}
+      }
       return { data, offlineReward };
     } catch {
       const data = this.normalize(null, now);
@@ -309,6 +316,7 @@ export class GameState extends Phaser.Events.EventEmitter {
       const n = Number(value);
       return Number.isFinite(n) ? n : fallback;
     };
+    data.offlineCarryVotes = Math.max(0, finiteOr(data.offlineCarryVotes, 0));
     data.trust = Phaser.Math.Clamp(finiteOr(data.trust, fallbackState.trust), 0, 100);
     data.days = Math.max(0, finiteOr(data.days, fallbackState.days));
     data.endless = Math.max(0, Math.floor(Number(data.endless) || 0));
@@ -410,6 +418,35 @@ export class GameState extends Phaser.Events.EventEmitter {
     }
   }
 
+  // 오프라인 표는 자원·누적 통계에는 즉시 한 번만 지급하고, 구역 진행에 못 들어간 초과분만 별도 보관한다.
+  // 반환값은 복귀 모달에서 이번 정산의 현재 구역 반영량/이월량을 구분해 보여주는 데 사용한다.
+  applyOfflineStageProgress(data, amount) {
+    const raw = Number(amount);
+    const value = Number.isFinite(raw) ? Math.max(0, raw) : 0;
+    const target = Math.max(0, Number(data.stage?.target) || 0);
+    const progress = Phaser.Math.Clamp(Number(data.stage?.progress) || 0, 0, target);
+    const room = Math.max(0, target - progress);
+    const progressApplied = Math.min(value, room);
+    const carryAdded = Math.max(0, value - progressApplied);
+    const previousCarry = Number(data.offlineCarryVotes);
+    const carryBefore = Number.isFinite(previousCarry) ? Math.max(0, previousCarry) : 0;
+    data.stage.progress = progress + progressApplied;
+    data.offlineCarryVotes = carryBefore + carryAdded;
+    return { progressApplied, carryAdded, carryTotal: data.offlineCarryVotes };
+  }
+
+  // 지역 완료 뒤 새 지역 진행도에 보관분을 적용한다. 표 자원은 이미 지급됐으므로 진행도만 이동한다.
+  applyOfflineCarryToStage(data = this.data) {
+    const raw = Number(data.offlineCarryVotes);
+    const carryBefore = Number.isFinite(raw) ? Math.max(0, raw) : 0;
+    const target = Math.max(0, Number(data.stage?.target) || 0);
+    const progress = Phaser.Math.Clamp(Number(data.stage?.progress) || 0, 0, target);
+    const applied = Math.min(carryBefore, Math.max(0, target - progress));
+    data.stage.progress = progress + applied;
+    data.offlineCarryVotes = Math.max(0, carryBefore - applied);
+    return { applied, remaining: data.offlineCarryVotes };
+  }
+
   applyOfflineProgress(data, now) {
     const elapsed = Phaser.Math.Clamp(now - data.lastSeenAt, 0, this.offlineCapMsFor(data));
     if (elapsed < 30000) return null;
@@ -417,9 +454,9 @@ export class GameState extends Phaser.Events.EventEmitter {
     const seconds = elapsed / 1000;
     const votes = this.cpsFor(data) * seconds * this.offlineRateFor(data);
     const explain = this.explainPerSecondFor(data) * seconds * 0.58;
+    const stageAllocation = this.applyOfflineStageProgress(data, votes);
     data.votes += votes;
     data.explain += explain;
-    data.stage.progress = Phaser.Math.Clamp(data.stage.progress + votes, 0, data.stage.target);
     data.stats.totalVotes += votes;
     data.stats.totalOfflineMs += elapsed;
 
@@ -427,6 +464,7 @@ export class GameState extends Phaser.Events.EventEmitter {
       elapsed,
       votes,
       explain,
+      ...stageAllocation,
     };
   }
 
@@ -438,15 +476,15 @@ export class GameState extends Phaser.Events.EventEmitter {
   claimOfflineBonus() {
     const r = this.offlineReward;
     if (!r || !this.offline2xAvailable()) return null;
+    const stageAllocation = this.applyOfflineStageProgress(this.data, r.votes);
     this.data.votes += r.votes;
     this.data.explain += r.explain;
-    this.data.stage.progress = Phaser.Math.Clamp(this.data.stage.progress + r.votes, 0, this.data.stage.target);
     this.data.stats.totalVotes += r.votes;
     this.data.offline2xDay = this._todayIndex();
     this.offlineReward = null;
     this.emit("changed");
     this.save(false);
-    return r;
+    return { ...r, ...stageAllocation };
   }
 
   save(notify = true) {
@@ -1146,7 +1184,23 @@ export class GameState extends Phaser.Events.EventEmitter {
     const cpsFactor = 1 + this.permanentEffectFor(this.data, "cpsPct");
     const current = this.prestigeMultiplierFor(this.data) * cpsFactor;
     const projectedSeal = this.prestigeMultiplierRaw(p.totalSeals + earned, p.runs + 1, this.permanentEffectFor(this.data, "runsMult"));
-    return { earned, current, projected: projectedSeal * cpsFactor, medalEarned: this.medalPreview() };
+    const projected = projectedSeal * cpsFactor;
+    const gainPct = current > 0 ? Math.max(0, ((projected / current) - 1) * 100) : 0;
+    return {
+      earned,
+      current,
+      projected,
+      gainPct,
+      advice: this.prestigeAdviceFor(gainPct, earned),
+      medalEarned: this.medalPreview(),
+    };
+  }
+
+  prestigeAdviceFor(gainPct, earned = this.prestigePreview()) {
+    if (earned <= 0) return { key: "locked", label: "준비 중", detail: "4구역부터 감사를 실행할 수 있어요" };
+    if (gainPct < 10) return { key: "wait", label: "조금 더", detail: "다음 구역을 밀면 영구 상승폭이 커져요" };
+    if (gainPct < 25) return { key: "ready", label: "감사 적기", detail: "이번 런을 정리하기에 안정적인 보상이에요" };
+    return { key: "strong", label: "강력 추천", detail: "다음 런이 확실히 빨라지는 상승폭이에요" };
   }
 
   upgrade(id = this.data.selected) {
@@ -1221,7 +1275,8 @@ export class GameState extends Phaser.Events.EventEmitter {
     }
     this.data.boss = { ...fallbackState.boss };
     this.grantReward({ votes: rewardVotes + bossBonusVotes, explain: rewardExplain, trust: 5 });
-    this.addLog(`${this.data.stage.area - 1}구역 완료${bossBonusVotes > 0 ? ` · 보스 +${shortNumber(bossBonusVotes)}표` : ""}`);
+    const carried = this.applyOfflineCarryToStage();
+    this.addLog(`${this.data.stage.area - 1}구역 완료${bossBonusVotes > 0 ? ` · 보스 +${shortNumber(bossBonusVotes)}표` : ""}${carried.applied > 0 ? ` · 이월 +${shortNumber(carried.applied)}` : ""}`);
     // 구역 진입은 DOMModalLayer의 우선순위 배너가 담당한다.
     this.checkProgression();
     this.emit("changed");
@@ -1839,7 +1894,7 @@ export class GameState extends Phaser.Events.EventEmitter {
       const lv = data.facilities[item.id] || 0;
       return sum + lv * item.cps * this.facilityMilestoneFactor(lv);
     }, 0);
-    return raw * (0.9 + data.trust / 230) * this.trustModifier(data.trust) * this.staffMultiplierFor(data) * this.prestigeMultiplierFor(data) * (1 + this.permanentEffectFor(data, "cpsPct") + this.titleEffectFor(data, "cpsPct") + this.charEffectFor("cpsPct") + this.operationEffectFor(data, "cpsPct")) * (1 + this.dexBonusPct(data));
+    return raw * (0.9 + data.trust / 230) * this.trustModifier(data.trust) * this.staffMultiplierFor(data) * this.prestigeMultiplierFor(data) * (1 + this.permanentEffectFor(data, "cpsPct") + this.titleEffectFor(data, "cpsPct") + this.charEffectFor("cpsPct", data) + this.operationEffectFor(data, "cpsPct")) * (1 + this.dexBonusPct(data));
   }
 
   // 시설 레벨이 마일스톤을 넘을 때마다 해당 시설 생산 ×2 누적(AdVenture Capitalist식 영구 보너스)
@@ -1965,10 +2020,10 @@ export class GameState extends Phaser.Events.EventEmitter {
   }
 
   // ----- 캐릭터 선택 -----
-  currentCharacter() { return characterById(this.data.selectedChar || "classic"); }
+  currentCharacter(data = this.data) { return characterById(data?.selectedChar || "classic"); }
   // 선택 캐릭터 특성 효과(키 단위) — cps/click/event 버킷에 합산.
-  charEffectFor(key) {
-    const c = this.currentCharacter();
+  charEffectFor(key, data = this.data) {
+    const c = this.currentCharacter(data);
     return (c.trait && c.trait[key]) || 0;
   }
   selectCharacter(id) {

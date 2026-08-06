@@ -6,7 +6,7 @@ adapter:
   commands:
     unit: npm test
     integration: null
-    e2e: node scripts/_bosschecktest.mjs && node scripts/_operationfevertest.mjs && node scripts/_uireadabilitytest.mjs
+    e2e: node scripts/_offlinecarrytest.mjs && node scripts/_bosschecktest.mjs && node scripts/_operationfevertest.mjs && node scripts/_uireadabilitytest.mjs
 project:
   src_root: src/
   specs_dir: null

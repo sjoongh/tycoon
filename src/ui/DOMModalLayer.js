@@ -390,11 +390,16 @@ export class DOMModalLayer {
       ? this.gameState.prestigeProjection()
       : { earned: 0, current: 1, projected: 1, medalEarned: 0 };
     const medalLine = proj.medalEarned > 0 ? ` · <b style="color:#ffd479">🏆 훈장 +${proj.medalEarned}</b>` : "";
+    const advice = proj.advice || { key: "ready", label: "감사 적기", detail: "다음 런의 영구 생산이 상승합니다" };
     this._openModal(`
       <div class="gp-modal__badge">🔨</div>
       <div class="gp-mtitle">감사 실행</div>
       <div class="gp-msub">표·시설·직원은 초기화되지만, <b>제도인장 +${proj.earned}</b>${medalLine}을 받아 <b>영구 생산 배율</b>이 영원히 오릅니다. (감사 업그레이드·업적은 유지)</div>
       <div class="gp-mbig">영구 x${proj.current.toFixed(2)} → <span style="color:#8df0b0">x${proj.projected.toFixed(2)}</span></div>
+      <div class="gp-prestige-advice gp-prestige-advice--${advice.key}">
+        <span><b>현재보다 +${proj.gainPct.toFixed(1)}%</b><small>${advice.detail}</small></span>
+        <em>${advice.label}</em>
+      </div>
       <div class="gp-confirm-row">
         <button class="gp-btn gp-btn--disabled" data-close>취소</button>
         <button class="gp-btn gp-btn--gold" data-confirm>감사 실행</button>
@@ -486,12 +491,16 @@ export class DOMModalLayer {
     const capH = Math.round(capMs / 3600000);
     const near = r.elapsed >= capMs * 0.95;
     const can2x = this.gameState.offline2xAvailable && this.gameState.offline2xAvailable();
+    const progressApplied = Math.max(0, Number(r.progressApplied) || 0);
+    const carryAdded = Math.max(0, Number(r.carryAdded) || 0);
+    const carryTotal = Math.max(0, Number(r.carryTotal) || 0);
+    const previousCarry = Math.max(0, carryTotal - carryAdded);
     // FIX P0: 2× button uses gold+ready theme (premium CTA), physically larger than plain claim
     // Plain claim uses gp-btn--disabled style so gold 2× is the obvious choice
     const footer = can2x
       ? `<div class="gp-confirm-row" style="align-items:stretch">
            <button class="gp-btn gp-btn--disabled" data-close style="flex:1">그냥 수령</button>
-           <button class="gp-btn gp-btn--gold gp-btn--ready gp-btn--upgrade" data-confirm style="flex:1.4;font-size:15px">2배로 받기<small>하루 1회</small></button>
+           <button class="gp-btn gp-btn--gold gp-btn--ready gp-btn--upgrade" data-confirm style="flex:1.4;font-size:15px">2배로 받기<small>이월도 추가 · 하루 1회</small></button>
          </div>`
       : `<button class="gp-btn" data-close>수령하기</button>`;
     this._openModal(`
@@ -499,6 +508,11 @@ export class DOMModalLayer {
       <div class="gp-mtitle">오프라인 정산</div>
       <div class="gp-msub">${timeStr} 동안 개표가 계속됐어요${near ? `<br><span style="color:#ffcd75">최대 ${capH}시간까지 적립돼요 — 자주 들러요!</span>` : ""}</div>
       <div class="gp-mbig">+${shortNumber(r.votes)}표<br><span>+${shortNumber(r.explain)} 해명</span></div>
+      <div class="gp-offline-split" aria-label="오프라인 구역 진행 배분">
+        <div><small>현재 구역 반영</small><b>+${shortNumber(progressApplied)}</b></div>
+        <div class="gp-offline-split__carry"><small>다음 지역 이월</small><b>+${shortNumber(carryAdded)}</b></div>
+      </div>
+      ${carryTotal > 0 ? `<div class="gp-offline-note">미처리 개표함 ${shortNumber(carryTotal)}표${previousCarry > 0 ? ` · 기존 ${shortNumber(previousCarry)} 포함` : ""}<br>지역 완료 때 자동 반영되며 보스·작전 앞에서 멈춥니다.</div>` : ""}
       ${footer}`, () => this.gameState.claimOfflineBonus(), onClose);
   }
 
