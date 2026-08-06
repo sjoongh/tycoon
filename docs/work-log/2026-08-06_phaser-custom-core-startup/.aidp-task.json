@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "taskId": "2026-08-06_phaser-custom-core-startup",
+  "title": "Phaser custom core 부팅 최적화",
+  "goal": "게임 동작과 Canvas fallback을 보존하면서 Phaser 엔진 전송량과 4x CPU long task를 유의미하게 줄인다",
+  "root": "/Users/manager/aidp/gaepyo-master",
+  "startedAt": "2026-08-06T14:39:03+09:00",
+  "baseSha": "8e62cd0ee06ff0c53176d46c6cb361038c25399c",
+  "branch": "perf/phaser-custom-core-startup",
+  "dirtyAtStart": true,
+  "requiredChecks": [
+    "npm-test",
+    "build"
+  ],
+  "status": "active",
+  "latestEvidence": null,
+  "latestEvidenceSha256": null,
+  "closedAt": null
+}

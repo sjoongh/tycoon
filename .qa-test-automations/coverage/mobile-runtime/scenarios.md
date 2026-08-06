@@ -70,6 +70,26 @@
 
 왜 필요한가: 단순 파일 축소는 특정 한글·숫자를 누락하거나 픽셀 격자를 흐릴 수 있고, 닉네임은 정적 문자열 목록으로 제한할 수 없다.
 
+## SC-MRT-008: custom Phaser core가 WebGL과 Canvas에서 같은 게임 기능을 제공한다
+
+| 항목 | 내용 |
+|---|---|
+| AC 참조 | 사용자 승인 A안의 custom core·Canvas fallback |
+| 리스크 | HIGH |
+| 전제 조건 | exact Phaser/esbuild, 외부 요청 차단 localhost, WebGL 및 강제 Canvas 각각 신규 세이브 |
+
+왜 필요한가: 사용하지 않는 엔진 모듈을 제거하면 정적 참조에 드러나지 않는 factory·scene system이 빠질 수 있고, Canvas 능력검사를 보수적으로 고정하면 fallback 렌더가 달라질 수 있다.
+
+## SC-MRT-009: custom build는 재현 가능하고 stock rollback보다 startup long task가 작다
+
+| 항목 | 내용 |
+|---|---|
+| AC 참조 | hash 재생성·stock rollback·4× CPU 성능 기준 |
+| 리스크 | HIGH |
+| 전제 조건 | stock/custom production build, 390×844, 4× CPU + SwiftShader, 각 3회 신규 브라우저 |
+
+왜 필요한가: 개발 환경에만 남은 cache나 우연한 warm cache로 빨라진 것처럼 보이면 CI·배포에서 재현되지 않고, 현장 회귀 때 stock 엔진으로 즉시 돌아갈 수 없다.
+
 ## Traceability Matrix
 
 | AC | Scenario | Test Cases | Test Code | Evidence |
@@ -81,3 +101,5 @@
 | 전체 의미 회귀 | SC-MRT-005 | TC-MRT-008 | unit + 4 E2E + hands-on | `evidence/2026-08-06/mobile-runtime-summary.yaml` |
 | 클라우드 idle·상한 | SC-MRT-006 | TC-MRT-009~010 | `scripts/_startupfonttest.mjs` | `evidence/2026-08-06/startup-font-summary.yaml` |
 | 폰트 subset·fallback | SC-MRT-007 | TC-MRT-011~013 | startup/font E2E + subset generation | `evidence/2026-08-06/startup-font-summary.yaml` |
+| custom core 기능·Canvas | SC-MRT-008 | TC-MRT-014~016 | builder assertion + Phaser core E2E | `evidence/2026-08-06/phaser-core-summary.yaml` |
+| startup 성능·rollback | SC-MRT-009 | TC-MRT-017~018 | stock build + startup comparison | `evidence/2026-08-06/phaser-core-summary.yaml` |

@@ -64,3 +64,28 @@ cases:
     description: 같은 소스에서 subset 생성 스크립트를 두 번 실행하면 동일 SHA-256과 더 작은 WOFF2가 나온다
     type: boundary
     expected: { result: success, deterministic: true }
+  - id: TC-MRT-014
+    scenario: SC-MRT-008
+    description: Phaser 3.90.0과 esbuild 0.27.7에서 custom bundle을 두 번 만들면 동일 SHA, MIT 배너, 양 renderer flag와 200KB 이하 gzip을 얻고 소스의 factory·Math·제외 API 사용이 custom entry와 일치한다
+    type: boundary
+    expected: { result: success, deterministic: true, max_gzip_bytes: 200000 }
+  - id: TC-MRT-015
+    scenario: SC-MRT-008
+    description: WebGL custom core가 사용 factory와 input·loader·scale·time·tween을 제공하고 실제 canvas 탭을 처리한다
+    type: normal
+    expected: { result: success, renderer_type: 2, tap_increment: 1 }
+  - id: TC-MRT-016
+    scenario: SC-MRT-008
+    description: WebGL을 강제로 비활성화하면 Canvas fallback이 부팅되고 같은 API·탭·다색상 프레임을 제공한다
+    type: error
+    expected: { result: success, renderer_type: 1, min_sampled_colors: 4 }
+  - id: TC-MRT-017
+    scenario: SC-MRT-009
+    description: GAEPYO_STOCK_PHASER=1이 custom 준비·alias를 우회해 깨진 custom cache를 건드리지 않고 stock production build와 WebGL·Canvas 런타임을 정상 제공한다
+    type: error
+    expected: { result: success, rollback_available: true }
+  - id: TC-MRT-018
+    scenario: SC-MRT-009
+    description: 4× CPU 3회 중앙값에서 custom은 stock보다 전송 30%, 총 long task 25%, 최대 long task 15% 이상 작다
+    type: boundary
+    expected: { result: success, max_custom_transfer_bytes: 200000 }

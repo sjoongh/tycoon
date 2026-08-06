@@ -100,7 +100,10 @@ const config = {
 };
 
 const game = new Phaser.Game(config);
-if (import.meta.env.DEV) window.__game = game;
+if (import.meta.env.DEV) {
+  window.__game = game;
+  window.__phaserBuild = __GAEPYO_PHASER_BUILD__;
+}
 
 const uiLayer = document.createElement("div");
 uiLayer.className = "gp-ui";

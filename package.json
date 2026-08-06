@@ -9,8 +9,14 @@
     "preview": "vite preview --host 0.0.0.0 --port 4178",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:phaser-core": "node scripts/_phasercoretest.mjs",
+    "test:phaser-stock-rollback": "node scripts/_phaserstockrollbacktest.mjs",
+    "test:phaser-startup": "node scripts/_phaserstartupmeasure.mjs",
     "fonts:subset": "node scripts/_subsetfonts.mjs",
-    "prebuild": "npm run fonts:subset",
+    "phaser:build": "node tools/phaser/build-custom-phaser.mjs",
+    "phaser:check": "node tools/phaser/assert-custom-phaser.mjs",
+    "phaser:prepare": "node tools/phaser/prepare-phaser.mjs",
+    "prebuild": "npm run fonts:subset && npm run phaser:prepare",
     "build:android": "npm run build && cap copy android",
     "android:open": "cap open android",
     "android:sync": "npm run build && cap sync android"
@@ -23,11 +29,12 @@
     "@capacitor/splash-screen": "^8.0.1",
     "@capacitor/status-bar": "^8.0.2",
     "firebase": "^12.15.0",
-    "phaser": "^3.90.0"
+    "phaser": "3.90.0"
   },
   "devDependencies": {
     "@capacitor/assets": "^3.0.5",
     "@capacitor/cli": "^8.4.1",
+    "esbuild": "0.27.7",
     "playwright": "^1.61.1",
     "subset-font": "^2.5.0",
     "vite": "^7.0.0",

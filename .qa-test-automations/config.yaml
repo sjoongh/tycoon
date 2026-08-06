@@ -3,10 +3,11 @@ adapter:
   framework: vite-phaser
   test_dir: test/
   e2e_tool: playwright
+  execution: sequential
   commands:
     unit: npm test
     integration: null
-    e2e: node scripts/_offlinecarrytest.mjs && node scripts/_bosschecktest.mjs && node scripts/_operationfevertest.mjs && node scripts/_uireadabilitytest.mjs && node scripts/_mobileperformancetest.mjs && node scripts/_startupfonttest.mjs
+    e2e: node scripts/_offlinecarrytest.mjs && node scripts/_bosschecktest.mjs && node scripts/_operationfevertest.mjs && node scripts/_uireadabilitytest.mjs && node scripts/_mobileperformancetest.mjs && node scripts/_startupfonttest.mjs && node scripts/_phasercoretest.mjs
 project:
   src_root: src/
   specs_dir: null
