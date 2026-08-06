@@ -2,6 +2,7 @@ import { shortNumber } from "../utils/format.js";
 import { GOV_MAPS, PROP_MAPS, dotSvgUri } from "../world/dotChar.js";
 import { RARITY_LABEL, RARITY_COLOR } from "../data/titles.js";
 import { FEVER_FAMILY_PROFILES, OPERATION_FAMILIES, operationDefinitions } from "../data/operations.js";
+import { BOSS_DURATION_MS } from "../data/bosses.js";
 
 const MILESTONES = [5, 10, 25, 45];
 
@@ -15,14 +16,19 @@ export class DOMModalLayer {
     this._hint = null;
     this._prevArea = gameState.data.stage.area;
     this._onUpgraded = (f) => this._checkMilestone(f);
-    this._onChanged = () => { this._maybeHint(); this._checkStage(); this._maybeOperationDraft(); this._maybeFeverReport(); this._maybeNotifPrompt(); };
+    this._onChanged = () => { this._maybeHint(); this._checkStage(); this._maybeBossChallenge(); this._maybeOperationDraft(); this._maybeFeverReport(); this._maybeNotifPrompt(); };
     this._onPrestigeConfirm = () => this._confirmPrestige();
-    this._onCelebrate = (p) => { this._banner(p.text, { priority: 2, tone: "reward" }); this._flash(); };
+    this._onCelebrate = (p) => {
+      this._banner(p.text, { priority: 2, tone: "reward" });
+      if (!this.gameState.bossActive?.() && !this._bossEl?.isConnected) this._flash();
+    };
     this._onGachaResult = (e) => this._showGachaResult(e.detail);
     this._onGachaResult10 = (e) => this._showGachaResult10(e.detail);
     this._onCommWarning = (p) => { this._banner(p.text, { priority: 4, tone: "danger" }); document.dispatchEvent(new CustomEvent("gp:sfx", { detail: "crisis" })); };
     this._onCommCollapse = (p) => this._showCollapse(p);
     this._onOpenOperations = () => this._showOperationStatus();
+    this._onBossStart = (result) => this._showBossChallenge(result);
+    this._onBossEnd = (result) => this._resolveBossChallenge(result);
   }
 
   mount(parent) {
@@ -32,6 +38,8 @@ export class DOMModalLayer {
     this.gameState.on("celebrate", this._onCelebrate);
     this.gameState.on("comm-warning", this._onCommWarning);
     this.gameState.on("comm-collapse", this._onCommCollapse);
+    this.gameState.on("boss-start", this._onBossStart);
+    this.gameState.on("boss-end", this._onBossEnd);
     document.addEventListener("gp:prestige-confirm", this._onPrestigeConfirm);
     document.addEventListener("gp:gacha-result", this._onGachaResult);
     document.addEventListener("gp:gacha-result10", this._onGachaResult10);
@@ -42,6 +50,7 @@ export class DOMModalLayer {
       else this._maybeDaily();
     }
     this._maybeHint();
+    this._maybeBossChallenge();
     this._maybeOperationDraft();
   }
 
@@ -127,10 +136,125 @@ export class DOMModalLayer {
     }
   }
 
+  _maybeBossChallenge() {
+    if (!this.gameState.bossActive?.()) return;
+    if (!this._bossEl?.isConnected) this._showBossChallenge({
+      area: this.gameState.data.boss.area,
+      definition: this.gameState.bossDefinition?.(),
+      durationMs: BOSS_DURATION_MS,
+    });
+    this._updateBossChallenge();
+  }
+
+  _showBossChallenge(payload = {}) {
+    if (this._bossMounting || this._bossEl?.isConnected || !this.gameState.bossActive?.()) return;
+    this._bossMounting = true;
+    this._clearActiveBanner({ requeue: true });
+    clearTimeout(this._feverReportTimer);
+    this._feverReportEl?.remove();
+    this._feverReportEl = null;
+    if (this.gameState.data.fever?.report) this.gameState.dismissFeverReport?.();
+    this._clearHint();
+    this._setCentralVisualActive(true);
+
+    const definition = payload.definition || this.gameState.bossDefinition?.() || {};
+    const area = payload.area || this.gameState.data.stage.area;
+    const boss = document.createElement("section");
+    boss.className = "gp-boss gp-boss--active";
+    boss.setAttribute("role", "region");
+    boss.setAttribute("aria-label", `${area}구역 ${definition.title || "최종 검증"}`);
+    boss.innerHTML = `
+      <div class="gp-boss__live" data-boss-live aria-live="polite" aria-atomic="true">${area}구역 최종 검증 시작. 제한 시간 8초.</div>
+      <div class="gp-boss__head">
+        <span class="gp-boss__icon" aria-hidden="true">${definition.icon || "⚠"}</span>
+        <span class="gp-boss__heading"><small>${area}구역 체크포인트</small><b>${definition.title || "최종 검증"}</b></span>
+        <strong class="gp-boss__time" data-boss-time>8초</strong>
+      </div>
+      <div class="gp-boss__desc" data-boss-desc>${definition.desc || "제한 시간 안에 처리력을 증명하세요."}</div>
+      <div class="gp-boss__meter" aria-hidden="true"><span data-boss-fill></span></div>
+      <div class="gp-boss__numbers"><span>처리량 <b data-boss-progress>0</b></span><em>화면 탭 + 초당 생산</em></div>
+      <div class="gp-boss__timer" aria-hidden="true"><span data-boss-timer-fill></span></div>
+      <button type="button" class="gp-boss__skip" data-boss-skip>기본 보상으로 완료</button>`;
+    boss.querySelector("[data-boss-skip]").addEventListener("click", () => this.gameState.skipBoss?.());
+    this._bossEl = boss;
+    this.root.appendChild(boss);
+    this._updateBossChallenge();
+    clearInterval(this._bossClockTimer);
+    this._bossClockTimer = setInterval(() => {
+      if (this._destroyed || this._bossResolving) return;
+      const result = this.gameState.syncBoss?.();
+      if (!result) this._updateBossChallenge();
+    }, 100);
+    this._bossMounting = false;
+    document.dispatchEvent(new CustomEvent("gp:sfx", { detail: "crisis" }));
+  }
+
+  _updateBossChallenge(now = Date.now()) {
+    const boss = this._bossEl;
+    if (!boss?.isConnected || this._bossResolving) return;
+    const state = this.gameState.data.boss;
+    const progress = Math.max(0, state.progress || 0);
+    const target = Math.max(1, state.target || 1);
+    const pct = Math.min(1, progress / target);
+    const remaining = this.gameState.bossRemainingMs?.(now) || 0;
+    const remainingPct = Math.min(1, remaining / BOSS_DURATION_MS);
+    boss.querySelector("[data-boss-fill]").style.transform = `scaleX(${pct})`;
+    boss.querySelector("[data-boss-timer-fill]").style.transform = `scaleX(${remainingPct})`;
+    boss.querySelector("[data-boss-progress]").textContent = `${shortNumber(progress)} / ${shortNumber(target)}`;
+    boss.querySelector("[data-boss-time]").textContent = `${Math.max(0, Math.ceil(remaining / 1000))}초`;
+  }
+
+  _resolveBossChallenge(result) {
+    if (!result || this._bossResolving) return;
+    this._bossResolving = true;
+    clearInterval(this._bossClockTimer);
+    const boss = this._bossEl;
+    if (boss?.isConnected) {
+      boss.classList.remove("gp-boss--active");
+      boss.classList.add(result.success ? "gp-boss--success" : "gp-boss--base");
+      const title = boss.querySelector(".gp-boss__heading b");
+      const desc = boss.querySelector("[data-boss-desc]");
+      const time = boss.querySelector("[data-boss-time]");
+      const progress = boss.querySelector("[data-boss-progress]");
+      const timerFill = boss.querySelector("[data-boss-timer-fill]");
+      const live = boss.querySelector("[data-boss-live]");
+      const skip = boss.querySelector("[data-boss-skip]");
+      if (title) title.textContent = result.success ? "정밀 검표 성공!" : result.outcome === "skipped" ? "기본 완료 선택" : "시간 종료";
+      if (desc) desc.textContent = result.success
+        ? `완료 보상 +${shortNumber(result.bonusVotes)}표 확보`
+        : "페널티 없이 기본 구역 보상으로 진행합니다.";
+      if (time) time.textContent = result.success ? "성공" : "완료";
+      if (progress) progress.textContent = `${shortNumber(result.success ? result.target : result.progress)} / ${shortNumber(result.target)}`;
+      if (timerFill) timerFill.style.transform = "scaleX(0)";
+      if (live) live.textContent = result.success
+        ? `최종 검증 성공. 완료 보상 ${shortNumber(result.bonusVotes)}표 추가.`
+        : "최종 검증 기본 완료. 페널티 없이 진행합니다.";
+      if (skip) skip.remove();
+      if (result.success) {
+        const fill = boss.querySelector("[data-boss-fill]");
+        if (fill) fill.style.transform = "scaleX(1)";
+        this._flash();
+        document.dispatchEvent(new CustomEvent("gp:sfx", { detail: "achieve" }));
+      }
+    }
+    document.dispatchEvent(new CustomEvent("gp:boss-resolved", { detail: result }));
+    clearTimeout(this._bossAdvanceTimer);
+    this._bossAdvanceTimer = setTimeout(() => {
+      this._bossEl?.remove();
+      this._bossEl = null;
+      this._bossResolving = false;
+      this._setCentralVisualActive(false);
+      const sameArea = this.gameState.data.stage.area === result.area;
+      const ready = this.gameState.data.stage.progress >= this.gameState.data.stage.target;
+      if (sameArea && ready && !this.gameState.bossRequired?.()) this.gameState.advanceStage();
+      else this._drainBanners();
+    }, 900);
+  }
+
   // 3구역을 완료할 때마다 현장/운영/대응 3축 중 하나를 고르는 런 작전 드래프트.
   // 다른 보상 모달이 열려 있으면 다음 changed 틱까지 기다려 모달 중첩을 피한다.
   _maybeOperationDraft() {
-    if (this._operationModal?.isConnected || this.root.querySelector(".gp-modal-ov")) return;
+    if (this._operationModal?.isConnected || this._bossEl?.isConnected || this.root.querySelector(".gp-modal-ov")) return;
     const draft = this.gameState.data.operations?.draft;
     const choices = this.gameState.operationDraftDefinitions ? this.gameState.operationDraftDefinitions() : [];
     if (!draft || choices.length !== 3) return;
@@ -140,7 +264,7 @@ export class DOMModalLayer {
       const family = OPERATION_FAMILIES[operation.family];
       const profile = FEVER_FAMILY_PROFILES[operation.family];
       const recommendation = this.gameState.operationRecommendationText?.(operation.family) || "";
-      return `<button type="button" class="gp-opcard gp-opcard--${operation.family}" data-operation="${operation.id}" aria-label="${operation.name} 레벨 ${level + 1} 선택">
+      return `<button type="button" class="gp-opcard gp-opcard--${operation.family}" data-operation="${operation.id}" aria-pressed="false" aria-label="${operation.name} 레벨 ${level + 1} 선택">
         <span class="gp-opcard__icon" aria-hidden="true">${operation.icon}</span>
         <span class="gp-opcard__body">
           <span class="gp-opcard__meta"><span class="gp-opcard__family">${family?.label || "개표"} 작전</span>${recommendation ? `<em>★ 추천 · ${recommendation}</em>` : ""}</span>
@@ -159,11 +283,31 @@ export class DOMModalLayer {
       <div class="gp-msub">하나를 골라 이번 감사 런의 <b>다음 피버</b>를 바꾸세요.<br>가장 많이 쌓은 계열이 피버의 성격이 됩니다.</div>
       <div class="gp-oplist">${cards}</div>
       <div class="gp-opnote">다음 작전 회의는 3구역 뒤 · 동률이면 방금 고른 계열 우선</div>
+      <button type="button" class="gp-btn gp-btn--gold gp-btn--disabled gp-opconfirm" data-operation-confirm disabled>작전을 먼저 고르세요</button>
     </div>`;
+    // 보스 성공 직전의 연속 탭이 새로 열린 카드에 전달되어 작전을 오선택하지 않게 짧게 입력을 안정화한다.
+    const operationReadyTimer = setTimeout(() => { ov.dataset.ready = "true"; }, 450);
     ov.addEventListener("click", (event) => {
       const card = event.target.closest("[data-operation]");
-      if (!card) return;
-      if (!this.gameState.chooseOperation(card.dataset.operation)) return;
+      if (card) {
+        if (ov.dataset.ready !== "true") return;
+        ov.querySelectorAll("[data-operation]").forEach((item) => {
+          const selected = item === card;
+          item.classList.toggle("gp-opcard--selected", selected);
+          item.setAttribute("aria-pressed", String(selected));
+        });
+        const operation = choices.find((item) => item.id === card.dataset.operation);
+        const confirm = ov.querySelector("[data-operation-confirm]");
+        confirm.disabled = false;
+        confirm.classList.remove("gp-btn--disabled");
+        confirm.dataset.selectedOperation = card.dataset.operation;
+        confirm.textContent = `${operation?.name || "선택한 작전"} 채택`;
+        return;
+      }
+      const confirm = event.target.closest("[data-operation-confirm]");
+      const selectedId = confirm?.dataset.selectedOperation;
+      if (!selectedId || !this.gameState.chooseOperation(selectedId)) return;
+      clearTimeout(operationReadyTimer);
       document.dispatchEvent(new CustomEvent("gp:sfx", { detail: "powerup" }));
       ov.remove();
       this._operationModal = null;
@@ -204,7 +348,7 @@ export class DOMModalLayer {
   }
 
   _maybeFeverReport() {
-    if (this._feverReportEl?.isConnected || this.root.querySelector(".gp-modal-ov")) return;
+    if (this._feverReportEl?.isConnected || this._bossEl?.isConnected || this.root.querySelector(".gp-modal-ov")) return;
     const report = this.gameState.data.fever?.report;
     if (!report) return;
     this._clearActiveBanner({ requeue: true });
@@ -280,7 +424,7 @@ export class DOMModalLayer {
 
   _drainBanners() {
     if (this._destroyed || this._bannerActive || !this._bannerQueue?.length) return;
-    if (this.root.querySelector(".gp-modal-ov") || this._feverReportEl?.isConnected) return;
+    if (this.root.querySelector(".gp-modal-ov") || this._bossEl?.isConnected || this._feverReportEl?.isConnected) return;
     this._bannerActive = true;
     const item = this._bannerQueue.shift();
     this._bannerCurrent = item;
@@ -371,6 +515,7 @@ export class DOMModalLayer {
   _maybeHint() {
     const gs = this.gameState;
     const d = gs.data;
+    if (gs.bossActive?.()) { this._clearHint(); return; }
     if (d.tutorial && d.tutorial.done) { this._clearHint(); return; }
 
     const clicks = d.stats.totalClicks || 0;
@@ -401,7 +546,7 @@ export class DOMModalLayer {
   _maybeNotifPrompt() {
     const n = this.notifications;
     if (!n || this._notifPromptShown) return;
-    if (this.root.querySelector(".gp-modal-ov")) return;
+    if (this._bossEl?.isConnected || this.root.querySelector(".gp-modal-ov")) return;
     if (!n.supported() || n.asked() || n.permission() !== "default") return;
     if ((this.gameState.data.prestige?.runs || 0) < 1) return;
     this._notifPromptShown = true;
@@ -479,6 +624,8 @@ export class DOMModalLayer {
     this.gameState.off("celebrate", this._onCelebrate);
     this.gameState.off("comm-warning", this._onCommWarning);
     this.gameState.off("comm-collapse", this._onCommCollapse);
+    this.gameState.off("boss-start", this._onBossStart);
+    this.gameState.off("boss-end", this._onBossEnd);
     document.removeEventListener("gp:prestige-confirm", this._onPrestigeConfirm);
     document.removeEventListener("gp:gacha-result", this._onGachaResult);
     document.removeEventListener("gp:gacha-result10", this._onGachaResult10);
@@ -487,7 +634,10 @@ export class DOMModalLayer {
     clearTimeout(this._feverReportTimer);
     clearTimeout(this._bannerHoldTimer);
     clearTimeout(this._bannerExitTimer);
+    clearTimeout(this._bossAdvanceTimer);
+    clearInterval(this._bossClockTimer);
     this._feverReportEl?.remove();
+    this._bossEl?.remove();
     this.root.remove();
   }
 }

@@ -108,7 +108,10 @@ export class DOMBottomPanel {
     switch (el.dataset.action) {
       case "selectFac": gs.select(id); break;
       case "upgradeFac": gs.bulkUpgrade(gs.data.selected, this.buyQty); break;
-      case "advanceStage": gs.advanceStage(); break;
+      case "advanceStage":
+        if (gs.bossRequired?.()) gs.startBoss();
+        else gs.advanceStage();
+        break;
       case "hire": gs.bulkHire(id, this.buyQty); break;
       case "setBuyQty": this.buyQty = (id === "max" ? "max" : Number(id)); this.refresh(); break;
       case "getEvent": if (gs.eventReady()) { this.currentEvent = this._pickEvent(); gs.uiEventOpen = true; this.refresh(); } break;
@@ -207,6 +210,13 @@ export class DOMBottomPanel {
     const cost = gs.cost(sel);
     const ex = gs.explainCost(sel);
     const stageDone = gs.data.stage.progress >= gs.data.stage.target;
+    const bossActive = gs.bossActive?.() || false;
+    const bossRequired = gs.bossRequired?.() || false;
+    const stageAction = bossActive
+      ? `<button class="gp-btn gp-btn--sm gp-btn--disabled" aria-disabled="true">검증 진행 중</button>`
+      : bossRequired
+        ? `<button class="gp-btn gp-btn--sm gp-btn--gold gp-btn--boss" data-action="advanceStage">최종 검증!</button>`
+        : `<button class="gp-btn gp-btn--sm" data-action="advanceStage">지역완료 ✓</button>`;
     // 일괄구매 플랜(현재 수량 기준)
     const plan = unlocked ? gs.facilityBulkPlan(sel, this.buyQty) : { levels: 0, voteCost: 0, explainCost: 0 };
     const canBuy = unlocked && plan.levels > 0 && gs.data.votes >= plan.voteCost && gs.data.explain >= plan.explainCost;
@@ -237,7 +247,7 @@ export class DOMBottomPanel {
       }).join("")}</div>
       <div class="gp-region"><span>${gs.data.stage.area}구역 · ${shortNumber(gs.data.stage.progress)} / ${shortNumber(gs.data.stage.target)}</span>${
         stageDone
-          ? `<button class="gp-btn gp-btn--sm" data-action="advanceStage">지역완료 ✓</button>`
+          ? stageAction
           : `<span class="gp-stage-frac">${Math.floor((gs.data.stage.progress / gs.data.stage.target) * 100)}%</span>`
       }</div>
       ${this._nextUnlockTeaser()}`;

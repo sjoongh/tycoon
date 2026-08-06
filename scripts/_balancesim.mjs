@@ -21,7 +21,12 @@ const out = await p.evaluate(async ()=>{
     // 탭 수동 생산
     for(let k=0;k<tapsPerSec;k++) gs.addVotes(gs.clickValue?gs.clickValue():1);
     // 구역 돌파
-    if(gs.data.stage.progress>=gs.data.stage.target){ gs.advanceStage(); if(!reached[gs.data.stage.area]) reached[gs.data.stage.area]=t; }
+    if(gs.data.stage.progress>=gs.data.stage.target){
+      if(gs.bossRequired?.()){ gs.startBoss(); gs.skipBoss(); }
+      gs.advanceStage();
+      if(gs.data.operations?.draft) gs.chooseOperation(gs.data.operations.draft.choices[0]);
+      if(!reached[gs.data.stage.area]) reached[gs.data.stage.area]=t;
+    }
     // 그리디 구매: 가장 싼 시설 1레벨씩, 표의 60%까지만 소비
     for(let tries=0;tries<6;tries++){
       let best=null,bestCost=Infinity;

@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "taskId": "2026-08-05_checkpoint-boss-event",
+  "title": "체크포인트 보스 사건",
+  "goal": "3구역 단위 8초 보스가 무페널티 실패와 성공 보상, 작전 회의 순서, 저장 호환 및 모바일 실제 플레이에서 검증됨",
+  "root": "/Users/manager/aidp/gaepyo-master",
+  "startedAt": "2026-08-05T23:40:37+09:00",
+  "baseSha": "ce8d2313e4fd826b7fe47f554cdfcc97396be595",
+  "branch": "feat/checkpoint-boss-event",
+  "dirtyAtStart": true,
+  "requiredChecks": [
+    "npm-test",
+    "npm-run-build",
+    "playwright-boss-e2e",
+    "fresh-save-hands-on-play"
+  ],
+  "status": "active",
+  "latestEvidence": null,
+  "latestEvidenceSha256": null,
+  "closedAt": null
+}
