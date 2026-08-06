@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "taskId": "2026-08-06_checkpoint-boss-patterns",
+  "generatedAt": "2026-08-06T16:29:02+09:00",
+  "baseSha": "bb5a3d822bcebf6572d47a3abbbe6b44ad24401e",
+  "headSha": "bb5a3d822bcebf6572d47a3abbbe6b44ad24401e",
+  "repositoryStateDigest": "5024f9cdf5bab5649ab0b93847326989abe56797892fde481edf3c0f77d90714",
+  "branch": "feat/checkpoint-boss-patterns",
+  "changedFiles": [
+    ".impeccable/critique/2026-08-05T04-59-31Z__src-ui-domhud-js.md",
+    ".omc/artifacts/ask/codex-phaser-3-vite-pwa-src-6800-3-play-1-0-1-src-1-2-phaser-3-4-u-2026-07-24T09-00-51-332Z.md",
+    ".omc/project-memory.json",
+    ".qa-test-automations/_index.md",
+    ".qa-test-automations/coverage/checkpoint-boss/e2e-flows.md",
+    ".qa-test-automations/coverage/checkpoint-boss/manifest.yaml",
+    ".qa-test-automations/coverage/checkpoint-boss/scenarios.md",
+    ".qa-test-automations/coverage/checkpoint-boss/test-cases.yaml",
+    ".qa-test-automations/evidence/2026-08-06/checkpoint-boss-pattern-summary.yaml",
+    ".qa-test-automations/history.yaml",
+    ".qa-test-automations/reports/2026-08-06-checkpoint-boss-pattern-report.md",
+    "docs/impl-notes/2026-08-06-checkpoint-boss-patterns.md",
+    "public/fonts/Galmuri14.woff2",
+    "public/fonts/Galmuri9.woff2",
+    "scripts/_bosschecktest.mjs",
+    "scripts/_operationfeverplay.mjs",
+    "src/data/bosses.js",
+    "src/data/bosses.test.js",
+    "src/state/GameState.checkpointBoss.test.js",
+    "src/state/GameState.js",
+    "src/state/GameState.operationFever.test.js",
+    "src/ui/DOMModalLayer.js",
+    "src/ui/dom-ui.css"
+  ],
+  "checks": [
+    {
+      "name": "npm-test",
+      "command": "npm test",
+      "exitCode": 0,
+      "durationMs": 716,
+      "timedOut": false,
+      "status": "pass",
+      "logPath": "docs/work-log/2026-08-06_checkpoint-boss-patterns/evidence/logs/20260806T162859-npm-test.log",
+      "tail": "> trust-counting-office@0.1.0 test\n> vitest run\n\n\n RUN  v4.1.9 /Users/manager/aidp/gaepyo-master\n\n\n Test Files  13 passed (13)\n      Tests  76 passed (76)\n   Start at  16:28:59\n   Duration  366ms (transform 430ms, setup 0ms, import 740ms, tests 115ms, environment 1ms)"
+    },
+    {
+      "name": "build",
+      "command": "npm run build",
+      "exitCode": 0,
+      "durationMs": 2096,
+      "timedOut": false,
+      "status": "pass",
+      "logPath": "docs/work-log/2026-08-06_checkpoint-boss-patterns/evidence/logs/20260806T162859-build.log",
+      "tail": "dist/assets/index-D9E_qSIZ.css      48.78 kB │ gzip:   9.06 kB\ndist/assets/web-B35oiISD.js          0.15 kB │ gzip:   0.14 kB\ndist/assets/index-NnIYVR1E.js        0.35 kB │ gzip:   0.25 kB\ndist/assets/index-DFTSVDVa.js        0.39 kB │ gzip:   0.26 kB\ndist/assets/index-iXhnCKzH.js        0.41 kB │ gzip:   0.26 kB\ndist/assets/index.esm-B51NKrAC.js    0.74 kB │ gzip:   0.41 kB\ndist/assets/web-BCrDjVxv.js          0.87 kB │ gzip:   0.42 kB\ndist/assets/index.esm-DMTODEH0.js   19.12 kB │ gzip:   6.62 kB\ndist/assets/index.esm-CA25eeTZ.js   32.36 kB │ gzip:  10.62 kB\ndist/assets/index.esm-D_etj9Ak.js  127.44 kB │ gzip:  36.16 kB\ndist/assets/index-Df5ah-Mq.js      257.40 kB │ gzip:  78.95 kB\ndist/assets/index.esm-B_jPSg6Z.js  573.29 kB │ gzip: 169.27 kB\ndist/assets/phaser-C1P5Ftfi.js     648.18 kB │ gzip: 175.59 kB\n✓ built in 1.12s\n\n\n(!) Some chunks are larger than 500 kB after minification. Consider:\n- Using dynamic import() to code-split the application\n- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks\n- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit."
+    }
+  ],
+  "verdict": "PASS",
+  "workingTreeDirty": true
+}

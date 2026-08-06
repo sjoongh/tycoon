@@ -71,3 +71,12 @@ runs:
     skipped: 0
     coverage_lines: null
     duration_ms: 270000
+  - date: 2026-08-06
+    mode: incremental
+    target: checkpoint-boss-patterns
+    total: 91
+    passed: 91
+    failed: 0
+    skipped: 0
+    coverage_lines: null
+    duration_ms: 385000

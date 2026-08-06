@@ -21,9 +21,10 @@ import {
 } from "../data/operations.js";
 import {
   BOSS_DURATION_MS,
+  BOSS_PATTERN_VERSION,
   bossForArea,
+  bossPatternTarget,
   bossRewardBonus,
-  bossTargetFor,
   isCheckpointArea,
 } from "../data/bosses.js";
 import { shortNumber } from "../utils/format.js";
@@ -149,6 +150,10 @@ const fallbackState = {
     area: 0,
     progress: 0,
     target: 0,
+    patternVersion: 0,
+    phaseIndex: 0,
+    phaseProgress: 0,
+    phaseStartedAt: 0,
     startedAt: 0,
     endsAt: 0,
     clearedArea: 0,
@@ -333,6 +338,12 @@ export class GameState extends Phaser.Events.EventEmitter {
     data.boss.area = Math.max(0, Math.floor(Number(data.boss.area) || 0));
     data.boss.progress = Math.max(0, Number(data.boss.progress) || 0);
     data.boss.target = Math.max(0, Number(data.boss.target) || 0);
+    data.boss.patternVersion = Number(data.boss.patternVersion) === BOSS_PATTERN_VERSION
+      ? BOSS_PATTERN_VERSION
+      : 0;
+    data.boss.phaseIndex = Math.max(0, Math.floor(Number(data.boss.phaseIndex) || 0));
+    data.boss.phaseProgress = Math.max(0, Math.floor(Number(data.boss.phaseProgress) || 0));
+    data.boss.phaseStartedAt = Math.max(0, Number(data.boss.phaseStartedAt) || 0);
     data.boss.startedAt = Math.max(0, Number(data.boss.startedAt) || 0);
     data.boss.endsAt = Math.max(0, Number(data.boss.endsAt) || 0);
     data.boss.clearedArea = Math.max(0, Math.floor(Number(data.boss.clearedArea) || 0));
@@ -348,6 +359,24 @@ export class GameState extends Phaser.Events.EventEmitter {
       && data.boss.endsAt > data.boss.startedAt;
     data.boss.active = validActiveBoss;
     if (validActiveBoss) {
+      if (data.boss.patternVersion === BOSS_PATTERN_VERSION) {
+        const definition = bossForArea(data.boss.area);
+        const phases = definition?.phases || [];
+        if (!phases.length) {
+          data.boss.patternVersion = 0;
+        } else {
+          data.boss.phaseIndex = Phaser.Math.Clamp(data.boss.phaseIndex, 0, phases.length - 1);
+          const currentPhase = phases[data.boss.phaseIndex];
+          data.boss.phaseProgress = Phaser.Math.Clamp(data.boss.phaseProgress, 0, Math.max(0, currentPhase.target - 1));
+          data.boss.target = bossPatternTarget(definition);
+          const completed = phases.slice(0, data.boss.phaseIndex)
+            .reduce((sum, item) => sum + item.target, 0);
+          data.boss.progress = completed + data.boss.phaseProgress;
+          if (data.boss.phaseStartedAt < data.boss.startedAt || data.boss.phaseStartedAt >= data.boss.endsAt) {
+            data.boss.phaseStartedAt = data.boss.startedAt;
+          }
+        }
+      }
       data.boss.progress = Phaser.Math.Clamp(data.boss.progress, 0, data.boss.target);
       if (data.boss.progress >= data.boss.target) {
         data.boss.active = false;
@@ -553,7 +582,9 @@ export class GameState extends Phaser.Events.EventEmitter {
     this.addFever("tap", 2);
     const amount = Math.round(this.clickPower() * comboMult);
     this.addVotes(amount);
-    this.addBossProgress(amount);
+    const bossPattern = this.bossPatternStatus();
+    if (bossPattern?.phase.type === "rapid") this.bossAction("rapid");
+    else if (!this.bossUsesPatterns()) this.addBossProgress(amount);
     this.trackFeverAction(this._clickCombo);
     this.data.stats.totalClicks += 1;
     this._bumpDaily("clicks");
@@ -566,7 +597,7 @@ export class GameState extends Phaser.Events.EventEmitter {
       this.addFever("combo", 12);
       const bonus = Math.round(this.clickPower() * msBonus * (1 + this.operationEffectFor(this.data, "comboBonusPct") + this.operationEffectFor(this.data, "comboRewardPct")));
       this.addVotes(bonus);
-      this.addBossProgress(bonus);
+      if (!this.bossUsesPatterns()) this.addBossProgress(bonus);
       this.emit("celebrate", { text: `🔥 ${this._clickCombo} 콤보! +${shortNumber(bonus)}표!` });
       this.emit("float", { text: `🔥 +${shortNumber(bonus)}`, x, y: y - 62, color: "#ff7a3c" });
       // 콤보 축하음은 celebrate 이벤트(achieve)로 처리됨 — 중복 디스패치 제거
@@ -603,23 +634,54 @@ export class GameState extends Phaser.Events.EventEmitter {
     return target > 0 ? Phaser.Math.Clamp((this.data.boss.progress || 0) / target, 0, 1) : 0;
   }
 
+  bossUsesPatterns() {
+    return this.bossActive() && this.data.boss?.patternVersion === BOSS_PATTERN_VERSION;
+  }
+
+  bossPatternStatus(now = Date.now()) {
+    if (!this.bossUsesPatterns()) return null;
+    const definition = this.bossDefinition(this.data.boss.area);
+    const phases = definition?.phases || [];
+    const phaseIndex = Phaser.Math.Clamp(this.data.boss.phaseIndex || 0, 0, Math.max(0, phases.length - 1));
+    const phase = phases[phaseIndex];
+    if (!phase) return null;
+    const status = {
+      phase,
+      phaseIndex,
+      phaseCount: phases.length,
+      phaseProgress: this.data.boss.phaseProgress || 0,
+      expectedSide: (this.data.boss.phaseProgress || 0) % 2 === 0 ? "left" : "right",
+      timingPosition: 0,
+      timingHot: false,
+    };
+    if (phase.type === "timing") {
+      const periodMs = Math.max(400, Number(phase.periodMs) || 1200);
+      const elapsed = Math.max(0, now - (this.data.boss.phaseStartedAt || this.data.boss.startedAt || now));
+      status.timingPosition = (elapsed % periodMs) / periodMs;
+      status.timingHot = Math.abs(status.timingPosition - 0.5) <= (Number(phase.windowPct) || 0.3) / 2;
+    }
+    return status;
+  }
+
   startBoss(now = Date.now()) {
     this.syncBoss(now);
     if (this.bossActive() || !this.bossRequired() || this.data.operations?.draft) return false;
     const area = this.data.stage.area;
-    const feverClickMult = Math.max(1, this.feverClickMultiplier(now));
-    const baseClickPower = this.clickPower() / feverClickMult;
+    const definition = this.bossDefinition(area);
     this.data.boss = {
       active: true,
       area,
       progress: 0,
-      target: bossTargetFor({ cps: this.cpsFor(this.data), clickPower: baseClickPower }),
+      target: bossPatternTarget(definition),
+      patternVersion: BOSS_PATTERN_VERSION,
+      phaseIndex: 0,
+      phaseProgress: 0,
+      phaseStartedAt: now,
       startedAt: now,
       endsAt: now + BOSS_DURATION_MS,
       clearedArea: 0,
       outcome: null,
     };
-    const definition = this.bossDefinition(area);
     this.addLog(`${definition?.icon || "⚠"} ${definition?.title || "체크포인트 검증"} 시작`);
     this.emit("boss-start", { area, definition, durationMs: BOSS_DURATION_MS });
     this.emit("changed");
@@ -639,11 +701,64 @@ export class GameState extends Phaser.Events.EventEmitter {
   addBossProgress(amount, now = Date.now()) {
     if (!this.bossActive()) return 0;
     if (this.syncBoss(now)) return 0;
+    // 구버전 진행 중 세이브의 throughput 보스만 이 경로를 쓴다.
+    // 새 패턴 보스는 경제 수치나 자동 생산으로 우회 완료할 수 없다.
+    if (this.bossUsesPatterns()) return 0;
     const added = Math.max(0, Number(amount) || 0);
     if (added <= 0) return 0;
     this.data.boss.progress = Math.min(this.data.boss.target, this.data.boss.progress + added);
     if (this.data.boss.progress >= this.data.boss.target) this._finishBoss("success", now);
     return added;
+  }
+
+  bossAction(action, now = Date.now()) {
+    if (!this.bossUsesPatterns() || this.syncBoss(now)) return { accepted: false, correct: false };
+    const status = this.bossPatternStatus(now);
+    if (!status) return { accepted: false, correct: false };
+    const type = typeof action === "string" ? action : action?.type;
+    let correct = false;
+    if (status.phase.type === "rapid") correct = type === "rapid";
+    if (status.phase.type === "alternate") correct = type === status.expectedSide;
+    if (status.phase.type === "timing") correct = type === "timing" && status.timingHot;
+
+    if (!correct) {
+      const result = {
+        accepted: true,
+        correct: false,
+        pattern: status.phase.type,
+        message: status.phase.type === "alternate" ? "반대쪽입니다. 빛나는 검인대를 누르세요!" : "아직입니다. NOW 구간을 노리세요!",
+      };
+      this.emit("changed");
+      this.emit("boss-action", result);
+      return result;
+    }
+
+    this.data.boss.phaseProgress += 1;
+    this.data.boss.progress = Math.min(this.data.boss.target, this.data.boss.progress + 1);
+    const phaseCompleted = this.data.boss.phaseProgress >= status.phase.target;
+    const finalPhase = phaseCompleted && status.phaseIndex >= status.phaseCount - 1;
+    if (phaseCompleted && !finalPhase) {
+      this.data.boss.phaseIndex += 1;
+      this.data.boss.phaseProgress = 0;
+      this.data.boss.phaseStartedAt = now;
+    } else if (status.phase.type === "timing") {
+      this.data.boss.phaseStartedAt = now;
+    }
+    const result = {
+      accepted: true,
+      correct: true,
+      pattern: status.phase.type,
+      phaseCompleted,
+      finalPhase,
+      message: finalPhase ? "최종 검증 완료!" : phaseCompleted ? `${status.phaseIndex + 1}단계 통과!` : "정확합니다!",
+    };
+    this.emit("boss-action", result);
+    if (finalPhase) {
+      result.resolution = this._finishBoss("success", now);
+    } else {
+      this.emit("changed");
+    }
+    return result;
   }
 
   skipBoss(now = Date.now()) {
@@ -903,7 +1018,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     this.data.fever.finisherUsed = true;
     const instant = Math.max(25, Math.round(this.cpsFor(this.data) * 4 + this.clickPower() * 12));
     this.addVotes(instant);
-    this.addBossProgress(instant, now);
+    if (!this.bossUsesPatterns()) this.addBossProgress(instant, now);
     this.trackFeverAction(this.clickCombo(), now);
     this.emit("float", { text: `막판 총력! +${shortNumber(instant)}표`, x: 195, y: 300, color: "#ffd34d" });
     this.emit("celebrate", { text: `⚡ 막판 총력! 남은 피버 ×${FEVER_FINISHER_MULT}` });
@@ -949,7 +1064,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     this.syncBoss(now);
     const production = this.cps();
     this.addVotes(production);
-    this.addBossProgress(production, now);
+    if (!this.bossUsesPatterns()) this.addBossProgress(production, now);
     this.data.explain += this.explainPerSecond();
     // 홍보(notice) 패시브 회복은 믿음이 높을수록 둔화 → 100%에 고정되지 않고 평형점에 수렴(위기/보너스 긴장 유지, 보너스는 능동 브리핑으로 진입).
     this.data.trust = Phaser.Math.Clamp(this.data.trust - this.trustDecay() + this.level("notice") * 0.035 * (1 - this.data.trust / 100), 0, 100);

@@ -41,3 +41,38 @@ cases:
     description: 작전 모달 직후 연타를 무시하고 재접속을 복구한다
     type: error
     expected: { premature_operation_pick: false, restored_outcome: failed, touch_target_min_px: 44 }
+  - id: TC-BOSS-009
+    scenario: SC-BOSS-005
+    description: 전반 세 보스는 단일 패턴을 가르치고 후반 세 보스는 승인된 패턴만 조합한다
+    type: boundary
+    expected: { early_phases: [[rapid], [alternate], [timing]], final_phases: [rapid, alternate, timing] }
+  - id: TC-BOSS-010
+    scenario: SC-BOSS-005
+    description: 연타 보스는 직접 탭만 세고 자동 생산과 수치 진행 API를 무시한다
+    type: negative
+    expected: { tap_progress: 1, passive_progress: 0, throughput_bypass: 0 }
+  - id: TC-BOSS-011
+    scenario: SC-BOSS-005
+    description: 좌우 교대는 잘못된 쪽을 거절하고 다음 정답 쪽을 표시한다
+    type: negative
+    expected: { wrong_progress: 0, correct_progress: 1, next_side: right }
+  - id: TC-BOSS-012
+    scenario: SC-BOSS-005
+    description: 타이밍 봉인은 이른 입력을 거절하고 NOW 구간 입력만 인정한다
+    type: boundary
+    expected: { early_progress: 0, hot_progress: 1 }
+  - id: TC-BOSS-013
+    scenario: SC-BOSS-006
+    description: 18구역 보스가 연타 4회, 교대 4회, 타이밍 1회를 순서대로 완료한다
+    type: normal
+    expected: { phases: 3, total_target: 9, outcome: success }
+  - id: TC-BOSS-014
+    scenario: SC-BOSS-007
+    description: 구버전 throughput 목표와 패턴 단계·타이밍 원점을 각각 복구한다
+    type: compatibility
+    expected: { legacy_target_preserved: true, patterned_phase_preserved: true, expiry_unblocks: true }
+  - id: TC-BOSS-015
+    scenario: SC-BOSS-006
+    description: 모바일·데스크톱과 키보드 단계 전환, 라이브 피드백, reduced-motion을 검증한다
+    type: accessibility
+    expected: { touch_target_min_px: 44, focus_handoff: true, live_feedback: true, overflow: false, reduced_motion: true }
