@@ -96,7 +96,7 @@ export class WorldView {
 
     // 중앙 큰 숫자(개표수) — 한글 단위 지원 위해 Galmuri14
     this.bigNum = scene.add
-      .text(GAME_W / 2, 312, "0", { fontFamily: '"Galmuri14", monospace', fontSize: "30px", color: "#ffffff" })
+      .text(GAME_W / 2, 312, "0", { fontFamily: '"Galmuri14", "Galmuri11", monospace', fontSize: "30px", color: "#ffffff" })
       .setOrigin(0.5)
       .setDepth(120);
     this.bigNum.setShadow(3, 3, "#b13e53", 0, true, true);
@@ -106,7 +106,7 @@ export class WorldView {
       .setDepth(120);
     this.cpsText = scene.add
       .text(GAME_W / 2, GROUND_Y + 22, "", {
-        fontFamily: '"Galmuri9", monospace', fontSize: "11px", color: "#bcd0e0",
+        fontFamily: '"Galmuri9", "Galmuri11", monospace', fontSize: "11px", color: "#bcd0e0",
         backgroundColor: "rgba(20,18,28,0.72)", padding: { x: 7, y: 4 },
       })
       .setOrigin(0.5)
@@ -115,7 +115,7 @@ export class WorldView {
     // 국장 대표 칭호 명패(인사 발령 뽑기 결과 — 머리 위에 직급 표시, 꾸미기)
     this.titlePlate = scene.add
       .text(GAME_W / 2, 380, "", {
-        fontFamily: '"Galmuri9", monospace', fontSize: "10px", color: "#ffd479",
+        fontFamily: '"Galmuri9", "Galmuri11", monospace', fontSize: "10px", color: "#ffd479",
         backgroundColor: "rgba(20,18,28,0.78)", padding: { x: 6, y: 3 },
       })
       .setOrigin(0.5)
@@ -126,7 +126,7 @@ export class WorldView {
     // 클릭 콤보 카운터(연타 시 등장)
     this.comboText = scene.add
       .text(10, 312, "", {
-        fontFamily: '"Galmuri14", monospace', fontSize: "13px", color: "#ffcd75",
+        fontFamily: '"Galmuri14", "Galmuri11", monospace', fontSize: "13px", color: "#ffcd75",
         backgroundColor: "rgba(20,18,28,0.78)", padding: { x: 4, y: 3 },
       })
       .setOrigin(0, 0.5)
@@ -384,12 +384,12 @@ export class WorldView {
       .setOrigin(0.5)
       .setDepth(111);
     this.titleMain = this.scene.add
-      .text(cx, top + 31, "개 표 국", { fontFamily: '"Galmuri14", monospace', fontSize: "19px", color: "#ffe3a8" })
+      .text(cx, top + 31, "개 표 국", { fontFamily: '"Galmuri14", "Galmuri11", monospace', fontSize: "19px", color: "#ffe3a8" })
       .setOrigin(0.5)
       .setDepth(111);
     // 간판 아래 "지도" 힌트 + 클릭 영역(탭하면 전국 지도 모달)
     this.titleHint = this.scene.add
-      .text(cx, top + h + 9, "🗺 전국 지도", { fontFamily: '"Galmuri9", monospace', fontSize: "10px", color: "#9fb8d0" })
+      .text(cx, top + h + 9, "🗺 전국 지도", { fontFamily: '"Galmuri9", "Galmuri11", monospace', fontSize: "10px", color: "#9fb8d0" })
       .setOrigin(0.5)
       .setDepth(111);
     this.scene.tweens.add({ targets: this.titleHint, alpha: 0.5, yoyo: true, repeat: -1, duration: 900, ease: "Sine.easeInOut" });
@@ -422,7 +422,7 @@ export class WorldView {
 
     // 상황판 LED 실시간 개표 현황
     this.boardText = this.scene.add
-      .text(344, SHELF_Y - 42, "", { fontFamily: '"Galmuri9", monospace', fontSize: "8px", color: "#73eff7", align: "center" })
+      .text(344, SHELF_Y - 42, "", { fontFamily: '"Galmuri9", "Galmuri11", monospace', fontSize: "8px", color: "#73eff7", align: "center" })
       .setOrigin(0.5)
       .setDepth(89);
 
@@ -430,7 +430,7 @@ export class WorldView {
     this.propLabels = {};
     const mkLabel = (obj, id) => {
       const t = this.scene.add
-        .text(obj.x, SHELF_Y + 9, "", { fontFamily: '"Galmuri9", monospace', fontSize: "8px", color: "#9fb8d0" })
+        .text(obj.x, SHELF_Y + 9, "", { fontFamily: '"Galmuri9", "Galmuri11", monospace', fontSize: "8px", color: "#9fb8d0" })
         .setOrigin(0.5, 0)
         .setDepth(90);
       this.propLabels[id] = t;
@@ -567,8 +567,8 @@ export class WorldView {
     const y = 150;
     const bar = this.scene.add.rectangle(GAME_W / 2, y, GAME_W, 28, 0xb13e53, 0.96).setDepth(200).setScale(1, 0).setScrollFactor(0);
     const live = this.scene.add.rectangle(40, y, 52, 28, 0x14121c, 1).setDepth(201).setScale(1, 0).setScrollFactor(0);
-    const liveTx = this.scene.add.text(40, y, "● 속보", { fontFamily: '"Galmuri9", monospace', fontSize: "9px", color: "#ff6a7c" }).setOrigin(0.5).setDepth(202).setAlpha(0).setScrollFactor(0);
-    const tx = this.scene.add.text(96, y, `${title || "개표국 사건"}`, { fontFamily: '"Galmuri9", monospace', fontSize: "10px", color: "#ffffff" }).setOrigin(0, 0.5).setDepth(202).setAlpha(0).setScrollFactor(0);
+    const liveTx = this.scene.add.text(40, y, "● 속보", { fontFamily: '"Galmuri9", "Galmuri11", monospace', fontSize: "9px", color: "#ff6a7c" }).setOrigin(0.5).setDepth(202).setAlpha(0).setScrollFactor(0);
+    const tx = this.scene.add.text(96, y, `${title || "개표국 사건"}`, { fontFamily: '"Galmuri9", "Galmuri11", monospace', fontSize: "10px", color: "#ffffff" }).setOrigin(0, 0.5).setDepth(202).setAlpha(0).setScrollFactor(0);
     this.scene.tweens.add({ targets: [bar, live], scaleY: 1, duration: 150, ease: "Back.easeOut" });
     this.scene.tweens.add({ targets: [tx, liveTx], alpha: 1, duration: 200, delay: 90 });
     this._govGesture();
@@ -584,7 +584,7 @@ export class WorldView {
   _ciderMoment(p) {
     const cx = GAME_W / 2;
     // 큰 사이다 텍스트(금색, 팝)
-    const big = this.scene.add.text(cx, 262, "🔥 사이다!", { fontFamily: '"Galmuri14", monospace', fontSize: "26px", color: "#ffd34d" }).setOrigin(0.5).setDepth(210).setScale(0.4).setScrollFactor(0);
+    const big = this.scene.add.text(cx, 262, "🔥 사이다!", { fontFamily: '"Galmuri14", "Galmuri11", monospace', fontSize: "26px", color: "#ffd34d" }).setOrigin(0.5).setDepth(210).setScale(0.4).setScrollFactor(0);
     big.setShadow(3, 3, "#b13e53", 0, true, true);
     this.scene.tweens.add({ targets: big, scale: 1, duration: 300, ease: "Back.easeOut" });
     this.scene.tweens.add({ targets: big, alpha: 0, y: 232, duration: 500, delay: 900, onComplete: () => big.destroy() });
@@ -618,8 +618,8 @@ export class WorldView {
     const accent = item.tone === "praise" ? "#8df0b0" : item.tone === "mock" ? "#ff9a8e" : "#9fd0e0";
     // 2줄 레이아웃 — 위: 📰 외신 · 매체명 / 아래: 헤드라인. 가독성↑
     const bar = this.scene.add.rectangle(GAME_W / 2, y, GAME_W, 42, col, 0.95).setDepth(200).setScale(1, 0).setScrollFactor(0);
-    const top = this.scene.add.text(12, y - 10, `📰 외신 · ${item.outlet}`, { fontFamily: '"Galmuri9", monospace', fontSize: "9px", color: accent }).setOrigin(0, 0.5).setDepth(202).setAlpha(0).setScrollFactor(0);
-    const head = this.scene.add.text(12, y + 8, item.text, { fontFamily: '"Galmuri9", monospace', fontSize: "10px", color: "#ffffff", wordWrap: { width: GAME_W - 24 } }).setOrigin(0, 0.5).setDepth(202).setAlpha(0).setScrollFactor(0);
+    const top = this.scene.add.text(12, y - 10, `📰 외신 · ${item.outlet}`, { fontFamily: '"Galmuri9", "Galmuri11", monospace', fontSize: "9px", color: accent }).setOrigin(0, 0.5).setDepth(202).setAlpha(0).setScrollFactor(0);
+    const head = this.scene.add.text(12, y + 8, item.text, { fontFamily: '"Galmuri9", "Galmuri11", monospace', fontSize: "10px", color: "#ffffff", wordWrap: { width: GAME_W - 24 } }).setOrigin(0, 0.5).setDepth(202).setAlpha(0).setScrollFactor(0);
     this._pressEls = [bar, top, head];
     this.scene.tweens.add({ targets: bar, scaleY: 1, duration: 140, ease: "Back.easeOut" });
     this.scene.tweens.add({ targets: [top, head], alpha: 1, duration: 200, delay: 80 });

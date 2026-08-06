@@ -19,21 +19,51 @@ import { initCloud, openLeaderboard, saveCloud, submitScore, logEvt } from "./cl
 const gameState = new GameState();
 const sfx = new Sfx(gameState);
 const notifications = new Notifications(gameState);
+const CLOUD_START_DEADLINE_MS = 5000;
+const CLOUD_INPUT_SETTLE_MS = 750;
+const CLOUD_IDLE_TIMEOUT_MS = 500;
 let cloudInitPromise = null;
-let cloudStartTimer = null;
+let cloudDeadlineTimer = null;
+let cloudSettleTimer = null;
+let cloudIdleHandle = null;
+const cancelCloudSchedule = () => {
+  clearTimeout(cloudDeadlineTimer);
+  clearTimeout(cloudSettleTimer);
+  cloudDeadlineTimer = null;
+  cloudSettleTimer = null;
+  if (cloudIdleHandle !== null && "cancelIdleCallback" in window) window.cancelIdleCallback(cloudIdleHandle);
+  cloudIdleHandle = null;
+};
 const startCloud = () => {
   if (cloudInitPromise) return cloudInitPromise;
-  clearTimeout(cloudStartTimer);
-  window.removeEventListener("pointerdown", startCloud, true);
-  window.removeEventListener("keydown", startCloud, true);
+  cancelCloudSchedule();
+  window.removeEventListener("pointerdown", scheduleCloudStart, true);
+  window.removeEventListener("keydown", scheduleCloudStart, true);
   cloudInitPromise = initCloud(gameState);
   return cloudInitPromise;
 };
-// Firebase는 첫 화면·폰트와 네트워크를 다투지 않게 첫 사용자 의도에서 시작한다.
-// 사용자가 가만히 있어도 5초 뒤에는 동기화를 시작해 멀티기기 세이브를 계속 보장한다.
-window.addEventListener("pointerdown", startCloud, { once: true, capture: true, passive: true });
-window.addEventListener("keydown", startCloud, { once: true, capture: true });
-cloudStartTimer = setTimeout(startCloud, 5000);
+// 첫 조작은 게임 프레임에 양보한다. 입력이 잠잠해진 뒤 브라우저 idle에서 시작하되,
+// 사용자가 계속 연타해도 페이지 진입 5초에는 반드시 클라우드 동기화를 시작한다.
+function scheduleCloudStart() {
+  if (cloudInitPromise) return;
+  clearTimeout(cloudSettleTimer);
+  if (cloudIdleHandle !== null && "cancelIdleCallback" in window) window.cancelIdleCallback(cloudIdleHandle);
+  cloudIdleHandle = null;
+  cloudSettleTimer = setTimeout(() => {
+    cloudSettleTimer = null;
+    if ("requestIdleCallback" in window) {
+      cloudIdleHandle = window.requestIdleCallback(() => {
+        cloudIdleHandle = null;
+        startCloud();
+      }, { timeout: CLOUD_IDLE_TIMEOUT_MS });
+    } else {
+      startCloud();
+    }
+  }, CLOUD_INPUT_SETTLE_MS);
+}
+window.addEventListener("pointerdown", scheduleCloudStart, { capture: true, passive: true });
+window.addEventListener("keydown", scheduleCloudStart, { capture: true });
+cloudDeadlineTimer = setTimeout(startCloud, CLOUD_START_DEADLINE_MS);
 
 if ("serviceWorker" in navigator && import.meta.env.PROD) {
   window.addEventListener("load", () => {

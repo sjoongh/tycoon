@@ -1,2 +1,3 @@
 task_id,title,started_at,closed_at,duration_minutes,verification_status,first_pass,human_revisions,retries,reverted,knowledge_reused
 2026-08-06_mobile-dom-runtime-optimization,모바일 DOM 런타임 최적화,2026-08-06T11:31:58+09:00,2026-08-06T13:14:33+09:00,102.6,verified,no,0,1,no,no
+2026-08-06_first-interaction-font-subset,첫 조작·폰트 전송 최적화,2026-08-06T13:37:58+09:00,2026-08-06T14:03:19+09:00,25.4,verified,no,0,1,no,yes

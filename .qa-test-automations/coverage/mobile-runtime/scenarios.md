@@ -50,6 +50,26 @@
 
 왜 필요한가: 렌더 소비자와 초기화 시점 변경이 작전·피버·보스·오프라인·멀티기기 저장을 간접적으로 깨뜨릴 수 있다.
 
+## SC-MRT-006: 클라우드는 연타를 피하되 동기화 상한과 명시적 진입을 지킨다
+
+| 항목 | 내용 |
+|---|---|
+| AC 참조 | 사용자 승인 A안의 idle 예약·5초 상한 |
+| 리스크 | HIGH |
+| 전제 조건 | 250ms 연속 pointer 입력, 무입력 페이지, 랭킹 직접 진입 |
+
+왜 필요한가: 첫 조작만 보고 SDK를 즉시 읽으면 플레이가 계속되는 동안 비필수 파싱이 겹치고, 지나치게 미루면 멀티기기 동기화와 랭킹이 늦어진다.
+
+## SC-MRT-007: 정적 픽셀 폰트는 작아지고 동적 한글은 full fallback을 쓴다
+
+| 항목 | 내용 |
+|---|---|
+| AC 참조 | Galmuri9·14 정적 서브셋, Galmuri11 full 보존 |
+| 리스크 | HIGH |
+| 전제 조건 | 390×844, 정적 작은/굵은 문구, 숫자 101, 희귀 한글 `힣` |
+
+왜 필요한가: 단순 파일 축소는 특정 한글·숫자를 누락하거나 픽셀 격자를 흐릴 수 있고, 닉네임은 정적 문자열 목록으로 제한할 수 없다.
+
 ## Traceability Matrix
 
 | AC | Scenario | Test Cases | Test Code | Evidence |
@@ -59,3 +79,5 @@
 | 목표·HUD 보존 | SC-MRT-003 | TC-MRT-005~006 | performance + readability E2E | `evidence/2026-08-06/mobile-runtime-summary.yaml` |
 | 초기 클라우드 지연 | SC-MRT-004 | TC-MRT-007 | performance E2E | `evidence/2026-08-06/mobile-runtime-summary.yaml` |
 | 전체 의미 회귀 | SC-MRT-005 | TC-MRT-008 | unit + 4 E2E + hands-on | `evidence/2026-08-06/mobile-runtime-summary.yaml` |
+| 클라우드 idle·상한 | SC-MRT-006 | TC-MRT-009~010 | `scripts/_startupfonttest.mjs` | `evidence/2026-08-06/startup-font-summary.yaml` |
+| 폰트 subset·fallback | SC-MRT-007 | TC-MRT-011~013 | startup/font E2E + subset generation | `evidence/2026-08-06/startup-font-summary.yaml` |

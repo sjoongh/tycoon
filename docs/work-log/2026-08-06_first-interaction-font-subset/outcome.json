@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "taskId": "2026-08-06_first-interaction-font-subset",
+  "title": "첫 조작·폰트 전송 최적화",
+  "startedAt": "2026-08-06T13:37:58+09:00",
+  "closedAt": "2026-08-06T14:03:19+09:00",
+  "durationMinutes": 25.4,
+  "verificationStatus": "verified",
+  "verificationReason": "verified",
+  "requiredChecks": [
+    "npm-test"
+  ],
+  "firstPass": "no",
+  "humanRevisions": 0,
+  "retries": 1,
+  "reverted": "no",
+  "knowledgeReused": "yes",
+  "knowledgeCandidates": [
+    "정적 픽셀 폰트는 크기별 subset, 임의 한글은 full fallback으로 분리한다"
+  ],
+  "remainingRisks": [
+    "Phaser 초기 부팅 장기 작업과 Galmuri11 full 505KB는 별도 최적화 후보다"
+  ]
+}

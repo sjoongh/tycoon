@@ -53,3 +53,12 @@ runs:
     skipped: 0
     coverage_lines: null
     duration_ms: 120000
+  - date: 2026-08-06
+    mode: incremental
+    target: first-interaction-font-subset
+    total: 77
+    passed: 77
+    failed: 0
+    skipped: 0
+    coverage_lines: null
+    duration_ms: 155000

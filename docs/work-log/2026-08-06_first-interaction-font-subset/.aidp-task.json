@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "taskId": "2026-08-06_first-interaction-font-subset",
+  "title": "첫 조작·폰트 전송 최적화",
+  "goal": "첫 조작 프레임 경쟁을 줄이고 픽셀 선명도와 임의 한글 입력을 보존하면서 초기 폰트 전송량을 절감한다",
+  "root": "/Users/manager/aidp/gaepyo-master",
+  "startedAt": "2026-08-06T13:37:58+09:00",
+  "baseSha": "59d3ff3a733422955a66bc9a82dafacc34fe5c26",
+  "branch": "perf/first-interaction-font-subset",
+  "dirtyAtStart": true,
+  "requiredChecks": [
+    "npm-test"
+  ],
+  "status": "closed",
+  "latestEvidence": "docs/work-log/2026-08-06_first-interaction-font-subset/evidence/evidence.json",
+  "latestEvidenceSha256": "e0716872b505995c06e9dc7208b21600a0a6be942f30dd175fccfa46f6bc0654",
+  "closedAt": "2026-08-06T14:03:19+09:00",
+  "lastVerifiedAt": "2026-08-06T14:03:13+09:00"
+}

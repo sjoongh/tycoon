@@ -1,0 +1,74 @@
+date: 2026-08-06
+mode: incremental
+target: first-interaction-font-subset
+duration_ms: 155000
+unit:
+  total: 68
+  passed: 68
+  failed: 0
+  skipped: 0
+integration:
+  total: 2
+  passed: 2
+  failed: 0
+  skipped: 0
+  checks: [npm-run-build, deterministic-font-subset]
+e2e:
+  total: 6
+  passed: 6
+  failed: 0
+  scripts: [_offlinecarrytest.mjs, _bosschecktest.mjs, _operationfevertest.mjs, _uireadabilitytest.mjs, _mobileperformancetest.mjs, _startupfonttest.mjs]
+hands_on:
+  total: 1
+  passed: 1
+  game_state_injection: false
+  external_requests_blocked: true
+  pace: adaptive-active
+  duration_sec: 70
+  tap_interval_ms: 250
+  taps: 257
+  area: 6
+  upgrades: 30
+  events: 2
+  operation_choices: 1
+  fever_cycles: 1
+  fever_finishers: 1
+  boss_cycles: 1
+  boss_successes: 1
+  errors: 0
+cloud_start:
+  requests_during_continuous_input: 0
+  quiet_delay_after_last_input_ms: 771.3
+  no_input_deadline_ms: 4932.6
+  leaderboard_force_start_ms: 0.2
+  firestore_semantics: full-sdk-preserved
+fonts:
+  transfer_before_bytes: 1506654
+  transfer_after_bytes: 556338
+  transfer_reduction_bytes: 950316
+  transfer_reduction_percent: 63.1
+  galmuri9: { before_bytes: 429336, after_bytes: 20112 }
+  galmuri14: { before_bytes: 565420, after_bytes: 24328 }
+  galmuri11_full_bytes: 505116
+  static_codepoints: 1035
+  generation_deterministic: true
+  static_small_platform_font: Galmuri9-Regular
+  static_bold_platform_font: Galmuri14-Regular
+  rare_hangul_fallback_font: Galmuri11-Regular
+  screenshot: screenshots/SC-MRT-006-font-subset-mobile.png
+performance_regression:
+  facilities_frame_max_ms: 25.0
+  crew_frame_max_ms: 25.1
+  goals_frame_max_ms: 17.1
+  prestige_frame_max_ms: 16.8
+  viewport_overflow: false
+validation:
+  diff_check: passed
+  existing_bundle_warning: phaser-and-firestore-chunks-over-500kb
+environment:
+  target_url: "http://localhost:5178"
+  target_guard_passed: true
+  external_requests_blocked: true
+  provider: none
+  lifecycle: preexisting
+  started_by_skill: false
