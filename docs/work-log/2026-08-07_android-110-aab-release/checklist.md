@@ -16,4 +16,4 @@
 - [x] signing properties·keystore 누락 시 release 빌드가 fail-closed 되는지 확인했다.
 - [x] worktree 외부에 최종 AAB 사본을 보존했다.
 - [x] Claude Fable 5·Sonnet 5 xhigh 교차 리뷰와 보강 후 최종 PASS.
-- [ ] PR CI, squash merge, 임시 서명 링크 제거, 원장·worktree 정리.
+- [x] PR #12 CI PASS와 squash merge 사용자 승인. 실제 merge·임시 서명 링크·branch·worktree 정리는 GitHub/AIDP 종료 상태로 추적.

@@ -63,6 +63,9 @@ cross_review:
   final_verdict: passed
   successful_response_cost_usd: 2.2555202
 release:
+  pr_number: 12
+  pr_ci: passed
+  squash_merge_approved: true
   play_console_upload: not-authorized
   version_code_external_availability: not-checked
   target_sdk_external_policy: not-checked
