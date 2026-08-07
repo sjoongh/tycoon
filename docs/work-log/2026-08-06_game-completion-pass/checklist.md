@@ -23,5 +23,5 @@
 - [x] 단위·빌드·E2E·10분 실플레이·회귀 PASS.
 - [x] 반대 모델 교차 리뷰와 aidp-flow 구현 게이트 PASS.
 - [x] Firebase preview channel smoke test PASS.
-- [ ] 운영 배포 및 URL smoke test PASS.
-- [ ] PR 머지와 원장·worktree 정리.
+- [x] 운영 배포 및 URL smoke test PASS.
+- [x] PR 머지와 원장·worktree 정리.

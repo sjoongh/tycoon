@@ -1,0 +1,68 @@
+date: 2026-08-07
+mode: android-release-gate
+target: android-1.1.0-aab
+application_id: kr.gaepyo.counting
+version:
+  name: 1.1.0
+  code: 3
+toolchain:
+  java: openjdk-21
+  bundletool: 1.18.1
+unit:
+  files: 19
+  total: 112
+  passed: 112
+  failed: 0
+web:
+  production_build: passed
+  capacitor_sync: passed
+  capacitor_doctor: passed
+android:
+  min_sdk: 24
+  target_sdk: 36
+  clean_bundle_release: passed
+  npm_android_bundle: passed
+  lint_vital: passed
+  bundletool_validate: passed
+  manifest_metadata: passed
+  zip_integrity: passed
+  jar_signature: passed
+  signer_matches_keystore: passed
+  signer_cert_sha256: 7A:81:32:A4:F7:BE:13:4C:4E:91:B1:3F:82:0C:49:68:8D:71:A8:DD:DF:B3:AF:65:A6:96:1A:08:49:31:35:D8
+  missing_signing_config_fails_closed: passed
+  fail_closed_cases:
+    - missing-properties-file
+    - empty-store-file
+    - empty-store-password
+    - empty-key-alias
+    - empty-key-password
+    - missing-keystore-file
+  signing_assets_gitignored: passed
+artifact:
+  filename: gaepyo-1.1.0-3-release.aab
+  bytes: 4452241
+  sha256: 72dc0a3c8a35054edb96d62df8a1adc556996eb936a45615afbaf0d9208e55b0
+  stable_copy: /Users/manager/aidp/gaepyo-release-artifacts/1.1.0/gaepyo-1.1.0-3-release.aab
+source:
+  base_commit: 6977a5d529a24ce4fe198caa26e32d3491172120
+  state: base-plus-release-build-inputs
+  build_input_sha256:
+    package_json: 7f2153250f553246e54d174315c4dba2209fc06458e58b54820e0bb2bfc1fcce
+    package_lock_json: 8c698926423953f5195f763df6c20801ff89441e090e4f1fa08833a0f0057e27
+    android_app_build_gradle: 50b4dfb9faa6cf0d60028354ae46cad154f6d1eabe5d07996b67b7e03511a325
+security:
+  production_vulnerabilities: 0
+  full_audit_moderate: 3
+cross_review:
+  tier: high
+  effort: xhigh
+  panel: 2
+  models:
+    - claude-fable-5
+    - claude-sonnet-5
+  final_verdict: passed
+  successful_response_cost_usd: 2.2555202
+release:
+  play_console_upload: not-authorized
+  version_code_external_availability: not-checked
+  target_sdk_external_policy: not-checked

@@ -1,7 +1,7 @@
 {
   "name": "trust-counting-office",
   "private": true,
-  "version": "0.1.0",
+  "version": "1.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0 --port 5178",
@@ -24,7 +24,8 @@
     "prebuild": "npm run fonts:subset && npm run phaser:prepare",
     "build:android": "npm run build && cap copy android",
     "android:open": "cap open android",
-    "android:sync": "npm run build && cap sync android"
+    "android:sync": "npm run build && cap sync android",
+    "android:bundle": "npm run android:sync && cd android && ./gradlew --no-daemon clean bundleRelease"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.0",

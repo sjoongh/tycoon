@@ -13,8 +13,8 @@ android {
         applicationId "kr.gaepyo.counting"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 2
-        versionName "1.0.1"
+        versionCode 3
+        versionName "1.1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -37,6 +37,24 @@ android {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
             if (hasKeystore) { signingConfig signingConfigs.release }
+        }
+    }
+}
+
+afterEvaluate {
+    tasks.named("preReleaseBuild").configure {
+        doFirst {
+            if (!hasKeystore) {
+                throw new GradleException("Release signing requires android/keystore.properties")
+            }
+            def requiredKeys = ['storeFile', 'storePassword', 'keyAlias', 'keyPassword']
+            def missingKeys = requiredKeys.findAll { !keystoreProperties[it] }
+            if (!missingKeys.isEmpty()) {
+                throw new GradleException("Release signing properties missing: ${missingKeys.join(', ')}")
+            }
+            if (!file(keystoreProperties['storeFile']).isFile()) {
+                throw new GradleException("Release keystore file not found")
+            }
         }
     }
 }

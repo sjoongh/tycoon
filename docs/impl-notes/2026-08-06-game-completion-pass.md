@@ -56,7 +56,8 @@
 - Impeccable 단일 감지: `side-tab` 4건. 목표·직원 희귀도·사건·내 랭킹을 나타내는 기존 픽셀 게임의 상태/등급 stripe라서 일반 SaaS 카드 장식 오탐으로 판정했다. 실제 모바일·와이드 캡처에서 정보 의미와 팔레트 일관성을 확인해 유지했다.
 - 최종 10분 실플레이: 330ms/탭 신규 세이브에서 실제 감사 가능 진입은 495.54초. 1,721탭·업그레이드 57회·사건 12회·체인 결말 2회·작전 1회·피버/피니셔 2회·보스 1회 성공·오류 0. 최초 480초 값은 30초 샘플 관측치였고, 105ms/탭 실행은 파워유저 스트레스 증거로만 분리했다.
 - 전체 회귀: build, balance 687/405/426초 및 첫 런 계속 진행 11구역 1,395초, offline carry, boss, operation/fever, UI readability, mobile runtime, startup font, custom/stock Phaser, event chain, staff, PWA, Android sync/doctor 모두 PASS.
-- Firebase preview: `https://gaepyo-tycoon--game-completion-pass-44eivfl3.web.app`에 45파일 배포. `/`, privacy, manifest, sw, icon, screenshot, SPA fallback 200과 `sw.js: no-cache, no-store, must-revalidate`를 확인했고 운영은 아직 배포하지 않았다.
+- Firebase preview: `https://gaepyo-tycoon--game-completion-pass-44eivfl3.web.app`에 45파일 배포. `/`, privacy, manifest, sw, icon, screenshot, SPA fallback 200과 `sw.js: no-cache, no-store, must-revalidate`를 확인했다.
+- 출시 완료: PR #11을 `6977a5d`로 squash merge했고 main CI 통과 뒤 `https://gaepyo-tycoon.web.app`에 운영 배포했다. `/`, `/privacy.html`, manifest, service worker, SPA fallback smoke test가 모두 200으로 통과했다. 재확인 원자료는 `.qa-test-automations/evidence/2026-08-07/production-release-closure-smoke.md`에 남겼다.
 - Claude Fable 5 xhigh 2패널: 초기 증거 보강 요청을 테스트·preview·원시 로그 추적표로 닫고 prior-closure PASS. 당시 provenance 비용 $2.558219와 digest `sha256:dafa0681914d`는 과거 폐쇄 시점 기록이며, 최종 HEAD 결박은 외부 AIDP 원장이 정본이다.
 
 ## ⚠️ DEVIATION (계획과 달라진 것 · 복병)
