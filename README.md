@@ -36,6 +36,15 @@ npm run preview
 - `지금 갱신`은 로컬 진행을 먼저 저장한 뒤 대기 중인 서비스워커를 활성화
 - Firebase Hosting은 `dist/`를 배포하며 `/privacy.html`을 함께 보존
 
+## Android 릴리스
+
+- 현재 앱 버전: `1.1.0` (`versionCode 3`)
+- Android 빌드 도구체인: OpenJDK 21
+- release keystore와 `android/keystore.properties`는 로컬에만 두고 Git에 커밋하지 않음
+- 로컬 서명 설정이 연결된 환경에서 clean AAB 생성: `npm run android:bundle`
+- 서명 설정·keystore가 없거나 불완전하면 release 빌드는 즉시 실패
+- 산출물: `android/app/build/outputs/bundle/release/app-release.aab`
+
 ## 검증
 
 ```bash

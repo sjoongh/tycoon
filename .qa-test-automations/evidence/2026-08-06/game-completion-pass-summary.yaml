@@ -110,10 +110,16 @@ cross_review:
   prior_closure_cost_usd: 2.558219
   current_head_gate: external-aidp-ledger-is-authoritative
 validation:
+  closed_on: 2026-08-07
   diff_check: passed
   firebase_preview: passed
-  production_deploy: pending-pr-ci
-  pr_ci: pending-pr
+  production_deploy: passed
+  production_url: https://gaepyo-tycoon.web.app
+  production_smoke: passed
+  production_smoke_evidence: ../2026-08-07/production-release-closure-smoke.md
+  pr_number: 11
+  merge_commit: 6977a5d529a24ce4fe198caa26e32d3491172120
+  pr_ci: passed
 known_non_blocking:
   - Firebase and Phaser output chunks over 500 kB retain the existing Vite warning.
   - Three moderate dev-only uuid findings require a forced Capacitor CLI downgrade to auto-fix.

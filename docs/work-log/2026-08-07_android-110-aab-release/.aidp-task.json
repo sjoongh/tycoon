@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "taskId": "2026-08-07_android-110-aab-release",
+  "title": "Android 1.1.0 AAB 릴리스",
+  "goal": "문서 완료 상태와 Android 1.1.0(3)이 일치하고 서명된 release AAB가 검증된 뒤 PR로 병합된다",
+  "root": "/Users/manager/aidp/gaepyo-android-1.1.0-aab",
+  "startedAt": "2026-08-07T09:59:11+09:00",
+  "baseSha": "6977a5d529a24ce4fe198caa26e32d3491172120",
+  "branch": "release/android-1.1.0-aab",
+  "dirtyAtStart": false,
+  "requiredChecks": [
+    "npm-test",
+    "web-build",
+    "android-aab"
+  ],
+  "status": "active",
+  "latestEvidence": null,
+  "latestEvidenceSha256": null,
+  "closedAt": null
+}

@@ -2,10 +2,10 @@
 
 ## Outcome
 
-- Result: PASS (pre-PR release gate)
+- Result: PASS (released)
 - Checks: 129/129 passed — 112 unit, 6 integration, 10 E2E, 1 hands-on
 - Firebase preview: `https://gaepyo-tycoon--game-completion-pass-44eivfl3.web.app`
-- Production: not deployed; PR CI remains the downstream gate
+- Production: `https://gaepyo-tycoon.web.app` — PR #11 merge, main CI, production smoke test complete
 
 ## Covered behavior
 
@@ -47,10 +47,11 @@
 - Browser matrix: balance integration plus offline carry, boss, operation/fever, UI readability, mobile performance, startup font, Phaser, event chains, staff, and PWA E2E — all pass
 - Hands-on capture: `../evidence/2026-08-06/game-completion-pass-live-final/SC-GCP-015-hands-on-adaptive-600s.png`
 - Claude packets and finding traceability: `../../docs/reviews/2026-08-06-game-completion-pass-fable-closure.md`
+- PR #11 and production closure smoke: `../evidence/2026-08-07/production-release-closure-smoke.md`
 
-## Remaining gates and accepted risk
+## Release closure and accepted risk
 
-- PR CI must run Node 22 `npm ci`, `npm test`, and `npm run build` before merge.
-- Production deploy follows green PR CI; the dev-protocol deviation/quiz approval is complete.
+- PR #11 was squash-merged as `6977a5d` after Node 22 `npm ci`, `npm test`, and `npm run build` passed.
+- Production deployment and `/`, `/privacy.html`, manifest, service worker, and SPA fallback smoke tests passed.
 - Full npm audit retains three moderate dev-only `uuid` findings through Capacitor CLI/xcode; production audit is zero and a forced breaking downgrade was rejected.
 - Existing Firebase and Phaser chunks above 500 kB remain a warning; the guarded custom Phaser artifact is 184,363 B gzip.
