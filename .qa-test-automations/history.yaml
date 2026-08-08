@@ -98,3 +98,12 @@ runs:
     skipped: 0
     coverage_lines: null
     duration_ms: 1800000
+  - date: 2026-08-08
+    mode: android-release-gate
+    target: android-1.1.1-realtime-save-release
+    total: 136
+    passed: 136
+    failed: 0
+    skipped: 1
+    coverage_lines: null
+    duration_ms: null

@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "taskId": "2026-08-08_android-111-realtime-save-release",
+  "title": "Android 1.1.1 실시간 저장 수정 릴리스",
+  "goal": "실시간 구매 저장 수정이 포함된 Android 1.1.1(4) 서명 AAB를 검증하고 PR로 병합한다",
+  "root": "/Users/manager/aidp/gaepyo-release-111",
+  "startedAt": "2026-08-08T14:23:11+09:00",
+  "baseSha": "2d54cb4b1b3f4acc4397ed479b286b08c4bcb82a",
+  "branch": "release/android-1.1.1-save-fix",
+  "dirtyAtStart": false,
+  "requiredChecks": [
+    "npm-test",
+    "android-aab"
+  ],
+  "status": "active",
+  "latestEvidence": null,
+  "latestEvidenceSha256": null,
+  "closedAt": null
+}
