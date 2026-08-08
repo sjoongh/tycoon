@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "taskId": "2026-08-08_android-durable-save-1-1-2-release",
+  "title": "Android 저장 수정 1.1.2 배포 준비",
+  "startedAt": "2026-08-08T18:57:54+09:00",
+  "closedAt": "2026-08-08T19:44:03+09:00",
+  "durationMinutes": 46.2,
+  "verificationStatus": "verified",
+  "verificationReason": "verified",
+  "requiredChecks": [
+    "npm-test",
+    "npm-run-build",
+    "android-release-aab-build",
+    "android-15-facility-force-stop-cold-relaunch-persistence",
+    "android-15-staff-force-stop-cold-relaunch-persistence"
+  ],
+  "firstPass": "no",
+  "humanRevisions": 0,
+  "retries": 3,
+  "reverted": "no",
+  "knowledgeReused": "yes",
+  "knowledgeCandidates": [
+    "Android 저장 hotfix 릴리스는 exact AAB의 신규 설치뿐 아니라 이전 versionCode에서 데이터 삭제 없는 업데이트를 검증한다.",
+    "동기 durable slot 도입 시 실제 설정 초기화가 구 슬롯을 부활시키지 않는지 force-stop과 cold relaunch로 검증한다."
+  ],
+  "remainingRisks": [
+    "Play 단계적 출시 전 물리 Android 기기 1종 smoke test를 권장한다.",
+    "Play Console 업로드와 출시는 이번 승인 범위에서 수행하지 않았다.",
+    "루트 aggregate connectedDebugAndroidTest의 생성 플러그인 Kotlin 중복 그래프는 비게이팅 후속 정리가 필요하다."
+  ]
+}

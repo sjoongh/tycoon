@@ -64,13 +64,38 @@ size:4453987 bytes
 
 The stable copy at `/Users/manager/aidp/gaepyo-release-artifacts/1.1.1/gaepyo-1.1.1-4-release.aab` has the same SHA-256 and size.
 
-## Not run
+## Android device process-kill test
 
 ```text
-adb devices -l
-List of devices attached
+Device: gaepyo_qa_api35
+OS: Android 15
+ABI: arm64-v8a
+Installed package: kr.gaepyo.counting
+Installed version: 1.1.1 (versionCode 4)
+AAB SHA-256: f2fafd6f74d35bd74a51514f45f5fc81ace0e816b831a47af616ac683bbf48c2
 
-Android emulator binary: not found
+Facility, sub-second force-stop:
+  before: Lv.1
+  purchase confirmed on screen: Lv.2
+  after force-stop and cold relaunch: Lv.1
+  result: FAIL — purchase lost
+
+Staff, sub-second force-stop:
+  before: Lv.0
+  purchase confirmed on screen: Lv.1
+  after force-stop and cold relaunch: Lv.0
+  result: FAIL — purchase lost
+
+Staff, three-second delay before force-stop:
+  before: Lv.0
+  purchase confirmed on screen: Lv.1
+  after force-stop and cold relaunch: Lv.1
+  result: PASS
+
+Native mirror inspection:
+  expected: /data/user/0/kr.gaepyo.counting/shared_prefs/CapacitorStorage.xml
+  observed after more than one 10-second autosave interval: absent
+  Capacitor Preferences plugin JSON and classes.dex entry: present
 ```
 
-Native Android purchase → force-stop → relaunch persistence remains unverified and is a blocking pre-upload gate.
+The release AAB therefore has a sub-second durability window: WebView localStorage eventually flushes, but the native SharedPreferences mirror does not write in the installed release. Play upload remains blocked.

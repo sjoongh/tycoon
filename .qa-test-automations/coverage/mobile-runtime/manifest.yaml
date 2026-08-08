@@ -106,3 +106,23 @@ modules:
     risk_score: 17
     last_tested: 2026-08-06
     last_passed: true
+  - source: src/state/persistence.js
+    spec: docs/impl-notes/2026-08-08-android-durable-save-followup.md
+    scenario_ref: [SC-MRT-010]
+    tests:
+      - path: src/state/persistence.test.js
+        type: unit
+        covers: [sync-bridge-priority, async-fallback, boot-newer-selection, equal-timestamp-selection, clear]
+        case_ref: [TC-MRT-019, TC-MRT-020, TC-MRT-021]
+      - path: android/app/src/androidTest/java/kr/gaepyo/counting/DurableSaveStoreInstrumentedTest.java
+        type: integration
+        covers: [commit-readable, commit-clear, invalid-payload-rejection]
+        case_ref: [TC-MRT-021]
+      - path: (bundletool + adb Android 15 manual E2E)
+        type: e2e
+        covers: [facility-force-stop, staff-force-stop, durable-file, recent-apps-swipe]
+        case_ref: [TC-MRT-019, TC-MRT-020, TC-MRT-021, TC-MRT-022]
+        flow_ref: [Flow-MRT-5]
+    risk_score: 20
+    last_tested: 2026-08-08
+    last_passed: true
