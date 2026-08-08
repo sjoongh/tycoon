@@ -1,0 +1,97 @@
+date: 2026-08-08
+mode: android-release-gate
+target: android-1.1.2-durable-save-release
+application_id: kr.gaepyo.counting
+version:
+  name: 1.1.2
+  code: 5
+  release_status: verified-distributable-aab
+source:
+  branch: fix/android-durable-save
+  base_commit: 6c40dc13b8348182e594a292c7c4e66233426a2f
+  state: uncommitted-approved-worktree
+environment:
+  provider: android-emulator
+  lifecycle: isolated-local-avd
+  target_guard_passed: true
+  device: gaepyo_qa_api35
+  os: Android 15
+  abi: arm64-v8a
+unit:
+  files: 21
+  total: 132
+  passed: 132
+  failed: 0
+android_instrumentation:
+  command_scope: app-module
+  total: 4
+  passed: 4
+  failed: 0
+android_e2e:
+  install_source: exact-1.1.2-aab-via-bundletool
+  installed_version_name: 1.1.2
+  installed_version_code: 5
+  facility_subsecond_force_stop:
+    before_level: 1
+    purchased_level: 2
+    durable_before_relaunch_level: 2
+    relaunched_local_level: 2
+    relaunched_durable_level: 2
+    command_elapsed_seconds: 0.4
+    result: passed
+  staff_subsecond_force_stop:
+    before_level: 0
+    purchased_level: 1
+    durable_before_relaunch_level: 1
+    relaunched_local_level: 1
+    relaunched_durable_level: 1
+    command_elapsed_seconds: 0.7
+    result: passed
+  upgrade_in_place_1_1_1_to_1_1_2:
+    old_version_name: 1.1.1
+    old_version_code: 4
+    old_saved_facility_level: 2
+    data_wipe: false
+    first_new_local_level: 2
+    first_new_durable_level: 2
+    relaunched_local_level: 2
+    relaunched_durable_level: 2
+    result: passed
+  settings_two_step_reset:
+    before_facility_level: 2
+    after_local_level: 1
+    after_durable_level: 1
+    old_save_resurrected: false
+    result: passed
+  native_file:
+    path: /data/user/0/kr.gaepyo.counting/shared_prefs/gaepyo_durable_save.xml
+    save_entry_present_after_force_stop: true
+web:
+  production_build: passed
+  capacitor_sync: passed
+android_build:
+  clean_bundle_release: passed
+  lint_vital: passed
+  bundletool_validate: passed
+  jar_signature_exit: 0
+  capacitor_doctor: passed
+artifact:
+  source_path: android/app/build/outputs/bundle/release/app-release.aab
+  release_copy: /Users/manager/aidp/gaepyo-release-artifacts/1.1.2/gaepyo-1.1.2-5-release.aab
+  bytes: 4454773
+  sha256: 24878940e160a126bea117cffd15c0e74b448e2ca9c30512910cf52f9529fba4
+  source_copy_match: true
+security:
+  production_vulnerabilities: 0
+diagnostics:
+  root_connected_debug_android_test:
+    result: non_gating_failed_after_app_tests_passed
+    failing_module: capacitor-cordova-android-plugins
+    cause: kotlin-stdlib-test-graph-duplicate-classes
+  app_connected_debug_android_test: passed
+  legacy_last_saved_at_audit: passed_from_initial_0_1_0_state
+  first_upgrade_fixture_attempt: rejected_non_representative_direct_storage_injection
+release:
+  play_console_upload: not-authorized
+  git_status: pending-dev-protocol-review-and-commit
+  physical_device_smoke_test: not-run-no-device

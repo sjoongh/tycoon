@@ -89,3 +89,23 @@ cases:
     description: 4× CPU 3회 중앙값에서 custom은 stock보다 전송 30%, 총 long task 25%, 최대 long task 15% 이상 작다
     type: boundary
     expected: { result: success, max_custom_transfer_bytes: 200000 }
+  - id: TC-MRT-019
+    scenario: SC-MRT-010
+    description: 시설 구매 함수 반환 직후 앱을 force-stop하고 cold relaunch해도 Lv.2가 유지된다
+    type: error
+    expected: { result: success, facility_level_persisted: true }
+  - id: TC-MRT-020
+    scenario: SC-MRT-010
+    description: 직원 채용 함수 반환 직후 앱을 force-stop하고 cold relaunch해도 Lv.1이 유지된다
+    type: error
+    expected: { result: success, staff_level_persisted: true }
+  - id: TC-MRT-021
+    scenario: SC-MRT-010
+    description: 구매 직후 동기 SharedPreferences 파일과 고정 세이브 슬롯이 존재하고 최신 값을 담는다
+    type: boundary
+    expected: { result: success, durable_slot_present: true }
+  - id: TC-MRT-022
+    scenario: SC-MRT-010
+    description: 직원 Lv.2 구매 뒤 최근 앱에서 위로 밀어 종료해도 cold relaunch 시 Lv.2가 유지된다
+    type: error
+    expected: { result: success, swipe_kill_persisted: true }

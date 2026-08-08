@@ -107,3 +107,30 @@ runs:
     skipped: 1
     coverage_lines: null
     duration_ms: null
+  - date: 2026-08-08
+    mode: android-device-e2e
+    target: android-1.1.1-process-kill-persistence
+    total: 3
+    passed: 1
+    failed: 2
+    skipped: 0
+    coverage_lines: null
+    duration_ms: 540000
+  - date: 2026-08-08
+    mode: android-durable-save-followup
+    target: android-durable-save-process-kill-persistence
+    total: 140
+    passed: 140
+    failed: 0
+    skipped: 0
+    coverage_lines: null
+    duration_ms: 1140000
+  - date: 2026-08-08
+    mode: android-release-gate
+    target: android-1.1.2-durable-save-release
+    total: 142
+    passed: 142
+    failed: 0
+    skipped: 0
+    coverage_lines: null
+    duration_ms: 1320000

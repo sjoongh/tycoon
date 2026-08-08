@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "taskId": "2026-08-08_android-durable-save-followup",
+  "title": "Android 구매 즉시 저장 내구성 수정",
+  "startedAt": "2026-08-08T16:58:46+09:00",
+  "closedAt": "2026-08-08T18:08:21+09:00",
+  "durationMinutes": 69.6,
+  "verificationStatus": "verified",
+  "verificationReason": "verified",
+  "requiredChecks": [
+    "npm-test",
+    "npm-run-build",
+    "android-release-aab-build",
+    "android-15-facility-force-stop-cold-relaunch-persistence",
+    "android-15-staff-force-stop-cold-relaunch-persistence"
+  ],
+  "firstPass": "no",
+  "humanRevisions": 0,
+  "retries": 1,
+  "reverted": "no",
+  "knowledgeReused": "yes",
+  "knowledgeCandidates": [
+    "Android WebView 구매 저장은 실제 release AAB의 sub-second force-stop gate로 검증한다.",
+    "동기 고정 슬롯은 lastSavedAt이 같아도 JSON이 다르면 마지막 durable 값을 우선한다."
+  ],
+  "remainingRisks": [
+    "다음 배포는 versionCode를 올린 뒤 새 AAB로 device gate를 반복해야 한다.",
+    "단계적 출시 전 물리 Android 기기 1종 smoke test를 권장한다."
+  ]
+}

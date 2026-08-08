@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "taskId": "2026-08-08_android-durable-save-followup",
+  "title": "Android 구매 즉시 저장 내구성 수정",
+  "goal": "시설·직원 구매 직후 앱을 강제 종료해도 구매 결과가 다음 실행에 보존되도록 Android 저장 경로를 수정하고 실제 AAB에서 검증한다.",
+  "root": "/Users/manager/aidp/gaepyo-android-durable-save",
+  "startedAt": "2026-08-08T16:58:46+09:00",
+  "baseSha": "6c40dc13b8348182e594a292c7c4e66233426a2f",
+  "branch": "fix/android-durable-save",
+  "dirtyAtStart": false,
+  "requiredChecks": [
+    "npm-test",
+    "npm-run-build",
+    "android-release-aab-build",
+    "android-15-facility-force-stop-cold-relaunch-persistence",
+    "android-15-staff-force-stop-cold-relaunch-persistence"
+  ],
+  "status": "closed",
+  "latestEvidence": "docs/work-log/2026-08-08_android-durable-save-followup/evidence/evidence.json",
+  "latestEvidenceSha256": "e3d0919809277978dbb56373ce9cb07a38ceb66dc584d16a2f69137b2f8a3b57",
+  "closedAt": "2026-08-08T18:08:21+09:00",
+  "lastVerifiedAt": "2026-08-08T18:08:13+09:00"
+}

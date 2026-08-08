@@ -90,6 +90,16 @@
 
 왜 필요한가: 개발 환경에만 남은 cache나 우연한 warm cache로 빨라진 것처럼 보이면 CI·배포에서 재현되지 않고, 현장 회귀 때 stock 엔진으로 즉시 돌아갈 수 없다.
 
+## SC-MRT-010: Android 구매는 즉시 프로세스가 종료돼도 유지된다
+
+| 항목 | 내용 |
+|---|---|
+| AC 참조 | Android 동기 durable-save 후속 수정 |
+| 리스크 | HIGH |
+| 전제 조건 | 수정 후보 릴리스 AAB, Android 15 ARM64, 신규 로컬 세이브 |
+
+왜 필요한가: WebView `localStorage`는 메모리 반영 뒤 디스크 flush 전에 프로세스가 종료될 수 있으므로, 구매 직후 화면 값과 브라우저 reload만으로 실제 내구성을 보장할 수 없다.
+
 ## Traceability Matrix
 
 | AC | Scenario | Test Cases | Test Code | Evidence |
@@ -103,3 +113,4 @@
 | 폰트 subset·fallback | SC-MRT-007 | TC-MRT-011~013 | startup/font E2E + subset generation | `evidence/2026-08-06/startup-font-summary.yaml` |
 | custom core 기능·Canvas | SC-MRT-008 | TC-MRT-014~016 | builder assertion + Phaser core E2E | `evidence/2026-08-06/phaser-core-summary.yaml` |
 | startup 성능·rollback | SC-MRT-009 | TC-MRT-017~018 | stock build + startup comparison | `evidence/2026-08-06/phaser-core-summary.yaml` |
+| Android 즉시 저장 | SC-MRT-010 | TC-MRT-019~022 | bundletool + adb Android 15 E2E | `evidence/2026-08-08/android-durable-save-followup-summary.yaml` |

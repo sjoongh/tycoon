@@ -17,10 +17,12 @@ import { Sfx } from "./audio/sfx.js";
 import { Notifications } from "./notifications.js";
 import { initNative } from "./native.js";
 import { initCloud, openLeaderboard, saveCloud, submitScore, logEvt } from "./cloud.js";
-import { mirrorNativeSave, restoreNativeSave } from "./state/persistence.js";
+import { mirrorNativeSave, restoreNativeSave, seedLocalStorageFromDurableSave } from "./state/persistence.js";
 
+// Android 동기 슬롯이 더 최신이면 GameState가 localStorage를 읽기 전에 복구한다.
+seedLocalStorageFromDurableSave();
 const gameState = new GameState();
-// 안드로이드: localStorage 유실 대비 SharedPreferences 이중 기록 + 부팅 시 더 최신인 미러 복원
+// Android: localStorage 유실 대비 동기 SharedPreferences 이중 기록 + 구버전 비동기 미러 복원
 gameState.persistMirror = mirrorNativeSave;
 restoreNativeSave(gameState);
 const sfx = new Sfx(gameState);

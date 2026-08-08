@@ -37,3 +37,12 @@
 5. custom cache를 고의로 망가뜨린 뒤 `GAEPYO_STOCK_PHASER=1`로 준비·alias를 우회하는 rollback production build를 만들고, stock dev의 WebGL·강제 Canvas 부팅과 탭도 확인한다.
 6. 각 빌드를 4× CPU + SwiftShader 신규 브라우저에서 3번 로드해 Phaser 전송량·총/최대 long task·HUD/world-ready 중앙값을 비교한다.
 7. 기존 E2E 전체와 상태 주입 없는 180초 직접 플레이로 동적 경로를 회귀 검증한다.
+
+## Flow-MRT-5 — Android 구매 직후 프로세스 종료
+
+1. SHA-256이 확인된 릴리스 AAB를 bundletool로 Android 15 ARM64 에뮬레이터에 설치한다.
+2. 신규 세이브에서 실제 게임 입력으로 자원을 모으고 시설 구매 UI를 실행한다.
+3. 구매 함수 반환 뒤 1초 안에 `am force-stop`하고 cold relaunch한다.
+4. 화면·`localStorage`·동기 SharedPreferences 슬롯에서 같은 시설 레벨을 확인한다.
+5. 직원 채용도 같은 방식으로 반복한다.
+6. 직원 추가 채용 뒤 최근 앱 화면에서 위로 밀어 종료하고 cold relaunch한다.

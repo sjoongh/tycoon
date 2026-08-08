@@ -1,0 +1,71 @@
+date: 2026-08-08
+mode: android-durable-save-followup
+target: android-durable-save-process-kill-persistence
+application_id: kr.gaepyo.counting
+version:
+  name: 1.1.1
+  code: 4
+  release_status: qa-candidate-only-version-code-must-increase
+source:
+  branch: fix/android-durable-save
+  base_commit: 6c40dc13b8348182e594a292c7c4e66233426a2f
+  state: uncommitted-approved-worktree
+unit:
+  files: 21
+  total: 132
+  passed: 132
+  failed: 0
+android_instrumentation:
+  device: gaepyo_qa_api35
+  os: Android 15
+  total: 4
+  passed: 4
+  failed: 0
+android_e2e:
+  install_source: exact-candidate-aab-via-bundletool
+  facility_subsecond_force_stop:
+    before_level: 1
+    purchased_level: 2
+    relaunched_local_level: 2
+    relaunched_durable_level: 2
+    result: passed
+  staff_subsecond_force_stop:
+    before_level: 0
+    purchased_level: 1
+    relaunched_local_level: 1
+    relaunched_durable_level: 1
+    result: passed
+  recent_apps_swipe_kill:
+    before_level: 1
+    purchased_level: 2
+    process_after_swipe: absent
+    relaunched_local_level: 2
+    relaunched_durable_level: 2
+    result: passed
+  native_file:
+    path: /data/user/0/kr.gaepyo.counting/shared_prefs/gaepyo_durable_save.xml
+    save_entry_present_after_force_stop: true
+performance:
+  payload_bytes: 2286
+  synchronous_write_ms: [21.8, 2.3, 0.5, 0.7, 0.1]
+  max_observed_ms: 21.8
+web:
+  production_build: passed
+  capacitor_sync: passed
+android_build:
+  clean_bundle_release: passed
+  lint_vital: passed
+  bundletool_validate: passed
+  jar_signature: passed
+artifact:
+  path: android/app/build/outputs/bundle/release/app-release.aab
+  bytes: 4454725
+  sha256: 5306792d9aae299e227854994f04d2a2e767e201ff9078cf6e671c8829d8b874
+security:
+  production_vulnerabilities: 0
+release:
+  play_console_upload: not-authorized
+  required_before_release:
+    version_code_increment: blocking
+    rebuild_and_repeat_device_gate: blocking
+    commit_pr_merge: pending-user-approval
