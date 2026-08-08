@@ -595,13 +595,18 @@ export class GameState extends Phaser.Events.EventEmitter {
     const now = Date.now();
     this.data.lastSavedAt = now;
     this.data.lastSeenAt = now;
+    const json = JSON.stringify(this.data);
     try {
-      localStorage.setItem(SAVE_KEY, JSON.stringify(this.data));
+      localStorage.setItem(SAVE_KEY, json);
     } catch (e) {
       // 저장 실패(용량/프라이빗 모드)로 게임 루프가 죽지 않게 — 1회만 경고
       if (!this._saveWarned) { this._saveWarned = true; console.warn("save failed:", e); }
+      // localStorage가 죽어도(용량/프라이빗 모드) 네이티브 미러에는 남긴다
+      try { this.persistMirror?.(json); } catch {}
       return;
     }
+    // 네이티브(안드로이드)에서는 SharedPreferences에도 이중 기록 — main.js에서 주입
+    try { this.persistMirror?.(json); } catch {}
     if (notify) this.emit("saved");
   }
 
@@ -1601,6 +1606,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     this.emit("upgraded", facility);
     this.checkProgression();
     this.emit("changed");
+    this.save(false); // 구매 직후 앱이 죽어도 유실되지 않게 즉시 저장
     return true;
   }
 
@@ -1678,6 +1684,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     this.trackFeverAction();
     this.checkProgression();
     this.emit("changed");
+    this.save(false);
     return true;
   }
 
@@ -1734,6 +1741,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     this.emit("upgraded", fac);
     this.checkProgression();
     this.emit("changed");
+    this.save(false);
     return true;
   }
 
@@ -1757,6 +1765,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     this.trackFeverAction();
     this.checkProgression();
     this.emit("changed");
+    this.save(false);
     return true;
   }
 

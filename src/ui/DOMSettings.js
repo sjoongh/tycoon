@@ -1,5 +1,6 @@
 import pkg from "../../package.json";
 import { cloudEnabled } from "../firebaseConfig.js";
+import { mirrorNativeSave, clearNativeSave } from "../state/persistence.js";
 
 const SAVE_KEY = "trust-office-phaser-v2";
 const PRIVACY_URL = "https://gaepyo-tycoon.web.app/privacy.html";
@@ -94,6 +95,7 @@ export class DOMSettings {
         if (!parsed || typeof parsed !== "object" || !parsed.stage) throw new Error("bad save");
         this.gameState._suspendPersist = true; // pagehide 저장이 덮어쓰지 않게
         localStorage.setItem(SAVE_KEY, txt);
+        mirrorNativeSave(txt); // 네이티브 미러가 예전 세이브를 되살리지 않게 함께 갱신
         btn.textContent = "적용됨! 재시작…";
         setTimeout(() => location.reload(), 600);
       } catch { btn.textContent = "잘못된 데이터"; }
@@ -105,6 +107,7 @@ export class DOMSettings {
       } else {
         this.gameState._suspendPersist = true; // pagehide 저장이 세이브를 되살리지 않게
         try { localStorage.removeItem(SAVE_KEY); } catch {}
+        clearNativeSave(); // 네이티브 미러도 함께 삭제 — 리셋 후 복원 방지
         location.reload();
       }
     } else if (act === "privacy") {
