@@ -38,7 +38,7 @@ npm run preview
 
 ## Android 릴리스
 
-- 현재 앱 버전: `1.1.0` (`versionCode 3`)
+- 현재 앱 버전: `1.1.1` (`versionCode 4`)
 - Android 빌드 도구체인: OpenJDK 21
 - release keystore와 `android/keystore.properties`는 로컬에만 두고 Git에 커밋하지 않음
 - 로컬 서명 설정이 연결된 환경에서 clean AAB 생성: `npm run android:bundle`

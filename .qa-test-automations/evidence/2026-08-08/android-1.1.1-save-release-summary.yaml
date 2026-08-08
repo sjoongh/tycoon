@@ -1,0 +1,85 @@
+date: 2026-08-08
+mode: android-release-gate
+target: android-1.1.1-realtime-save-release
+application_id: kr.gaepyo.counting
+version:
+  name: 1.1.1
+  code: 4
+toolchain:
+  java: openjdk-21.0.11
+  bundletool: 1.18.1
+unit:
+  files: 21
+  total: 124
+  passed: 124
+  failed: 0
+  save_targeted:
+    files: 2
+    total: 12
+    passed: 12
+    failed: 0
+integration:
+  balance_simulation: passed
+e2e:
+  target_guard_passed: true
+  allowed_hosts:
+    - localhost
+  game_target: http://localhost:5178
+  game_flows: 10
+  game_passed: 10
+  pwa_target: http://localhost:4178
+  pwa_passed: 1
+  device_process_kill: not-run-no-connected-device-or-emulator
+web:
+  production_build: passed
+  capacitor_sync: passed
+  capacitor_doctor: passed
+android:
+  min_sdk: 24
+  target_sdk: 36
+  clean_bundle_release: passed
+  npm_android_bundle: passed
+  lint_vital: passed
+  bundletool_validate: passed
+  manifest_metadata: passed
+  zip_integrity: passed
+  jar_signature: passed
+  signer_matches_keystore: passed
+  signer_cert_sha256: 7A:81:32:A4:F7:BE:13:4C:4E:91:B1:3F:82:0C:49:68:8D:71:A8:DD:DF:B3:AF:65:A6:96:1A:08:49:31:35:D8
+  signing_assets_gitignored: passed
+artifact:
+  filename: gaepyo-1.1.1-4-release.aab
+  bytes: 4453987
+  sha256: f2fafd6f74d35bd74a51514f45f5fc81ace0e816b831a47af616ac683bbf48c2
+  stable_copy: /Users/manager/aidp/gaepyo-release-artifacts/1.1.1/gaepyo-1.1.1-4-release.aab
+source:
+  base_commit: 2d54cb4b1b3f4acc4397ed479b286b08c4bcb82a
+  includes_realtime_save_fix: true
+  state: base-plus-release-metadata
+  build_input_sha256:
+    package_json: f10b3944ccea8786eefd6d2e8a3a224c3026bf050af885586d5441dfa85e7a6d
+    package_lock_json: 4ae5216b36455634a5e5ef06269c0a27d25b70f7b8b541e2c4f38f763c1b9681
+    android_app_build_gradle: 63b759943d1fcc3fd9bff0ab380c9256292b258aaee385a3f28cc2848f7ee963
+security:
+  production_vulnerabilities: 0
+  full_audit_moderate: 3
+environment:
+  target_guard_passed: true
+  matched_allowed_host: localhost
+  provider: none
+  lifecycle: preexisting
+  connected_android_devices: 0
+  android_emulator_available: false
+release:
+  pr_number: pending
+  pr_ci: pending
+  merge: pending
+  play_console_upload: not-authorized
+  version_code_external_availability: not-checked
+  pre_upload_gates:
+    android_process_kill_persistence: blocking-unverified
+    play_upload_certificate_match: not-checked
+    version_code_available_on_all_tracks: not-checked
+  provenance:
+    build_inputs_content_hashed: true
+    merge_commit_sidecar: pending
