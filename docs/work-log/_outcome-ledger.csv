@@ -5,3 +5,4 @@ task_id,title,started_at,closed_at,duration_minutes,verification_status,first_pa
 2026-08-06_event-chain-endings,사건 체인 결말,2026-08-06T18:15:41+09:00,2026-08-06T20:34:01+09:00,138.3,verified,unknown,0,1,no,unknown
 2026-08-08_android-durable-save-followup,Android 구매 즉시 저장 내구성 수정,2026-08-08T16:58:46+09:00,2026-08-08T18:08:21+09:00,69.6,verified,no,0,1,no,yes
 2026-08-08_android-durable-save-1-1-2-release,Android 저장 수정 1.1.2 배포 준비,2026-08-08T18:57:54+09:00,2026-08-08T19:44:03+09:00,46.2,verified,no,0,3,no,yes
+2026-08-10_play-internal-1-1-2,Google Play 1.1.2 내부 테스트 배포,2026-08-10T17:44:38+09:00,2026-08-10T18:19:11+09:00,34.6,verified,no,0,3,no,unknown

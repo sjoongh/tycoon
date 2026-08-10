@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "taskId": "2026-08-10_play-internal-1-1-2",
+  "generatedAt": "2026-08-10T18:19:06+09:00",
+  "baseSha": "4493e9d806cc944615594e10841e072168ced49e",
+  "headSha": "4493e9d806cc944615594e10841e072168ced49e",
+  "repositoryStateDigest": "c3edba6d108d8226809aa9c073335eacb71cd942852ad435a01d0d300d7136f1",
+  "branch": "ops/play-internal-1-1-2",
+  "changedFiles": [
+    "docs/impl-notes/2026-08-10-play-internal-1-1-2.md"
+  ],
+  "checks": [
+    {
+      "name": "play-developer-api-접근-검증",
+      "command": "PYTHONWARNINGS=ignore /tmp/gaepyo-play-auth.qX1Mwm/bin/python /tmp/gaepyo-play-verify.py",
+      "exitCode": 0,
+      "durationMs": 4104,
+      "timedOut": false,
+      "status": "pass",
+      "logPath": "docs/work-log/2026-08-10_play-internal-1-1-2/evidence/logs/20260810T181857-play-developer-api-접근-검증.log",
+      "tail": "play_api_access=pass\nbundle_version_5_sha256=pass\ninternal_version_5_completed=pass\nproduction_version_3_unchanged=pass\nversion_code_5_tracks=internal_only"
+    },
+    {
+      "name": "aab-해시-및-버전-검증",
+      "command": "test \"$(shasum -a 256 /Users/manager/aidp/gaepyo-release-artifacts/1.1.2/gaepyo-1.1.2-5-release.aab | awk '{print $1}')\" = 24878940e160a126bea117cffd15c0e74b448e2ca9c30512910cf52f9529fba4 && unzip -tq /Users/manager/aidp/gaepyo-release-artifacts/1.1.2/gaepyo-1.1.2-5-release.aab && rg -q 'versionCode 5' android/app/build.gradle && rg -q 'versionName \"1.1.2\"' android/app/build.gradle",
+      "exitCode": 0,
+      "durationMs": 104,
+      "timedOut": false,
+      "status": "pass",
+      "logPath": "docs/work-log/2026-08-10_play-internal-1-1-2/evidence/logs/20260810T181857-aab-해시-및-버전-검증.log",
+      "tail": "No errors detected in compressed data of /Users/manager/aidp/gaepyo-release-artifacts/1.1.2/gaepyo-1.1.2-5-release.aab."
+    },
+    {
+      "name": "내부-테스트-트랙-커밋-결과-확인",
+      "command": "PYTHONWARNINGS=ignore /tmp/gaepyo-play-auth.qX1Mwm/bin/python /tmp/gaepyo-play-verify.py",
+      "exitCode": 0,
+      "durationMs": 5034,
+      "timedOut": false,
+      "status": "pass",
+      "logPath": "docs/work-log/2026-08-10_play-internal-1-1-2/evidence/logs/20260810T181857-내부-테스트-트랙-커밋-결과-확인.log",
+      "tail": "play_api_access=pass\nbundle_version_5_sha256=pass\ninternal_version_5_completed=pass\nproduction_version_3_unchanged=pass\nversion_code_5_tracks=internal_only"
+    }
+  ],
+  "verdict": "PASS",
+  "workingTreeDirty": true
+}

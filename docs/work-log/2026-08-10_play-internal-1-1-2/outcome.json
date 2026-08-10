@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "taskId": "2026-08-10_play-internal-1-1-2",
+  "title": "Google Play 1.1.2 내부 테스트 배포",
+  "startedAt": "2026-08-10T17:44:38+09:00",
+  "closedAt": "2026-08-10T18:19:11+09:00",
+  "durationMinutes": 34.6,
+  "verificationStatus": "verified",
+  "verificationReason": "verified",
+  "requiredChecks": [
+    "play-developer-api-접근-검증",
+    "aab-해시-및-버전-검증",
+    "내부-테스트-트랙-커밋-결과-확인"
+  ],
+  "firstPass": "no",
+  "humanRevisions": 0,
+  "retries": 3,
+  "reverted": "no",
+  "knowledgeReused": "unknown",
+  "knowledgeCandidates": [],
+  "remainingRisks": []
+}

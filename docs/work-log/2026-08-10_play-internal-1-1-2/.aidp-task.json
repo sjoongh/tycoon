@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "taskId": "2026-08-10_play-internal-1-1-2",
+  "title": "Google Play 1.1.2 내부 테스트 배포",
+  "goal": "서명된 1.1.2 versionCode 5 AAB가 Google Play 내부 테스트 트랙에만 검증·배포된다",
+  "root": "/Users/manager/aidp/gaepyo-play-internal-112",
+  "startedAt": "2026-08-10T17:44:38+09:00",
+  "baseSha": "4493e9d806cc944615594e10841e072168ced49e",
+  "branch": "ops/play-internal-1-1-2",
+  "dirtyAtStart": false,
+  "requiredChecks": [
+    "play-developer-api-접근-검증",
+    "aab-해시-및-버전-검증",
+    "내부-테스트-트랙-커밋-결과-확인"
+  ],
+  "status": "closed",
+  "latestEvidence": "docs/work-log/2026-08-10_play-internal-1-1-2/evidence/evidence.json",
+  "latestEvidenceSha256": "7bd5ead3a43fa73512bfae3b833e5702a5f5c67ec7e835972182a27c8bde01fc",
+  "closedAt": "2026-08-10T18:19:11+09:00",
+  "lastVerifiedAt": "2026-08-10T18:19:06+09:00"
+}
