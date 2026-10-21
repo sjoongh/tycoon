@@ -26,7 +26,8 @@
     "android:open": "cap open android",
     "android:sync": "npm run build && cap sync android",
     "android:bundle": "npm run android:sync && cd android && ./gradlew --no-daemon clean bundleRelease",
-    "art:icons": "python3 scripts/art/build_icons.py"
+    "art:icons": "python3 scripts/art/build_icons_glossy.py",
+    "art:world": "python3 scripts/art/build_world_vector.py"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.0",

@@ -2,7 +2,7 @@ import { iconRef } from "../assets/iconTextures.js";
 import { WorldEffects } from "./WorldEffects.js";
 import { govTextureKey, govStageFor } from "./dotChar.js";
 import { facilities } from "../data/facilities.js";
-import { facilitySpriteKey, WORLD_ATLAS } from "./worldAtlas.js";
+import { facilitySpriteKey, govSpriteKey, workerSpriteKey, WORLD_ATLAS } from "./worldAtlas.js";
 import { stationDepth, workerDepth } from "./depth.js";
 import { WORLD_SCALE, ROOM_X, ROOM_Y, ROOM_BOTTOM, FACILITY_SLOTS, GOV_TILE, BIG_NUM_TILE, tileCenter, facilityPos, workerPos, randomFloorPoint, facilitySpriteMeta } from "./iso.js";
 import { staffDefinitions } from "../data/staff.js";
@@ -88,7 +88,7 @@ export class WorldView {
 
     // 중앙 도트 국장
     this.gov = scene.add
-      .image(GOV_POS.x, GROUND_Y, govTextureKey(gameState.data))
+      .image(GOV_POS.x, GROUND_Y, govSpriteKey(govStageFor(gameState.data)))
       .setOrigin(0.5, 1)
       .setScale(GOV_SCALE)
       .setDepth(workerDepth(GROUND_Y));
@@ -98,17 +98,17 @@ export class WorldView {
 
     // 중앙 큰 숫자(개표수) — 한글 단위 지원 위해 Galmuri14
     this.bigNum = scene.add
-      .text(BIG_NUM_POS.x, BIG_NUM_Y, "0", { fontFamily: '"Galmuri14", "Galmuri11", monospace', fontSize: "30px", color: "#ffffff" })
+      .text(BIG_NUM_POS.x, BIG_NUM_Y, "0", { fontFamily: '"Jua", "DoHyeon", sans-serif', fontSize: "30px", color: "#ffffff" })
       .setOrigin(0.5)
       .setDepth(2500);
     this.bigNum.setShadow(3, 3, "#b13e53", 0, true, true);
     this.bigSub = scene.add
-      .text(BIG_NUM_POS.x, BIG_NUM_Y + 26, "표", { fontFamily: '"Galmuri11", monospace', fontSize: "12px", color: "#ffcd75" })
+      .text(BIG_NUM_POS.x, BIG_NUM_Y + 26, "표", { fontFamily: '"DoHyeon", "Jua", sans-serif', fontSize: "12px", color: "#ffcd75" })
       .setOrigin(0.5)
       .setDepth(2500);
     this.cpsText = scene.add
       .text(GAME_W / 2, ROOM_BOTTOM + 12, "", {
-        fontFamily: '"Galmuri9", "Galmuri11", monospace', fontSize: "11px", color: "#bcd0e0",
+        fontFamily: '"DoHyeon", "Jua", sans-serif', fontSize: "11px", color: "#bcd0e0",
         backgroundColor: "rgba(20,18,28,0.72)", padding: { x: 7, y: 4 },
       })
       .setOrigin(0.5)
@@ -116,8 +116,8 @@ export class WorldView {
 
     // 국장 대표 칭호 명패(인사 발령 뽑기 결과 — 머리 위에 직급 표시, 꾸미기)
     this.titlePlate = scene.add
-      .text(GOV_POS.x, GROUND_Y - 58, "", {
-        fontFamily: '"Galmuri9", "Galmuri11", monospace', fontSize: "10px", color: "#ffd479",
+      .text(GOV_POS.x, GROUND_Y - 70, "", {
+        fontFamily: '"DoHyeon", "Jua", sans-serif', fontSize: "10px", color: "#ffd479",
         backgroundColor: "rgba(20,18,28,0.78)", padding: { x: 6, y: 3 },
       })
       .setOrigin(0.5)
@@ -128,7 +128,7 @@ export class WorldView {
     // 클릭 콤보 카운터(연타 시 등장)
     this.comboText = scene.add
       .text(10, ROOM_Y + 100, "", {
-        fontFamily: '"Galmuri14", "Galmuri11", monospace', fontSize: "13px", color: "#ffcd75",
+        fontFamily: '"Jua", "DoHyeon", sans-serif', fontSize: "13px", color: "#ffcd75",
         backgroundColor: "rgba(20,18,28,0.78)", padding: { x: 4, y: 3 },
       })
       .setOrigin(0, 0.5)
@@ -267,13 +267,11 @@ export class WorldView {
     const key = eraTheme(area).key;
     const g = this.bg;
     g.clear();
-    // 하늘
-    g.fillStyle(c.sky, 1);
+    // 배경: 시대 색 → 바닥색 세로 그라데이션(카툰 스킨, 별·픽셀 점 없음)
+    g.fillGradientStyle(c.sky, c.sky, c.floor, c.floor, 1);
     g.fillRect(0, 0, GAME_W, ROOM_BOTTOM - 70);
-    // 별
-    const stars = [[40, 150], [92, 206], [150, 138], [300, 168], [342, 224], [212, 184], [70, 262], [330, 300], [120, 308], [262, 250]];
-    g.fillStyle(c.star, 1);
-    stars.forEach(([x, y]) => g.fillRect(x, y, 3, 3));
+    g.fillStyle(0xffffff, 0.06);
+    g.fillEllipse(GAME_W / 2, 120, 420, 180);
 
     // ── 체제 상징물 ──
     if (key === "force") {
@@ -353,33 +351,27 @@ export class WorldView {
     g.fillStyle(0x14121c, 1);
     g.fillRect(x + 18, top - 12, 3, 14);
     g.fillRect(x + w - 21, top - 12, 3, 14);
-    // 외곽 + 본체
-    g.fillStyle(0x000000, 1);
-    g.fillRect(x - 3, top - 3, w + 6, h + 6);
-    g.fillStyle(0x29366f, 1);
-    g.fillRect(x, top, w, h);
-    g.fillStyle(0x3b5dc9, 1);
-    g.fillRect(x, top, w, 4);
-    g.fillStyle(0x1f2750, 1);
-    g.fillRect(x, top + h - 5, w, 5);
-    // 모서리 못(금색)
-    g.fillStyle(0xffcd75, 1);
-    g.fillRect(x + 5, top + 5, 4, 4);
-    g.fillRect(x + w - 9, top + 5, 4, 4);
-    g.fillRect(x + 5, top + h - 9, 4, 4);
-    g.fillRect(x + w - 9, top + h - 9, 4, 4);
+    // 둥근 카툰 간판(남색 보드 + 금테)
+    g.fillStyle(0x000000, 0.25);
+    g.fillRoundedRect(x - 2, top + 3, w + 4, h + 4, 14);
+    g.fillStyle(0xffc53d, 1);
+    g.fillRoundedRect(x - 3, top - 3, w + 6, h + 6, 14);
+    g.fillStyle(0x2d3a70, 1);
+    g.fillRoundedRect(x, top, w, h, 12);
+    g.fillStyle(0xffffff, 0.12);
+    g.fillRoundedRect(x + 3, top + 3, w - 6, h / 2, 10);
     this.titleBg = g;
     this.titleTop = this.scene.add
-      .text(cx, top + 14, "믿어주세요", { fontFamily: '"Galmuri11", monospace', fontSize: "11px", color: "#94b0c2" })
+      .text(cx, top + 14, "믿어주세요", { fontFamily: '"DoHyeon", "Jua", sans-serif', fontSize: "11px", color: "#94b0c2" })
       .setOrigin(0.5)
       .setDepth(111);
     this.titleMain = this.scene.add
-      .text(cx, top + 31, "개 표 국", { fontFamily: '"Galmuri14", "Galmuri11", monospace', fontSize: "19px", color: "#ffe3a8" })
+      .text(cx, top + 31, "개 표 국", { fontFamily: '"Jua", "DoHyeon", sans-serif', fontSize: "19px", color: "#ffe3a8" })
       .setOrigin(0.5)
       .setDepth(111);
     // 간판 아래 "지도" 힌트 + 클릭 영역(탭하면 전국 지도 모달)
     this.titleHint = this.scene.add
-      .text(cx, top + h + 9, "전국 지도", { fontFamily: '"Galmuri9", "Galmuri11", monospace', fontSize: "10px", color: "#9fb8d0" })
+      .text(cx, top + h + 9, "전국 지도", { fontFamily: '"DoHyeon", "Jua", sans-serif', fontSize: "10px", color: "#9fb8d0" })
       .setOrigin(0.5)
       .setDepth(111);
     this.scene.tweens.add({ targets: this.titleHint, alpha: 0.5, yoyo: true, repeat: -1, duration: 900, ease: "Sine.easeInOut" });
@@ -406,7 +398,7 @@ export class WorldView {
       this.propByFacility[f.id] = s;
       this.propLabels[f.id] = this.scene.add
         .text(pos.x, pos.y + 6, "", {
-          fontFamily: '"Galmuri9", "Galmuri11", monospace', fontSize: "8px", color: "#c0cbdc",
+          fontFamily: '"DoHyeon", "Jua", sans-serif', fontSize: "8px", color: "#c0cbdc",
           backgroundColor: "rgba(20,18,28,0.72)", padding: { x: 3, y: 1 },
         })
         .setOrigin(0.5, 0)
@@ -417,19 +409,19 @@ export class WorldView {
     // 적체(미처리 표) 더미 — 접수창구 앞 타일에 쌓인다. 개수는 적체/분당용량 비율.
     const pile = workerPos("desk");
     this._backlogPile = Array.from({ length: 6 }, (_, k) => this.scene.add
-      .image(pile.x - 26 + (k % 3) * 10, pile.y - 6 - Math.floor(k / 3) * 7, "ballot")
-      .setScale(0.9)
+      .image(pile.x - 26 + (k % 3) * 10, pile.y - 6 - Math.floor(k / 3) * 7, "world/ballot")
+      .setScale(0.5)
       .setAngle(-12 + (k * 37) % 24)
       .setDepth(stationDepth(pile.y) - 2)
       .setVisible(false));
     this._backlogBadge = this.scene.add
-      .text(pile.x, pile.y - 30, "!", { fontFamily: '"Press Start 2P", monospace', fontSize: "10px", color: "#ffffff", backgroundColor: "#e43b44", padding: { x: 4, y: 3 } })
+      .text(pile.x, pile.y - 30, "!", { fontFamily: '"Jua", sans-serif', fontSize: "14px", color: "#ffffff", backgroundColor: "#e43b44", padding: { x: 6, y: 2 } })
       .setOrigin(0.5)
       .setDepth(stationDepth(pile.y) + 50)
       .setVisible(false);
     // 서버실 위 LED 개표 현황
     this.boardText = this.scene.add
-      .text(this.board.x + 34, this.board.y - 56, "", { fontFamily: '"Galmuri9", "Galmuri11", monospace', fontSize: "8px", color: "#2ce8f5", align: "center", backgroundColor: "rgba(20,18,28,0.6)", padding: { x: 3, y: 2 } })
+      .text(this.board.x + 34, this.board.y - 56, "", { fontFamily: '"DoHyeon", "Jua", sans-serif', fontSize: "8px", color: "#2ce8f5", align: "center", backgroundColor: "rgba(20,18,28,0.6)", padding: { x: 3, y: 2 } })
       .setOrigin(0.5)
       .setDepth(stationDepth(this.board.y) + 2);
   }
@@ -505,8 +497,8 @@ export class WorldView {
     const sy = GROUND_Y - 44;
     const tx = this.ballotbox.x + (Math.random() * 10 - 5);
     const ty = this.ballotbox.y - this.ballotbox.displayHeight * 0.6;
-    const b = this.scene.add.image(sx, sy, "ballot").setDepth(2400).setScale(0);
-    this.scene.tweens.add({ targets: b, scale: 0.42, duration: 110, ease: "Back.easeOut" });
+    const b = this.scene.add.image(sx, sy, "world/ballot").setDepth(2400).setScale(0);
+    this.scene.tweens.add({ targets: b, scale: 0.4, duration: 110, ease: "Back.easeOut" });
     this.scene.tweens.add({ targets: b, x: tx, angle: -160, duration: 440, ease: "Sine.easeIn" });
     this.scene.tweens.add({
       targets: b, y: ty - 34, duration: 220, yoyo: true, ease: "Sine.easeOut",
@@ -560,8 +552,8 @@ export class WorldView {
     const y = 150;
     const bar = this.scene.add.rectangle(GAME_W / 2, y, GAME_W, 28, 0xb13e53, 0.96).setDepth(200).setScale(1, 0).setScrollFactor(0);
     const live = this.scene.add.rectangle(40, y, 52, 28, 0x14121c, 1).setDepth(201).setScale(1, 0).setScrollFactor(0);
-    const liveTx = this.scene.add.text(40, y, "● 속보", { fontFamily: '"Galmuri9", "Galmuri11", monospace', fontSize: "9px", color: "#ff6a7c" }).setOrigin(0.5).setDepth(202).setAlpha(0).setScrollFactor(0);
-    const tx = this.scene.add.text(96, y, `${title || "개표국 사건"}`, { fontFamily: '"Galmuri9", "Galmuri11", monospace', fontSize: "10px", color: "#ffffff" }).setOrigin(0, 0.5).setDepth(202).setAlpha(0).setScrollFactor(0);
+    const liveTx = this.scene.add.text(40, y, "● 속보", { fontFamily: '"DoHyeon", "Jua", sans-serif', fontSize: "9px", color: "#ff6a7c" }).setOrigin(0.5).setDepth(202).setAlpha(0).setScrollFactor(0);
+    const tx = this.scene.add.text(96, y, `${title || "개표국 사건"}`, { fontFamily: '"DoHyeon", "Jua", sans-serif', fontSize: "10px", color: "#ffffff" }).setOrigin(0, 0.5).setDepth(202).setAlpha(0).setScrollFactor(0);
     this.scene.tweens.add({ targets: [bar, live], scaleY: 1, duration: 150, ease: "Back.easeOut" });
     this.scene.tweens.add({ targets: [tx, liveTx], alpha: 1, duration: 200, delay: 90 });
     this._govGesture();
@@ -577,7 +569,7 @@ export class WorldView {
   _ciderMoment(p) {
     const cx = GAME_W / 2;
     // 큰 사이다 텍스트(금색, 팝)
-    const big = this.scene.add.text(cx, 262, "사이다!", { fontFamily: '"Galmuri14", "Galmuri11", monospace', fontSize: "26px", color: "#ffd34d" }).setOrigin(0.5).setDepth(210).setScale(0.4).setScrollFactor(0);
+    const big = this.scene.add.text(cx, 262, "사이다!", { fontFamily: '"Jua", "DoHyeon", sans-serif', fontSize: "26px", color: "#ffd34d" }).setOrigin(0.5).setDepth(210).setScale(0.4).setScrollFactor(0);
     big.setShadow(3, 3, "#b13e53", 0, true, true);
     this.scene.tweens.add({ targets: big, scale: 1, duration: 300, ease: "Back.easeOut" });
     this.scene.tweens.add({ targets: big, alpha: 0, y: 232, duration: 500, delay: 900, onComplete: () => big.destroy() });
@@ -611,8 +603,8 @@ export class WorldView {
     const accent = item.tone === "praise" ? "#8df0b0" : item.tone === "mock" ? "#ff9a8e" : "#9fd0e0";
     // 2줄 레이아웃 — 위: 📰 외신 · 매체명 / 아래: 헤드라인. 가독성↑
     const bar = this.scene.add.rectangle(GAME_W / 2, y, GAME_W, 42, col, 0.95).setDepth(200).setScale(1, 0).setScrollFactor(0);
-    const top = this.scene.add.text(12, y - 10, `외신 · ${item.outlet}`, { fontFamily: '"Galmuri9", "Galmuri11", monospace', fontSize: "9px", color: accent }).setOrigin(0, 0.5).setDepth(202).setAlpha(0).setScrollFactor(0);
-    const head = this.scene.add.text(12, y + 8, item.text, { fontFamily: '"Galmuri9", "Galmuri11", monospace', fontSize: "10px", color: "#ffffff", wordWrap: { width: GAME_W - 24 } }).setOrigin(0, 0.5).setDepth(202).setAlpha(0).setScrollFactor(0);
+    const top = this.scene.add.text(12, y - 10, `외신 · ${item.outlet}`, { fontFamily: '"DoHyeon", "Jua", sans-serif', fontSize: "9px", color: accent }).setOrigin(0, 0.5).setDepth(202).setAlpha(0).setScrollFactor(0);
+    const head = this.scene.add.text(12, y + 8, item.text, { fontFamily: '"DoHyeon", "Jua", sans-serif', fontSize: "10px", color: "#ffffff", wordWrap: { width: GAME_W - 24 } }).setOrigin(0, 0.5).setDepth(202).setAlpha(0).setScrollFactor(0);
     this._pressEls = [bar, top, head];
     this.scene.tweens.add({ targets: bar, scaleY: 1, duration: 140, ease: "Back.easeOut" });
     this.scene.tweens.add({ targets: [top, head], alpha: 1, duration: 200, delay: 80 });
@@ -684,15 +676,15 @@ export class WorldView {
     if (this._golden) return;
     const { x, y } = randomFloorPoint(1.5);
     const key = "decor/ballotbox";
-    const halo = this.scene.add.image(x, y, key).setDepth(4999).setTint(0xffe9a8).setAlpha(0.3).setScale(1.5);
+    const halo = this.scene.add.circle(x, y, 26, 0xffe9a8, 0.3).setDepth(4999).setScale(1.5);
     this._goldenHalo = halo;
     this._goldenHaloPulse = this.scene.tweens.add({ targets: halo, scale: 1.9, alpha: 0.1, yoyo: true, repeat: -1, duration: 850, ease: "Sine.easeInOut" });
 
-    const disc = this.scene.add.image(x, y, key).setDepth(5000).setTint(0xffd000).setInteractive({ useHandCursor: true });
+    const disc = this.scene.add.image(x, y, ...iconRef("res-votes")).setDepth(5000).setInteractive({ useHandCursor: true });
     this._golden = disc;
-    disc.setScale(0.3).setAlpha(0);
-    this.scene.tweens.add({ targets: disc, scale: 0.95, alpha: 1, duration: 280, ease: "Back.easeOut" });
-    this._goldenPulse = this.scene.tweens.add({ targets: disc, scale: 1.08, yoyo: true, repeat: -1, duration: 560, ease: "Sine.easeInOut", delay: 290 });
+    disc.setScale(0.2).setAlpha(0);
+    this.scene.tweens.add({ targets: disc, scale: 0.6, alpha: 1, duration: 280, ease: "Back.easeOut" });
+    this._goldenPulse = this.scene.tweens.add({ targets: disc, scale: 0.68, yoyo: true, repeat: -1, duration: 560, ease: "Sine.easeInOut", delay: 290 });
     disc.on("pointerdown", () => {
       if (!this._golden) return;
       const reward = this.gameState.collectGoldenBallot();
@@ -750,19 +742,20 @@ export class WorldView {
       const variant = staffIndex % variants;
       let worker = this._workers[id];
       if (!worker) {
-        const shadow = this.scene.add.rectangle(pos.x, pos.y + 1, 28, 6, 0x000000, 0.35).setDepth(workerDepth(pos.y) - 1);
-        const body = this.scene.add.sprite(pos.x, pos.y, "workers").setOrigin(0.5, 1).setScale(0).setDepth(workerDepth(pos.y));
-        body.play(`worker-type-${slot.facing}-${variant}`);
-        const badge = this.scene.add.image(pos.x + 12, pos.y - 46, `worker-rank-${rank.tier}`).setOrigin(0.5, 1).setScale(0).setDepth(workerDepth(pos.y) + 1);
+        const shadow = this.scene.add.rectangle(pos.x, pos.y + 1, 1, 1, 0x000000, 0).setDepth(workerDepth(pos.y) - 1); // 그림자는 스프라이트에 포함
+        const body = this.scene.add.sprite(pos.x, pos.y, workerSpriteKey(variant, 0)).setOrigin(0.5, 1).setScale(0).setDepth(workerDepth(pos.y));
+        body.setFlipX(slot.facing === "left");
+        body.play(`worker-type-${variant}`);
+        const badge = this.scene.add.text(pos.x + 14, pos.y - 54, rank.tier ? String(rank.tier) : "", { fontFamily: '"Jua", sans-serif', fontSize: "11px", color: "#4a2600", backgroundColor: "#ffc53d", padding: { x: 4, y: 1 } }).setOrigin(0.5, 1).setScale(0).setDepth(workerDepth(pos.y) + 1);
         worker = { facId, rank: rank.tier, body, badge, shadow };
         this._workers[id] = worker;
         this.scene.tweens.add({ targets: body, scaleX: WORKER_SCALE, scaleY: WORKER_SCALE, duration: 280, ease: "Back.easeOut" });
-        this.scene.tweens.add({ targets: badge, scaleX: WORKER_SCALE, scaleY: WORKER_SCALE, duration: 280, ease: "Back.easeOut" });
+        this.scene.tweens.add({ targets: badge, scaleX: 1, scaleY: 1, duration: 280, ease: "Back.easeOut" });
         this.scene.tweens.add({ targets: [body, badge], y: "-=2", yoyo: true, repeat: -1, duration: 1200, ease: "Sine.easeInOut" });
         this.effects.deskPop(pos.x, pos.y - 30);
       } else if (worker.rank !== rank.tier) {
         worker.rank = rank.tier;
-        worker.badge.setTexture(`worker-rank-${rank.tier}`);
+        worker.badge.setText(String(rank.tier));
         this.scene.tweens.add({ targets: worker.body, scaleX: WORKER_SCALE * 1.2, scaleY: WORKER_SCALE * 1.2, yoyo: true, duration: 180, ease: "Back.easeOut" });
         this.effects.float({ text: `★ ${rank.name} 승급!`, x: worker.body.x, y: worker.body.y - 56, color: "#ffd34d" });
       }
@@ -785,7 +778,7 @@ export class WorldView {
     const txt = this.scene.add.image(x, y, ...iconRef(def.icon)).setOrigin(0.5).setDepth(5001).setInteractive({ useHandCursor: true });
     this._item = txt;
     txt.setScale(0);
-    this.scene.tweens.add({ targets: txt, scale: 1, duration: 260, ease: "Back.easeOut" });
+    this.scene.tweens.add({ targets: txt, scale: 0.5, duration: 260, ease: "Back.easeOut" });
     this._itemBob = this.scene.tweens.add({ targets: txt, y: y - 10, yoyo: true, repeat: -1, duration: 900, ease: "Sine.easeInOut", delay: 270 });
     // 비서 Lv2 — 필드 아이템 자동 줍기
     if (this.gameState.autoAideLevel && this.gameState.autoAideLevel() >= 2) {
@@ -832,7 +825,7 @@ export class WorldView {
     const st = govStageFor(d);
     if (st !== this._govStage) {
       this._govStage = st;
-      this.gov.setTexture(`gov-${st}`);
+      this.gov.setTexture(govSpriteKey(st));
     }
     this.bigNum.setText(shortNumber(d.votes));
     const cps = this.gameState.cps ? this.gameState.cps() : 0;
@@ -858,6 +851,9 @@ export class WorldView {
 
   // 장착한 꾸미기 + 선택 캐릭터 시그니처를 국장 위 오버레이로 표시. 위치/스케일은 update에서 국장에 글루.
   _syncCosmetics(d) {
+    // TODO(카툰 스킨): 꾸미기 오버레이는 픽셀 텍스처라 벡터 국장 위에 얹지 않는다. 데이터·해금은 유지.
+    if (this._cosSprites) Object.values(this._cosSprites).forEach((spr) => spr?.setVisible(false));
+    return;
     const slots = ["hat", "face", "sig"];
     for (const slot of slots) {
       const id = slot === "sig"

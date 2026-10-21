@@ -46,14 +46,15 @@ describe("icon atlas", () => {
     }
   });
 
-  it("iconStyle maps frame coordinates at integer scale", () => {
-    const [size, x, y] = ICONS["res-votes"];
-    const sheet = ICON_SHEETS[size];
-    const css = iconStyle("res-votes", 2);
-    expect(css).toContain(`width:${size * 2}px`);
-    expect(css).toContain(`background-position:-${x * 2}px -${y * 2}px`);
-    expect(css).toContain(`background-size:${sheet.width * 2}px ${sheet.height * 2}px`);
-    expect(css).toContain("image-rendering:pixelated");
+  it("iconStyle maps frame coordinates as percentages so CSS can resize freely", () => {
+    const [cell, x, y] = ICONS["res-votes"];
+    const sheet = ICON_SHEETS[cell];
+    const cols = sheet.width / cell;
+    const rows = sheet.height / cell;
+    const css = iconStyle("res-votes", 48);
+    expect(css).toContain("width:48px;height:48px");
+    expect(css).toContain(`background-size:${cols * 100}% ${rows * 100}%`);
+    expect(css).toContain(`background-position:${(x / cell) / (cols - 1) * 100}% ${(y / cell) / (rows - 1) * 100}%`);
   });
 
   it("iconHtml renders a placeholder for unknown names instead of throwing", () => {

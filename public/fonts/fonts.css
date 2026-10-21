@@ -1,4 +1,6 @@
-/* 로컬 번들 폰트 — 오프라인/CDN 장애에도 픽셀 폰트 유지 (Galmuri: OFL, Press Start 2P: OFL) */
+/* 로컬 번들 폰트 — 카툰 UI: Jua(제목·숫자), Do Hyeon(본문) 둘 다 SIL OFL. 픽셀 폰트는 캔버스 레거시 텍스트용으로만 남김. */
+@font-face { font-family: "Jua"; src: url("/fonts/Jua.woff2") format("woff2"); font-display: swap; }
+@font-face { font-family: "DoHyeon"; src: url("/fonts/DoHyeon.woff2") format("woff2"); font-display: swap; }
 @font-face { font-family: "Galmuri9";  src: url("/fonts/Galmuri9.woff2") format("woff2");  font-display: swap; }
 @font-face { font-family: "Galmuri11"; src: url("/fonts/Galmuri11.woff2") format("woff2"); font-display: swap; }
 @font-face { font-family: "Galmuri14"; src: url("/fonts/Galmuri14.woff2") format("woff2"); font-display: swap; }

@@ -219,7 +219,7 @@ function renderLeaderboard(message, rows) {
     }).join("") || `<div class="gp-rank__msg">아직 기록이 없어요. 1등 하세요!</div>`;
   }
   ov.innerHTML = `<div class="gp-map">
-    <div class="gp-map__hd"><span>${iconHtml("ui-trophy", { scale: 1 })}도달 구역 랭킹</span><button class="gp-map__x" aria-label="닫기">✕</button></div>
+    <div class="gp-map__hd"><span>${iconHtml("ui-trophy", { size: 32 })}도달 구역 랭킹</span><button class="gp-map__x" aria-label="닫기">✕</button></div>
     <div class="gp-map__sub">내 닉네임: ${escapeHtml(getNick() || "(미설정)")} · 탭으로 변경</div>
     <div class="gp-map__list gp-rank__list">${body}</div>
     <div class="gp-map__foot">구역을 더 정복할수록 순위가 오릅니다</div>

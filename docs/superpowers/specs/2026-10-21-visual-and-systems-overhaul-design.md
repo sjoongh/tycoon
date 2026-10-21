@@ -219,6 +219,14 @@ P1 → P2 → P3 → P4 → P5 순서. P3와 P4는 독립이라 병렬 가능.
 - P4: `src/state/clock.js`(서버 보정 오프셋, Firestore serverTimestamp 왕복 1회), GameState의 Date.now() 41곳 치환, 시계 되감김(1시간) 시 출석·주간 보상 보류. `src/state/saveWinner.js` 승자 규칙을 클라우드·네이티브 미러 공통 적용. persist 이벤트 → 10초 디바운스 클라우드 저장, pagehide flush.
 - P5: tick은 `changed {economy:true}`로 emit. 패널은 같은 탭이면 버튼 상태·진행·용량 라인·카운트다운만 패치. 계측: 5초 동안 패널 innerHTML 쓰기 5회 → 0회(시설·직원·사건·감사 탭).
 
+## 6.6 스타일 전환 기록 (2026-10-21 오후)
+소유자가 픽셀 방향을 거부("다른 타이쿤처럼, 아직도 픽셀이잖아"). §4의 픽셀 규칙(16/32px, 1px 외곽선, 3x 배율)은 폐기하고 카툰 스킨으로 교체했다.
+- 아이콘: `scripts/art/build_icons_glossy.py` — 크림 스티커 타일 + 색 테두리 + 그라데이션·외곽선 글리프(game-icons SVG, CC BY 3.0). 96px 아틀라스, DOM은 퍼센트 배경 위치라 CSS에서 크기 자유.
+- UI: `dom-ui.css` 토큰 교체(Jua/Do Hyeon 폰트, 둥근 모서리, 그라데이션 버튼·탭, 소프트 섀도). 픽셀 전용 속성·steps() 애니메이션 제거. Phaser antialias on.
+- 월드: `scripts/art/build_world_vector.py` — Kenney Furniture Kit 아이소 렌더(CC0) 원본 합성, 방·공지판·투표지는 벡터 드로잉, 캐릭터는 Kenney Toon Characters(CC0; 국장=Male person 5단계 포즈/장식, 직원 4종 idle↔interact). 2x 소스 0.5배 표시.
+- 꾸미기 오버레이(픽셀)는 비표시. 레티나 선명도(캔버스 1x)는 후속.
+- 에셋 조사: `docs/superpowers/research/2026-10-21-cartoon-asset-sources.md`.
+
 ## 7. 빌더에게 맡기는 것
 - 아틀라스 패킹 도구 선택(free-tex-packer-core 등 npm 내)과 webp 품질 값.
 - 시설 티어 구간의 정확한 레벨 경계(§4.3 제안값은 가이드).

@@ -34,13 +34,14 @@ npm run preview
 아이콘과 월드 스프라이트는 전부 스크립트로 재생성한다(원본 팩은 `assets/art-src/_packs/`, gitignore).
 
 ```bash
-npm run art:icons            # game-icons.net SVG → public/art/icons32.png + src/assets/iconAtlas.js
-python3 scripts/art/build_world.py   # Kenney 아이소 가구 → public/art/world/*.png + src/world/worldAtlas.js
+npm run art:icons   # game-icons.net SVG → 스티커 스타일 카툰 아이콘 96px 아틀라스(public/art/icons96.png) + src/assets/iconAtlas.js
+npm run art:world   # Kenney 가구·툰 캐릭터 → 아이소 방·시설 티어·국장·직원 스프라이트(public/art/world) + src/world/worldAtlas.js
+npm run fonts:subset   # Jua·Do Hyeon(OFL) 서브셋 woff2
 ```
 
-- 규칙: 32px 아이콘(1x/2x 표시), 월드 3x 전역 배율, 1px 외곽선 `#2b1d2e`, Endesga 32 팔레트. 상세는 `docs/superpowers/specs/2026-10-21-visual-and-systems-overhaul-design.md`
-- 크레딧: `public/art/CREDITS.md` (game-icons.net CC BY 3.0, Kenney CC0, OGA office workers CC BY)
-- 필요 도구: ImageMagick(`magick`), Python 3 + Pillow
+- 스타일: 픽셀이 아니라 모바일 타이쿤(Idle Miner Tycoon류) 카툰. 둥근 패널·그라데이션 버튼은 CSS(`src/ui/dom-ui.css`), 월드는 2x 소스를 0.5배 표시. 에셋 조사는 `docs/superpowers/research/2026-10-21-cartoon-asset-sources.md`
+- 크레딧: `public/art/CREDITS.md` (game-icons.net CC BY 3.0, Kenney CC0, 폰트 OFL)
+- 원본 팩은 `assets/art-src/_packs/`(gitignore). 필요 도구: ImageMagick(`magick`), Python 3 + Pillow
 
 ## PWA와 배포
 

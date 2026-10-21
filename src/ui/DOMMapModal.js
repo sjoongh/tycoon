@@ -48,14 +48,14 @@ export class DOMMapModal {
     for (let a = 1; a <= maxNode; a++) {
       const th = eraTheme(a);
       if (th.key !== lastEra) {
-        nodes += `<div class="gp-map__era">${iconHtml(th.icon, { scale: 1 })}${th.name}</div>`;
+        nodes += `<div class="gp-map__era">${iconHtml(th.icon, { size: 32 })}${th.name}</div>`;
         lastEra = th.key;
       }
       const r = regionFor(a);
       const state = a < area ? "done" : a === area ? "cur" : "lock";
       const st = a < area ? "정복 ✓" : a === area ? `${pct}%` : "잠김";
       nodes += `<div class="gp-mapnode gp-mapnode--${state}">
-        <span class="gp-mapnode__ic">${a < area ? "✓" : a === area ? "▶" : iconHtml("ui-lock", { scale: 1 })}</span>
+        <span class="gp-mapnode__ic">${a < area ? "✓" : a === area ? "▶" : iconHtml("ui-lock", { size: 32 })}</span>
         <span class="gp-mapnode__body"><b>${a}구역 · ${r.name}</b><s>${r.desc}</s></span>
         <span class="gp-mapnode__st">${st}</span>
       </div>`;
@@ -100,12 +100,12 @@ export class DOMMapModal {
       .join("");
 
     this.root.innerHTML = `<div class="gp-map">
-      <div class="gp-map__hd"><span>${iconHtml("ui-map", { scale: 1 })}전국 개표 지도</span><button class="gp-map__x" aria-label="닫기">✕</button></div>
+      <div class="gp-map__hd"><span>${iconHtml("ui-map", { size: 32 })}전국 개표 지도</span><button class="gp-map__x" aria-label="닫기">✕</button></div>
       <div class="gp-map__sub">정복 ${done} · 현재 ${area}구역 · 누적 ${shortNumber(gs.data.votes)}표</div>
       <div class="gp-map__list">${nodes}
-        <div class="gp-map__era">${iconHtml("staff-analyst", { scale: 1 })}내 개표 기록</div>
+        <div class="gp-map__era">${iconHtml("staff-analyst", { size: 32 })}내 개표 기록</div>
         <div class="gp-stats">${statRows}</div>
-        <div class="gp-map__era">${iconHtml("ui-book", { scale: 1 })}사건 도감 <span class="gp-dex__count">${seenN}/${total}종</span></div>
+        <div class="gp-map__era">${iconHtml("ui-book", { size: 32 })}사건 도감 <span class="gp-dex__count">${seenN}/${total}종</span></div>
         <div class="gp-dex__bonus">${dexBonusLine}</div>
         <div class="gp-dex__tip">수집한 사건을 눌러 다시 읽어보세요</div>
         <div class="gp-dex">${dexCells}</div>

@@ -36,13 +36,13 @@ export class DOMSettings {
   _render() {
     const n = this.notifications;
     const bellRow = n && n.supported && n.supported() && n.granted()
-      ? `<div class="gp-set__row"><span>${iconHtml("ui-bell", { scale: 1 })}알림</span><button class="gp-btn gp-btn--sm" data-set="bell">${n.muted() ? "꺼짐" : "켜짐"}</button></div>`
+      ? `<div class="gp-set__row"><span>${iconHtml("ui-bell", { size: 32 })}알림</span><button class="gp-btn gp-btn--sm" data-set="bell">${n.muted() ? "꺼짐" : "켜짐"}</button></div>`
       : "";
     const cloudRow = cloudEnabled()
       ? `<div class="gp-set__row"><span>클라우드 저장</span><b class="gp-set__ok">자동 동기화 중</b></div>`
       : "";
     this.root.innerHTML = `<div class="gp-map gp-settings">
-      <div class="gp-map__hd"><span>${iconHtml("ui-gear", { scale: 1 })}설정</span><button class="gp-map__x" aria-label="닫기">✕</button></div>
+      <div class="gp-map__hd"><span>${iconHtml("ui-gear", { size: 32 })}설정</span><button class="gp-map__x" aria-label="닫기">✕</button></div>
       <div class="gp-map__list gp-set__list">
         <div class="gp-set__row"><span>소리</span><button class="gp-btn gp-btn--sm" data-set="mute">${this._muted ? "꺼짐" : "켜짐"}</button></div>
         ${bellRow}

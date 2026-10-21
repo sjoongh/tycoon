@@ -50,7 +50,7 @@ export class DOMBottomPanel {
       const b = document.createElement("button");
       b.className = "gp-tab";
       b.dataset.tab = id;
-      b.innerHTML = `<span class="gp-tab__ic" data-tabic="${id}" style="${iconStyle(tabIcon(id), 1)}"></span>${label}<span class="gp-tab__dot" data-dot="${id}" hidden></span>`;
+      b.innerHTML = `<span class="gp-tab__ic" data-tabic="${id}" style="${iconStyle(tabIcon(id), 34)}"></span>${label}<span class="gp-tab__dot" data-dot="${id}" hidden></span>`;
       b.addEventListener("click", () => this.gameState.setTab(id));
       tabsEl.appendChild(b);
     });
@@ -250,7 +250,7 @@ export class DOMBottomPanel {
     this.root.querySelectorAll(".gp-tab").forEach((el) => {
       const on = el.dataset.tab === tab;
       el.classList.toggle("gp-tab--active", on);
-      applyIcon(el.querySelector("[data-tabic]"), tabIcon(el.dataset.tab, on), 1);
+      applyIcon(el.querySelector("[data-tabic]"), tabIcon(el.dataset.tab, on), 34);
     });
     this._updateBadges(tab);
   }
@@ -376,7 +376,7 @@ export class DOMBottomPanel {
       : `<button class="gp-btn gp-btn--upgrade gp-btn--disabled" data-action="upgradeFac">잠김</button>`;
     this.panel.innerHTML = `
       <div class="gp-card">
-        <div class="gp-card__icon" style="${iconStyle(facilityIcon(sel), 2)}"></div>
+        <div class="gp-card__icon" style="${iconStyle(facilityIcon(sel), 64)}"></div>
         <div class="gp-card__body">
           <div class="gp-card__title">${f.name} Lv.${gs.level(sel)}</div>
           <div class="gp-card__sub">${unlocked ? `${shortNumber(cost)}표 · 해명 ${shortNumber(ex)}` : this._lockText(sel)}</div>
@@ -392,7 +392,7 @@ export class DOMBottomPanel {
       <div class="gp-facsel">${facilities.map((ff) => {
         const u = gs.isUnlocked(ff.id);
         // P1 fix: facility picker icon — use webp asset as background-image, color as fallback
-      return `<button class="gp-fac ${ff.id === sel ? "gp-fac--active" : ""} ${u ? "" : "gp-fac--locked"}" data-action="selectFac" data-id="${ff.id}"><span class="gp-fac__icon" style="${iconStyle(facilityIcon(ff.id), 1)}"></span><span class="gp-fac__role">${ff.role}</span><span class="gp-fac__lv">${u || gs.level(ff.id) > 0 ? `Lv.${gs.level(ff.id)}` : (gs.unlockReason(ff.id)?.area ? `${ff.unlock}구` : "잠김")}</span></button>`;
+      return `<button class="gp-fac ${ff.id === sel ? "gp-fac--active" : ""} ${u ? "" : "gp-fac--locked"}" data-action="selectFac" data-id="${ff.id}"><span class="gp-fac__icon" style="${iconStyle(facilityIcon(ff.id), 40)}"></span><span class="gp-fac__role">${ff.role}</span><span class="gp-fac__lv">${u || gs.level(ff.id) > 0 ? `Lv.${gs.level(ff.id)}` : (gs.unlockReason(ff.id)?.area ? `${ff.unlock}구` : "잠김")}</span></button>`;
       }).join("")}</div>
       <div class="gp-region"><span class="gp-region__progress">${gs.data.stage.area}구역 · ${shortNumber(gs.data.stage.progress)} / ${shortNumber(gs.data.stage.target)}${offlineCarry > 0 ? `<small class="gp-carry">미처리 개표 +${shortNumber(offlineCarry)}</small>` : ""}</span>${
         stageDone
@@ -468,7 +468,7 @@ export class DOMBottomPanel {
       const nextRank = [5, 10, 15, 20].find((level) => level > lv);
       // P0 fix: show 해명 cost in hire button (two-line pattern); add gp-btn--ready glow when affordable
       return `<div class="gp-staff${lightRarity}${deployed ? " gp-staff--deployed" : ""}" style="--rarity-color:${hex(rarityHex)}">
-        <div class="gp-staff__dot gp-staff__dot--r${rank.tier}"><i class="gp-ic" style="${iconStyle(staffIcon(s.id), 1)}"></i><span>${rank.tier || ""}</span></div>
+        <div class="gp-staff__dot gp-staff__dot--r${rank.tier}"><i class="gp-ic" style="${iconStyle(staffIcon(s.id), 36)}"></i><span>${rank.tier || ""}</span></div>
         <div class="gp-staff__body"><div class="gp-staff__name">${s.name}<span class="gp-staff__rar">${s.rarityName}</span></div><div class="gp-staff__sub">Lv.${lv} · ${rank.name}${nextRank ? ` · Lv.${nextRank} 승급` : " · 최고 직급"}</div><div class="gp-staff__sub">${skill} ${synLabel}</div></div>
         <button class="gp-btn gp-btn--sm gp-btn--upgrade ${can ? "gp-btn--ready" : "gp-btn--disabled"}" data-action="hire" data-id="${s.id}">${plan.levels > 0 ? `${shortNumber(plan.voteCost)}표` : blockLabel}<small>${this.buyQty !== 1 ? (this.buyQty === "max" ? (plan.levels > 0 ? `MAX +${plan.levels}` : "MAX") : `×${plan.levels || this.buyQty}`) : (plan.levels > 0 ? `${shortNumber(plan.explainCost)}해명` : (blockFac ? "시설 필요" : `Lv.${lv}`))}</small></button>
         <div class="gp-staff__field"><span>${staffDeploymentEffectText(s.id, lv)}</span>${deployButton}</div></div>`;
@@ -546,7 +546,7 @@ export class DOMBottomPanel {
       const effectLine = chainStatus?.effects?.length
         ? `<div class="gp-chainfx"><b>이번 런 효과</b>${chainStatus.effects.map((ending) => `<span>${ending.title} · ${ending.effectText.replace("이번 런 ", "")}</span>`).join("")}</div>`
         : "";
-      this.panel.innerHTML = `<div class="gp-paneltitle">${iconHtml("ui-clipboard", { scale: 1 })}사건 대응실 · 처리 ${gs.data.stats.totalEvents}건</div><div class="gp-card__sub">사건 대응으로 표·믿음을 얻으세요 · 보상 x${gs.eventRewardScale().toFixed(1)}</div>${btn}${chainLine}${effectLine}<div class="gp-dexline">${dexLine}</div><div class="gp-log">${log}</div>`;
+      this.panel.innerHTML = `<div class="gp-paneltitle">${iconHtml("ui-clipboard", { size: 32 })}사건 대응실 · 처리 ${gs.data.stats.totalEvents}건</div><div class="gp-card__sub">사건 대응으로 표·믿음을 얻으세요 · 보상 x${gs.eventRewardScale().toFixed(1)}</div>${btn}${chainLine}${effectLine}<div class="gp-dexline">${dexLine}</div><div class="gp-log">${log}</div>`;
       // transform 기반 쿨다운 스윕으로 레이아웃 재계산을 피한다.
       if (!ready && totalMs > 0) {
         const btnEl = this.panel.querySelector(".gp-btn--event");
@@ -656,7 +656,7 @@ export class DOMBottomPanel {
     // FIX P1: 📅 emoji replaced with unicode diamond to avoid Android WebView glyph fallback
     // 랭킹 버튼 — 클라우드(Firebase) 설정됐을 때만 노출(웹·앱 공통). 미설정 시 숨김.
     const rankBtn = cloudEnabled()
-      ? `<button class="gp-btn gp-btn--sm gp-rankbtn" data-action="openRank">${iconHtml("ui-trophy", { scale: 1 })}랭킹</button>` : "";
+      ? `<button class="gp-btn gp-btn--sm gp-rankbtn" data-action="openRank">${iconHtml("ui-trophy", { size: 32 })}랭킹</button>` : "";
     this.panel.innerHTML = `<div class="gp-paneltitle">운영 목표 · ${titleProgress}${rankBtn}</div>
       <div class="gp-goallist-wrap"><div class="gp-stafflist gp-goallist">
       ${dailyRow}
@@ -772,7 +772,7 @@ export class DOMBottomPanel {
 
     const medalSection = this._renderMedalSection();
 
-    this.panel.innerHTML = `<div class="gp-paneltitle">감사 재정비 · 인장 ${gs.data.prestige.seals} · ${iconHtml("ui-medal", { scale: 1 })}훈장 ${gs.data.prestige.medals} · 영구 x${fullMult.toFixed(2)}</div>
+    this.panel.innerHTML = `<div class="gp-paneltitle">감사 재정비 · 인장 ${gs.data.prestige.seals} · ${iconHtml("ui-medal", { size: 32 })}훈장 ${gs.data.prestige.medals} · 영구 x${fullMult.toFixed(2)}</div>
       ${this._renderCharacterCard()}
       ${this._renderGachaCard()}
       ${this._renderCosmeticCard()}
@@ -805,11 +805,11 @@ export class DOMBottomPanel {
     const eq = gs.equippedTitleDef();
     const eqLv = eq ? (gs.data.titles[eq.id] || 0) : 0;
     const eqLine = eq
-      ? `<span class="gp-gacha__eqname" style="color:${RARITY_COLOR[eq.rarity]}">${iconHtml(eq.icon, { scale: 1 })}${eq.name} Lv.${eqLv}</span> · ${eq.per}`
+      ? `<span class="gp-gacha__eqname" style="color:${RARITY_COLOR[eq.rarity]}">${iconHtml(eq.icon, { size: 32 })}${eq.name} Lv.${eqLv}</span> · ${eq.per}`
       : `<span class="gp-card__sub">아직 발령 없음 — 첫 뽑기로 칭호를 받으세요</span>`;
     // 보유 칭호 미니 칩(보유한 것만, 등급색)
     const chips = govTitles.filter((t) => (gs.data.titles[t.id] || 0) > 0)
-      .map((t) => `<span class="gp-gacha__chip" style="border-color:${RARITY_COLOR[t.rarity]};color:${RARITY_COLOR[t.rarity]}" title="${t.name} · ${t.per}">${iconHtml(t.icon, { scale: 1 })}${(gs.data.titles[t.id] || 0)}</span>`)
+      .map((t) => `<span class="gp-gacha__chip" style="border-color:${RARITY_COLOR[t.rarity]};color:${RARITY_COLOR[t.rarity]}" title="${t.name} · ${t.per}">${iconHtml(t.icon, { size: 32 })}${(gs.data.titles[t.id] || 0)}</span>`)
       .join("");
     // 확률 표기(weight 합산) + 소프트 천장 카운터 — 투명한 뽑기
     const wSum = (r) => govTitles.filter((t) => t.rarity === r).reduce((a, t) => a + (t.weight || 1), 0);
@@ -818,7 +818,7 @@ export class DOMBottomPanel {
     const pityLeft = gs.gachaPityLeft ? gs.gachaPityLeft() : null;
     const oddsLine = `<div class="gp-gacha__odds">일반 ${pct("common")}% · 고급 ${pct("uncommon")}% · 희귀 ${pct("rare")}%${pityLeft !== null ? ` · 희귀 확정까지 ${pityLeft}회` : ""}</div>`;
     return `<div class="gp-gacha">
-      <div class="gp-gacha__hd">${iconHtml("ui-dice", { scale: 1 })}인사 발령 뽑기 <span class="gp-gacha__count">보유 ${owned}/${govTitles.length}</span></div>
+      <div class="gp-gacha__hd">${iconHtml("ui-dice", { size: 32 })}인사 발령 뽑기 <span class="gp-gacha__count">보유 ${owned}/${govTitles.length}</span></div>
       <div class="gp-gacha__eq">${eqLine}</div>
       ${chips ? `<div class="gp-gacha__chips">${chips}</div>` : ""}
       ${oddsLine}
@@ -836,13 +836,13 @@ export class DOMBottomPanel {
     const opts = characters.map((c) => {
       const on = c.id === cur;
       return `<button class="gp-char__opt ${on ? "gp-char__opt--on" : ""}" data-action="selectChar" data-id="${c.id}">
-        <span class="gp-char__ic">${iconHtml(c.icon, { scale: 2 })}</span>
+        <span class="gp-char__ic">${iconHtml(c.icon, { size: 72 })}</span>
         <span class="gp-char__name">${c.name}</span>
         <span class="gp-char__trait">${c.traitText}</span>
       </button>`;
     }).join("");
     return `<div class="gp-gacha gp-charcard">
-      <div class="gp-gacha__hd">${iconHtml("ui-people", { scale: 1 })}국장 캐릭터</div>
+      <div class="gp-gacha__hd">${iconHtml("ui-people", { size: 32 })}국장 캐릭터</div>
       <div class="gp-char__grid">${opts}</div>
     </div>`;
   }
@@ -856,14 +856,14 @@ export class DOMBottomPanel {
       const eq = gs.equippedCosmetic(slot);
       const chips = cosmetics.filter((c) => c.slot === slot).map((c) => {
         const has = gs.ownsCosmetic(c.id);
-        if (!has) return `<span class="gp-cos__chip gp-cos__chip--lock" title="${c.name} · ${c.hint}">${iconHtml("ui-lock", { scale: 1 })}</span>`;
+        if (!has) return `<span class="gp-cos__chip gp-cos__chip--lock" title="${c.name} · ${c.hint}">${iconHtml("ui-lock", { size: 32 })}</span>`;
         const on = eq === c.id;
-        return `<button class="gp-cos__chip ${on ? "gp-cos__chip--on" : ""}" data-action="equipCos" data-id="${c.id}" title="${c.name}${on ? " (장착중·탭하면 벗기)" : ""}">${iconHtml(c.icon, { scale: 1 })}</button>`;
+        return `<button class="gp-cos__chip ${on ? "gp-cos__chip--on" : ""}" data-action="equipCos" data-id="${c.id}" title="${c.name}${on ? " (장착중·탭하면 벗기)" : ""}">${iconHtml(c.icon, { size: 32 })}</button>`;
       }).join("");
       return `<div class="gp-cos__row"><span class="gp-cos__slot">${slotLabel[slot] || slot}</span><div class="gp-cos__chips">${chips || "—"}</div></div>`;
     }).join("");
     return `<div class="gp-gacha gp-cos">
-      <div class="gp-gacha__hd">${iconHtml("cos-tophat", { scale: 1 })}국장 꾸미기 <span class="gp-gacha__count">보유 ${owned}/${cosmetics.length}</span></div>
+      <div class="gp-gacha__hd">${iconHtml("cos-tophat", { size: 32 })}국장 꾸미기 <span class="gp-gacha__count">보유 ${owned}/${cosmetics.length}</span></div>
       ${rows}
       <div class="gp-cos__tip">진행하면 더 해금돼요 · 탭해서 장착/해제</div>
     </div>`;
@@ -874,7 +874,7 @@ export class DOMBottomPanel {
     const gs = this.gameState;
     const unlocked = (gs.data.prestige.totalMedals || 0) > 0 || (gs.data.prestige.medals || 0) > 0;
     if (!unlocked) {
-      return `<div class="gp-goal__section" style="margin-top:10px">${iconHtml("ui-medal", { scale: 1 })}훈장 전당 · 2차</div>
+      return `<div class="gp-goal__section" style="margin-top:10px">${iconHtml("ui-medal", { size: 32 })}훈장 전당 · 2차</div>
         <div class="gp-card__sub" style="padding:2px 4px 0;opacity:.78">새 구역을 처음 돌파하면 <b>훈장</b>을 얻어 영구 메타 강화를 해금합니다.</div>`;
     }
     const medalFirst = medalUpgrades.find((u) => {
@@ -906,7 +906,7 @@ export class DOMBottomPanel {
       <button class="gp-btn gp-btn--sm gp-btn--gold ${selCanBuy ? "gp-btn--ready" : "gp-btn--disabled"}" data-action="buyPrestige" data-id="${sel}">구매</button>
     </div>` : "";
 
-    return `<div class="gp-goal__section" style="margin-top:10px">${iconHtml("ui-medal", { scale: 1 })}훈장 전당 · 2차 · 보유 ${gs.data.prestige.medals}</div>
+    return `<div class="gp-goal__section" style="margin-top:10px">${iconHtml("ui-medal", { size: 32 })}훈장 전당 · 2차 · 보유 ${gs.data.prestige.medals}</div>
       <div class="gp-sealgrid">${grid}</div>
       ${detail}`;
   }

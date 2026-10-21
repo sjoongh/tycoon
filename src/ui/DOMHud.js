@@ -9,9 +9,9 @@ export class DOMHud {
     this.root.className = "gp-hud";
     this.root.innerHTML = `
       <div class="gp-hud__row">
-        <div class="gp-chip gp-chip--votes"><span class="gp-chip__ic" style="${iconStyle("res-votes", 1)}"></span><span><div class="gp-chip__label">표</div><div class="gp-chip__val" data-k="votes">0</div></span></div>
-        <div class="gp-chip gp-chip--explain"><span class="gp-chip__ic" style="${iconStyle("res-explain", 1)}"></span><span><div class="gp-chip__label">해명</div><div class="gp-chip__val" data-k="explain">0</div></span></div>
-        <div class="gp-chip gp-chip--trust"><span class="gp-chip__ic" style="${iconStyle("res-trust", 1)}"></span><span><div class="gp-chip__label">믿음</div><div class="gp-chip__val" data-k="trust">0%</div></span></div>
+        <div class="gp-chip gp-chip--votes"><span class="gp-chip__ic" style="${iconStyle("res-votes", 36)}"></span><span><div class="gp-chip__label">표</div><div class="gp-chip__val" data-k="votes">0</div></span></div>
+        <div class="gp-chip gp-chip--explain"><span class="gp-chip__ic" style="${iconStyle("res-explain", 36)}"></span><span><div class="gp-chip__label">해명</div><div class="gp-chip__val" data-k="explain">0</div></span></div>
+        <div class="gp-chip gp-chip--trust"><span class="gp-chip__ic" style="${iconStyle("res-trust", 36)}"></span><span><div class="gp-chip__label">믿음</div><div class="gp-chip__val" data-k="trust">0%</div></span></div>
       </div>
       <div class="gp-progress"><div class="gp-progress__fill" data-k="progress"></div></div>
       <div class="gp-stage" data-k="stage"></div>
@@ -54,7 +54,7 @@ export class DOMHud {
     this._muteBtn = document.createElement("button");
     this._muteBtn.className = "gp-mute";
     this._muteBtn.setAttribute("aria-label", "설정");
-    this._muteBtn.innerHTML = iconHtml("ui-gear", { scale: 1 });
+    this._muteBtn.innerHTML = iconHtml("ui-gear", { size: 32 });
     this._muteBtn.addEventListener("click", () => document.dispatchEvent(new CustomEvent("gp:open-settings")));
 
     // 긴급 개표는 독립 버프가 아니라 피버 마지막 4초의 1회 피니셔다.

@@ -5,8 +5,8 @@ body {
   height: 100dvh; /* 폰 주소창 반영 동적 뷰포트 — 상하 잘림 방지 */
   margin: 0;
   background:
-    radial-gradient(circle at 50% 0%, #2a2f55, transparent 24rem),
-    linear-gradient(180deg, #14121c 0%, #0a0a12 100%);
+    radial-gradient(circle at 50% 0%, #3a4a8a, transparent 24rem),
+    linear-gradient(180deg, #1b2244 0%, #0f1328 100%);
   overflow: hidden;
   /* 탭 중심 모바일 게임 최적화 */
   touch-action: manipulation;        /* 더블탭 줌·300ms 탭 지연 제거(연타 즉각 반응) */
@@ -34,10 +34,8 @@ body {
   height: min(100dvh, calc(100dvw * 844 / 390));
   overflow: hidden;
   box-shadow: 0 0 0 3px #000, 0 0 40px rgba(40, 50, 90, 0.4);
-  image-rendering: pixelated;
 }
 
 canvas {
   display: block;
-  image-rendering: pixelated;
 }

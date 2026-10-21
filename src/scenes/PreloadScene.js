@@ -2,7 +2,7 @@ import Phaser from "phaser";
 import { generatePlaceholders } from "../textures/devPlaceholders.js";
 import { buildGovTextures, buildPropTextures, buildWorkerTexture, buildCosmeticTextures } from "../world/dotChar.js";
 import { loadIconSheets, registerIconFrames } from "../assets/iconTextures.js";
-import { WORLD_ATLAS, facilitySpriteKey } from "../world/worldAtlas.js";
+import { WORLD_ATLAS, facilitySpriteKey, govSpriteKey, workerSpriteKey } from "../world/worldAtlas.js";
 
 export class PreloadScene extends Phaser.Scene {
   constructor() {
@@ -13,9 +13,9 @@ export class PreloadScene extends Phaser.Scene {
     // 로딩 스크린(진행바) — 무거운 초기 에셋 로드 동안 검은화면/탭유실 방지
     const W = 390;
     const H = 844;
-    this.add.rectangle(W / 2, H / 2, W, H, 0x2b2420);
+    this.add.rectangle(W / 2, H / 2, W, H, 0x1b2244);
     this.add.text(W / 2, H / 2 - 46, "믿어주세요 개표국", {
-      fontFamily: "system-ui, sans-serif", fontSize: "22px", fontStyle: "bold", color: "#ffe1a6",
+      fontFamily: '"Jua", system-ui, sans-serif', fontSize: "24px", color: "#ffe1a6",
     }).setOrigin(0.5);
     const pct = this.add.text(W / 2, H / 2 + 40, "0%", {
       fontFamily: "system-ui, sans-serif", fontSize: "13px", color: "#c9b9a8",
@@ -36,19 +36,21 @@ export class PreloadScene extends Phaser.Scene {
         this.load.image(facilitySpriteKey(id, t), `/art/world/fac-${id}-t${t}.png`);
       }
     }
-    this.load.spritesheet("workers", "/art/world/workers.png", { frameWidth: WORLD_ATLAS.workers.frame, frameHeight: WORLD_ATLAS.workers.frame });
+    for (let g = 1; g <= WORLD_ATLAS.gov.length; g += 1) this.load.image(govSpriteKey(g), `/art/world/gov-${g}.png`);
+    for (let v = 0; v < WORLD_ATLAS.workers.variants; v += 1) {
+      for (let f = 0; f < WORLD_ATLAS.workers.frames; f += 1) this.load.image(workerSpriteKey(v, f), `/art/world/worker-${v}-${f}.png`);
+    }
+    this.load.image("world/ballot", "/art/world/ballot.png");
   }
 
   create() {
     registerIconFrames(this);
-    // 직원 애니메이션 — 변형(머리색·셔츠)별 idle/typing-right/typing-left (OGA 시트 행 0/4/5)
-    const { cols, rowsPerVariant, variants } = WORLD_ATLAS.workers;
-    const row = (v, r) => Array.from({ length: cols }, (_, c) => (v * rowsPerVariant + r) * cols + c);
-    for (let v = 0; v < variants; v += 1) {
-      if (!this.anims.exists(`worker-idle-${v}`)) this.anims.create({ key: `worker-idle-${v}`, frames: this.anims.generateFrameNumbers("workers", { frames: [row(v, 0)[0]] }), frameRate: 1, repeat: -1 });
-      if (!this.anims.exists(`worker-walk-${v}`)) this.anims.create({ key: `worker-walk-${v}`, frames: this.anims.generateFrameNumbers("workers", { frames: row(v, 0) }), frameRate: 6, repeat: -1 });
-      if (!this.anims.exists(`worker-type-right-${v}`)) this.anims.create({ key: `worker-type-right-${v}`, frames: this.anims.generateFrameNumbers("workers", { frames: row(v, 4) }), frameRate: 6, repeat: -1 });
-      if (!this.anims.exists(`worker-type-left-${v}`)) this.anims.create({ key: `worker-type-left-${v}`, frames: this.anims.generateFrameNumbers("workers", { frames: row(v, 5) }), frameRate: 6, repeat: -1 });
+    // 직원 타이핑 루프(2프레임) — 변형별
+    for (let v = 0; v < WORLD_ATLAS.workers.variants; v += 1) {
+      const key = `worker-type-${v}`;
+      if (!this.anims.exists(key)) {
+        this.anims.create({ key, frames: Array.from({ length: WORLD_ATLAS.workers.frames }, (_, f) => ({ key: workerSpriteKey(v, f) })), frameRate: 3, repeat: -1 });
+      }
     }
     generatePlaceholders(this); // ballot 폴백 등 안전망(존재하면 건너뜀)
     buildGovTextures(this); // 도트 국장 4단계 텍스처(gov-1..4)

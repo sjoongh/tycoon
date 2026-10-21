@@ -28,17 +28,19 @@ const codepoints = [...new Set([...sourceText].map((char) => char.codePointAt(0)
   .sort((a, b) => a - b);
 const subsetText = codepoints.map((codepoint) => String.fromCodePoint(codepoint)).join("");
 
-for (const size of [9, 14]) {
-  const source = join(sourceRoot, `Galmuri${size}.full.woff2`);
-  const output = join(outputRoot, `Galmuri${size}.woff2`);
-  const subset = await subsetFont(readFileSync(source), subsetText, {
+// 카툰 UI 폰트(Jua·Do Hyeon, OFL) — 게임 문구에 쓰인 글자만 남긴다. 숫자·기호는 항상 포함.
+const ALWAYS = "0123456789.,%+-×/:!?·★▲▼▶◆◇✓✕≥≤~()[]";
+for (const family of ["Jua", "DoHyeon"]) {
+  const source = join(sourceRoot, `${family}.full.ttf`);
+  const output = join(outputRoot, `${family}.woff2`);
+  const subset = await subsetFont(readFileSync(source), subsetText + ALWAYS, {
     targetFormat: "woff2",
     preserveNameIds: [0, 1, 2, 3, 4, 5, 6, 13, 14],
   });
   writeFileSync(output, subset);
   const before = statSync(source).size;
   const after = statSync(output).size;
-  if (after >= before) throw new Error(`Galmuri${size} subset did not shrink (${before} -> ${after})`);
+  if (after >= before) throw new Error(`${family} subset did not shrink (${before} -> ${after})`);
   console.log(`${relative(repoRoot, output)}: ${before} -> ${after} bytes`);
 }
 console.log(`Static UI coverage: ${codepoints.length} codepoints from ${files.length} source files`);
