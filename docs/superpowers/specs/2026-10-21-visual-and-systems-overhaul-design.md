@@ -216,6 +216,8 @@ P1 → P2 → P3 → P4 → P5 순서. P3와 P4는 독립이라 병렬 가능.
 - 보스 실패·건너뛰기 페널티는 해명 비용 대신 적체(용량 30초분, 하한 50). 사건 주기 45초는 유지(밸런스 시뮬이 45초 주기를 전제).
 - 밸런스 시뮬(`npm run test:balance`): 첫 감사 644초(목표 480~720), 반복 423·457초(목표 300~480), 깊은 런 11구역 1398초(기준선 1395초). 난이도 상승은 구역 7 이후 지수 1.5로만 반영.
 - 세이브 v10: `backlog` 추가. v9 로드 테스트 통과.
+- P4: `src/state/clock.js`(서버 보정 오프셋, Firestore serverTimestamp 왕복 1회), GameState의 Date.now() 41곳 치환, 시계 되감김(1시간) 시 출석·주간 보상 보류. `src/state/saveWinner.js` 승자 규칙을 클라우드·네이티브 미러 공통 적용. persist 이벤트 → 10초 디바운스 클라우드 저장, pagehide flush.
+- P5: tick은 `changed {economy:true}`로 emit. 패널은 같은 탭이면 버튼 상태·진행·용량 라인·카운트다운만 패치. 계측: 5초 동안 패널 innerHTML 쓰기 5회 → 0회(시설·직원·사건·감사 탭).
 
 ## 7. 빌더에게 맡기는 것
 - 아틀라스 패킹 도구 선택(free-tex-packer-core 등 npm 내)과 webp 품질 값.

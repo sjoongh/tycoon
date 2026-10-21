@@ -1183,7 +1183,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     this._tickAutoAide();
     this.reduceDays();
     this.checkProgression();
-    this.emit("changed");
+    this.emit("changed", { economy: true }); // 매초 숫자만 바뀜 — 패널은 부분 갱신, 구조 변경은 payload 없이 emit
   }
 
   // 사건 자동 대응(비서 Lv1) — 사건 준비 후 8초 유예(수동 사이다 노림 기회) 뒤 안전 선택 자동 처리.

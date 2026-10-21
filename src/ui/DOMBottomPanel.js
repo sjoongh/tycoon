@@ -62,7 +62,8 @@ export class DOMBottomPanel {
     this._refreshTimer = null;
     this._refreshFrame = null;
     this._refreshPending = false;
-    this._refresh = () => this._scheduleRefresh();
+    this._economyOnly = true; // 보류 중인 변경이 전부 매초 숫자 변경(economy)인지
+    this._refresh = (payload) => this._scheduleRefresh(payload);
     this._onVisibility = () => {
       if (document.visibilityState === "visible" && this._refreshPending) this.refresh();
     };
@@ -129,13 +130,15 @@ export class DOMBottomPanel {
 
   // 연타의 첫 상태 변경은 즉시 보여주고, 이어지는 변경만 100ms 창으로 합친다.
   // 패널 버튼이 직접 refresh()를 호출하면 예약 렌더를 취소해 이중 갱신을 막는다.
-  _scheduleRefresh() {
+  _scheduleRefresh(payload) {
     const now = nowMs();
     const idle = now - this._lastChangedAt >= PANEL_REFRESH_BUDGET_MS;
     this._lastChangedAt = now;
+    if (!payload?.economy) this._economyOnly = false;
     if (idle) {
       this._cancelScheduledRefresh();
-      this._renderNow();
+      this._renderNow(this._economyOnly);
+      this._economyOnly = true;
       return;
     }
     if (this._refreshPending) return;
@@ -148,7 +151,8 @@ export class DOMBottomPanel {
       this._refreshFrame = requestAnimationFrame(() => {
         this._refreshFrame = null;
         this._refreshPending = false;
-        this._renderNow();
+        this._renderNow(this._economyOnly);
+        this._economyOnly = true;
       });
     }, remaining);
   }
@@ -209,12 +213,23 @@ export class DOMBottomPanel {
   refresh() {
     this._cancelScheduledRefresh();
     this._lastChangedAt = -Infinity;
-    this._renderNow();
+    this._economyOnly = true;
+    this._renderNow(false);
   }
 
-  _renderNow() {
+  // economyOnly=true면(매초 틱) 같은 탭이 이미 그려져 있을 때 숫자·버튼 상태만 패치하고 innerHTML을 건드리지 않는다.
+  _renderNow(economyOnly = false) {
     this._lastRenderAt = nowMs();
     const tab = this.gameState.data.activeTab || "facilities";
+    if (economyOnly && this._renderedTab === tab && tab !== "goals") {
+      const patched = ({
+        facilities: () => this._patchFacilities(),
+        crew: () => this._patchCrew(),
+        events: () => this._patchEvents(),
+        prestige: () => true,
+      }[tab] || (() => false))();
+      if (patched) { this._updateBadges(tab); return; }
+    }
     const prevScroll = this.panel.querySelector(".gp-stafflist")?.scrollTop || 0;
     const goalsSignature = tab === "goals" ? this._goalsStructureSignature() : null;
     if (tab === "goals" && this._renderedTab === "goals" && goalsSignature === this._goalsSignature) {
@@ -259,6 +274,80 @@ export class DOMBottomPanel {
     ).join("")}</div>`;
   }
 
+  // ── 매초 부분 갱신(innerHTML 없음) ──
+  _setBtnState(btn, ready) {
+    if (!btn) return;
+    btn.classList.toggle("gp-btn--ready", ready);
+    btn.classList.toggle("gp-btn--disabled", !ready);
+  }
+
+  _patchFacilities() {
+    const gs = this.gameState;
+    const sel = gs.data.selected;
+    const unlocked = gs.isUnlocked(sel);
+    const stageDone = gs.data.stage.progress >= gs.data.stage.target;
+    const sig = `${sel}|${unlocked}|${stageDone}|${gs.bossActive?.() || false}|${gs.bossRequired?.() || false}|${this.buyQty}`;
+    if (sig !== this._facSignature) return false; // 구조가 바뀌면 전체 렌더
+    if (unlocked) {
+      const plan = gs.facilityBulkPlan(sel, this.buyQty);
+      const canBuy = plan.levels > 0 && gs.data.votes >= plan.voteCost && gs.data.explain >= plan.explainCost;
+      const btn = this.panel.querySelector('[data-action="upgradeFac"]');
+      this._setBtnState(btn, canBuy);
+      const small = btn?.querySelector("small");
+      const qtyTag = this.buyQty === "max" ? (plan.levels > 0 ? `+${plan.levels}Lv` : "MAX") : `×${plan.levels || this.buyQty}`;
+      const text = `${plan.levels > 0 ? `${shortNumber(plan.voteCost)}표` : "부족"}${this.buyQty !== 1 ? ` · ${qtyTag}` : ""}`;
+      if (small && small.textContent !== text) small.textContent = text;
+    }
+    const prog = this.panel.querySelector(".gp-region__progress");
+    if (prog) {
+      const offlineCarry = Math.max(0, Number(gs.data.offlineCarryVotes) || 0);
+      const html = `${gs.data.stage.area}구역 · ${shortNumber(gs.data.stage.progress)} / ${shortNumber(gs.data.stage.target)}${offlineCarry > 0 ? `<small class="gp-carry">미처리 개표 +${shortNumber(offlineCarry)}</small>` : ""}`;
+      if (prog.innerHTML !== html) prog.innerHTML = html;
+    }
+    const frac = this.panel.querySelector(".gp-stage-frac");
+    if (frac) {
+      const text = `${Math.floor((gs.data.stage.progress / gs.data.stage.target) * 100)}%`;
+      if (frac.textContent !== text) frac.textContent = text;
+    }
+    const cap = this.panel.querySelector(".gp-capline");
+    if (cap) {
+      const tmp = document.createElement("div");
+      tmp.innerHTML = this._capacityLine();
+      const next = tmp.firstElementChild;
+      if (next && next.outerHTML !== cap.outerHTML) cap.replaceWith(next);
+    }
+    return true;
+  }
+
+  _patchCrew() {
+    const gs = this.gameState;
+    const slotsFull = gs.staffSlots().length >= STAFF_SLOT_LIMIT;
+    const sig = `${this.buyQty}|${slotsFull}|${gs.staffSlots().join(",")}|${staffDefinitions.map((s) => gs.staffLevel(s.id)).join(",")}`;
+    if (sig !== this._crewSignature) return false;
+    for (const s of staffDefinitions) {
+      const btn = this.panel.querySelector(`[data-action="hire"][data-id="${s.id}"]`);
+      if (!btn) continue;
+      const plan = gs.staffBulkPlan(s.id, this.buyQty);
+      const can = plan.levels > 0 && gs.data.votes >= plan.voteCost && gs.data.explain >= plan.explainCost;
+      this._setBtnState(btn, can);
+    }
+    return true;
+  }
+
+  _patchEvents() {
+    const gs = this.gameState;
+    if (this.currentEvent) return true; // 사건 카드가 떠 있으면 매초 바뀌는 숫자가 없다
+    const ready = gs.eventReady();
+    if (ready !== this._eventsReadyRendered) return false; // 준비 상태 전환은 전체 렌더
+    if (!ready) {
+      const btn = this.panel.querySelector(".gp-btn--event");
+      const sec = Math.ceil((gs.eventCooldownRemainingMs ? gs.eventCooldownRemainingMs() : 0) / 1000);
+      const text = `다음 사건까지 ${sec}초`;
+      if (btn && btn.textContent !== text) btn.textContent = text;
+    }
+    return true;
+  }
+
   _renderFacilities() {
     const gs = this.gameState;
     const sel = gs.facility(gs.data.selected) ? gs.data.selected : "desk";
@@ -270,6 +359,7 @@ export class DOMBottomPanel {
     const offlineCarry = Math.max(0, Number(gs.data.offlineCarryVotes) || 0);
     const bossActive = gs.bossActive?.() || false;
     const bossRequired = gs.bossRequired?.() || false;
+    this._facSignature = `${sel}|${unlocked}|${stageDone}|${bossActive}|${bossRequired}|${this.buyQty}`;
     const stageAction = bossActive
       ? `<button class="gp-btn gp-btn--sm gp-btn--disabled" aria-disabled="true">검증 진행 중</button>`
       : bossRequired
@@ -347,6 +437,7 @@ export class DOMBottomPanel {
 
   _renderCrew() {
     const gs = this.gameState;
+    this._crewSignature = `${this.buyQty}|${gs.staffSlots().length >= STAFF_SLOT_LIMIT}|${gs.staffSlots().join(",")}|${staffDefinitions.map((s) => gs.staffLevel(s.id)).join(",")}`;
     // P2 fix: detect light-luminance rarity colors for badge contrast swap
     const isLightColor = (hex6) => {
       const r = (hex6 >> 16) & 0xff, g = (hex6 >> 8) & 0xff, b = hex6 & 0xff;
@@ -430,6 +521,7 @@ export class DOMBottomPanel {
     } else {
       const log = (gs.data.log || []).slice(0, 3).map((l) => `<div class="gp-logline">${l}</div>`).join("");
       const ready = gs.eventReady();
+      this._eventsReadyRendered = ready;
       const chainStatus = gs.eventChainStatus?.();
       const remainMs = gs.eventCooldownRemainingMs ? gs.eventCooldownRemainingMs() : 0;
       const totalMs = gs.eventCooldownTotalMs ? gs.eventCooldownTotalMs() : remainMs;

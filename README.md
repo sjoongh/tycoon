@@ -19,14 +19,28 @@ npm run preview
 ## 게임 시스템
 
 - 표·해명·믿음 3자원과 탭 콤보, 시설 자동 생산, 오프라인 정산
-- 6개 시설의 레벨·해금·시너지와 t1~t5 픽셀 외형 승급
-- 6명 직원의 기존 상시 효과, 3개 현장 배치 슬롯, 역할별 배치 보너스
+- 6개 시설의 레벨·구역/선행 시설 해금·시너지와 t1~t5 아이소 스프라이트 승급
+- 유입(intake) vs 처리 용량(capacity): 분류·기록·전산과 운반·전산 직원이 용량을 올리고, 초과 유입은 적체로 쌓여 믿음을 깎는다
+- 6명 직원의 기존 상시 효과, 담당 시설 레벨이 직원 레벨 상한, 3개 현장 배치 슬롯, 역할별 배치 보너스
 - 직원 Lv.5/10/15/20 직급 승진과 필드·카드 외형 변화
 - 일반 사건, 3단계 연쇄 사건 3종과 경로별 특별 결말 9종
 - 3구역 주기 체크포인트 보스, 감사 런 작전, 계열별 개표 피버·피니셔
 - 감사 인장·훈장 영구 성장과 첫 감사 8~12분, 반복 감사 5~8분 목표 곡선
 - 목표·업적·도감·출석·주간 목표·칭호·캐릭터·꾸미기·랭킹
-- 저장 v9, 구버전 진행률 보존 마이그레이션, 클라우드 저장
+- 저장 v10, 구버전 진행률 보존 마이그레이션, 클라우드 저장(서버 시계 보정·최신/누적표 승자 규칙·10초 디바운스)
+
+## 아트 파이프라인
+
+아이콘과 월드 스프라이트는 전부 스크립트로 재생성한다(원본 팩은 `assets/art-src/_packs/`, gitignore).
+
+```bash
+npm run art:icons            # game-icons.net SVG → public/art/icons32.png + src/assets/iconAtlas.js
+python3 scripts/art/build_world.py   # Kenney 아이소 가구 → public/art/world/*.png + src/world/worldAtlas.js
+```
+
+- 규칙: 32px 아이콘(1x/2x 표시), 월드 3x 전역 배율, 1px 외곽선 `#2b1d2e`, Endesga 32 팔레트. 상세는 `docs/superpowers/specs/2026-10-21-visual-and-systems-overhaul-design.md`
+- 크레딧: `public/art/CREDITS.md` (game-icons.net CC BY 3.0, Kenney CC0, OGA office workers CC BY)
+- 필요 도구: ImageMagick(`magick`), Python 3 + Pillow
 
 ## PWA와 배포
 
