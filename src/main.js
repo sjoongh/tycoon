@@ -18,6 +18,7 @@ import { Notifications } from "./notifications.js";
 import { initNative } from "./native.js";
 import { initCloud, openLeaderboard, saveCloud, submitScore, logEvt } from "./cloud.js";
 import { mirrorNativeSave, restoreNativeSave, seedLocalStorageFromDurableSave } from "./state/persistence.js";
+import { createDebounced } from "./state/saveWinner.js";
 
 // Android 동기 슬롯이 더 최신이면 GameState가 localStorage를 읽기 전에 복구한다.
 seedLocalStorageFromDurableSave();
@@ -91,6 +92,10 @@ document.addEventListener("visibilitychange", () => { if (document.visibilitySta
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") { try { saveCloud(); } catch {} } });
 window.addEventListener("pagehide", () => { try { saveCloud(); } catch {} });
 setInterval(() => { try { saveCloud(); } catch {} }, 5 * 60 * 1000);
+// 구매·감사·구역 완료 등 즉시 저장(persist)이 일어나면 10초 디바운스로 클라우드에도 올린다
+const cloudSync = createDebounced(() => { try { saveCloud(); } catch {} }, 10_000);
+gameState.on("persist", () => cloudSync.request());
+window.addEventListener("pagehide", () => cloudSync.flush());
 
 const config = {
   type: Phaser.AUTO,

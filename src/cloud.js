@@ -2,6 +2,7 @@
 // 설정(firebaseConfig)이 비어 있으면 전부 안전하게 no-op. Firebase는 동적 import로 코드 분리.
 import { FIREBASE_CONFIG, cloudEnabled } from "./firebaseConfig.js";
 import { iconHtml } from "./ui/icon.js";
+import { clock, offsetFromRoundTrip } from "./state/clock.js";
 
 const NICK_KEY = "gp-nick";
 let _fb = null;       // { app, auth, db }
@@ -69,12 +70,29 @@ export async function initCloud(gameState) {
     const cred = await signInAnonymously(auth);
     _uid = cred.user.uid;
     _ready = true;
+    await calibrateClock();
     await maybeLoadCloud();
     submitScore();
   } catch (e) { /* 오프라인/설정오류 — 무시 */ }
 }
 
 export function cloudReady() { return _ready; }
+
+// ── 서버 시계 보정 — serverTimestamp 왕복 1회로 로컬 시계 오프셋을 잡는다(실패해도 무시) ──
+async function calibrateClock() {
+  try {
+    const { db, fs } = await fb();
+    const ref = fs.doc(db, "clock", _uid);
+    const sentAt = Date.now();
+    await fs.setDoc(ref, { t: fs.serverTimestamp() });
+    const snap = await fs.getDoc(ref);
+    const receivedAt = Date.now();
+    const serverMs = snap.data()?.t?.toMillis?.();
+    if (typeof serverMs === "number" && Number.isFinite(serverMs)) {
+      clock.setOffset(offsetFromRoundTrip(serverMs, sentAt, receivedAt));
+    }
+  } catch {}
+}
 
 // ── 클라우드 세이브 ──
 async function maybeLoadCloud() {
@@ -86,9 +104,9 @@ async function maybeLoadCloud() {
     const json = snap.data()?.json;
     if (!json) return;
     const cloud = JSON.parse(json);
-    if ((cloud.lastSavedAt || 0) > (_gs.data.lastSavedAt || 0)) {
+    if (_gs.shouldAdopt(cloud)) {
       // 클라우드 채택은 GameState 단일 경로로 — 오프라인 보상 재계산 + 즉시 로컬 저장(중복/경합 방지)
-      _gs.adoptCloudData(cloud, Date.now());
+      _gs.adoptCloudData(cloud, clock.now());
     }
   } catch {}
 }
@@ -99,7 +117,7 @@ export async function saveCloud() {
     const { db, fs } = await fb();
     await fs.setDoc(fs.doc(db, "saves", _uid), {
       json: JSON.stringify(_gs.data),
-      lastSavedAt: _gs.data.lastSavedAt || Date.now(),
+      lastSavedAt: _gs.data.lastSavedAt || clock.now(),
       area: _gs.data.stage?.area || 1,
     });
   } catch {}

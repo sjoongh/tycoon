@@ -45,6 +45,8 @@ import {
   isCheckpointArea,
 } from "../data/bosses.js";
 import { shortNumber } from "../utils/format.js";
+import { clock, clockRolledBack } from "./clock.js";
+import { saveBeats } from "./saveWinner.js";
 
 const DAY_MS = 86400000;
 const DAILY_STREAK_CAP = 7;
@@ -224,7 +226,7 @@ export class GameState extends Phaser.Events.EventEmitter {
   }
 
   load() {
-    const now = Date.now();
+    const now = clock.now();
     try {
       const parsed = JSON.parse(localStorage.getItem(SAVE_KEY));
       const data = this.normalize(parsed, now);
@@ -526,7 +528,7 @@ export class GameState extends Phaser.Events.EventEmitter {
 
   // 백그라운드에서 복귀했을 때 자리 비운 시간을 오프라인 생산으로 정산(모바일 앱 리줌 대응).
   resumeOfflineProgress() {
-    const now = Date.now();
+    const now = clock.now();
     const reward = this.applyOfflineProgress(this.data, now);
     this.data.lastSeenAt = now;
     if (reward) {
@@ -606,7 +608,7 @@ export class GameState extends Phaser.Events.EventEmitter {
 
   save(notify = true) {
     if (this._suspendPersist) return; // 초기화/가져오기 직후 reload 시 pagehide 저장이 되살리는 것 방지
-    const now = Date.now();
+    const now = clock.now();
     this.data.lastSavedAt = now;
     this.data.lastSeenAt = now;
     const json = JSON.stringify(this.data);
@@ -621,6 +623,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     }
     // 네이티브(안드로이드)에서는 SharedPreferences에도 이중 기록 — main.js에서 주입
     try { this.persistMirror?.(json); } catch {}
+    this.emit("persist"); // 클라우드 동기화 예약용(디바운스는 main.js)
     if (notify) this.emit("saved");
   }
 
@@ -664,7 +667,7 @@ export class GameState extends Phaser.Events.EventEmitter {
 
   processClick(x, y) {
     // 연타 콤보: 기본 600ms 안에 이어 누르면 콤보 누적. 작전으로 유지시간·보너스를 확장한다.
-    const now = (typeof performance !== "undefined" ? performance.now() : Date.now());
+    const now = (typeof performance !== "undefined" ? performance.now() : clock.now());
     const comboWindowMs = 600 + this.operationEffectFor(this.data, "comboWindowMs");
     if (now - (this._lastClickAt || 0) < comboWindowMs) this._clickCombo = (this._clickCombo || 0) + 1;
     else this._clickCombo = 1;
@@ -718,7 +721,7 @@ export class GameState extends Phaser.Events.EventEmitter {
       && this.data.boss?.clearedArea !== area;
   }
 
-  bossRemainingMs(now = Date.now()) {
+  bossRemainingMs(now = clock.now()) {
     return this.bossActive() ? Math.max(0, (this.data.boss.endsAt || 0) - now) : 0;
   }
 
@@ -731,7 +734,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     return this.bossActive() && this.data.boss?.patternVersion === BOSS_PATTERN_VERSION;
   }
 
-  bossPatternStatus(now = Date.now()) {
+  bossPatternStatus(now = clock.now()) {
     if (!this.bossUsesPatterns()) return null;
     const definition = this.bossDefinition(this.data.boss.area);
     const phases = definition?.phases || [];
@@ -756,7 +759,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     return status;
   }
 
-  startBoss(now = Date.now()) {
+  startBoss(now = clock.now()) {
     this.syncBoss(now);
     if (this.bossActive() || !this.bossRequired() || this.data.operations?.draft) return false;
     const area = this.data.stage.area;
@@ -782,7 +785,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     return true;
   }
 
-  syncBoss(now = Date.now()) {
+  syncBoss(now = clock.now()) {
     if (!this.bossActive()) return null;
     if ((this.data.boss.progress || 0) >= (this.data.boss.target || 0)) {
       return this._finishBoss("success", now);
@@ -791,7 +794,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     return null;
   }
 
-  addBossProgress(amount, now = Date.now()) {
+  addBossProgress(amount, now = clock.now()) {
     if (!this.bossActive()) return 0;
     if (this.syncBoss(now)) return 0;
     // 구버전 진행 중 세이브의 throughput 보스만 이 경로를 쓴다.
@@ -804,7 +807,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     return added;
   }
 
-  bossAction(action, now = Date.now()) {
+  bossAction(action, now = clock.now()) {
     if (!this.bossUsesPatterns() || this.syncBoss(now)) return { accepted: false, correct: false };
     const status = this.bossPatternStatus(now);
     if (!status) return { accepted: false, correct: false };
@@ -854,14 +857,14 @@ export class GameState extends Phaser.Events.EventEmitter {
     return result;
   }
 
-  skipBoss(now = Date.now()) {
+  skipBoss(now = clock.now()) {
     if (!this.bossActive()) return false;
     if (this.syncBoss(now)) return false;
     this._finishBoss("skipped", now);
     return true;
   }
 
-  _finishBoss(outcome, now = Date.now()) {
+  _finishBoss(outcome, now = clock.now()) {
     if (!this.bossActive()) return null;
     const area = this.data.boss.area;
     const success = outcome === "success";
@@ -973,21 +976,21 @@ export class GameState extends Phaser.Events.EventEmitter {
     return this.operationCount(data) > 0;
   }
 
-  feverActive(now = Date.now()) {
+  feverActive(now = clock.now()) {
     return now < (this.data.fever?.endsAt || 0);
   }
 
-  feverRecovering(now = Date.now()) {
+  feverRecovering(now = clock.now()) {
     return !this.feverActive(now) && now < (this.data.fever?.recoveryEndsAt || 0);
   }
 
-  feverRecoveryRemainingMs(now = Date.now()) {
+  feverRecoveryRemainingMs(now = clock.now()) {
     return Math.max(0, (this.data.fever?.recoveryEndsAt || 0) - now);
   }
 
   feverRecoveryDurationMs() { return FEVER_RECOVERY_MS; }
 
-  feverFamily(now = Date.now()) {
+  feverFamily(now = clock.now()) {
     const stored = this.data.fever?.family;
     if ((this.feverActive(now) || this.feverRecovering(now)) && FEVER_FAMILY_PROFILES[stored]) return stored;
     return this.dominantOperationFamily() || (FEVER_FAMILY_PROFILES[stored] ? stored : null);
@@ -997,7 +1000,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     return FEVER_FAMILY_PROFILES[family] || FEVER_FAMILY_PROFILES.tap;
   }
 
-  feverRemainingMs(now = Date.now()) {
+  feverRemainingMs(now = clock.now()) {
     return Math.max(0, (this.data.fever?.endsAt || 0) - now);
   }
 
@@ -1005,7 +1008,7 @@ export class GameState extends Phaser.Events.EventEmitter {
   feverFinisherWindowMs() { return FEVER_FINISHER_WINDOW_MS; }
   feverFinisherUsed() { return !!this.data.fever?.finisherUsed; }
 
-  feverFinisherAvailable(now = Date.now()) {
+  feverFinisherAvailable(now = clock.now()) {
     const remaining = this.feverRemainingMs(now);
     return this.feverActive(now)
       && !this.feverFinisherUsed()
@@ -1013,34 +1016,34 @@ export class GameState extends Phaser.Events.EventEmitter {
       && remaining <= FEVER_FINISHER_WINDOW_MS;
   }
 
-  feverProductionMultiplier(now = Date.now()) {
+  feverProductionMultiplier(now = clock.now()) {
     if (!this.feverActive(now)) return 1;
     const base = this.feverProfile().productionMult;
     return base * (this.feverFinisherUsed() ? FEVER_FINISHER_MULT : 1);
   }
 
-  feverClickMultiplier(now = Date.now()) {
+  feverClickMultiplier(now = clock.now()) {
     if (!this.feverActive(now)) return 1;
     const base = this.feverProfile().clickMult;
     return base * (this.feverFinisherUsed() ? FEVER_FINISHER_MULT : 1);
   }
 
-  feverResponseRewardMultiplier(now = Date.now()) {
+  feverResponseRewardMultiplier(now = clock.now()) {
     if (!this.feverActive(now) || this.feverFamily() !== "response") return 1;
     return this.feverProfile("response").responseRewardMult
       * (this.feverFinisherUsed() ? FEVER_FINISHER_MULT : 1);
   }
 
-  feverPurchaseDiscountPct(now = Date.now()) {
+  feverPurchaseDiscountPct(now = clock.now()) {
     if (!this.feverActive(now) || this.feverFamily() !== "build") return 0;
     return this.feverProfile("build").discountPct || 0;
   }
 
   // 이전 호출부 호환: 일반 배율을 묻는 코드는 생산 배율을 받는다.
-  feverMultiplier(now = Date.now()) { return this.feverProductionMultiplier(now); }
+  feverMultiplier(now = clock.now()) { return this.feverProductionMultiplier(now); }
   feverCharge() { return Phaser.Math.Clamp(Number(this.data.fever?.charge) || 0, 0, FEVER_TARGET); }
 
-  feverProgressPct(now = Date.now()) {
+  feverProgressPct(now = clock.now()) {
     if (this.feverActive(now)) return this.feverRemainingMs(now) / FEVER_DURATION_MS;
     if (this.feverRecovering(now)) return 1 - this.feverRecoveryRemainingMs(now) / FEVER_RECOVERY_MS;
     return this.feverCharge() / FEVER_TARGET;
@@ -1069,7 +1072,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     this.emit("celebrate", { text: `${profile.name}! ${profile.summary}` });
   }
 
-  _finishFever(now = Date.now()) {
+  _finishFever(now = clock.now()) {
     const fever = this.data.fever;
     if (!fever?.endsAt) return null;
     const endedAt = fever.endsAt;
@@ -1094,7 +1097,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     return report;
   }
 
-  syncFever(now = Date.now()) {
+  syncFever(now = clock.now()) {
     if ((this.data.fever?.endsAt || 0) > 0 && now >= this.data.fever.endsAt) return this._finishFever(now);
     if ((this.data.fever?.recoveryEndsAt || 0) > 0 && now >= this.data.fever.recoveryEndsAt) {
       this.data.fever.recoveryEndsAt = 0;
@@ -1102,13 +1105,13 @@ export class GameState extends Phaser.Events.EventEmitter {
     return null;
   }
 
-  trackFeverAction(combo = 0, now = Date.now()) {
+  trackFeverAction(combo = 0, now = clock.now()) {
     if (!this.feverActive(now) || !this.data.fever.session) return;
     this.data.fever.session.actions += 1;
     this.data.fever.session.bestCombo = Math.max(this.data.fever.session.bestCombo, Math.floor(combo || 0));
   }
 
-  activateFeverFinisher(now = Date.now()) {
+  activateFeverFinisher(now = clock.now()) {
     if (!this.feverFinisherAvailable(now)) return false;
     this.data.fever.finisherUsed = true;
     const instant = Math.max(25, Math.round(this.cpsFor(this.data) * 4 + this.clickPower() * 12));
@@ -1129,7 +1132,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     return true;
   }
 
-  addFever(source, baseAmount, now = Date.now()) {
+  addFever(source, baseAmount, now = clock.now()) {
     this.syncFever(now);
     if (!this.feverUnlocked() || this.feverActive(now) || this.feverRecovering(now)) return { added: 0, started: false };
     const heatKeys = {
@@ -1155,7 +1158,7 @@ export class GameState extends Phaser.Events.EventEmitter {
 
   tick() {
     if (this.data.paused) return;
-    const now = Date.now();
+    const now = clock.now();
     this.syncFever(now);
     this.syncBoss(now);
     // 유입(intake)은 용량(capacity)까지만 표로 확정되고, 초과분은 적체로 쌓인다. 남는 용량은 적체를 소화한다.
@@ -1245,7 +1248,7 @@ export class GameState extends Phaser.Events.EventEmitter {
       ...kept,
       trust: 45, // 재건 시작 믿음(즉시 재전복 방지)
       log: ["체제 전복 — 인민개표위원회 수립", "개표국 재건 시작"],
-    }, Date.now());
+    }, clock.now());
     this.data.stats.collapses = collapses;
     this.data.commGauge = 0;
     this.data.weekly.baseVotes = this.data.stats.totalVotes;
@@ -1287,7 +1290,7 @@ export class GameState extends Phaser.Events.EventEmitter {
 
   // 클라우드 세이브 채택(P0-3) — 정규화→오프라인 정산을 클라우드 스냅샷 기준으로 딱 1회 수행.
   // 낡은 로컬 오프라인 보상은 폐기(중복 지급 방지)하고 즉시 로컬 저장(다음 시작 때 재경합 방지).
-  adoptCloudData(parsed, now = Date.now()) {
+  adoptCloudData(parsed, now = clock.now()) {
     const data = this.normalize(parsed, now);
     this.offlineReward = this.applyOfflineProgress(data, now);
     this.data = data;
@@ -1500,7 +1503,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     this.data.stats.totalEvents += 1;
     if (fever) this.addFever("event", 28);
     this._bumpDaily("events");
-    this.data.eventReadyAt = Date.now() + this.eventCooldownTotalMs();
+    this.data.eventReadyAt = clock.now() + this.eventCooldownTotalMs();
     this.trackFeverAction();
     this.advanceTutorial("event");
     this.addLog(`사건 대응: 믿음 ${Math.round(this.data.trust)}%`);
@@ -1562,11 +1565,11 @@ export class GameState extends Phaser.Events.EventEmitter {
   }
 
   eventReady() {
-    return Date.now() >= (this.data.eventReadyAt || 0);
+    return clock.now() >= (this.data.eventReadyAt || 0);
   }
 
   eventCooldownRemainingMs() {
-    return Math.max(0, (this.data.eventReadyAt || 0) - Date.now());
+    return Math.max(0, (this.data.eventReadyAt || 0) - clock.now());
   }
 
   eventCooldownTotalMs() {
@@ -1962,7 +1965,7 @@ export class GameState extends Phaser.Events.EventEmitter {
       votes: this.startingVotesFor(kept.prestige),
       trust: Math.min(90, fallbackState.trust + kept.prestige.runs),
       log: [medalEarned > 0 ? `감사 완료: 제도인장 +${earned} · 훈장 +${medalEarned}` : `감사 완료: 제도인장 +${earned}`, "개표국 재정비"],
-    }, Date.now());
+    }, clock.now());
     // 감사로 stats.totalVotes가 0으로 리셋되므로 주간 기준점도 재정렬(안 하면 progress가 음수→0에 영구 고정)
     this.data.weekly.baseVotes = this.data.stats.totalVotes;
     // 아직 미수령이면 목표량도 감사 후(낮아진) 생산 기준으로 재계산 — 안 하면 감사 전 높은 cps 기준 목표가 도달 불가해짐(재청구는 claimed 유지로 차단)
@@ -2046,8 +2049,18 @@ export class GameState extends Phaser.Events.EventEmitter {
   }
 
   // ----- 일일 출석 보상 -----
+  // 로컬 시계가 마지막 저장보다 1시간 넘게 과거면(시계 되감김) 출석·주간·오프라인 보상을 보류한다
+  clockSuspicious() {
+    return clockRolledBack(clock.now(), this.data?.lastSavedAt || 0);
+  }
+
+  // 세이브 후보 채택 판정(로컬·네이티브 미러·클라우드 공통 규칙: 최신 저장 → 동률이면 누적 표)
+  shouldAdopt(candidate) {
+    return saveBeats(candidate, this.data);
+  }
+
   _todayIndex() {
-    const d = new Date();
+    const d = new Date(clock.now());
     d.setHours(0, 0, 0, 0); // 로컬 자정 기준 일자 인덱스
     return Math.floor(d.getTime() / DAY_MS);
   }
@@ -2055,7 +2068,7 @@ export class GameState extends Phaser.Events.EventEmitter {
   dailyStatus() {
     const today = this._todayIndex();
     const last = this.data.daily.day;
-    const available = today > last;
+    const available = today > last && !this.clockSuspicious();
     // 어제 받았으면 연속, 아니면 1일차로 리셋
     const pendingStreak = available ? (today === last + 1 ? Math.min(this.data.daily.streak + 1, DAILY_STREAK_CAP) : 1) : this.data.daily.streak;
     return { available, streak: pendingStreak, reward: this.dailyReward(pendingStreak) };
@@ -2185,6 +2198,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     return Math.max(1, (this._weekIndex() + 1) * 7 - this._todayIndex());
   }
   claimWeekly() {
+    if (this.clockSuspicious()) return null;
     if (!this.weeklyClaimable()) return null;
     const def = this.weeklyDef();
     this.data.prestige.seals += def.seals || 0;
@@ -2295,23 +2309,23 @@ export class GameState extends Phaser.Events.EventEmitter {
     return Math.max(15, Math.round(this.explainPerSecond() * 20)); // 약 20초치 해명(스테이지 무관하게 의미 유지)
   }
   briefActive() {
-    return Date.now() < (this.data.briefEndsAt || 0);
+    return clock.now() < (this.data.briefEndsAt || 0);
   }
   briefReady() {
-    return !this.briefActive() && Date.now() >= (this.data.briefReadyAt || 0);
+    return !this.briefActive() && clock.now() >= (this.data.briefReadyAt || 0);
   }
   briefAffordable() {
     return this.data.explain >= this.briefCost();
   }
   briefCooldownRemainingMs() {
-    return Math.max(0, (this.data.briefReadyAt || 0) - Date.now());
+    return Math.max(0, (this.data.briefReadyAt || 0) - clock.now());
   }
   briefRemainingMs() {
-    return Math.max(0, (this.data.briefEndsAt || 0) - Date.now());
+    return Math.max(0, (this.data.briefEndsAt || 0) - clock.now());
   }
   activateBrief() {
     if (!this.briefReady() || !this.briefAffordable()) return false;
-    const now = Date.now();
+    const now = clock.now();
     this.data.explain -= this.briefCost();
     const trustGain = BRIEF_TRUST + this.operationEffectFor(this.data, "briefTrustFlat");
     this.data.trust = Phaser.Math.Clamp(this.data.trust + trustGain, 0, 100);

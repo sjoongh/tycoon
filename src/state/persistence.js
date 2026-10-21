@@ -105,7 +105,7 @@ export async function restoreNativeSave(gameState) {
     const { value } = await P.get({ key: SAVE_KEY });
     if (!value) return false;
     const parsed = JSON.parse(value);
-    if ((parsed?.lastSavedAt || 0) > (gameState.data.lastSavedAt || 0)) {
+    if (gameState.shouldAdopt ? gameState.shouldAdopt(parsed) : (parsed?.lastSavedAt || 0) > (gameState.data.lastSavedAt || 0)) {
       gameState.adoptCloudData(parsed, Date.now());
       return true;
     }

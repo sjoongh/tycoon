@@ -1,6 +1,7 @@
 import { shortNumber } from "../utils/format.js";
 import { GOV_MAPS, PROP_MAPS, dotSvgUri } from "../world/dotChar.js";
 import { iconHtml } from "./icon.js";
+import { clock } from "../state/clock.js";
 import { RARITY_LABEL, RARITY_COLOR } from "../data/titles.js";
 import { FEVER_FAMILY_PROFILES, OPERATION_FAMILIES, operationDefinitions } from "../data/operations.js";
 import { BOSS_DURATION_MS } from "../data/bosses.js";
@@ -212,7 +213,7 @@ export class DOMModalLayer {
     document.dispatchEvent(new CustomEvent("gp:sfx", { detail: "crisis" }));
   }
 
-  _updateBossChallenge(now = Date.now()) {
+  _updateBossChallenge(now = clock.now()) {
     const boss = this._bossEl;
     if (!boss?.isConnected || this._bossResolving) return;
     const state = this.gameState.data.boss;
