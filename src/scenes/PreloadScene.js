@@ -2,6 +2,7 @@ import Phaser from "phaser";
 import { generatePlaceholders } from "../textures/devPlaceholders.js";
 import { buildGovTextures, buildPropTextures, buildWorkerTexture, buildCosmeticTextures } from "../world/dotChar.js";
 import { loadIconSheets, registerIconFrames } from "../assets/iconTextures.js";
+import { WORLD_ATLAS, facilitySpriteKey } from "../world/worldAtlas.js";
 
 export class PreloadScene extends Phaser.Scene {
   constructor() {
@@ -28,10 +29,27 @@ export class PreloadScene extends Phaser.Scene {
     this.load.image("decor/ballotbox", "/art/ballotbox.webp");
     this.load.image("ballot", "/art/ballot.webp");
     loadIconSheets(this); // 아이콘 아틀라스(DOM과 공용)
+    // 아이소 개표소 월드(scripts/art/build_world.py 산출물)
+    this.load.image("world/room", "/art/world/room.png");
+    for (const id of Object.keys(WORLD_ATLAS.facilities)) {
+      for (let t = 1; t <= WORLD_ATLAS.facilities[id].length; t += 1) {
+        this.load.image(facilitySpriteKey(id, t), `/art/world/fac-${id}-t${t}.png`);
+      }
+    }
+    this.load.spritesheet("workers", "/art/world/workers.png", { frameWidth: WORLD_ATLAS.workers.frame, frameHeight: WORLD_ATLAS.workers.frame });
   }
 
   create() {
     registerIconFrames(this);
+    // 직원 애니메이션 — 변형(머리색·셔츠)별 idle/typing-right/typing-left (OGA 시트 행 0/4/5)
+    const { cols, rowsPerVariant, variants } = WORLD_ATLAS.workers;
+    const row = (v, r) => Array.from({ length: cols }, (_, c) => (v * rowsPerVariant + r) * cols + c);
+    for (let v = 0; v < variants; v += 1) {
+      if (!this.anims.exists(`worker-idle-${v}`)) this.anims.create({ key: `worker-idle-${v}`, frames: this.anims.generateFrameNumbers("workers", { frames: [row(v, 0)[0]] }), frameRate: 1, repeat: -1 });
+      if (!this.anims.exists(`worker-walk-${v}`)) this.anims.create({ key: `worker-walk-${v}`, frames: this.anims.generateFrameNumbers("workers", { frames: row(v, 0) }), frameRate: 6, repeat: -1 });
+      if (!this.anims.exists(`worker-type-right-${v}`)) this.anims.create({ key: `worker-type-right-${v}`, frames: this.anims.generateFrameNumbers("workers", { frames: row(v, 4) }), frameRate: 6, repeat: -1 });
+      if (!this.anims.exists(`worker-type-left-${v}`)) this.anims.create({ key: `worker-type-left-${v}`, frames: this.anims.generateFrameNumbers("workers", { frames: row(v, 5) }), frameRate: 6, repeat: -1 });
+    }
     generatePlaceholders(this); // ballot 폴백 등 안전망(존재하면 건너뜀)
     buildGovTextures(this); // 도트 국장 4단계 텍스처(gov-1..4)
     buildPropTextures(this); // 개표소 소품 텍스처(투표함/서류/깃발)

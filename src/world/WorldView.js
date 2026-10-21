@@ -1,6 +1,10 @@
 import { iconRef } from "../assets/iconTextures.js";
 import { WorldEffects } from "./WorldEffects.js";
-import { facilityPropTextureKey, govTextureKey, govStageFor } from "./dotChar.js";
+import { govTextureKey, govStageFor } from "./dotChar.js";
+import { facilities } from "../data/facilities.js";
+import { facilitySpriteKey, WORLD_ATLAS } from "./worldAtlas.js";
+import { stationDepth, workerDepth } from "./depth.js";
+import { WORLD_SCALE, ROOM_X, ROOM_Y, ROOM_BOTTOM, FACILITY_SLOTS, GOV_TILE, BIG_NUM_TILE, tileCenter, facilityPos, workerPos, randomFloorPoint, facilitySpriteMeta } from "./iso.js";
 import { staffDefinitions } from "../data/staff.js";
 import { staffRankForLevel } from "../data/staffDeployment.js";
 import { tierForLevel } from "./facilityTiers.js";
@@ -13,19 +17,14 @@ import { shortNumber } from "../utils/format.js";
 // 거지키우기식 심플 월드: 미니멀 픽셀 배경 + 중앙 도트 국장 + 큰 숫자 + 바닥.
 // (구 버전의 이소 오피스 다이어그램·화분·시계·창문·워커·시설 스테이션은 전부 제거)
 const GAME_W = 390;
-const GROUND_Y = 492;   // 국장 발이 닿는 바닥선
-const GOV_SCALE = 6;    // 16px 도트 → 96px 표시
+const GOV_POS = tileCenter(GOV_TILE.i, GOV_TILE.j);
+const GROUND_Y = GOV_POS.y;     // 국장 발이 닿는 타일 중앙
+const GOV_SCALE = WORLD_SCALE;  // 16px 도트 → 48px (월드 전역 3x)
 const GOV_BOB_MS = 900;
-const PROP_SCALE = 4;   // 16px 소품 → 64px
-const BACK_SCALE = PROP_SCALE * 0.74; // 뒤쪽 선반(원근감 위해 작게)
-const SHELF_Y = GROUND_Y - 12;        // 뒤쪽 선반(카운터) 라인 — 국장보다 뒤
-const BACK_DEPTH = 88;                // 국장(100)보다 뒤 → 캐릭터를 절대 안 가림
-// 채용된 직원이 서는 바닥 슬롯 — 설비(선반 x: 46/122/268/344)·국장(195) 사이 빈 곳에 작게
-const WORKER_SLOTS = [94, 195, 296];
-const WORKER_SCALE = 3.2;
-const WORKER_Y = GROUND_Y + 14; // 국장 앞에 3인 현장팀이 서되 상체를 가리지 않는 낮은 바닥선
-const SORTER_SCALE = BACK_SCALE; // 분류기도 뒷줄 동일 스케일
-// 국장 풍자 대사(개표국 이슈 위트, 정치 중립)
+const WORKER_SCALE = WORLD_SCALE;
+const BIG_NUM_POS = tileCenter(BIG_NUM_TILE.i, BIG_NUM_TILE.j);
+const BIG_NUM_Y = BIG_NUM_POS.y;  // 국장 앞 바닥에 큰 숫자
+
 const GOV_LINES = [
   "한 표만 믿어주세요!", "분류기는 정상입니다.", "소쿠리는 이제 그만…",
   "수검표 환영합니다.", "CCTV 다 공개할게요.", "야근 수당은 대체…",
@@ -89,51 +88,51 @@ export class WorldView {
 
     // 중앙 도트 국장
     this.gov = scene.add
-      .image(GAME_W / 2, GROUND_Y, govTextureKey(gameState.data))
+      .image(GOV_POS.x, GROUND_Y, govTextureKey(gameState.data))
       .setOrigin(0.5, 1)
       .setScale(GOV_SCALE)
-      .setDepth(100);
+      .setDepth(workerDepth(GROUND_Y));
     this._govStage = govStageFor(gameState.data);
     this._cosSprites = {}; // 꾸미기 오버레이 슬롯별 스프라이트(국장에 글루)
     this._startBob();
 
     // 중앙 큰 숫자(개표수) — 한글 단위 지원 위해 Galmuri14
     this.bigNum = scene.add
-      .text(GAME_W / 2, 312, "0", { fontFamily: '"Galmuri14", "Galmuri11", monospace', fontSize: "30px", color: "#ffffff" })
+      .text(BIG_NUM_POS.x, BIG_NUM_Y, "0", { fontFamily: '"Galmuri14", "Galmuri11", monospace', fontSize: "30px", color: "#ffffff" })
       .setOrigin(0.5)
-      .setDepth(120);
+      .setDepth(2500);
     this.bigNum.setShadow(3, 3, "#b13e53", 0, true, true);
     this.bigSub = scene.add
-      .text(GAME_W / 2, 346, "표", { fontFamily: '"Galmuri11", monospace', fontSize: "12px", color: "#ffcd75" })
+      .text(BIG_NUM_POS.x, BIG_NUM_Y + 26, "표", { fontFamily: '"Galmuri11", monospace', fontSize: "12px", color: "#ffcd75" })
       .setOrigin(0.5)
-      .setDepth(120);
+      .setDepth(2500);
     this.cpsText = scene.add
-      .text(GAME_W / 2, GROUND_Y + 22, "", {
+      .text(GAME_W / 2, ROOM_BOTTOM + 12, "", {
         fontFamily: '"Galmuri9", "Galmuri11", monospace', fontSize: "11px", color: "#bcd0e0",
         backgroundColor: "rgba(20,18,28,0.72)", padding: { x: 7, y: 4 },
       })
       .setOrigin(0.5)
-      .setDepth(120);
+      .setDepth(2500);
 
     // 국장 대표 칭호 명패(인사 발령 뽑기 결과 — 머리 위에 직급 표시, 꾸미기)
     this.titlePlate = scene.add
-      .text(GAME_W / 2, 380, "", {
+      .text(GOV_POS.x, GROUND_Y - 58, "", {
         fontFamily: '"Galmuri9", "Galmuri11", monospace', fontSize: "10px", color: "#ffd479",
         backgroundColor: "rgba(20,18,28,0.78)", padding: { x: 6, y: 3 },
       })
       .setOrigin(0.5)
-      .setDepth(121)
+      .setDepth(2500)
       .setVisible(false);
     this._titleId = null;
 
     // 클릭 콤보 카운터(연타 시 등장)
     this.comboText = scene.add
-      .text(10, 312, "", {
+      .text(10, ROOM_Y + 100, "", {
         fontFamily: '"Galmuri14", "Galmuri11", monospace', fontSize: "13px", color: "#ffcd75",
         backgroundColor: "rgba(20,18,28,0.78)", padding: { x: 4, y: 3 },
       })
       .setOrigin(0, 0.5)
-      .setDepth(121)
+      .setDepth(2500)
       .setVisible(false);
     this.comboText.setShadow(2, 2, "#000", 0, true, true);
     this._comboN = 0;
@@ -173,7 +172,7 @@ export class WorldView {
     // 하단 패널 높이에 맞춰 카메라를 위로 스크롤 — 국장·시설·초당표가 패널에 절대 안 잘리게(BUG2).
     // WORLD_BOTTOM = cps 라벨 하단(GROUND_Y+34). 패널 top이 그보다 위면 그 차이만큼 카메라를 올린다.
     this._onSheetTop = (e) => {
-      const WORLD_BOTTOM = GROUND_Y + 34;
+      const WORLD_BOTTOM = ROOM_BOTTOM + 28;
       const target = Math.max(0, WORLD_BOTTOM - e.detail.topGame + 6);
       if (Math.abs((this._camTarget ?? -1) - target) < 1) return;
       this._camTarget = target;
@@ -199,7 +198,7 @@ export class WorldView {
       this._squishGov();
       this._punchNum();
       this._bumpCombo();
-      this.effects.deskPop(GAME_W / 2, GROUND_Y - 30);
+      this.effects.deskPop(this.gov.x, GROUND_Y - 30);
       this._flyBallotToBox(); // 처리한 표가 투표함으로 날아가 모인다(의미 + 손맛)
     };
     scene.input.on("pointerdown", this._onPointer);
@@ -211,14 +210,14 @@ export class WorldView {
       callback: () => {
         const inc = this.gameState.cps ? this.gameState.cps() : 0;
         if (inc > 0) {
-          const x = GAME_W / 2 + (Math.random() * 120 - 60);
-          this.effects.float({ text: `+${shortNumber(inc)}`, x, y: GROUND_Y - 76, color: "#7fb98a" });
+          const x = this.gov.x + (Math.random() * 80 - 40);
+          this.effects.float({ text: `+${shortNumber(inc)}`, x, y: GROUND_Y - 70, color: "#7fb98a" });
           // 패시브 생산도 표가 투표함으로 모인다
           this._flyBallotToBox();
         }
         // 일꾼이 일하는 반짝임(랜덤 1명 머리 위)
         const wk = Object.values(this._workers);
-        if (wk.length) { const r = wk[(Math.random() * wk.length) | 0]; this.effects.deskPop(r.x, r.y - 28); }
+        if (wk.length) { const r = wk[(Math.random() * wk.length) | 0]; this.effects.deskPop(r.body.x, r.body.y - 52); }
       },
     });
 
@@ -270,7 +269,7 @@ export class WorldView {
     g.clear();
     // 하늘
     g.fillStyle(c.sky, 1);
-    g.fillRect(0, 0, GAME_W, GROUND_Y);
+    g.fillRect(0, 0, GAME_W, ROOM_BOTTOM - 70);
     // 별
     const stars = [[40, 150], [92, 206], [150, 138], [300, 168], [342, 224], [212, 184], [70, 262], [330, 300], [120, 308], [262, 250]];
     g.fillStyle(c.star, 1);
@@ -324,21 +323,9 @@ export class WorldView {
       g.fillStyle(0xffcd75, 0.9); [[300, 130], [320, 220], [60, 250]].forEach(([x, y]) => g.fillCircle(x, y, 5));
     }
 
-    // 바닥
+    // 방 아래 바닥(방 밖 여백) — 방 이미지(depth 5)가 위에 얹힌다
     g.fillStyle(c.floor, 1);
-    g.fillRect(0, GROUND_Y, GAME_W, 844 - GROUND_Y);
-    g.fillStyle(0x000000, 1);
-    g.fillRect(0, GROUND_Y, GAME_W, 3);
-    g.fillStyle(0x333c57, 1);
-    g.fillRect(0, GROUND_Y + 3, GAME_W, 2);
-    g.fillStyle(c.line, 1);
-    for (let i = 1; i <= 4; i++) {
-      const y = GROUND_Y + 12 + i * i * 6;
-      g.fillRect(0, y, GAME_W, 1);
-    }
-    // 국장 발밑 그림자
-    g.fillStyle(0x0a0a12, 0.5);
-    g.fillRect(GAME_W / 2 - 30, GROUND_Y - 4, 60, 6);
+    g.fillRect(0, ROOM_BOTTOM - 70, GAME_W, 844 - ROOM_BOTTOM + 70);
   }
 
   // 구역이 바뀌면 배경/깃발 전환 + 화면 플래시
@@ -360,7 +347,7 @@ export class WorldView {
   // 상단 간판: "믿어주세요 / 개표국"
   _buildTitle() {
     const cx = GAME_W / 2;
-    const w = 300, h = 46, top = 214, x = cx - w / 2;
+    const w = 300, h = 46, top = 170, x = cx - w / 2;
     const g = this.scene.add.graphics().setDepth(110);
     // 현수막 끈
     g.fillStyle(0x14121c, 1);
@@ -402,86 +389,63 @@ export class WorldView {
     this.titleZone.on("pointerup", () => document.dispatchEvent(new CustomEvent("gp:open-map")));
   }
 
-  // 개표소 설비 — 국장 뒤쪽 '선반' 한 줄에 균등 배치(국장은 앞 중앙 단독, 안 가림).
+  // 아이소 개표소 — 방(벽+바닥) 위에 시설 6종을 고정 슬롯(iso.js)에 놓는다. 티어 스프라이트는 build_world.py 산출물.
   _buildProps() {
     this.props = [];
-    // 뒤쪽 선반(카운터) 바 — 설비들이 놓인 받침. 캐릭터보다 뒤 depth.
-    this._shelf = this.scene.add.graphics().setDepth(86);
-    this._shelf.fillStyle(0x000000, 0.35); this._shelf.fillRect(0, SHELF_Y - 1, GAME_W, 4); // 그림자
-    this._shelf.fillStyle(0x1f2750, 1); this._shelf.fillRect(0, SHELF_Y, GAME_W, 6);          // 선반 상판
-    this._shelf.fillStyle(0x333c57, 1); this._shelf.fillRect(0, SHELF_Y + 6, GAME_W, 2);      // 하이라이트
-
-    const place = (id, px, scale = BACK_SCALE * 0.82) => {
-      const key = facilityPropTextureKey(id, 1);
-      const s = this.scene.add.image(px, SHELF_Y, key).setOrigin(0.5, 1).setScale(scale).setDepth(BACK_DEPTH);
-      this.props.push(s);
-      this.propByFacility[id] = s;
-      return s;
-    };
     this.propByFacility = {};
-    // 시설 여섯 종을 모두 선반에 배치하고 가운데 국장 실루엣을 위한 간격을 남긴다.
-    this.ballotbox = place("desk", 28);
-    this.sorter = place("sorter", 88);
-    this.notice = place("notice", 148);
-    this.papers = place("archive", 242);
-    this.board = place("server", 302);
-    this.studio = place("studio", 362);
-    this._boardBlink = this.scene.tweens.add({ targets: this.board, alpha: 0.8, yoyo: true, repeat: -1, duration: 700, ease: "Sine.easeInOut" });
-
-    // 상황판 LED 실시간 개표 현황
-    this.boardText = this.scene.add
-      .text(this.board.x, SHELF_Y - 42, "", { fontFamily: '"Galmuri9", "Galmuri11", monospace', fontSize: "8px", color: "#73eff7", align: "center" })
-      .setOrigin(0.5)
-      .setDepth(89);
-
-    // 시설 레벨 뱃지(설비 아래) — 업그레이드가 화면에 숫자로 보이게
     this.propLabels = {};
-    const mkLabel = (obj, id) => {
-      const t = this.scene.add
-        .text(obj.x, SHELF_Y + 9, "", { fontFamily: '"Galmuri9", "Galmuri11", monospace', fontSize: "8px", color: "#9fb8d0" })
+    this.room = this.scene.add.image(ROOM_X, ROOM_Y, "world/room").setOrigin(0, 0).setScale(WORLD_SCALE).setDepth(5);
+    for (const f of facilities) {
+      const pos = facilityPos(f.id);
+      const meta = facilitySpriteMeta(f.id, 1);
+      const s = this.scene.add.image(pos.x, pos.y, facilitySpriteKey(f.id, 1))
+        .setOrigin(meta.ax / meta.w, meta.ay / meta.h)
+        .setScale(WORLD_SCALE)
+        .setDepth(stationDepth(pos.y));
+      this.props.push(s);
+      this.propByFacility[f.id] = s;
+      this.propLabels[f.id] = this.scene.add
+        .text(pos.x, pos.y + 6, "", {
+          fontFamily: '"Galmuri9", "Galmuri11", monospace', fontSize: "8px", color: "#c0cbdc",
+          backgroundColor: "rgba(20,18,28,0.72)", padding: { x: 3, y: 1 },
+        })
         .setOrigin(0.5, 0)
-        .setDepth(90);
-      this.propLabels[id] = t;
-    };
-    Object.entries(this.propByFacility).forEach(([id, object]) => mkLabel(object, id));
+        .setDepth(stationDepth(pos.y) + 1);
+    }
+    this.ballotbox = this.propByFacility.desk;
+    this.board = this.propByFacility.server;
+    // 서버실 위 LED 개표 현황
+    this.boardText = this.scene.add
+      .text(this.board.x + 34, this.board.y - 56, "", { fontFamily: '"Galmuri9", "Galmuri11", monospace', fontSize: "8px", color: "#2ce8f5", align: "center", backgroundColor: "rgba(20,18,28,0.6)", padding: { x: 3, y: 2 } })
+      .setOrigin(0.5)
+      .setDepth(stationDepth(this.board.y) + 2);
   }
 
-  // 각 장비를 대응 시설 레벨에 맞춰 키운다(시설 업그레이드가 화면에 보이게)
-  //  투표함←접수(desk) · 서류더미←기록(archive) · 상황판←전산(server)
+  // 시설 레벨 → 티어 스프라이트 교체(t1~t5) + 레벨 라벨. 승급 시 번쩍 + 알림.
   _syncProps() {
     const lvl = (id) => (this.gameState.level ? this.gameState.level(id) : 0);
-    // 뒷줄 선반 기준(BACK_SCALE)에서 레벨에 따라 완만히 성장 — 너무 커져 옆을 침범하지 않게 +0.4 상한
-    const grow = (l) => BACK_SCALE * 0.82 * (1 + Math.min(0.24, l / 120));
-    Object.entries(this.propByFacility).forEach(([id, object]) => this._tweenScale(object, grow(lvl(id))));
-
-    // 시설 레벨 뱃지 + t1~t5 실루엣 진화(승급 시 번쩍 + 알림)
-    const TIER_NAME = { t1: "기본", t2: "증설", t3: "정예", t4: "특급", t5: "전설" };
+    const TIER_NAME = { 2: "증설", 3: "정예", 4: "특급", 5: "전설" };
     Object.entries(this.propByFacility).forEach(([id, obj]) => {
       if (!obj) return;
       const l = lvl(id);
       const label = this.propLabels[id];
-      if (label) label.setText(l > 0 ? `Lv.${l}` : "");
+      if (label) { label.setText(l > 0 ? `Lv.${l}` : ""); label.setVisible(l > 0); }
       obj.setVisible(l > 0);
       const t = tierForLevel(l);
-      const textureTier = t === "locked" ? "t1" : t;
-      if (this._propTier[id] === undefined) {
-        this._propTier[id] = t;
-        obj.setTexture(facilityPropTextureKey(id, textureTier));
-      } else if (t !== this._propTier[id]) {
-        const previous = Number(String(this._propTier[id]).replace("t", "")) || 0;
-        const current = Number(String(t).replace("t", "")) || 0;
-        const up = current > previous;
-        this._propTier[id] = t;
-        obj.setTexture(facilityPropTextureKey(id, textureTier));
-        if (up && current > 1) {
-          const s = obj.scaleX;
-          this.scene.tweens.add({ targets: obj, scaleX: s * 1.3, scaleY: s * 1.3, yoyo: true, duration: 180, ease: "Back.easeOut" });
-          this.effects.float({ text: `★ ${TIER_NAME[t]} 시설 승급!`, x: obj.x, y: obj.y - 56, color: "#ffd34d" });
+      const tierN = t === "locked" ? 1 : Number(String(t).replace("t", "")) || 1;
+      const key = facilitySpriteKey(id, tierN);
+      if (obj.texture.key !== key) {
+        const meta = facilitySpriteMeta(id, tierN);
+        const prev = this._propTier[id];
+        obj.setTexture(key).setOrigin(meta.ax / meta.w, meta.ay / meta.h);
+        if (prev !== undefined && tierN > prev && l > 0) {
+          this.scene.tweens.add({ targets: obj, scaleX: WORLD_SCALE * 1.25, scaleY: WORLD_SCALE * 1.25, yoyo: true, duration: 180, ease: "Back.easeOut" });
+          this.effects.float({ text: `★ ${TIER_NAME[tierN] || "기본"} 시설 승급!`, x: obj.x, y: obj.y - obj.displayHeight - 10, color: "#ffd34d" });
         }
       }
+      this._propTier[id] = tierN;
     });
 
-    // 상황판 실시간 개표 현황(구역 진행률)
     if (this.boardText) {
       const d = this.gameState.data;
       const pct = Math.min(100, Math.round((d.stage.progress / d.stage.target) * 100));
@@ -509,11 +473,11 @@ export class WorldView {
   _flyBallotToBox() {
     if (!this.ballotbox || this._flying > 6) return; // 동시 비행 표 상한(성능)
     this._flying = (this._flying || 0) + 1;
-    const sx = GAME_W / 2 + (Math.random() * 30 - 15);
-    const sy = GROUND_Y - 86;
+    const sx = this.gov.x + (Math.random() * 30 - 15);
+    const sy = GROUND_Y - 44;
     const tx = this.ballotbox.x + (Math.random() * 10 - 5);
     const ty = this.ballotbox.y - this.ballotbox.displayHeight * 0.6;
-    const b = this.scene.add.image(sx, sy, "ballot").setDepth(150).setScale(0);
+    const b = this.scene.add.image(sx, sy, "ballot").setDepth(2400).setScale(0);
     this.scene.tweens.add({ targets: b, scale: 0.42, duration: 110, ease: "Back.easeOut" });
     this.scene.tweens.add({ targets: b, x: tx, angle: -160, duration: 440, ease: "Sine.easeIn" });
     this.scene.tweens.add({
@@ -637,21 +601,21 @@ export class WorldView {
     // 불신 위기(trust<20)면 절반은 위기 대사 — 중앙 캐릭터가 게임 상태(믿음)에 반응하게.
     if (this.gameState.trustState && this.gameState.trustState() === "crisis" && Math.random() < 0.5) {
       const txt = GOV_LINES_CRISIS[(Math.random() * GOV_LINES_CRISIS.length) | 0];
-      this.effects.float({ text: `"${txt}"`, x: GAME_W / 2, y: 372, color: "#ff9a8e" }); // 불안한 붉은톤
+      this.effects.float({ text: `"${txt}"`, x: this.gov.x, y: GROUND_Y - 64, color: "#ff9a8e" }); // 불안한 붉은톤
       return;
     }
     // 45% 확률로 현재 성장 단계 전용 대사, 아니면 공통 풀에서 — 캐릭터 성장이 말에도 드러나게
     const stageLines = GOV_LINES_BY_STAGE[this._govStage] || [];
     const pool = (stageLines.length && Math.random() < 0.45) ? stageLines : GOV_LINES;
     const txt = pool[(Math.random() * pool.length) | 0];
-    this.effects.float({ text: `"${txt}"`, x: GAME_W / 2, y: 372, color: "#ffe9c0" });
+    this.effects.float({ text: `"${txt}"`, x: this.gov.x, y: GROUND_Y - 64, color: "#ffe9c0" });
   }
 
   // 큰 성취 반응 — 기쁜 점프 + 환호 대사(밝은 금색으로 평소 대사와 구분)
   _govReact() {
     if (!this.gov || !this.gov.active) return;
     const txt = GOV_REACT_LINES[(Math.random() * GOV_REACT_LINES.length) | 0];
-    this.effects.float({ text: `"${txt}"`, x: GAME_W / 2, y: 360, color: "#ffd479" });
+    this.effects.float({ text: `"${txt}"`, x: this.gov.x, y: GROUND_Y - 72, color: "#ffd479" });
     this._govGesture();
   }
 
@@ -664,7 +628,7 @@ export class WorldView {
       targets: this.gov, y: GROUND_Y - 14, yoyo: true, duration: 200, ease: "Quad.easeOut",
       onComplete: () => { if (this.gov && this.gov.active) this._startBob(); },
     });
-    if (Math.random() < 0.6) this.effects.ballots({ x: GAME_W / 2 + (Math.random() * 40 - 20), y: GROUND_Y - 96, count: 2 });
+    if (Math.random() < 0.6) this.effects.ballots({ x: this.gov.x + (Math.random() * 40 - 20), y: GROUND_Y - 50, count: 2 });
   }
 
   _squishGov() {
@@ -690,8 +654,7 @@ export class WorldView {
 
   _spawnGolden() {
     if (this._golden) return;
-    const x = 70 + Math.random() * 250;
-    const y = 180 + Math.random() * 200 + (this._camTarget || 0); // 카메라 스크롤 보정 — 화면 안 스폰 보장
+    const { x, y } = randomFloorPoint(1.5);
     const key = "decor/ballotbox";
     const halo = this.scene.add.image(x, y, key).setDepth(4999).setTint(0xffe9a8).setAlpha(0.3).setScale(1.5);
     this._goldenHalo = halo;
@@ -736,40 +699,44 @@ export class WorldView {
     }
   }
 
-  // 현장 슬롯의 세 직원만 국장 앞에 배치하고, 직급 장식을 별도 오버레이로 유지한다.
+  // 현장 배치 직원 — 담당(시너지) 시설 앞 타일에서 타이핑 루프. 직급 배지는 머리 위 오버레이.
   _syncWorkers() {
     const deployed = this.gameState.staffSlots ? this.gameState.staffSlots() : [];
+    const variants = WORLD_ATLAS.workers.variants;
     Object.entries(this._workers).forEach(([id, worker]) => {
-      const index = deployed.indexOf(id);
-      if (index >= 0 && worker.slot === index) return;
+      if (deployed.includes(id)) return;
       this.scene.tweens.killTweensOf([worker.body, worker.badge]);
       worker.body.destroy();
       worker.badge.destroy();
       worker.shadow.destroy();
       delete this._workers[id];
     });
-    deployed.forEach((id, index) => {
-      const staff = staffDefinitions.find((item) => item.id === id);
+    deployed.forEach((id) => {
+      const staffIndex = staffDefinitions.findIndex((item) => item.id === id);
+      const staff = staffDefinitions[staffIndex];
       if (!staff) return;
       const rank = staffRankForLevel(this.gameState.staffLevel(id));
+      const facId = FACILITY_SLOTS[staff.synergy?.facility] ? staff.synergy.facility : "desk";
+      const slot = FACILITY_SLOTS[facId];
+      const pos = workerPos(facId);
+      const variant = staffIndex % variants;
       let worker = this._workers[id];
       if (!worker) {
-        const sx = WORKER_SLOTS[index];
-        const shadow = this.scene.add.rectangle(sx, WORKER_Y + 1, 24, 6, 0x000000, 0.4).setDepth(110);
-        const body = this.scene.add.image(sx, WORKER_Y, "worker-mini").setOrigin(0.5, 1).setScale(0).setDepth(111).setTint(lightenColor(staff.color || 0xffffff, 0.35));
-        const badge = this.scene.add.image(sx, WORKER_Y, `worker-rank-${rank.tier}`).setOrigin(0.5, 1).setScale(0).setDepth(112);
-        worker = { slot: index, rank: rank.tier, body, badge, shadow };
+        const shadow = this.scene.add.rectangle(pos.x, pos.y + 1, 28, 6, 0x000000, 0.35).setDepth(workerDepth(pos.y) - 1);
+        const body = this.scene.add.sprite(pos.x, pos.y, "workers").setOrigin(0.5, 1).setScale(0).setDepth(workerDepth(pos.y));
+        body.play(`worker-type-${slot.facing}-${variant}`);
+        const badge = this.scene.add.image(pos.x + 12, pos.y - 46, `worker-rank-${rank.tier}`).setOrigin(0.5, 1).setScale(0).setDepth(workerDepth(pos.y) + 1);
+        worker = { facId, rank: rank.tier, body, badge, shadow };
         this._workers[id] = worker;
-        this.scene.tweens.add({ targets: [body, badge], scaleX: WORKER_SCALE, scaleY: WORKER_SCALE, duration: 280, ease: "Back.easeOut" });
-        this.scene.tweens.add({ targets: [body, badge], y: WORKER_Y - 3, yoyo: true, repeat: -1, duration: 640 + index * 70, ease: "Sine.easeInOut", delay: 120 + index * 90 });
-        this.scene.tweens.add({ targets: [body, badge], x: sx + (index % 2 ? 6 : -6), yoyo: true, repeat: -1, duration: 1600 + index * 180, ease: "Sine.easeInOut", delay: 200 + index * 120 });
-        this.effects.deskPop(sx, GROUND_Y - 14);
+        this.scene.tweens.add({ targets: body, scaleX: WORKER_SCALE, scaleY: WORKER_SCALE, duration: 280, ease: "Back.easeOut" });
+        this.scene.tweens.add({ targets: badge, scaleX: WORKER_SCALE, scaleY: WORKER_SCALE, duration: 280, ease: "Back.easeOut" });
+        this.scene.tweens.add({ targets: [body, badge], y: "-=2", yoyo: true, repeat: -1, duration: 1200, ease: "Sine.easeInOut" });
+        this.effects.deskPop(pos.x, pos.y - 30);
       } else if (worker.rank !== rank.tier) {
         worker.rank = rank.tier;
         worker.badge.setTexture(`worker-rank-${rank.tier}`);
-        const scale = worker.body.scaleX;
-        this.scene.tweens.add({ targets: [worker.body, worker.badge], scaleX: scale * 1.2, scaleY: scale * 1.2, yoyo: true, duration: 180, ease: "Back.easeOut" });
-        this.effects.float({ text: `★ ${rank.name} 승급!`, x: worker.body.x, y: worker.body.y - 40, color: "#ffd34d" });
+        this.scene.tweens.add({ targets: worker.body, scaleX: WORKER_SCALE * 1.2, scaleY: WORKER_SCALE * 1.2, yoyo: true, duration: 180, ease: "Back.easeOut" });
+        this.effects.float({ text: `★ ${rank.name} 승급!`, x: worker.body.x, y: worker.body.y - 56, color: "#ffd34d" });
       }
     });
   }
@@ -783,8 +750,7 @@ export class WorldView {
   _spawnItem() {
     if (this._item) return;
     const def = pickRandomItem();
-    const x = 70 + Math.random() * 250;
-    const y = 170 + Math.random() * 160 + (this._camTarget || 0); // 카메라 스크롤 보정
+    const { x, y } = randomFloorPoint(1.5);
     const halo = this.scene.add.circle(x, y, 22, 0xffe9a8, 0.18).setDepth(4998);
     this._itemHalo = halo;
     this._itemHaloT = this.scene.tweens.add({ targets: halo, scale: 1.4, alpha: 0.05, yoyo: true, repeat: -1, duration: 700, ease: "Sine.easeInOut" });
@@ -873,7 +839,7 @@ export class WorldView {
       if (!id) { if (spr) spr.setVisible(false); continue; }
       const key = id; // 텍스처 키 = cosmetic id(cos-*)
       if (!spr) {
-        spr = this.scene.add.image(this.gov.x, this.gov.y, key).setOrigin(0.5, 1).setScale(GOV_SCALE).setDepth(102);
+        spr = this.scene.add.image(this.gov.x, this.gov.y, key).setOrigin(0.5, 1).setScale(GOV_SCALE).setDepth(workerDepth(GROUND_Y) + 1);
         this._cosSprites[slot] = spr;
       }
       if (spr.texture.key !== key) spr.setTexture(key);
@@ -942,6 +908,7 @@ export class WorldView {
     this.cpsText?.destroy();
     this.comboText?.destroy();
     this.bg?.destroy();
+    this.room?.destroy();
     this.titleBg?.destroy();
     this.titleTop?.destroy();
     this.titleMain?.destroy();
