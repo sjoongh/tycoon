@@ -1,3 +1,4 @@
+import { iconRef } from "../assets/iconTextures.js";
 import { WorldEffects } from "./WorldEffects.js";
 import { facilityPropTextureKey, govTextureKey, govStageFor } from "./dotChar.js";
 import { staffDefinitions } from "../data/staff.js";
@@ -187,7 +188,7 @@ export class WorldView {
     this._onEventResolved = (e) => {
       if (!e.detail) return;
       if (e.detail.real) this._newsFlash(e.detail.title);
-      if (e.detail.firstSeen) this.gameState.emit("float", { text: "📖 도감 수집!", x: 195, y: 500, color: "#ffd479" });
+      if (e.detail.firstSeen) this.gameState.emit("float", { text: "도감 수집!", x: 195, y: 500, color: "#ffd479" });
     };
     document.addEventListener("gp:event-resolved", this._onEventResolved);
 
@@ -352,7 +353,7 @@ export class WorldView {
     // 체제가 바뀌는 순간엔 배너 토스트
     if (eraTheme(area).key !== prevKey) {
       const t = eraTheme(area);
-      this.effects.float({ text: `${t.icon} ${t.name} 돌입`, x: GAME_W / 2, y: 150, color: "#ffe3a8" });
+      this.effects.float({ text: `${t.name} 돌입`, x: GAME_W / 2, y: 150, color: "#ffe3a8" });
     }
   }
 
@@ -391,7 +392,7 @@ export class WorldView {
       .setDepth(111);
     // 간판 아래 "지도" 힌트 + 클릭 영역(탭하면 전국 지도 모달)
     this.titleHint = this.scene.add
-      .text(cx, top + h + 9, "🗺 전국 지도", { fontFamily: '"Galmuri9", "Galmuri11", monospace', fontSize: "10px", color: "#9fb8d0" })
+      .text(cx, top + h + 9, "전국 지도", { fontFamily: '"Galmuri9", "Galmuri11", monospace', fontSize: "10px", color: "#9fb8d0" })
       .setOrigin(0.5)
       .setDepth(111);
     this.scene.tweens.add({ targets: this.titleHint, alpha: 0.5, yoyo: true, repeat: -1, duration: 900, ease: "Sine.easeInOut" });
@@ -580,11 +581,11 @@ export class WorldView {
     });
   }
 
-  // 사이다! 정의구현 순간 — 큰 "🔥 사이다!" + 국장 반격 대사 + 외신 극찬 + 축포 + 점프.
+  // 사이다! 정의구현 순간 — 큰 "사이다!" + 국장 반격 대사 + 외신 극찬 + 축포 + 점프.
   _ciderMoment(p) {
     const cx = GAME_W / 2;
     // 큰 사이다 텍스트(금색, 팝)
-    const big = this.scene.add.text(cx, 262, "🔥 사이다!", { fontFamily: '"Galmuri14", "Galmuri11", monospace', fontSize: "26px", color: "#ffd34d" }).setOrigin(0.5).setDepth(210).setScale(0.4).setScrollFactor(0);
+    const big = this.scene.add.text(cx, 262, "사이다!", { fontFamily: '"Galmuri14", "Galmuri11", monospace', fontSize: "26px", color: "#ffd34d" }).setOrigin(0.5).setDepth(210).setScale(0.4).setScrollFactor(0);
     big.setShadow(3, 3, "#b13e53", 0, true, true);
     this.scene.tweens.add({ targets: big, scale: 1, duration: 300, ease: "Back.easeOut" });
     this.scene.tweens.add({ targets: big, alpha: 0, y: 232, duration: 500, delay: 900, onComplete: () => big.destroy() });
@@ -618,7 +619,7 @@ export class WorldView {
     const accent = item.tone === "praise" ? "#8df0b0" : item.tone === "mock" ? "#ff9a8e" : "#9fd0e0";
     // 2줄 레이아웃 — 위: 📰 외신 · 매체명 / 아래: 헤드라인. 가독성↑
     const bar = this.scene.add.rectangle(GAME_W / 2, y, GAME_W, 42, col, 0.95).setDepth(200).setScale(1, 0).setScrollFactor(0);
-    const top = this.scene.add.text(12, y - 10, `📰 외신 · ${item.outlet}`, { fontFamily: '"Galmuri9", "Galmuri11", monospace', fontSize: "9px", color: accent }).setOrigin(0, 0.5).setDepth(202).setAlpha(0).setScrollFactor(0);
+    const top = this.scene.add.text(12, y - 10, `외신 · ${item.outlet}`, { fontFamily: '"Galmuri9", "Galmuri11", monospace', fontSize: "9px", color: accent }).setOrigin(0, 0.5).setDepth(202).setAlpha(0).setScrollFactor(0);
     const head = this.scene.add.text(12, y + 8, item.text, { fontFamily: '"Galmuri9", "Galmuri11", monospace', fontSize: "10px", color: "#ffffff", wordWrap: { width: GAME_W - 24 } }).setOrigin(0, 0.5).setDepth(202).setAlpha(0).setScrollFactor(0);
     this._pressEls = [bar, top, head];
     this.scene.tweens.add({ targets: bar, scaleY: 1, duration: 140, ease: "Back.easeOut" });
@@ -715,7 +716,7 @@ export class WorldView {
       this.scene.time.delayedCall(2600, () => {
         if (!this._golden || this._golden !== disc) return;
         const reward = this.gameState.collectGoldenBallot(0.8, { fever: false });
-        this.effects.float({ text: `🤖 +${shortNumber(reward)}`, x, y: y - 28, color: "#ffd34d" });
+        this.effects.float({ text: `비서 +${shortNumber(reward)}`, x, y: y - 28, color: "#ffd34d" });
         this._despawnGolden();
         this._scheduleGolden(60000 + Math.random() * 60000);
       });
@@ -787,7 +788,7 @@ export class WorldView {
     const halo = this.scene.add.circle(x, y, 22, 0xffe9a8, 0.18).setDepth(4998);
     this._itemHalo = halo;
     this._itemHaloT = this.scene.tweens.add({ targets: halo, scale: 1.4, alpha: 0.05, yoyo: true, repeat: -1, duration: 700, ease: "Sine.easeInOut" });
-    const txt = this.scene.add.text(x, y, def.icon, { fontSize: "30px" }).setOrigin(0.5).setDepth(5001).setInteractive({ useHandCursor: true });
+    const txt = this.scene.add.image(x, y, ...iconRef(def.icon)).setOrigin(0.5).setDepth(5001).setInteractive({ useHandCursor: true });
     this._item = txt;
     txt.setScale(0);
     this.scene.tweens.add({ targets: txt, scale: 1, duration: 260, ease: "Back.easeOut" });
@@ -797,7 +798,7 @@ export class WorldView {
       this.scene.time.delayedCall(2200, () => {
         if (!this._item || this._item !== txt) return;
         const res = this.gameState.applyRandomItem(def.id, { fever: false });
-        this.effects.float({ text: `🤖 ${res.text}`, x, y: y - 30, color: "#ffe3a8" });
+        this.effects.float({ text: `비서 · ${res.text}`, x, y: y - 30, color: "#ffe3a8" });
         this._despawnItem();
         this._scheduleItem(25000 + Math.random() * 20000);
       });
@@ -847,7 +848,7 @@ export class WorldView {
     this.bigNum.setColor(fever ? "#ffd34d" : "#ffffff");
     this.bigNum.setShadow(3, 3, fever ? "#ef7d57" : "#b13e53", 0, true, true);
     this.cpsText
-      .setText(`${fever ? `${finisher ? "⚡ 막판 총력" : `${feverProfile.icon} ${feverProfile.name}`}` : "▶"} · 초당 ${cps < 10000 ? cps.toFixed(0) : shortNumber(cps)}표`)
+      .setText(`${fever ? `${finisher ? "막판 총력" : feverProfile.name}` : "▶"} · 초당 ${cps < 10000 ? cps.toFixed(0) : shortNumber(cps)}표`)
       .setColor(fever ? "#ffe3a8" : "#bcd0e0");
     if (fever && !this._feverWasActive) {
       this.scene.tweens.killTweensOf(this.bigNum);
@@ -886,7 +887,7 @@ export class WorldView {
     const td = this.gameState.equippedTitleDef ? this.gameState.equippedTitleDef() : null;
     if (!td) { this.titlePlate.setVisible(false); this._titleId = null; return; }
     const lv = (d.titles && d.titles[td.id]) || 0;
-    this.titlePlate.setText(`${td.emoji} ${td.name}${lv > 1 ? ` Lv.${lv}` : ""}`);
+    this.titlePlate.setText(`${td.name}${lv > 1 ? ` Lv.${lv}` : ""}`);
     this.titlePlate.setColor(RARITY_COLOR[td.rarity] || "#ffd479");
     this.titlePlate.setVisible(true);
     if (this._titleId !== td.id) {

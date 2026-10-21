@@ -1,3 +1,4 @@
+import { iconHtml } from "./icon.js";
 import pkg from "../../package.json";
 import { cloudEnabled } from "../firebaseConfig.js";
 import { mirrorNativeSave, clearNativeSave } from "../state/persistence.js";
@@ -35,22 +36,22 @@ export class DOMSettings {
   _render() {
     const n = this.notifications;
     const bellRow = n && n.supported && n.supported() && n.granted()
-      ? `<div class="gp-set__row"><span>🔔 알림</span><button class="gp-btn gp-btn--sm" data-set="bell">${n.muted() ? "꺼짐" : "켜짐"}</button></div>`
+      ? `<div class="gp-set__row"><span>${iconHtml("ui-bell", { scale: 1 })}알림</span><button class="gp-btn gp-btn--sm" data-set="bell">${n.muted() ? "꺼짐" : "켜짐"}</button></div>`
       : "";
     const cloudRow = cloudEnabled()
-      ? `<div class="gp-set__row"><span>☁️ 클라우드 저장</span><b class="gp-set__ok">자동 동기화 중</b></div>`
+      ? `<div class="gp-set__row"><span>클라우드 저장</span><b class="gp-set__ok">자동 동기화 중</b></div>`
       : "";
     this.root.innerHTML = `<div class="gp-map gp-settings">
-      <div class="gp-map__hd"><span>⚙️ 설정</span><button class="gp-map__x" aria-label="닫기">✕</button></div>
+      <div class="gp-map__hd"><span>${iconHtml("ui-gear", { scale: 1 })}설정</span><button class="gp-map__x" aria-label="닫기">✕</button></div>
       <div class="gp-map__list gp-set__list">
-        <div class="gp-set__row"><span>🔊 소리</span><button class="gp-btn gp-btn--sm" data-set="mute">${this._muted ? "꺼짐" : "켜짐"}</button></div>
+        <div class="gp-set__row"><span>소리</span><button class="gp-btn gp-btn--sm" data-set="mute">${this._muted ? "꺼짐" : "켜짐"}</button></div>
         ${bellRow}
         ${cloudRow}
-        <div class="gp-map__era">💾 데이터</div>
+        <div class="gp-map__era">데이터</div>
         <div class="gp-set__row"><span>세이브 내보내기</span><button class="gp-btn gp-btn--sm" data-set="export">복사</button></div>
         <div class="gp-set__row"><span>세이브 가져오기</span><button class="gp-btn gp-btn--sm" data-set="import">붙여넣기</button></div>
         <div class="gp-set__row"><span>처음부터 다시 시작</span><button class="gp-btn gp-btn--sm gp-set__danger" data-set="reset">${this._resetArmed ? "정말 삭제!" : "초기화"}</button></div>
-        <div class="gp-map__era">ℹ️ 정보</div>
+        <div class="gp-map__era">정보</div>
         <div class="gp-set__row"><span>버전</span><b>v${pkg.version}</b></div>
         <div class="gp-set__row"><span>개인정보처리방침</span><button class="gp-btn gp-btn--sm" data-set="privacy">보기</button></div>
         <div class="gp-set__note">폰트: Galmuri(quiple), Press Start 2P — OFL 라이선스 · 엔진: Phaser 3</div>

@@ -1,4 +1,5 @@
 import { shortNumber } from "../utils/format.js";
+import { iconHtml, iconStyle } from "./icon.js";
 
 export class DOMHud {
   constructor(gameState, notifications = null) {
@@ -8,9 +9,9 @@ export class DOMHud {
     this.root.className = "gp-hud";
     this.root.innerHTML = `
       <div class="gp-hud__row">
-        <div class="gp-chip gp-chip--votes"><span class="gp-chip__ic" style="background-image:url('/art/icons/votes.webp')"></span><span><div class="gp-chip__label">표</div><div class="gp-chip__val" data-k="votes">0</div></span></div>
-        <div class="gp-chip gp-chip--explain"><span class="gp-chip__ic" style="background-image:url('/art/icons/explain.webp')"></span><span><div class="gp-chip__label">해명</div><div class="gp-chip__val" data-k="explain">0</div></span></div>
-        <div class="gp-chip gp-chip--trust"><span class="gp-chip__ic" style="background-image:url('/art/icons/trust.webp')"></span><span><div class="gp-chip__label">믿음</div><div class="gp-chip__val" data-k="trust">0%</div></span></div>
+        <div class="gp-chip gp-chip--votes"><span class="gp-chip__ic" style="${iconStyle("res-votes", 1)}"></span><span><div class="gp-chip__label">표</div><div class="gp-chip__val" data-k="votes">0</div></span></div>
+        <div class="gp-chip gp-chip--explain"><span class="gp-chip__ic" style="${iconStyle("res-explain", 1)}"></span><span><div class="gp-chip__label">해명</div><div class="gp-chip__val" data-k="explain">0</div></span></div>
+        <div class="gp-chip gp-chip--trust"><span class="gp-chip__ic" style="${iconStyle("res-trust", 1)}"></span><span><div class="gp-chip__label">믿음</div><div class="gp-chip__val" data-k="trust">0%</div></span></div>
       </div>
       <div class="gp-progress"><div class="gp-progress__fill" data-k="progress"></div></div>
       <div class="gp-stage" data-k="stage"></div>
@@ -50,7 +51,7 @@ export class DOMHud {
     this._muteBtn = document.createElement("button");
     this._muteBtn.className = "gp-mute";
     this._muteBtn.setAttribute("aria-label", "설정");
-    this._muteBtn.textContent = "⚙️";
+    this._muteBtn.innerHTML = iconHtml("ui-gear", { scale: 1 });
     this._muteBtn.addEventListener("click", () => document.dispatchEvent(new CustomEvent("gp:open-settings")));
 
     // 긴급 개표는 독립 버프가 아니라 피버 마지막 4초의 1회 피니셔다.
@@ -102,9 +103,9 @@ export class DOMHud {
     badge.hidden = true;
     const stageEl = this._els.stage;
     const stateSuffix = state === "crisis"
-      ? ` · <span style="color:#ff9a9a">⚠ 불신위기</span>`
+      ? ` · <span style="color:#ff9a9a">▼ 불신위기</span>`
       : state === "bonus"
-      ? ` · <span style="color:#8df0b0">✦ 신뢰보너스</span>`
+      ? ` · <span style="color:#8df0b0">▲ 신뢰보너스</span>`
       : "";
     // 초당 생산은 월드 하단에 상시 노출되므로 HUD에는 진행 맥락만 남긴다.
     const stageMarkup = `${d.stage.area}구역 · D-${d.days}${stateSuffix}`;
@@ -120,7 +121,7 @@ export class DOMHud {
       if (gauge > 0) {
         gEl.hidden = false;
         this._setStyle(this._els.commFill, "transform", `scaleX(${gauge})`);
-        this._setText(this._els.commText, `🚩 체제 전복 위기 ${Math.round(gauge * 100)}%`);
+        this._setText(this._els.commText, `체제 전복 위기 ${Math.round(gauge * 100)}%`);
         gEl.classList.toggle("gp-commgauge--danger", gauge >= 0.66);
       } else {
         gEl.hidden = true;
@@ -155,7 +156,7 @@ export class DOMHud {
     const active = gs.feverActive();
     const recovering = gs.feverRecovering ? gs.feverRecovering() : false;
     const pct = Math.max(0, Math.min(1, gs.feverProgressPct()));
-    const profile = gs.feverProfile ? gs.feverProfile() : { icon: "🔥", name: "개표 피버", summary: "생산·탭 강화" };
+    const profile = gs.feverProfile ? gs.feverProfile() : { icon: "op-fire", name: "개표 피버", summary: "생산·탭 강화" };
     fever.classList.toggle("gp-fever--active", active);
     fever.classList.toggle("gp-fever--recovery", recovering);
     ["tap", "build", "response"].forEach((family) => {
@@ -163,10 +164,10 @@ export class DOMHud {
     });
     this._setStyle(this._els.feverFill, "transform", `scaleX(${pct})`);
     this._setText(this._els.feverLabel, active
-      ? `${profile.icon} ${profile.name}`
+      ? `${profile.name}`
       : recovering
         ? "재정비 중"
-        : `${profile.icon} ${profile.name} 열기`);
+        : `${profile.name} 열기`);
     this._setText(this._els.feverHint, active
       ? `${profile.summary} · 눌러서 작전 현황`
       : recovering
@@ -217,7 +218,7 @@ export class DOMHud {
     } else {
       className = "gp-brief gp-brief--ready";
       disabled = false;
-      html = `<b>📢 긴급 브리핑</b><small>해명 ${shortNumber(gs.briefCost())} · 믿음+12</small>`;
+      html = `<b>긴급 브리핑</b><small>해명 ${shortNumber(gs.briefCost())} · 믿음+12</small>`;
     }
     const markupKey = `${className}|${disabled}|${html}`;
     if (markupKey !== this._briefMarkupKey) {
@@ -244,12 +245,12 @@ export class DOMHud {
       disabled = true;
       const rushPct = Math.round(Math.max(0, Math.min(100, (remMs / gs.feverFinisherWindowMs()) * 100)));
       if (btn.style.getPropertyValue("--rush-pct") !== `${rushPct}%`) btn.style.setProperty("--rush-pct", `${rushPct}%`);
-      html = `<b>⚡ 막판 총력!</b><small>추가 ×2 · ${Math.ceil(remMs / 1000)}초</small>`;
+      html = `<b>막판 총력!</b><small>추가 ×2 · ${Math.ceil(remMs / 1000)}초</small>`;
     } else {
       className = "gp-rush gp-rush--ready";
       disabled = false;
       btn.style.removeProperty("--rush-pct");
-      html = `<b>⚡ 막판 총력</b><small>남은 피버 추가 ×2</small>`;
+      html = `<b>막판 총력</b><small>남은 피버 추가 ×2</small>`;
     }
     const markupKey = `${className}|${disabled}|${html}`;
     if (markupKey !== this._rushMarkupKey) {

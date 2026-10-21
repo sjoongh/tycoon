@@ -677,8 +677,8 @@ export class GameState extends Phaser.Events.EventEmitter {
       const bonus = Math.round(this.clickPower() * msBonus * (1 + this.operationEffectFor(this.data, "comboBonusPct") + this.operationEffectFor(this.data, "comboRewardPct")));
       this.addVotes(bonus);
       if (!this.bossUsesPatterns()) this.addBossProgress(bonus);
-      this.emit("celebrate", { text: `🔥 ${this._clickCombo} 콤보! +${shortNumber(bonus)}표!` });
-      this.emit("float", { text: `🔥 +${shortNumber(bonus)}`, x, y: y - 62, color: "#ff7a3c" });
+      this.emit("celebrate", { text: `${this._clickCombo} 콤보! +${shortNumber(bonus)}표!` });
+      this.emit("float", { text: `+${shortNumber(bonus)}`, x, y: y - 62, color: "#ff7a3c" });
       // 콤보 축하음은 celebrate 이벤트(achieve)로 처리됨 — 중복 디스패치 제거
     }
     this.checkProgression();
@@ -761,7 +761,7 @@ export class GameState extends Phaser.Events.EventEmitter {
       clearedArea: 0,
       outcome: null,
     };
-    this.addLog(`${definition?.icon || "⚠"} ${definition?.title || "체크포인트 검증"} 시작`);
+    this.addLog(`${definition?.title || "체크포인트 검증"} 시작`);
     this.emit("boss-start", { area, definition, durationMs: BOSS_DURATION_MS });
     this.emit("changed");
     this.save(false);
@@ -946,7 +946,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     this.addLog(`작전 채택: ${operation.name} Lv.${level + 1}`);
     this.addFever("choice", 12);
     // 채택 결과는 중앙 알림 큐에서 한 번만 보여 중복 연출을 피한다.
-    this.emit("celebrate", { text: `${operation.icon} 작전 채택 · ${operation.name} Lv.${level + 1}` });
+    this.emit("celebrate", { text: `작전 채택 · ${operation.name} Lv.${level + 1}` });
     this.emit("changed");
     this.save(false);
     return true;
@@ -1050,7 +1050,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     }
     const profile = this.feverProfile(family);
     this.emit("fever-start", { durationMs: FEVER_DURATION_MS, family, profile });
-    this.emit("celebrate", { text: `${profile.icon} ${profile.name}! ${profile.summary}` });
+    this.emit("celebrate", { text: `${profile.name}! ${profile.summary}` });
   }
 
   _finishFever(now = Date.now()) {
@@ -1100,7 +1100,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     if (!this.bossUsesPatterns()) this.addBossProgress(instant, now);
     this.trackFeverAction(this.clickCombo(), now);
     this.emit("float", { text: `막판 총력! +${shortNumber(instant)}표`, x: 195, y: 300, color: "#ffd34d" });
-    this.emit("celebrate", { text: `⚡ 막판 총력! 남은 피버 ×${FEVER_FINISHER_MULT}` });
+    this.emit("celebrate", { text: `막판 총력! 남은 피버 ×${FEVER_FINISHER_MULT}` });
     this.emit("changed");
     return true;
   }
@@ -1168,7 +1168,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     const side = (ev.left[1].trust || 0) >= (ev.right[1].trust || 0) ? "left" : "right"; // 안전(믿음) 선택
     const result = this.resolveEventChoice(ev, side, { fever: false });
     if (!result) return;
-    this.addLog(`🤖 비서 자동 대응: ${ev.title}`);
+    this.addLog(`비서 자동 대응: ${ev.title}`);
     document.dispatchEvent(new CustomEvent("gp:event-resolved", { detail: result }));
   }
 
@@ -1182,8 +1182,8 @@ export class GameState extends Phaser.Events.EventEmitter {
     // 경고 단계 진입(상승 중 33%/66% 돌파 시 1회 경고)
     const warnAt = [Math.round(COMM_LIMIT * 0.33), Math.round(COMM_LIMIT * 0.66)];
     if (g > prev) {
-      if (prev < warnAt[0] && g >= warnAt[0]) this.emit("comm-warning", { level: 1, pct: g / COMM_LIMIT, text: "🚩 여론 싸늘 — 체제가 흔들립니다!" });
-      else if (prev < warnAt[1] && g >= warnAt[1]) this.emit("comm-warning", { level: 2, pct: g / COMM_LIMIT, text: "🚩🚩 전복 위기! 믿음을 올리세요!" });
+      if (prev < warnAt[0] && g >= warnAt[0]) this.emit("comm-warning", { level: 1, pct: g / COMM_LIMIT, text: "여론 싸늘 — 체제가 흔들립니다!" });
+      else if (prev < warnAt[1] && g >= warnAt[1]) this.emit("comm-warning", { level: 2, pct: g / COMM_LIMIT, text: "전복 위기! 믿음을 올리세요!" });
     }
     if (g >= COMM_LIMIT && prev < COMM_LIMIT) this.communistReset();
   }
@@ -1216,7 +1216,7 @@ export class GameState extends Phaser.Events.EventEmitter {
       ...structuredClone(fallbackState),
       ...kept,
       trust: 45, // 재건 시작 믿음(즉시 재전복 방지)
-      log: ["🚩 체제 전복 — 인민개표위원회 수립", "개표국 재건 시작"],
+      log: ["체제 전복 — 인민개표위원회 수립", "개표국 재건 시작"],
     }, Date.now());
     this.data.stats.collapses = collapses;
     this.data.commGauge = 0;
@@ -1773,60 +1773,60 @@ export class GameState extends Phaser.Events.EventEmitter {
   applyRandomItem(id, { fever = true } = {}) {
     const responseMult = this.feverResponseRewardMultiplier();
     const cps = this.cps() * responseMult;
-    let r = { icon: "📦", text: "" };
+    let r = { icon: "item-parcel", text: "" };
     switch (id) {
       case "parcel": {
         const v = Math.max(80, Math.floor(cps * 90));
-        this.addVotes(v); r = { icon: "📦", text: `의문의 택배 +${shortNumber(v)}표` }; break;
+        this.addVotes(v); r = { icon: "item-parcel", text: `의문의 택배 +${shortNumber(v)}표` }; break;
       }
       case "doc": {
         const e = Math.max(30, Math.floor(this.explainPerSecond() * 120 + this.data.explain * 0.25));
-        this.data.explain += e; r = { icon: "📜", text: `기밀 문서 해명+${shortNumber(e)}` }; break;
+        this.data.explain += e; r = { icon: "item-doc", text: `기밀 문서 해명+${shortNumber(e)}` }; break;
       }
       case "balloon": {
         this.data.trust = Phaser.Math.Clamp(this.data.trust + 8, 0, 100);
-        r = { icon: "🎈", text: `응원 답지 믿음+8` }; break;
+        r = { icon: "item-balloon", text: `응원 답지 믿음+8` }; break;
       }
       case "votes": {
         const v = Math.max(120, Math.floor(cps * 150));
-        this.addVotes(v); r = { icon: "🗳️", text: `숨은 표뭉치 +${shortNumber(v)}표` }; break;
+        this.addVotes(v); r = { icon: "item-votes", text: `숨은 표뭉치 +${shortNumber(v)}표` }; break;
       }
       case "donation": {
         const v = Math.max(200, Math.floor(cps * 320));
         const e = Math.floor(this.data.explain * 0.2 + 50);
         this.addVotes(v); this.data.explain += e;
-        r = { icon: "💰", text: `거액 후원 +${shortNumber(v)}표` }; break;
+        r = { icon: "item-donation", text: `거액 후원 +${shortNumber(v)}표` }; break;
       }
       case "coffee": {
         const v = Math.max(100, Math.floor(cps * 110));
-        this.addVotes(v); r = { icon: "☕", text: `야근 커피 +${shortNumber(v)}표` }; break;
+        this.addVotes(v); r = { icon: "item-coffee", text: `야근 커피 +${shortNumber(v)}표` }; break;
       }
       case "stamp": {
         const v = Math.max(90, Math.floor(cps * 100));
         const e = Math.floor(this.data.explain * 0.12 + 30);
         this.addVotes(v); this.data.explain += e;
-        r = { icon: "🧾", text: `결재 도장 +${shortNumber(v)}표` }; break;
+        r = { icon: "item-stamp", text: `결재 도장 +${shortNumber(v)}표` }; break;
       }
       case "ramen": {
         const v = Math.max(80, Math.floor(cps * 80));
         this.addVotes(v); this.data.trust = Phaser.Math.Clamp(this.data.trust + 5, 0, 100);
-        r = { icon: "🍜", text: `야식 회식 +${shortNumber(v)}표·믿음+5` }; break;
+        r = { icon: "item-ramen", text: `야식 회식 +${shortNumber(v)}표·믿음+5` }; break;
       }
       case "jackpot": {
         const big = Math.random() < 0.5;
         const v = big ? Math.max(500, Math.floor(cps * 600)) : Math.max(60, Math.floor(cps * 40));
         this.addVotes(v);
-        r = { icon: "🎰", text: big ? `🎉 복권 대박! +${shortNumber(v)}표` : `복권 꽝… +${shortNumber(v)}표` }; break;
+        r = { icon: "item-jackpot", text: big ? `복권 대박! +${shortNumber(v)}표` : `복권 꽝… +${shortNumber(v)}표` }; break;
       }
       case "pigeon": {
         const v = Math.max(90, Math.floor(cps * 95));
         this.addVotes(v); this.data.trust = Phaser.Math.Clamp(this.data.trust + 3, 0, 100);
-        r = { icon: "🕊️", text: `🕊️ 비둘기 소동 수습 +${shortNumber(v)}표·믿음+3` }; break;
+        r = { icon: "item-pigeon", text: `비둘기 소동 수습 +${shortNumber(v)}표·믿음+3` }; break;
       }
       case "tip": {
         const e = Math.max(40, Math.floor(this.explainPerSecond() * 110 + this.data.explain * 0.15));
         this.data.explain += e; this.data.trust = Phaser.Math.Clamp(this.data.trust + 3, 0, 100);
-        r = { icon: "📱", text: `📱 제보 전화 해명+${shortNumber(e)}·믿음+3` }; break;
+        r = { icon: "item-tip", text: `제보 전화 해명+${shortNumber(e)}·믿음+3` }; break;
       }
       default: break;
     }
@@ -1960,7 +1960,7 @@ export class GameState extends Phaser.Events.EventEmitter {
       if (this.achievementProgress(a.metric) < a.target) return;
       this.data.achievements[a.id] = true;
       this.grantReward(a.reward);
-      this.emit("celebrate", { text: `🏅 업적 달성 · ${a.name}` });
+      this.emit("celebrate", { text: `★ 업적 달성 · ${a.name}` });
     });
   }
 
@@ -2063,7 +2063,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     const r = q.reward || {};
     this.grantReward(r);
     this.data.daily.claimed[id] = true;
-    this.emit("celebrate", { text: `📅 일일 완료 · ${q.title}` });
+    this.emit("celebrate", { text: `일일 완료 · ${q.title}` });
     this.emit("changed");
     this.save(false);
     return r;
@@ -2076,7 +2076,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     this.addVotes(reward);
     if (fever) this.addFever("field", 30);
     this.trackFeverAction();
-    this.emit("celebrate", { text: `🌟 황금 투표함! +${shortNumber(reward)}표` });
+    this.emit("celebrate", { text: `★ 황금 투표함! +${shortNumber(reward)}표` });
     this.emit("changed");
     return reward;
   }
@@ -2128,7 +2128,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     const def = this.weeklyDef();
     this.data.prestige.seals += def.seals || 0;
     this.data.weekly.claimed = true;
-    this.emit("celebrate", { text: `🏆 ${def.title} 완료 · 인장 +${def.seals}` });
+    this.emit("celebrate", { text: `★ ${def.title} 완료 · 인장 +${def.seals}` });
     this.emit("changed");
     this.save(false);
     return { seals: def.seals };
@@ -2137,7 +2137,7 @@ export class GameState extends Phaser.Events.EventEmitter {
   checkQuests() {
     const grant = (quest) => {
       this.grantReward(quest.reward);
-      this.emit("celebrate", { text: `✅ 목표 완료 · ${quest.title}` });
+      this.emit("celebrate", { text: `✓ 목표 완료 · ${quest.title}` });
     };
     questDefinitions.forEach((quest) => {
       if (this.data.quests[quest.id]) return;
@@ -2239,7 +2239,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     this.addFever("brief", 18, now);
     this.trackFeverAction(0, now);
     this.emit("float", { text: `긴급 브리핑! 믿음 +${trustGain}`, x: 195, y: 330, color: "#8df0b0" });
-    this.emit("celebrate", { text: `📢 긴급 브리핑! 믿음 +${trustGain}` }); // 토스트+플래시 스파이크
+    this.emit("celebrate", { text: `긴급 브리핑! 믿음 +${trustGain}` }); // 토스트+플래시 스파이크
     this.emit("changed");
     return true;
   }
@@ -2510,7 +2510,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     }
     if (results.length) {
       const best = results.reduce((a, b) => (RARITY_ORDER[b.rarity] > RARITY_ORDER[a.rarity] ? b : a));
-      this.emit("celebrate", { text: `🎰 ${results.length}연차 완료 · 최고 ${best.emoji}${best.name}` });
+      this.emit("celebrate", { text: `${results.length}연차 완료 · 최고 ${best.name}` });
     }
     return results;
   }
@@ -2533,11 +2533,11 @@ export class GameState extends Phaser.Events.EventEmitter {
     const level = prev + 1;
     // 대표 칭호 갱신(더 높은 등급/레벨이면 자동 장착)
     this.data.equippedTitle = this.bestTitleId();
-    if (!quiet) this.emit("celebrate", { text: `${isNew ? "🎉 신규 발령" : "⬆️ 승진"} · ${def.name}${isNew ? "" : ` Lv.${level}`}` });
+    if (!quiet) this.emit("celebrate", { text: `${isNew ? "NEW 신규 발령" : "▲ 승진"} · ${def.name}${isNew ? "" : ` Lv.${level}`}` });
     this.checkProgression();
     this.emit("changed");
     this.save(false);
-    return { id: def.id, name: def.name, rarity: def.rarity, per: def.per, emoji: def.emoji, level, isNew };
+    return { id: def.id, name: def.name, rarity: def.rarity, per: def.per, icon: def.icon, level, isNew };
   }
 
   // ----- 국장 꾸미기(액세서리) -----
@@ -2583,7 +2583,7 @@ export class GameState extends Phaser.Events.EventEmitter {
       if (!this._cosmeticUnlocked(def)) continue;
       this.data.cosmetics[def.id] = 1;
       if (!this.data.equippedCos[def.slot]) this.data.equippedCos[def.slot] = def.id; // 빈 슬롯 자동 장착
-      this.emit("celebrate", { text: `${def.emoji} 꾸미기 해금 · ${def.name}` });
+      this.emit("celebrate", { text: `꾸미기 해금 · ${def.name}` });
     }
   }
 

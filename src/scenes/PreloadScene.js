@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import { generatePlaceholders } from "../textures/devPlaceholders.js";
 import { buildGovTextures, buildPropTextures, buildWorkerTexture, buildCosmeticTextures } from "../world/dotChar.js";
+import { loadIconSheets, registerIconFrames } from "../assets/iconTextures.js";
 
 export class PreloadScene extends Phaser.Scene {
   constructor() {
@@ -26,9 +27,11 @@ export class PreloadScene extends Phaser.Scene {
     //  · decor/ballotbox: 필드 황금 투표함  · ballot: 투표용지 파티클(BallotPool)
     this.load.image("decor/ballotbox", "/art/ballotbox.webp");
     this.load.image("ballot", "/art/ballot.webp");
+    loadIconSheets(this); // 아이콘 아틀라스(DOM과 공용)
   }
 
   create() {
+    registerIconFrames(this);
     generatePlaceholders(this); // ballot 폴백 등 안전망(존재하면 건너뜀)
     buildGovTextures(this); // 도트 국장 4단계 텍스처(gov-1..4)
     buildPropTextures(this); // 개표소 소품 텍스처(투표함/서류/깃발)

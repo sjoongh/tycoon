@@ -27,42 +27,42 @@ const phase = (type, target, options = {}) => ({
 export const checkpointBosses = [
   {
     id: "district-inspection",
-    icon: "🔎",
+    icon: "boss-district-inspection",
     title: "구청장 현장 점검",
     desc: "밀린 표를 빠르게 찍어 누락 의혹을 끝내세요.",
     phases: [phase("rapid", 8)],
   },
   {
     id: "recount-surge",
-    icon: "📣",
+    icon: "boss-recount-surge",
     title: "재검표 요구 폭주",
     desc: "양쪽 검인대를 번갈아 잠가 재검표를 마치세요.",
     phases: [phase("alternate", 6)],
   },
   {
     id: "national-observers",
-    icon: "👁",
+    icon: "boss-national-observers",
     title: "전국 참관단 도착",
     desc: "참관단이 보는 앞에서 정확한 순간에 기록을 봉인하세요.",
     phases: [phase("timing", 2, { periodMs: 1200, windowPct: 0.34 })],
   },
   {
     id: "central-auditor",
-    icon: "⚖",
+    icon: "boss-central-auditor",
     title: "중앙 감사관 급습",
     desc: "긴급 처리 뒤 좌우 장부까지 교차 검인하세요.",
     phases: [phase("rapid", 5), phase("alternate", 4)],
   },
   {
     id: "satellite-verification",
-    icon: "📡",
+    icon: "boss-satellite-verification",
     title: "위성 중계 검증",
     desc: "중계 장부를 교대로 확인하고 송출 순간에 봉인하세요.",
     phases: [phase("alternate", 4), phase("timing", 1, { periodMs: 1100, windowPct: 0.3 })],
   },
   {
     id: "time-bureau",
-    icon: "⏱",
+    icon: "boss-time-bureau",
     title: "시간감사국 최종 심문",
     desc: "세 가지 검증을 연속 돌파해 최종 기록을 확정하세요.",
     phases: [

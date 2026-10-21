@@ -1,0 +1,23 @@
+{
+  "_doc": "Endesga 32 기반 게임 팔레트. 설계 문서 §4.5. role → {hi, base, sh}. 외곽선은 outline.",
+  "outline": "#2b1d2e",
+  "sparkle": "#ffffff",
+  "roles": {
+    "votes":    { "hi": "#ffffff", "base": "#ead4aa", "sh": "#c9a97a", "accent": "#e43b44" },
+    "explain":  { "hi": "#2ce8f5", "base": "#0099db", "sh": "#124e89" },
+    "trust":    { "hi": "#f6757a", "base": "#b55088", "sh": "#68386c" },
+    "glyph":    { "hi": "#ffffff", "base": "#c0cbdc", "sh": "#8b9bb4" },
+    "paper":    { "hi": "#ffffff", "base": "#ead4aa", "sh": "#e4a672" },
+    "gold":     { "hi": "#fee761", "base": "#feae34", "sh": "#d77643" },
+    "buy":      { "hi": "#b3e26b", "base": "#63c74d", "sh": "#3e8948" },
+    "danger":   { "hi": "#f6757a", "base": "#e43b44", "sh": "#a22633" },
+    "wood":     { "hi": "#e4a672", "base": "#b86f50", "sh": "#733e39" },
+    "ink":      { "hi": "#5a6988", "base": "#3a4466", "sh": "#262b44" },
+    "prestige": { "hi": "#8b9bb4", "base": "#5a6988", "sh": "#3a4466" },
+    "tab-facilities": { "hi": "#feae34", "base": "#d77643", "sh": "#b86f50" },
+    "tab-crew":       { "hi": "#b3e26b", "base": "#63c74d", "sh": "#3e8948" },
+    "tab-events":     { "hi": "#f6757a", "base": "#e43b44", "sh": "#a22633" },
+    "tab-goals":      { "hi": "#fee761", "base": "#feae34", "sh": "#d77643" },
+    "tab-prestige":   { "hi": "#c0cbdc", "base": "#8b9bb4", "sh": "#5a6988" }
+  }
+}

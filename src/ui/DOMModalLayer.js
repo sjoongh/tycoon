@@ -1,5 +1,6 @@
 import { shortNumber } from "../utils/format.js";
 import { GOV_MAPS, PROP_MAPS, dotSvgUri } from "../world/dotChar.js";
+import { iconHtml } from "./icon.js";
 import { RARITY_LABEL, RARITY_COLOR } from "../data/titles.js";
 import { FEVER_FAMILY_PROFILES, OPERATION_FAMILIES, operationDefinitions } from "../data/operations.js";
 import { BOSS_DURATION_MS } from "../data/bosses.js";
@@ -67,9 +68,9 @@ export class DOMModalLayer {
   _showGachaResult10(list) {
     if (!list || !list.length) return;
     const COLOR = { common: "#d8c4a0", uncommon: "#7fd9a0", rare: "#ffcd75" };
-    const rows = list.map((r) => `<div class="gp-g10__row" style="color:${COLOR[r.rarity] || "#fff"}">${r.emoji} ${r.name} ${r.isNew ? "🎉신규" : `Lv.${r.level}`}</div>`).join("");
+    const rows = list.map((r) => `<div class="gp-g10__row" style="color:${COLOR[r.rarity] || "#fff"}">${iconHtml(r.icon, { scale: 1 })} ${r.name} ${r.isNew ? "NEW" : `Lv.${r.level}`}</div>`).join("");
     this._openModal(`
-      <div class="gp-modal__badge">🎰</div>
+      <div class="gp-modal__badge">${iconHtml("ui-dice", { scale: 2 })}</div>
       <div class="gp-mtitle">${list.length}연차 결과</div>
       <div class="gp-g10">${rows}</div>
       <button class="gp-btn gp-btn--gold" data-confirm>확인</button>`);
@@ -85,7 +86,7 @@ export class DOMModalLayer {
     const r = st.reward;
     const sealLine = r.seals ? `<br><span>+${r.seals} 제도인장</span>` : "";
     this._openModal(`
-      <div class="gp-modal__badge">📅</div>
+      <div class="gp-modal__badge">${iconHtml("ui-calendar", { scale: 2 })}</div>
       <div class="gp-mtitle">출석 보상 · ${st.streak}일 연속</div>
       <div class="gp-msub">매일 들러 개표국을 챙기세요${st.streak >= 7 ? " (최대 연속!)" : ""}</div>
       <div class="gp-mbig">+${shortNumber(r.votes)}표<br><span>+${shortNumber(r.explain)} 해명</span>${sealLine}</div>
@@ -175,7 +176,7 @@ export class DOMModalLayer {
     boss.innerHTML = `
       <div class="gp-boss__live" data-boss-live aria-live="polite" aria-atomic="true">${area}구역 최종 검증 시작. 제한 시간 8초.</div>
       <div class="gp-boss__head">
-        <span class="gp-boss__icon" aria-hidden="true">${definition.icon || "⚠"}</span>
+        <span class="gp-boss__icon" aria-hidden="true">${iconHtml(definition.icon || "ui-warning", { scale: 1 })}</span>
         <span class="gp-boss__heading"><small>${area}구역 체크포인트</small><b>${definition.title || "최종 검증"}</b></span>
         <strong class="gp-boss__time" data-boss-time>8초</strong>
       </div>
@@ -372,7 +373,7 @@ export class DOMModalLayer {
       const profile = FEVER_FAMILY_PROFILES[operation.family];
       const recommendation = this.gameState.operationRecommendationText?.(operation.family) || "";
       return `<button type="button" class="gp-opcard gp-opcard--${operation.family}" data-operation="${operation.id}" aria-pressed="false" aria-label="${operation.name} 레벨 ${level + 1} 선택">
-        <span class="gp-opcard__icon" aria-hidden="true">${operation.icon}</span>
+        <span class="gp-opcard__icon" aria-hidden="true">${iconHtml(operation.icon, { scale: 1 })}</span>
         <span class="gp-opcard__body">
           <span class="gp-opcard__meta"><span class="gp-opcard__family">${family?.label || "개표"} 작전</span>${recommendation ? `<em>★ 추천 · ${recommendation}</em>` : ""}</span>
           <b>${operation.name}</b>
@@ -436,16 +437,16 @@ export class DOMModalLayer {
       const active = family === dominant;
       const fever = FEVER_FAMILY_PROFILES[family];
       return `<div class="gp-opstatus__family gp-opstatus__family--${family}${active ? " gp-opstatus__family--active" : ""}">
-        <b>${meta.icon} ${meta.label} ${counts[family] || 0}</b><span>${fever.summary}</span>
+        <b>${iconHtml(meta.icon, { scale: 1 })} ${meta.label} ${counts[family] || 0}</b><span>${fever.summary}</span>
       </div>`;
     }).join("");
     const picked = operationDefinitions
       .filter((operation) => gs.operationLevel(operation.id) > 0)
-      .map((operation) => `<div class="gp-opstatus__pick"><span>${operation.icon} ${operation.name}</span><b>Lv.${gs.operationLevel(operation.id)}</b></div>`)
+      .map((operation) => `<div class="gp-opstatus__pick"><span>${iconHtml(operation.icon, { scale: 1 })} ${operation.name}</span><b>Lv.${gs.operationLevel(operation.id)}</b></div>`)
       .join("") || `<div class="gp-opstatus__empty">3구역을 완료하면 첫 작전 회의가 열립니다.</div>`;
 
     this._openModal(`
-      <div class="gp-modal__badge">${profile.icon}</div>
+      <div class="gp-modal__badge">${iconHtml(profile.icon, { scale: 2 })}</div>
       <div class="gp-mtitle">이번 감사 런 작전</div>
       <div class="gp-msub">현재 우세는 <b>${profile.name}</b><br>${profile.description}</div>
       <div class="gp-opstatus__families">${familyRows}</div>
@@ -467,7 +468,7 @@ export class DOMModalLayer {
     recap.setAttribute("aria-live", "polite");
     recap.innerHTML = `
       <button type="button" class="gp-fever-recap__close" aria-label="피버 결산 닫기">×</button>
-      <div class="gp-fever-recap__title">${report.finisherUsed ? "⚡" : profile.icon} ${profile.name} 결산</div>
+      <div class="gp-fever-recap__title">${iconHtml(report.finisherUsed ? "ui-spark" : profile.icon, { scale: 1 })} ${profile.name} 결산</div>
       <div class="gp-fever-report">
         <div><span>처리한 표</span><b>+${shortNumber(report.votes)}</b></div>
         <div><span>피버 행동</span><b>${report.actions}회</b></div>
@@ -496,10 +497,10 @@ export class DOMModalLayer {
     const proj = this.gameState.prestigeProjection
       ? this.gameState.prestigeProjection()
       : { earned: 0, current: 1, projected: 1, medalEarned: 0 };
-    const medalLine = proj.medalEarned > 0 ? ` · <b style="color:#ffd479">🏆 훈장 +${proj.medalEarned}</b>` : "";
+    const medalLine = proj.medalEarned > 0 ? ` · <b style="color:#ffd479">훈장 +${proj.medalEarned}</b>` : "";
     const advice = proj.advice || { key: "ready", label: "감사 적기", detail: "다음 런의 영구 생산이 상승합니다" };
     this._openModal(`
-      <div class="gp-modal__badge">🔨</div>
+      <div class="gp-modal__badge">${iconHtml("ui-upgrade", { scale: 2 })}</div>
       <div class="gp-mtitle">감사 실행</div>
       <div class="gp-msub">표·시설·직원은 초기화되지만, <b>제도인장 +${proj.earned}</b>${medalLine}을 받아 <b>영구 생산 배율</b>이 영원히 오릅니다. (감사 업그레이드·업적은 유지)</div>
       <div class="gp-mbig">영구 x${proj.current.toFixed(2)} → <span style="color:#8df0b0">x${proj.projected.toFixed(2)}</span></div>
@@ -616,7 +617,7 @@ export class DOMModalLayer {
          </div>`
       : `<button class="gp-btn" data-close>수령하기</button>`;
     this._openModal(`
-      <div class="gp-modal__badge">💤</div>
+      <div class="gp-modal__badge">${iconHtml("op-moon", { scale: 2 })}</div>
       <div class="gp-mtitle">오프라인 정산</div>
       <div class="gp-msub">${timeStr} 동안 개표가 계속됐어요${near ? `<br><span style="color:#ffcd75">최대 ${capH}시간까지 적립돼요 — 자주 들러요!</span>` : ""}</div>
       <div class="gp-mbig">+${shortNumber(r.votes)}표<br><span>+${shortNumber(r.explain)} 해명</span></div>
@@ -632,7 +633,7 @@ export class DOMModalLayer {
     if (!f) return;
     const lv = this.gameState.level(f.id);
     if (MILESTONES.includes(lv)) {
-      this._banner(`🎉 ${f.name} Lv.${lv} 마일스톤!`, { priority: 1, tone: "reward" });
+      this._banner(`★ ${f.name} Lv.${lv} 마일스톤!`, { priority: 1, tone: "reward" });
       this._flash();
     }
   }
@@ -677,7 +678,7 @@ export class DOMModalLayer {
     if ((this.gameState.data.prestige?.runs || 0) < 1) return;
     this._notifPromptShown = true;
     this._openModal(`
-      <div class="gp-modal__badge">🔔</div>
+      <div class="gp-modal__badge">${iconHtml("ui-bell", { scale: 2 })}</div>
       <div class="gp-mtitle">알림을 켤까요?</div>
       <div class="gp-msub">출석 보상·오프라인 정산이 준비되면 알려드려요. 언제든 끌 수 있어요.</div>
       <div class="gp-confirm-row">
@@ -717,12 +718,12 @@ export class DOMModalLayer {
   _showGachaResult(res) {
     if (!res) return;
     const color = RARITY_COLOR[res.rarity] || "#ffd479";
-    const tag = res.isNew ? "🎉 신규 발령" : `⬆️ 승진 · Lv.${res.level}`;
+    const tag = res.isNew ? "NEW 신규 발령" : `▲ 승진 · Lv.${res.level}`;
     if (res.rarity === "rare") this._flash(); // 희귀는 화면 플래시로 강조
     this._openModal(`
       <div class="gp-gres" style="--rc:${color}">
         <div class="gp-gres__tag">${tag}</div>
-        <div class="gp-gres__emoji">${res.emoji}</div>
+        <div class="gp-gres__emoji">${iconHtml(res.icon, { scale: 2 })}</div>
         <div class="gp-gres__name" style="color:${color}">${res.name}</div>
         <div class="gp-gres__rarity" style="color:${color}">${RARITY_LABEL[res.rarity] || ""}</div>
         <div class="gp-gres__per">${res.per}</div>
@@ -753,7 +754,7 @@ export class DOMModalLayer {
     this._flash();
     document.dispatchEvent(new CustomEvent("gp:sfx", { detail: "crisis" }));
     this._openModal(`
-      <div class="gp-modal__badge">🚩</div>
+      <div class="gp-modal__badge">${iconHtml("ui-flag", { scale: 2 })}</div>
       <div class="gp-mtitle" style="color:#ff6b6b">체제 전복!</div>
       <div class="gp-msub">믿음이 바닥나 개표국이 <b>인민개표위원회</b>로 넘어갔습니다.<br>표·시설·직원·구역은 초기화됐지만, <b>감사 업그레이드·도감·국장 칭호·업적은 그대로</b>입니다. 다시 신뢰를 쌓아 재건하세요.</div>
       <div class="gp-mbig" style="font-size:15px">누적 전복 ${p?.collapses || 1}회</div>

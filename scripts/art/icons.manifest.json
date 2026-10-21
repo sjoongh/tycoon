@@ -1,0 +1,884 @@
+{
+  "_doc": "아이콘 매니페스트. 32px 단일 소스(16px은 game-icons 글리프가 뭉개져 custom 맵만 허용). src는 gi:<author>/<name>(game-icons.net, CC BY 3.0) 또는 custom:<map>. color는 palette.json role 키 또는 hex.",
+  "icons": [
+    {
+      "name": "res-votes",
+      "src": "custom:ballot",
+      "color": "votes",
+      "sizes": [
+        16,
+        32
+      ],
+      "sparkle": true
+    },
+    {
+      "name": "res-explain",
+      "src": "gi:delapouite/chat-bubble",
+      "color": "explain",
+      "sizes": [
+        32
+      ],
+      "sparkle": true
+    },
+    {
+      "name": "res-trust",
+      "src": "gi:badges/heart",
+      "color": "trust",
+      "sizes": [
+        32
+      ],
+      "sparkle": true
+    },
+    {
+      "name": "tab-facilities",
+      "src": "gi:delapouite/desk",
+      "color": "glyph",
+      "sizes": [
+        32
+      ],
+      "tints": {
+        "on": "tab-facilities"
+      }
+    },
+    {
+      "name": "tab-crew",
+      "src": "gi:delapouite/person",
+      "color": "glyph",
+      "sizes": [
+        32
+      ],
+      "tints": {
+        "on": "tab-crew"
+      }
+    },
+    {
+      "name": "tab-events",
+      "src": "gi:badges/exclamation",
+      "color": "glyph",
+      "sizes": [
+        32
+      ],
+      "tints": {
+        "on": "tab-events"
+      }
+    },
+    {
+      "name": "tab-goals",
+      "src": "gi:delapouite/flag-objective",
+      "color": "glyph",
+      "sizes": [
+        32
+      ],
+      "tints": {
+        "on": "tab-goals"
+      }
+    },
+    {
+      "name": "tab-prestige",
+      "src": "gi:lorc/magnifying-glass",
+      "color": "glyph",
+      "sizes": [
+        32
+      ],
+      "tints": {
+        "on": "tab-prestige"
+      }
+    },
+    {
+      "name": "fac-desk",
+      "src": "gi:delapouite/desk",
+      "color": "#ffc857",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "fac-sorter",
+      "src": "gi:delapouite/cardboard-box",
+      "color": "#ff8e8e",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "fac-notice",
+      "src": "gi:delapouite/notebook",
+      "color": "#89d98b",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "fac-server",
+      "src": "gi:delapouite/server-rack",
+      "color": "#7fc8ff",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "fac-archive",
+      "src": "gi:delapouite/archive-register",
+      "color": "#bba2ff",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "fac-studio",
+      "src": "gi:delapouite/old-microphone",
+      "color": "#ffb36b",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "staff-clerk",
+      "src": "gi:delapouite/stamper",
+      "color": "#ffc857",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "staff-auditor",
+      "src": "gi:lorc/scales",
+      "color": "#89d98b",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "staff-runner",
+      "src": "gi:lorc/sprint",
+      "color": "#f6b24b",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "staff-engineer",
+      "src": "gi:delapouite/keyboard",
+      "color": "#7fc8ff",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "staff-analyst",
+      "src": "gi:delapouite/histogram",
+      "color": "#bba2ff",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "staff-speaker",
+      "src": "gi:delapouite/microphone",
+      "color": "#ffb36b",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "char-classic",
+      "src": "gi:delapouite/police-officer-head",
+      "color": "paper",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "char-hotblood",
+      "src": "gi:carl-olsen/flame",
+      "color": "danger",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "char-calm",
+      "src": "gi:lorc/meditation",
+      "color": "explain",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "title-intern",
+      "src": "gi:delapouite/billed-cap",
+      "color": "glyph",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "title-clerk9",
+      "src": "gi:delapouite/files",
+      "color": "glyph",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "title-officer",
+      "src": "gi:delapouite/full-folder",
+      "color": "gold",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "title-secretary",
+      "src": "gi:delapouite/open-folder",
+      "color": "gold",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "title-director2",
+      "src": "gi:lorc/medal",
+      "color": "trust",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "title-director",
+      "src": "gi:badges/crown",
+      "color": "gold",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "cos-cap",
+      "src": "gi:delapouite/billed-cap",
+      "color": "danger",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "cos-tophat",
+      "src": "gi:lorc/top-hat",
+      "color": "ink",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "cos-halo",
+      "src": "gi:lorc/spiked-halo",
+      "color": "gold",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "cos-shades",
+      "src": "gi:delapouite/sunglasses",
+      "color": "ink",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "cos-mask",
+      "src": "gi:delapouite/carnival-mask",
+      "color": "paper",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "item-parcel",
+      "src": "gi:delapouite/cardboard-box-closed",
+      "color": "paper",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "item-doc",
+      "src": "gi:lorc/scroll-unfurled",
+      "color": "paper",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "item-balloon",
+      "src": "gi:lorc/balloons",
+      "color": "trust",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "item-votes",
+      "src": "custom:ballot",
+      "color": "votes",
+      "sizes": [
+        16,
+        32
+      ]
+    },
+    {
+      "name": "item-donation",
+      "src": "gi:delapouite/money-stack",
+      "color": "buy",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "item-coffee",
+      "src": "gi:delapouite/coffee-cup",
+      "color": "wood",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "item-stamp",
+      "src": "gi:delapouite/stamper",
+      "color": "danger",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "item-ramen",
+      "src": "gi:delapouite/noodles",
+      "color": "gold",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "item-jackpot",
+      "src": "gi:caro-asercion/slot-machine",
+      "color": "gold",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "item-pigeon",
+      "src": "gi:lorc/dove",
+      "color": "paper",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "item-tip",
+      "src": "gi:delapouite/smartphone",
+      "color": "explain",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "op-tap",
+      "src": "gi:delapouite/hand-of-god",
+      "color": "gold",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "op-build",
+      "src": "gi:lorc/cog",
+      "color": "buy",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "op-response",
+      "src": "gi:delapouite/megaphone",
+      "color": "danger",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "op-fire",
+      "src": "gi:carl-olsen/flame",
+      "color": "danger",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "op-ballot",
+      "src": "custom:ballot",
+      "color": "votes",
+      "sizes": [
+        16,
+        32
+      ]
+    },
+    {
+      "name": "op-drum",
+      "src": "gi:delapouite/drum",
+      "color": "wood",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "op-moon",
+      "src": "gi:badges/moon",
+      "color": "explain",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "op-files",
+      "src": "gi:delapouite/files",
+      "color": "paper",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "op-box",
+      "src": "gi:delapouite/cardboard-box",
+      "color": "wood",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "op-team",
+      "src": "gi:delapouite/three-friends",
+      "color": "buy",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "op-target",
+      "src": "gi:lorc/on-target",
+      "color": "danger",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "op-mic",
+      "src": "gi:delapouite/old-microphone",
+      "color": "glyph",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "op-phone",
+      "src": "gi:caro-asercion/rotary-phone",
+      "color": "glyph",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "boss-district-inspection",
+      "src": "gi:lorc/magnifying-glass",
+      "color": "prestige",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "boss-recount-surge",
+      "src": "gi:delapouite/megaphone",
+      "color": "danger",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "boss-national-observers",
+      "src": "gi:badges/eye",
+      "color": "explain",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "boss-central-auditor",
+      "src": "gi:lorc/scales",
+      "color": "gold",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "boss-satellite-verification",
+      "src": "gi:lorc/satellite",
+      "color": "glyph",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "boss-time-bureau",
+      "src": "gi:lorc/stopwatch",
+      "color": "trust",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "region-1",
+      "src": "gi:delapouite/house",
+      "color": "wood",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "region-2",
+      "src": "gi:delapouite/village",
+      "color": "wood",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "region-3",
+      "src": "gi:lorc/capitol",
+      "color": "paper",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "region-4",
+      "src": "gi:delapouite/theater",
+      "color": "danger",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "region-5",
+      "src": "gi:delapouite/megaphone",
+      "color": "gold",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "region-6",
+      "src": "gi:delapouite/three-friends",
+      "color": "buy",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "region-7",
+      "src": "gi:lorc/capitol",
+      "color": "gold",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "region-8",
+      "src": "gi:lorc/scales",
+      "color": "prestige",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "region-9",
+      "src": "custom:ballot",
+      "color": "votes",
+      "sizes": [
+        16,
+        32
+      ]
+    },
+    {
+      "name": "region-10",
+      "src": "gi:delapouite/pagoda",
+      "color": "danger",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "region-11",
+      "src": "gi:lorc/world",
+      "color": "explain",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "region-12",
+      "src": "gi:lorc/satellite",
+      "color": "glyph",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "era-force",
+      "src": "gi:lorc/crossed-swords",
+      "color": "glyph",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "era-red",
+      "src": "gi:badges/star",
+      "color": "danger",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "era-demo",
+      "src": "custom:ballot",
+      "color": "votes",
+      "sizes": [
+        16,
+        32
+      ]
+    },
+    {
+      "name": "era-future",
+      "src": "gi:delapouite/ufo",
+      "color": "explain",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "era-space",
+      "src": "gi:delapouite/galaxy",
+      "color": "trust",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "era-myth",
+      "src": "gi:delapouite/sparkles",
+      "color": "gold",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "ui-gear",
+      "src": "gi:lorc/cog",
+      "color": "glyph",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "ui-map",
+      "src": "gi:lorc/treasure-map",
+      "color": "paper",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "ui-trophy",
+      "src": "gi:lorc/trophy",
+      "color": "gold",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "ui-lock",
+      "src": "gi:lorc/padlock",
+      "color": "glyph",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "ui-upgrade",
+      "src": "gi:delapouite/upgrade",
+      "color": "buy",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "ui-check",
+      "src": "gi:delapouite/check-mark",
+      "color": "buy",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "ui-warning",
+      "src": "gi:lorc/hazard-sign",
+      "color": "gold",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "ui-star",
+      "src": "gi:badges/star",
+      "color": "gold",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "ui-medal",
+      "src": "gi:lorc/medal",
+      "color": "gold",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "ui-seal",
+      "src": "gi:lorc/wax-seal",
+      "color": "danger",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "ui-gift",
+      "src": "gi:delapouite/present",
+      "color": "trust",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "ui-robot",
+      "src": "gi:delapouite/robot-antennas",
+      "color": "explain",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "ui-book",
+      "src": "gi:delapouite/book-cover",
+      "color": "wood",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "ui-news",
+      "src": "gi:delapouite/newspaper",
+      "color": "paper",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "ui-flag",
+      "src": "gi:delapouite/flag-objective",
+      "color": "danger",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "ui-clipboard",
+      "src": "gi:delapouite/files",
+      "color": "paper",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "ui-calendar",
+      "src": "gi:delapouite/notebook",
+      "color": "glyph",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "ui-people",
+      "src": "gi:delapouite/three-friends",
+      "color": "glyph",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "ui-bell",
+      "src": "gi:lorc/ringing-bell",
+      "color": "gold",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "ui-spark",
+      "src": "gi:delapouite/sparkles",
+      "color": "gold",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "ui-dice",
+      "src": "gi:caro-asercion/slot-machine",
+      "color": "gold",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "ui-cider",
+      "src": "gi:lorc/sprint",
+      "color": "explain",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "ui-flame",
+      "src": "gi:carl-olsen/flame",
+      "color": "danger",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "ui-eye",
+      "src": "gi:badges/eye",
+      "color": "glyph",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "name": "ui-megaphone",
+      "src": "gi:delapouite/megaphone",
+      "color": "buy",
+      "sizes": [
+        32
+      ]
+    }
+  ]
+}

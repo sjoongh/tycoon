@@ -9,3 +9,5 @@ dist/
 .qa-test-automations/evidence/*/screenshots/
 .qa-test-automations/evidence/*/coverage.json
 .qa-test-automations/evidence/*/*-log.txt
+.tmp/
+assets/art-src/_packs/

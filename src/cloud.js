@@ -1,6 +1,7 @@
 // Firebase 클라우드 — 익명 로그인 + 클라우드 세이브(기기 간 동기화) + 랭킹(도달 구역).
 // 설정(firebaseConfig)이 비어 있으면 전부 안전하게 no-op. Firebase는 동적 import로 코드 분리.
 import { FIREBASE_CONFIG, cloudEnabled } from "./firebaseConfig.js";
+import { iconHtml } from "./ui/icon.js";
 
 const NICK_KEY = "gp-nick";
 let _fb = null;       // { app, auth, db }
@@ -195,12 +196,12 @@ function renderLeaderboard(message, rows) {
   else {
     body = rows.map((r, i) => {
       const me = r.id === _uid ? " gp-rank__row--me" : "";
-      const medal = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}`;
+      const medal = `${i + 1}`;
       return `<div class="gp-rank__row${me}"><span class="gp-rank__no">${medal}</span><span class="gp-rank__nick">${escapeHtml(r.nick || "익명")}</span><span class="gp-rank__area">${r.area}구역</span></div>`;
     }).join("") || `<div class="gp-rank__msg">아직 기록이 없어요. 1등 하세요!</div>`;
   }
   ov.innerHTML = `<div class="gp-map">
-    <div class="gp-map__hd"><span>🏆 도달 구역 랭킹</span><button class="gp-map__x" aria-label="닫기">✕</button></div>
+    <div class="gp-map__hd"><span>${iconHtml("ui-trophy", { scale: 1 })}도달 구역 랭킹</span><button class="gp-map__x" aria-label="닫기">✕</button></div>
     <div class="gp-map__sub">내 닉네임: ${escapeHtml(getNick() || "(미설정)")} · 탭으로 변경</div>
     <div class="gp-map__list gp-rank__list">${body}</div>
     <div class="gp-map__foot">구역을 더 정복할수록 순위가 오릅니다</div>

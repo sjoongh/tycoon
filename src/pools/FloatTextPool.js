@@ -10,7 +10,7 @@ export class FloatTextPool {
 
   show(text, x, y, color = "#ffc857") {
     // 빠른 탭 보상은 중앙 수치 양옆 네 개 레인으로 흩어 완전히 포개지지 않게 한다.
-    if (/^(?:🔥|🤖)?\s*\+/.test(text)) {
+    if (/^(?:비서)?\s*\+/.test(text)) {
       const lane = this.gainLane % 4;
       const laneX = [-40, 40, -58, 58][lane];
       const laneY = [0, -10, -5, -15][lane];

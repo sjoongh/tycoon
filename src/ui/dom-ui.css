@@ -91,11 +91,11 @@
 /* ---------- HUD ---------- */
 .gp-hud { position: absolute; top: 0; left: 0; right: 0; padding: max(9px, env(safe-area-inset-top)) 9px 9px; display: flex; flex-direction: column; gap: 7px; align-items: stretch; }
 .gp-hud__row { display: flex; gap: 6px; padding-right: 96px; }
-.gp-chip { display: flex; align-items: center; gap: 6px; padding: 6px 8px; background: var(--panel); border: 3px solid var(--line); box-shadow: var(--px-out-sm); flex: 1 1 0; min-width: 0; overflow: hidden; }
+.gp-chip { display: flex; align-items: center; gap: 2px; padding: 6px 4px 6px 2px; background: var(--panel); border: 3px solid var(--line); box-shadow: var(--px-out-sm); flex: 1 1 0; min-width: 0; overflow: hidden; }
 .gp-chip--votes  { flex-grow: 1.6; }
 .gp-chip--explain { flex-grow: 1.2; }
 .gp-chip--trust  { flex-grow: 0.9; }
-.gp-chip__ic { width: 18px; height: 18px; flex: none; background-size: contain; background-repeat: no-repeat; background-position: center; image-rendering: pixelated; }
+.gp-chip__ic { width: 32px; height: 32px; flex: none; image-rendering: pixelated; margin: -4px 0; }
 .gp-chip__val { font-family: var(--f-bold); font-size: 14px; color: var(--cyan, var(--gem)); line-height: 1.1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .gp-chip__label { font-family: var(--f-small); font-size: var(--type-label); color: var(--ink-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .gp-progress { height: 14px; background: var(--bg2); overflow: hidden; border: 3px solid var(--line); box-shadow: var(--px-out-sm); }
@@ -169,7 +169,7 @@
   box-shadow: 0 -3px 0 var(--gold-deep), inset 0 3px 0 rgba(255,255,255,0.08); }
 
 .gp-card { display: flex; align-items: center; gap: 10px; padding: 10px; background: var(--panel); border: 3px solid var(--line); box-shadow: var(--px-out-sm); }
-.gp-card__icon { width: 44px; height: 44px; background-size: cover; background-position: center; flex: none; border: 2px solid var(--line); image-rendering: pixelated; }
+.gp-card__icon { width: 64px; height: 64px; flex: none; image-rendering: pixelated; }
 .gp-card__body { flex: 1; min-width: 0; }
 .gp-card__title { font-family: var(--f-bold); color: var(--ink); font-size: 14px; }
 .gp-card__sub { font-family: var(--f-small); font-size: var(--type-body-sm); color: var(--ink-soft); }
@@ -208,7 +208,7 @@
 /* ---------- facility selector ---------- */
 .gp-facsel { display: flex; gap: 5px; margin-top: 10px; }
 .gp-fac { flex: 1; pointer-events: auto; border: 3px solid var(--line); padding: 7px 3px 6px; background: var(--panel2); cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 3px; min-height: 56px; box-shadow: var(--px-out-sm); }
-.gp-fac__icon { width: 24px; height: 24px; border: 2px solid var(--line); image-rendering: pixelated; background-size: contain; background-repeat: no-repeat; background-position: center; background-color: var(--bg2); }
+.gp-fac__icon { width: 32px; height: 32px; image-rendering: pixelated; }
 .gp-fac__role { font-family: var(--f-small); font-size: var(--type-body-sm); color: var(--ink); }
 .gp-fac__lv { font-family: var(--f-small); font-size: var(--type-label); color: var(--ink-soft); }
 .gp-fac--active { background: var(--panel3); box-shadow: var(--px-out-sm), 0 0 0 3px var(--gold); transform: translateY(-2px); }
@@ -220,8 +220,8 @@
 /* ---------- prestige seal buttons ---------- */
 /* 인사 발령 뽑기 카드 */
 .gp-gacha { margin-top: 10px; padding: 9px 10px; background: var(--panel-sunk); border: 2px solid var(--gold-hi); box-shadow: var(--px-out-sm); }
-.gp-gacha__hd { display: flex; justify-content: space-between; align-items: center; font-family: var(--f-bold); font-size: 12px; color: var(--gold-hi); }
-.gp-gacha__count { font-family: var(--f-num); font-size: 10px; color: var(--ink-soft); }
+.gp-gacha__hd { display: flex; justify-content: flex-start; gap: 6px; align-items: center; font-family: var(--f-bold); font-size: 12px; color: var(--gold-hi); }
+.gp-gacha__count { margin-left: auto; font-family: var(--f-num); font-size: 10px; color: var(--ink-soft); }
 .gp-gacha__eq { font-family: var(--f-small); font-size: var(--type-body-sm); color: var(--ink-soft); margin: 5px 0; line-height: 1.4; }
 .gp-gacha__chips { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 7px; }
 .gp-gacha__chip { font-family: var(--f-num); font-size: 10px; padding: 2px 5px; border: 1px solid; border-radius: 2px; background: var(--panel2); }
@@ -237,7 +237,7 @@
 .gp-cos__row { display: flex; align-items: center; gap: 8px; margin: 5px 0; }
 .gp-cos__slot { font-family: var(--f-small); font-size: 10px; color: var(--ink-soft); width: 28px; flex: none; }
 .gp-cos__chips { display: flex; flex-wrap: wrap; gap: 5px; }
-.gp-cos__chip { font-size: 18px; width: 44px; height: 44px; line-height: 40px; text-align: center; padding: 0; background: var(--panel2); border: 2px solid var(--line); cursor: pointer; box-shadow: var(--px-out-sm); }
+.gp-cos__chip { width: 44px; height: 44px; display: inline-flex; align-items: center; justify-content: center; padding: 0; background: var(--panel2); border: 2px solid var(--line); cursor: pointer; box-shadow: var(--px-out-sm); }
 .gp-cos__chip--on { border-color: var(--gold-hi); background: var(--panel); box-shadow: var(--px-out-sm), 0 0 0 2px var(--gold-hi); }
 .gp-cos__chip--lock { opacity: 0.5; cursor: default; filter: grayscale(1); }
 .gp-cos__tip { text-align: center; font-family: var(--f-small); font-size: var(--type-label); color: var(--ink-soft); padding-top: 4px; }
@@ -245,7 +245,7 @@
 .gp-char__grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; margin-top: 6px; }
 .gp-char__opt { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 7px 3px; background: var(--panel2); border: 2px solid var(--line); cursor: pointer; box-shadow: var(--px-out-sm); }
 .gp-char__opt--on { border-color: var(--gold-hi); background: var(--panel); box-shadow: var(--px-out-sm), 0 0 0 2px var(--gold-hi); }
-.gp-char__emoji { font-size: 22px; line-height: 1.1; }
+.gp-char__ic { display: block; height: 64px; }
 .gp-char__name { font-family: var(--f-bold); font-size: 11px; color: var(--ink); }
 .gp-char__trait { font-family: var(--f-small); font-size: var(--type-label); color: var(--green-hi, #89d98b); text-align: center; line-height: 1.25; }
 .gp-sealgrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-top: 10px; }
@@ -258,10 +258,22 @@
 /* ---------- tabs ---------- */
 .gp-tabs { display: flex; gap: 5px; flex: none; margin-top: 8px; position: relative; z-index: 6; }
 .gp-tab { position: relative; flex: 1; pointer-events: auto; border: 3px solid var(--line); padding: 6px 4px 7px; font-family: var(--f-small); font-size: 11px; background: var(--panel2); color: var(--ink-soft); cursor: pointer; box-shadow: var(--px-out-sm); text-align: center; }
-.gp-tab__ic { display: block; width: 18px; height: 18px; margin: 0 auto 3px; background-size: contain; background-repeat: no-repeat; background-position: center; image-rendering: pixelated; }
+.gp-tab__ic { display: block; width: 32px; height: 32px; margin: 0 auto 1px; image-rendering: pixelated; }
 .gp-tab__dot { position: absolute; top: 4px; right: 6px; width: 9px; height: 9px; background: #ff5a5a; border: 1px solid #000; animation: gp-dot-pulse 1.1s steps(2) infinite; }
 @keyframes gp-dot-pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.4); } }
 .gp-tab--active { background: var(--gold); color: #4a2600; transform: translateY(-1px); }
+
+/* ---------- atlas icons (public/art/icons32.png, 1x=32px, 2x=64px) ---------- */
+.gp-ic { display: inline-block; vertical-align: middle; flex: none; image-rendering: pixelated; background-repeat: no-repeat; }
+.gp-ic--missing { width: 32px; height: 32px; outline: 1px dashed #ff0044; }
+.gp-paneltitle .gp-ic, .gp-goal__section .gp-ic, .gp-gacha__hd .gp-ic, .gp-map__hd .gp-ic, .gp-map__era .gp-ic, .gp-set__row .gp-ic, .gp-rankbtn .gp-ic, .gp-mapnode__ic .gp-ic { margin: -8px 4px -8px 0; }
+.gp-gacha__chip { display: inline-flex; align-items: center; gap: 2px; }
+.gp-gacha__chip .gp-ic { margin: -6px 0; }
+.gp-gacha__eqname .gp-ic { margin: -8px 2px -8px 0; }
+.gp-staff__dot .gp-ic { position: absolute; inset: 0; margin: auto; }
+.gp-modal__badge .gp-ic { margin: 0 auto; display: block; }
+.gp-gres__emoji .gp-ic { display: block; margin: 0 auto; }
+.gp-opstatus__family .gp-ic, .gp-opstatus__pick .gp-ic, .gp-fever-recap__title .gp-ic, .gp-g10__row .gp-ic { margin: -8px 2px -8px 0; }
 
 /* ---------- panel content ---------- */
 .gp-panel { flex: 1; overflow-y: auto; min-height: 98px; max-height: 248px; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
@@ -615,7 +627,7 @@ body { background-color: var(--bg-deep); background-image: repeating-linear-grad
 /* 좁은 화면(360w 이하급) — HUD 칩 값 잘림 방지 */
 @media (max-width: 375px) {
   .gp-hud__row { padding-right: 96px; }
-  .gp-chip { padding: 6px 5px; gap: 4px; }
+  .gp-chip { padding: 6px 3px 6px 0; gap: 1px; }
 }
 
 /* ---------- 설정 모달 ---------- */
