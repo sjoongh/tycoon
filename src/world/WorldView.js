@@ -855,9 +855,7 @@ export class WorldView {
 
   // 장착한 꾸미기 + 선택 캐릭터 시그니처를 국장 위 오버레이로 표시. 위치/스케일은 update에서 국장에 글루.
   _syncCosmetics(d) {
-    // TODO(카툰 스킨): 꾸미기 오버레이는 픽셀 텍스처라 벡터 국장 위에 얹지 않는다. 데이터·해금은 유지.
-    if (this._cosSprites) Object.values(this._cosSprites).forEach((spr) => spr?.setVisible(false));
-    return;
+    // 꾸미기·시그니처 오버레이 — 국장과 같은 캔버스·앵커로 만든 벡터 PNG(world/cos-*, world/sig-*)를 국장 위에 글루
     const slots = ["hat", "face", "sig"];
     for (const slot of slots) {
       const id = slot === "sig"
@@ -865,7 +863,8 @@ export class WorldView {
         : (this.gameState.equippedCosmetic ? this.gameState.equippedCosmetic(slot) : null);
       let spr = this._cosSprites[slot];
       if (!id) { if (spr) spr.setVisible(false); continue; }
-      const key = id; // 텍스처 키 = cosmetic id(cos-*)
+      const key = `world/${id}`;
+      if (!this.scene.textures.exists(key)) { if (spr) spr.setVisible(false); continue; }
       if (!spr) {
         spr = this.scene.add.image(this.gov.x, this.gov.y, key).setOrigin(0.5, 1).setScale(GOV_SCALE).setDepth(workerDepth(GROUND_Y) + 1);
         this._cosSprites[slot] = spr;

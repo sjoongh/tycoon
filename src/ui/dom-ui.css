@@ -92,8 +92,8 @@
 .gp-hud { position: absolute; top: 0; left: 0; right: 0; padding: max(9px, env(safe-area-inset-top)) 9px 9px; display: flex; flex-direction: column; gap: 7px; align-items: stretch; }
 .gp-hud__row { display: flex; gap: 6px; padding-right: 96px; }
 .gp-chip { display: flex; align-items: center; gap: 2px; padding: 6px 4px 6px 2px; background: var(--panel); border: 2px solid var(--line); border-radius: var(--r-sm); border-radius: var(--r); box-shadow: var(--px-out-sm); flex: 1 1 0; min-width: 0; overflow: hidden; }
-.gp-chip--votes  { flex-grow: 1.6; }
-.gp-chip--explain { flex-grow: 1.2; }
+.gp-chip--votes  { flex-grow: 1.5; }
+.gp-chip--explain { flex-grow: 1.35; }
 .gp-chip--trust  { flex-grow: 0.9; }
 .gp-chip__ic { width: 32px; height: 32px; flex: none; margin: -4px 0; }
 .gp-chip__val { font-family: var(--f-bold); font-size: 14px; color: var(--cyan, var(--gem)); line-height: 1.1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -633,8 +633,15 @@ body { background-color: var(--bg-deep); background-image: repeating-linear-grad
 
 /* 좁은 화면(360w 이하급) — HUD 칩 값 잘림 방지 */
 @media (max-width: 375px) {
-  .gp-hud__row { padding-right: 96px; }
-  .gp-chip { padding: 6px 3px 6px 0; gap: 1px; }
+  /* 좁은 화면: 설정 버튼을 진행바 줄로 내려 칩 3개가 전체 폭을 쓰게 한다 */
+  .gp-hud__row { padding-right: 0; gap: 4px; }
+  .gp-chip { padding: 3px 5px 3px 3px; gap: 3px; }
+  .gp-chip__ic { width: 28px !important; height: 28px !important; margin: -3px 0; }
+  .gp-chip__label { display: none; }
+  .gp-chip__val { font-size: 13px; }
+  .gp-progress { margin-right: 44px; }
+  .gp-mute { top: calc(max(9px, env(safe-area-inset-top)) + 46px); width: 36px; height: 36px; }
+  .gp-mute .gp-ic { width: 24px !important; height: 24px !important; }
 }
 
 /* ---------- 설정 모달 ---------- */
@@ -666,7 +673,7 @@ body { background-color: var(--bg-deep); background-image: repeating-linear-grad
 /* ---------- 카툰 스킨 오버라이드 (토큰만으로 안 되는 형태 규칙) ---------- */
 .gp-chip { border-radius: 999px; padding: 4px 6px 4px 4px; gap: 5px; background: linear-gradient(180deg, #1b2244, #141a33); box-shadow: inset 0 2px 4px rgba(0,0,0,0.55), 0 2px 0 rgba(255,255,255,0.06); }
 .gp-chip__ic { width: 36px !important; height: 36px !important; margin: -6px 0; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.35)); }
-.gp-chip__val { font-family: var(--f-num); font-size: 15px; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.6); letter-spacing: -0.2px; }
+.gp-chip__val { font-family: var(--f-num); font-size: 14px; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.6); letter-spacing: -0.3px; font-variant-numeric: tabular-nums; }
 .gp-chip--trust { flex-grow: 1.1; }
 .gp-chip--trust .gp-chip__val { font-size: 14px; }
 .gp-chip__label { font-size: 10px; }

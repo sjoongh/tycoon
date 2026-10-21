@@ -306,6 +306,54 @@ def toon(folder: str, key: str, pose: str, display_h: int, crown=False, badge=No
     return canvas, (W // 2, H + pad)
 
 
+def cosmetic_overlay(cid: str, W: int, H: int, foot_y: int) -> Image.Image:
+    """국장(Kenney Male person) 머리 기준 오버레이. 실측: 머리 상단 12%H, 하단 58%H, 폭 62%W, 눈높이 머리의 52%."""
+    S = SS
+    im = Image.new("RGBA", (W * S, H * S), (0, 0, 0, 0))
+    d = ImageDraw.Draw(im)
+    cx = W * S / 2
+    ht = H * S * 0.12          # head top
+    hb = H * S * 0.58          # head bottom
+    hh = hb - ht
+    hw = W * S * 0.62
+    ey = ht + hh * 0.52        # eye line
+    ol = (40, 30, 40, 255)
+    lw = 3 * S
+    if cid == "cos-cap":
+        d.chord([cx - hw * 0.6, ht - hh * 0.02, cx + hw * 0.6, ht + hh * 0.62], 180, 360, fill=(226, 60, 60, 255), outline=ol, width=lw)
+        d.rounded_rectangle([cx - hw * 0.05, ht + hh * 0.24, cx + hw * 0.86, ht + hh * 0.36], 8 * S, fill=(190, 40, 40, 255), outline=ol, width=lw)
+        d.ellipse([cx - 10 * S, ht + hh * 0.02, cx + 10 * S, ht + hh * 0.12], fill=(255, 220, 120, 255))
+    elif cid == "cos-tophat":
+        d.rounded_rectangle([cx - hw * 0.7, ht + hh * 0.12, cx + hw * 0.7, ht + hh * 0.28], 8 * S, fill=(30, 30, 40, 255), outline=ol, width=lw)
+        d.rounded_rectangle([cx - hw * 0.45, ht - hh * 0.62, cx + hw * 0.45, ht + hh * 0.2], 10 * S, fill=(40, 40, 55, 255), outline=ol, width=lw)
+        d.rectangle([cx - hw * 0.45, ht + hh * 0.02, cx + hw * 0.45, ht + hh * 0.12], fill=(226, 60, 60, 255))
+    elif cid == "cos-halo":
+        box = [cx - hw * 0.55, ht - hh * 0.42, cx + hw * 0.55, ht - hh * 0.1]
+        d.ellipse(box, outline=(255, 215, 80, 255), width=8 * S)
+        d.ellipse(box, outline=(255, 248, 200, 170), width=3 * S)
+    elif cid == "cos-shades":
+        for side in (-1, 1):
+            x0 = cx + side * hw * 0.2
+            d.rounded_rectangle([x0 - hw * 0.19, ey - hh * 0.12, x0 + hw * 0.19, ey + hh * 0.12], 8 * S, fill=(30, 30, 45, 255), outline=ol, width=2 * S)
+        d.line([(cx - hw * 0.02, ey), (cx + hw * 0.02, ey)], fill=ol, width=lw)
+        d.line([(cx - hw * 0.39, ey - hh * 0.04), (cx - hw * 0.55, ey - hh * 0.1)], fill=ol, width=lw)
+        d.line([(cx + hw * 0.39, ey - hh * 0.04), (cx + hw * 0.55, ey - hh * 0.1)], fill=ol, width=lw)
+    elif cid == "cos-mask":
+        d.rounded_rectangle([cx - hw * 0.42, ey + hh * 0.14, cx + hw * 0.42, ey + hh * 0.5], 10 * S, fill=(245, 248, 255, 255), outline=(170, 180, 200, 255), width=lw)
+        for k in range(1, 3):
+            y = ey + hh * (0.14 + 0.12 * k)
+            d.line([(cx - hw * 0.34, y), (cx + hw * 0.34, y)], fill=(205, 212, 228, 255), width=2 * S)
+    elif cid == "sig-band":
+        d.rounded_rectangle([cx - hw * 0.62, ey - hh * 0.34, cx + hw * 0.62, ey - hh * 0.2], 6 * S, fill=(226, 60, 60, 255), outline=ol, width=2 * S)
+        d.polygon([(cx + hw * 0.56, ey - hh * 0.27), (cx + hw * 0.9, ey - hh * 0.4), (cx + hw * 0.86, ey - hh * 0.12)], fill=(226, 60, 60, 255), outline=ol)
+    elif cid == "sig-glasses":
+        for side in (-1, 1):
+            x0 = cx + side * hw * 0.2
+            d.ellipse([x0 - hw * 0.17, ey - hh * 0.13, x0 + hw * 0.17, ey + hh * 0.13], outline=(70, 60, 80, 255), width=3 * S, fill=(180, 220, 255, 70))
+        d.line([(cx - hw * 0.03, ey), (cx + hw * 0.03, ey)], fill=(70, 60, 80, 255), width=3 * S)
+    return im.resize((W, H), Image.LANCZOS)
+
+
 GOV_TOON = [  # 성장 5단계: 포즈·장식으로 구분
     ("Male person", "malePerson", "idle", False, None),
     ("Male person", "malePerson", "idle", False, (255, 197, 61)),
@@ -358,6 +406,14 @@ def main():
                 previews.append(img)
     # 비행·적체용 투표지(벡터)
     ballot_sprite().save(OUT / "ballot.png")
+    # 꾸미기·시그니처 오버레이 — 국장 캔버스와 같은 크기/앵커로 그려 gov 위치에 그대로 얹는다
+    gw, gh = meta["gov"][0]["w"], meta["gov"][0]["h"]
+    meta["cosmetics"] = {}
+    for cid in ["cos-cap", "cos-tophat", "cos-halo", "cos-shades", "cos-mask", "sig-band", "sig-glasses"]:
+        img = cosmetic_overlay(cid, gw, gh, meta["gov"][0]["ay"])
+        img.save(OUT / f"{cid}.png")
+        meta["cosmetics"][cid] = {"w": img.width, "h": img.height, "ax": gw // 2, "ay": meta["gov"][0]["ay"]}
+        previews.append(img)
     OUT_JS.write_text(
         "// 자동 생성 — scripts/art/build_world_vector.py. 직접 수정 금지.\n"
         f"export const WORLD_ATLAS = {json.dumps(meta, ensure_ascii=False)};\n"

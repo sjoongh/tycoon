@@ -124,7 +124,8 @@ export class DOMHud {
       if (backlog >= 1) {
         bEl.hidden = false;
         const pen = this.gameState.backlogTrustPenalty ? this.gameState.backlogTrustPenalty() : 0;
-        this._setText(this._els.backlogText, `적체 ${shortNumber(backlog)}표 · 믿음 -${(pen * 60).toFixed(1)}/분 · 분류·기록 용량 부족`);
+        const perMin = pen * 60;
+        this._setText(this._els.backlogText, `적체 ${shortNumber(backlog)}표 · 믿음 ${perMin < 0.05 ? "-0.1 미만" : `-${perMin.toFixed(1)}`}/분 · 분류·기록 용량 부족`);
         bEl.classList.toggle("gp-backlog--danger", pen >= 0.05);
       } else {
         bEl.hidden = true;
