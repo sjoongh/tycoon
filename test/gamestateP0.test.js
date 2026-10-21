@@ -60,7 +60,7 @@ describe("P0-2 직원 레벨 상한: 런타임에서도 20을 돌파할 수 없�
   });
 
   it("MAX 일괄 채용도 상한 20에서 멈춘다", () => {
-    seedSave(store, { votes: 1e15, explain: 1e15, staff: { [staffId]: 18 } });
+    seedSave(store, { votes: 1e15, explain: 1e15, staff: { [staffId]: 18 }, facilities: { desk: 60 } }); // 담당 시설(desk) 레벨이 직원 상한이므로 60으로 둔다
     const gs = new GameState();
     gs.bulkHire(staffId, "max");
     expect(gs.staffLevel(staffId)).toBe(20);

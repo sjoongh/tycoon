@@ -11,6 +11,8 @@ export const facilities = [
     cps: 0.8,
     click: 1,
     unlock: 1,
+    requires: null, // 선행 시설 레벨(구역 조건과 AND)
+    capacity: 0.5, // 처리 용량 가중치(레벨×cps×capacity) — 분류·기록이 병목을 푼다
     maxLevel: 60,
     desc: "번호표와 미소로 모든 문의를 접수합니다.",
     effect: "클릭 표 +1, 초당 표 +0.8",
@@ -27,6 +29,8 @@ export const facilities = [
     cps: 2.8,
     click: 0,
     unlock: 1,
+    requires: { desk: 5 }, // 선행 시설 레벨(구역 조건과 AND)
+    capacity: 1.8, // 처리 용량 가중치(레벨×cps×capacity) — 분류·기록이 병목을 푼다
     maxLevel: 55,
     desc: "무엇이든 가지런히 정리되는 든든한 상자입니다.",
     effect: "초당 표 생산을 크게 올립니다.",
@@ -44,6 +48,8 @@ export const facilities = [
     click: 0,
     trust: 4,
     unlock: 2,
+    requires: { sorter: 5 }, // 선행 시설 레벨(구역 조건과 AND)
+    capacity: 0.6, // 처리 용량 가중치(레벨×cps×capacity) — 분류·기록이 병목을 푼다
     maxLevel: 50,
     desc: "짧고 단호한 문장으로 믿음도를 회복합니다.",
     effect: "믿음 하락을 줄이고 업그레이드시 믿음 회복.",
@@ -61,6 +67,8 @@ export const facilities = [
     click: 2,
     trust: 2,
     unlock: 3,
+    requires: { notice: 8 }, // 선행 시설 레벨(구역 조건과 AND)
+    capacity: 1.0, // 처리 용량 가중치(레벨×cps×capacity) — 분류·기록이 병목을 푼다
     maxLevel: 45,
     desc: "가끔 조용하지만 열심히 돌아간다고 알려져 있습니다.",
     effect: "클릭과 자동 생산을 동시에 강화합니다.",
@@ -78,6 +86,8 @@ export const facilities = [
     click: 1,
     trust: 3,
     unlock: 4,
+    requires: { server: 10 }, // 선행 시설 레벨(구역 조건과 AND)
+    capacity: 1.6, // 처리 용량 가중치(레벨×cps×capacity) — 분류·기록이 병목을 푼다
     maxLevel: 40,
     desc: "누가 물어봐도 꺼낼 수 있는 기록을 쌓습니다.",
     effect: "후반 생산과 사건 대응 안정성을 올립니다.",
@@ -95,6 +105,8 @@ export const facilities = [
     click: 0,
     trust: 5,
     unlock: 5,
+    requires: { archive: 10 }, // 선행 시설 레벨(구역 조건과 AND)
+    capacity: 0.9, // 처리 용량 가중치(레벨×cps×capacity) — 분류·기록이 병목을 푼다
     maxLevel: 35,
     desc: "표정 관리를 포함한 실시간 설명 생산 시설입니다.",
     effect: "믿음 회복과 고효율 자동 생산.",

@@ -21,7 +21,8 @@ export class DOMHud {
         <small class="gp-fever__hint">눌러서 작전 현황 보기</small>
       </button>
       <div class="gp-truststate" data-k="truststate" hidden></div>
-      <div class="gp-commgauge" data-k="commgauge" hidden><div class="gp-commgauge__fill"></div><span class="gp-commgauge__txt"></span></div>`;
+      <div class="gp-commgauge" data-k="commgauge" hidden><div class="gp-commgauge__fill"></div><span class="gp-commgauge__txt"></span></div>
+      <div class="gp-backlog" data-k="backlog" hidden><span class="gp-backlog__txt"></span></div>`;
     this._els = {
       votes: this.root.querySelector('[data-k="votes"]'),
       explain: this.root.querySelector('[data-k="explain"]'),
@@ -33,6 +34,8 @@ export class DOMHud {
       commGauge: this.root.querySelector('[data-k="commgauge"]'),
       commFill: this.root.querySelector(".gp-commgauge__fill"),
       commText: this.root.querySelector(".gp-commgauge__txt"),
+      backlog: this.root.querySelector('[data-k="backlog"]'),
+      backlogText: this.root.querySelector(".gp-backlog__txt"),
       fever: this.root.querySelector('[data-k="fever"]'),
       feverFill: this.root.querySelector('[data-k="fever-fill"]'),
       feverLabel: this.root.querySelector('[data-k="fever-label"]'),
@@ -112,6 +115,20 @@ export class DOMHud {
     if (stageMarkup !== this._stageMarkup) {
       this._stageMarkup = stageMarkup;
       stageEl.innerHTML = stageMarkup;
+    }
+
+    // 적체 경고 — 유입이 용량을 넘겨 미처리 표가 쌓이면 노출
+    const bEl = this._els.backlog;
+    if (bEl) {
+      const backlog = Math.max(0, d.backlog || 0);
+      if (backlog >= 1) {
+        bEl.hidden = false;
+        const pen = this.gameState.backlogTrustPenalty ? this.gameState.backlogTrustPenalty() : 0;
+        this._setText(this._els.backlogText, `적체 ${shortNumber(backlog)}표 · 믿음 -${(pen * 60).toFixed(1)}/분 · 분류·기록 용량 부족`);
+        bEl.classList.toggle("gp-backlog--danger", pen >= 0.05);
+      } else {
+        bEl.hidden = true;
+      }
     }
 
     // 공산화(체제 전복) 위험 게이지 — 위험이 쌓일 때만 노출(미리 보이게 = 공정)

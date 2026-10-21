@@ -289,7 +289,7 @@ export class DOMBottomPanel {
         <div class="gp-card__icon" style="${iconStyle(facilityIcon(sel), 2)}"></div>
         <div class="gp-card__body">
           <div class="gp-card__title">${f.name} Lv.${gs.level(sel)}</div>
-          <div class="gp-card__sub">${unlocked ? `${shortNumber(cost)}표 · 해명 ${shortNumber(ex)}` : `${f.unlock}구역에서 해금`}</div>
+          <div class="gp-card__sub">${unlocked ? `${shortNumber(cost)}표 · 해명 ${shortNumber(ex)}` : this._lockText(sel)}</div>
           ${unlocked ? `<div class="gp-card__gain">▲ 업그레이드 시 초당 +${f.cps}표</div>` : ""}
           ${unlocked && gs.nextFacilityMilestone(gs.level(sel)) != null
             ? `<div class="gp-card__milestone">★ Lv.${gs.nextFacilityMilestone(gs.level(sel))} 달성 시 생산 ×2</div>`
@@ -298,10 +298,11 @@ export class DOMBottomPanel {
         ${upgradeBtn}
       </div>
       ${unlocked ? this._qtyToggle() : ""}
+      ${this._capacityLine()}
       <div class="gp-facsel">${facilities.map((ff) => {
         const u = gs.isUnlocked(ff.id);
         // P1 fix: facility picker icon — use webp asset as background-image, color as fallback
-      return `<button class="gp-fac ${ff.id === sel ? "gp-fac--active" : ""} ${u ? "" : "gp-fac--locked"}" data-action="selectFac" data-id="${ff.id}"><span class="gp-fac__icon" style="${iconStyle(facilityIcon(ff.id), 1)}"></span><span class="gp-fac__role">${ff.role}</span><span class="gp-fac__lv">${u ? `Lv.${gs.level(ff.id)}` : `${ff.unlock}구`}</span></button>`;
+      return `<button class="gp-fac ${ff.id === sel ? "gp-fac--active" : ""} ${u ? "" : "gp-fac--locked"}" data-action="selectFac" data-id="${ff.id}"><span class="gp-fac__icon" style="${iconStyle(facilityIcon(ff.id), 1)}"></span><span class="gp-fac__role">${ff.role}</span><span class="gp-fac__lv">${u || gs.level(ff.id) > 0 ? `Lv.${gs.level(ff.id)}` : (gs.unlockReason(ff.id)?.area ? `${ff.unlock}구` : "잠김")}</span></button>`;
       }).join("")}</div>
       <div class="gp-region"><span class="gp-region__progress">${gs.data.stage.area}구역 · ${shortNumber(gs.data.stage.progress)} / ${shortNumber(gs.data.stage.target)}${offlineCarry > 0 ? `<small class="gp-carry">미처리 개표 +${shortNumber(offlineCarry)}</small>` : ""}</span>${
         stageDone
@@ -311,6 +312,29 @@ export class DOMBottomPanel {
       ${this._nextUnlockTeaser()}`;
   }
 
+  // 잠금 사유 문구: 구역 또는 선행 시설 레벨
+  _lockText(id) {
+    const r = this.gameState.unlockReason ? this.gameState.unlockReason(id) : null;
+    if (!r) return "";
+    if (r.area) return `${r.area}구역에서 해금`;
+    const fac = this.gameState.facility(r.facility);
+    return `${fac?.name || r.facility} Lv.${r.level} 필요`;
+  }
+
+  // 처리 용량 라인: 유입 vs 용량, 적체. 병목이면 경고색.
+  _capacityLine() {
+    const gs = this.gameState;
+    if (!gs.intakeFor || !gs.capacityFor) return "";
+    const intake = gs.intakeFor(gs.data);
+    const capacity = gs.capacityFor(gs.data);
+    const backlog = Math.max(0, gs.data.backlog || 0);
+    const choked = intake > capacity * 1.0001;
+    const fmt = (v) => (v < 1000 ? v.toFixed(1) : shortNumber(v));
+    return `<div class="gp-capline${choked ? " gp-capline--choked" : ""}" title="유입이 용량을 넘으면 적체가 쌓여 믿음이 떨어집니다. 분류·기록·전산과 운반·전산 직원이 용량을 올립니다.">
+      <span>유입 <b>${fmt(intake)}</b>/초</span><span>용량 <b>${fmt(capacity)}</b>/초</span><span>${backlog > 0 ? `적체 <b>${shortNumber(backlog)}</b>` : "적체 없음"}</span>${choked ? `<em>병목 · 분류·기록 증설</em>` : ""}
+    </div>`;
+  }
+
   // 다음 해금 티저: 아직 잠긴 시설 중 가장 먼저 열리는 것을 한 줄 안내(진행 동기 부여)
   // FIX P1: emoji 🔒 replaced with CSS-safe unicode square to avoid Android WebView glyph fallback failure
   _nextUnlockTeaser() {
@@ -318,7 +342,7 @@ export class DOMBottomPanel {
     const locked = gs.lockedFacilities ? gs.lockedFacilities() : [];
     if (!locked.length) return "";
     const next = locked.reduce((a, b) => ((b.unlock || 1) < (a.unlock || 1) ? b : a));
-    return `<div class="gp-nextunlock"><span style="font-size:9px;color:var(--ink-soft);vertical-align:middle">&#9632;</span> 다음 해금: <b>${next.name}</b> · ${next.unlock}구역 도달 시</div>`;
+    return `<div class="gp-nextunlock"><span style="font-size:9px;color:var(--ink-soft);vertical-align:middle">&#9632;</span> 다음 해금: <b>${next.name}</b> · ${this._lockText(next.id)}</div>`;
   }
 
   _renderCrew() {
@@ -334,6 +358,9 @@ export class DOMBottomPanel {
       const deployed = gs.staffDeployed(s.id);
       const plan = gs.staffBulkPlan(s.id, this.buyQty);
       const can = plan.levels > 0 && gs.data.votes >= plan.voteCost && gs.data.explain >= plan.explainCost;
+      const block = plan.levels > 0 ? null : (gs.hireBlockReason ? gs.hireBlockReason(s.id) : null);
+      const blockFac = block?.facility ? gs.facility(block.facility) : null;
+      const blockLabel = block?.max ? "최대" : blockFac ? `${blockFac.role} Lv.${block.level}` : "최대";
       const skill = s.skill ? (gs.staffSkillActive(s.id) ? s.skill.name : `스킬 Lv.${s.skill.unlockLevel}`) : "";
       // 시너지: 대응 시설과 곱연산 — 빌드 방향 표시(활성 시 강조)
       const synFac = s.synergy ? facilities.find((f) => f.id === s.synergy.facility) : null;
@@ -352,7 +379,7 @@ export class DOMBottomPanel {
       return `<div class="gp-staff${lightRarity}${deployed ? " gp-staff--deployed" : ""}" style="--rarity-color:${hex(rarityHex)}">
         <div class="gp-staff__dot gp-staff__dot--r${rank.tier}"><i class="gp-ic" style="${iconStyle(staffIcon(s.id), 1)}"></i><span>${rank.tier || ""}</span></div>
         <div class="gp-staff__body"><div class="gp-staff__name">${s.name}<span class="gp-staff__rar">${s.rarityName}</span></div><div class="gp-staff__sub">Lv.${lv} · ${rank.name}${nextRank ? ` · Lv.${nextRank} 승급` : " · 최고 직급"}</div><div class="gp-staff__sub">${skill} ${synLabel}</div></div>
-        <button class="gp-btn gp-btn--sm gp-btn--upgrade ${can ? "gp-btn--ready" : "gp-btn--disabled"}" data-action="hire" data-id="${s.id}">${plan.levels > 0 ? `${shortNumber(plan.voteCost)}표` : "최대"}<small>${this.buyQty !== 1 ? (this.buyQty === "max" ? (plan.levels > 0 ? `MAX +${plan.levels}` : "MAX") : `×${plan.levels || this.buyQty}`) : (plan.levels > 0 ? `${shortNumber(plan.explainCost)}해명` : `Lv.${lv}`)}</small></button>
+        <button class="gp-btn gp-btn--sm gp-btn--upgrade ${can ? "gp-btn--ready" : "gp-btn--disabled"}" data-action="hire" data-id="${s.id}">${plan.levels > 0 ? `${shortNumber(plan.voteCost)}표` : blockLabel}<small>${this.buyQty !== 1 ? (this.buyQty === "max" ? (plan.levels > 0 ? `MAX +${plan.levels}` : "MAX") : `×${plan.levels || this.buyQty}`) : (plan.levels > 0 ? `${shortNumber(plan.explainCost)}해명` : (blockFac ? "시설 필요" : `Lv.${lv}`))}</small></button>
         <div class="gp-staff__field"><span>${staffDeploymentEffectText(s.id, lv)}</span>${deployButton}</div></div>`;
     }).join("");
     // FIX P2: multiplier shown as "+69% 생산 보너스" sub-label (not "x1.69" debug-looking number in title)

@@ -42,7 +42,7 @@ describe("감사 런 페이싱", () => {
 
     const gs = new GameState();
 
-    expect(gs.data.version).toBe(9);
+    expect(gs.data.version).toBe(10);
     expect(gs.data.stage.target).toBe(gs.stageTarget(2, 0));
     expect(gs.data.stage.progress / gs.data.stage.target).toBeCloseTo(0.375, 6);
 

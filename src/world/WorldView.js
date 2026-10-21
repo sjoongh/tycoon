@@ -414,6 +414,19 @@ export class WorldView {
     }
     this.ballotbox = this.propByFacility.desk;
     this.board = this.propByFacility.server;
+    // 적체(미처리 표) 더미 — 접수창구 앞 타일에 쌓인다. 개수는 적체/분당용량 비율.
+    const pile = workerPos("desk");
+    this._backlogPile = Array.from({ length: 6 }, (_, k) => this.scene.add
+      .image(pile.x - 26 + (k % 3) * 10, pile.y - 6 - Math.floor(k / 3) * 7, "ballot")
+      .setScale(0.9)
+      .setAngle(-12 + (k * 37) % 24)
+      .setDepth(stationDepth(pile.y) - 2)
+      .setVisible(false));
+    this._backlogBadge = this.scene.add
+      .text(pile.x, pile.y - 30, "!", { fontFamily: '"Press Start 2P", monospace', fontSize: "10px", color: "#ffffff", backgroundColor: "#e43b44", padding: { x: 4, y: 3 } })
+      .setOrigin(0.5)
+      .setDepth(stationDepth(pile.y) + 50)
+      .setVisible(false);
     // 서버실 위 LED 개표 현황
     this.boardText = this.scene.add
       .text(this.board.x + 34, this.board.y - 56, "", { fontFamily: '"Galmuri9", "Galmuri11", monospace', fontSize: "8px", color: "#2ce8f5", align: "center", backgroundColor: "rgba(20,18,28,0.6)", padding: { x: 3, y: 2 } })
@@ -445,6 +458,21 @@ export class WorldView {
       }
       this._propTier[id] = tierN;
     });
+
+    if (this._backlogPile) {
+      const d = this.gameState.data;
+      const backlog = Math.max(0, d.backlog || 0);
+      const perMin = this.gameState.capacityFor ? this.gameState.capacityFor(d) * 60 + 1 : 1;
+      const n = backlog < 1 ? 0 : Math.max(1, Math.min(6, Math.ceil((backlog / perMin) * 6)));
+      this._backlogPile.forEach((b, k) => b.setVisible(k < n));
+      const danger = n >= 3;
+      if (danger !== this._backlogDanger) {
+        this._backlogDanger = danger;
+        this._backlogBadge.setVisible(danger);
+        this.scene.tweens.killTweensOf(this._backlogBadge);
+        if (danger) this.scene.tweens.add({ targets: this._backlogBadge, y: this._backlogBadge.y - 4, yoyo: true, repeat: -1, duration: 420, ease: "Sine.easeInOut" });
+      }
+    }
 
     if (this.boardText) {
       const d = this.gameState.data;
@@ -916,6 +944,8 @@ export class WorldView {
     this.titleZone?.destroy();
     this.boardText?.destroy();
     Object.values(this.propLabels || {}).forEach((t) => t.destroy());
+    (this._backlogPile || []).forEach((b) => b.destroy());
+    if (this._backlogBadge) { this.scene.tweens.killTweensOf(this._backlogBadge); this._backlogBadge.destroy(); }
     (this.props || []).forEach((p) => p.destroy());
     Object.values(this._workers || {}).forEach((worker) => {
       this.scene.tweens.killTweensOf([worker.body, worker.badge]);

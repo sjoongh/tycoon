@@ -134,6 +134,13 @@
 .gp-commgauge__fill { position: absolute; inset: 0; background: linear-gradient(90deg, #b13e53, #ff5a5a); transform: scaleX(0); transform-origin: left center; transition: transform .3s steps(4); }
 .gp-commgauge__txt { position: relative; z-index: 1; display: block; text-align: center; line-height: 16px; font-family: var(--f-small); font-size: var(--type-label); color: #fff; text-shadow: 1px 1px 0 #000; }
 .gp-commgauge--danger { animation: gp-crisis-pulse 0.7s steps(2) infinite; }
+.gp-backlog { align-self: stretch; margin-top: 3px; padding: 3px 6px; background: #3a2412; border: 2px solid var(--gold-deep); font-family: var(--f-small); font-size: var(--type-label); color: var(--gold-hi); text-align: center; }
+.gp-backlog--danger { background: #3a1216; border-color: var(--red); color: #ff9a9a; animation: gp-crisis-pulse 1.1s steps(2) infinite; }
+.gp-capline { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; margin-top: 8px; padding: 5px 8px; background: var(--panel-sunk); border: 2px solid var(--line); font-family: var(--f-small); font-size: var(--type-label); color: var(--ink-soft); }
+.gp-capline b { color: var(--ink); font-family: var(--f-num); font-size: 10px; }
+.gp-capline em { font-style: normal; color: var(--gold-hi); margin-left: auto; }
+.gp-capline--choked { border-color: var(--gold-deep); }
+.gp-capline--choked em { color: #ff9a9a; }
 
 /* 우상단 토글 */
 .gp-mute { position: absolute; top: max(9px, env(safe-area-inset-top)); right: 8px; pointer-events: auto; width: 44px; height: 44px; border: 3px solid var(--line); background: var(--panel); box-shadow: var(--px-out-sm); font-size: 17px; cursor: pointer; z-index: 10; display: flex; align-items: center; justify-content: center; image-rendering: pixelated; }

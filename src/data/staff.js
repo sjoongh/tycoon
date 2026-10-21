@@ -11,6 +11,7 @@ export const staffDefinitions = [
     cpsBonus: 0.04,
     clickBonus: 1,
     synergy: { facility: "desk", per: 0.0004 },
+    worksAt: "desk", // 담당 시설 — Lv.1 이상이어야 채용, 직원 레벨 ≤ 시설 레벨
     skill: {
       name: "빠른 접수",
       desc: "5레벨마다 클릭 보너스가 추가로 증가합니다.",
@@ -31,6 +32,8 @@ export const staffDefinitions = [
     cpsBonus: 0.08,
     trustBonus: 0.02,
     synergy: { facility: "archive", per: 0.0004 },
+    worksAt: "archive", // 담당 시설 — Lv.1 이상이어야 채용, 직원 레벨 ≤ 시설 레벨
+    capacityBonus: 0.02, // 레벨당 처리 용량 +2% (유입이 아닌 용량 축)
     skill: {
       name: "교차 검수",
       desc: "믿음 하락을 크게 줄입니다.",
@@ -50,6 +53,8 @@ export const staffDefinitions = [
     cpsBonus: 0.05,
     clickBonus: 2,
     synergy: { facility: "sorter", per: 0.0004 },
+    worksAt: "sorter", // 담당 시설 — Lv.1 이상이어야 채용, 직원 레벨 ≤ 시설 레벨
+    capacityBonus: 0.05, // 레벨당 처리 용량 +5% (유입이 아닌 용량 축)
     skill: {
       name: "전력 질주",
       desc: "5레벨부터 클릭 처리량이 추가로 늘어납니다.",
@@ -70,6 +75,8 @@ export const staffDefinitions = [
     cpsBonus: 0.14,
     clickBonus: 2,
     synergy: { facility: "server", per: 0.0004 },
+    worksAt: "server", // 담당 시설 — Lv.1 이상이어야 채용, 직원 레벨 ≤ 시설 레벨
+    capacityBonus: 0.04, // 레벨당 처리 용량 +4% (유입이 아닌 용량 축)
     skill: {
       name: "무중단 배치",
       desc: "서버실 레벨에 따라 생산 배율이 추가됩니다.",
@@ -88,6 +95,7 @@ export const staffDefinitions = [
     explain: 38,
     cpsBonus: 0.12,
     synergy: { facility: "notice", per: 0.0004 },
+    worksAt: "notice", // 담당 시설 — Lv.1 이상이어야 채용, 직원 레벨 ≤ 시설 레벨
     skill: {
       name: "패턴 분석",
       desc: "5레벨부터 자동 생산이 추가로 늘어납니다.",
@@ -108,6 +116,7 @@ export const staffDefinitions = [
     cpsBonus: 0.1,
     trustBonus: 0.05,
     synergy: { facility: "studio", per: 0.0004 },
+    worksAt: "studio", // 담당 시설 — Lv.1 이상이어야 채용, 직원 레벨 ≤ 시설 레벨
     skill: {
       name: "생방송 대응",
       desc: "사건 대응 보상의 믿음 효과가 증가합니다.",

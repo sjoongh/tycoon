@@ -49,6 +49,15 @@ import { shortNumber } from "../utils/format.js";
 const DAY_MS = 86400000;
 const DAILY_STREAK_CAP = 7;
 const TRUST_CRISIS = 20; // 이 미만이면 불신 위기(생산 페널티)
+const TRUST_DECAY_BASE = 0.06; // 구역 1 기준 초당 믿음 자연 감소
+const TRUST_DECAY_PER_AREA = 0.004; // 구역마다 가산(난이도)
+const TRUST_DECAY_MAX = 0.12;
+const BACKLOG_TRUST_RATE = 0.05; // 적체/분당용량 비율당 초당 믿음 추가 하락(상한 0.1)
+const BACKLOG_TRUST_MAX = 0.1;
+const BOSS_FAIL_BACKLOG_MIN = 50; // 보스 실패·건너뛰기 적체 페널티 하한
+const STAGE_STEEP_FROM = 7; // 이 구역부터 목표량 지수 상승
+const STAGE_EXP = 1.38;
+const STAGE_EXP_STEEP = 1.5;
 const TRUST_BONUS = 90; // 이 이상이면 신뢰 보너스(생산 서지)
 const GACHA_PITY = 30; // 소프트 천장 — 이 횟수 내 희귀 미출현 시 다음 뽑기 희귀 확정
 const CIDER_TRUST = 12; // 사건 선택으로 믿음이 이만큼(+) 오르면 '사이다!' 정의구현 순간
@@ -77,7 +86,7 @@ const DEX_MILESTONES = [
   { n: 75, pct: 0.25 }, // 전종 수집 완성(officeEvents 총수와 일치 — 사건 추가 시 함께 갱신)
 ];
 
-const SAVE_VERSION = 9;
+const SAVE_VERSION = 10;
 const FIRST_RUN_STAGE_BASE = 44000;
 const REPEAT_RUN_STAGE_BASE = 24000;
 
@@ -199,6 +208,7 @@ const fallbackState = {
     report: null,
   }, // 준비→계열 피버→피니셔→회복(감사 시 초기화)
   offlineCarryVotes: 0, // 이미 지급된 오프라인 표 중 다음 구역 진행에만 쓸 미처리 크레딧
+  backlog: 0, // 처리 용량을 넘긴 미처리 표(적체) — 믿음을 깎고, 남는 용량으로 소화된다
   offline2xDay: 0,
   log: ["개표국 개국"],
 };
@@ -271,6 +281,10 @@ export class GameState extends Phaser.Events.EventEmitter {
       boss: { ...fallbackState.boss, ...(parsed?.boss || {}) },
       fever: { ...fallbackState.fever, ...(parsed?.fever || {}) },
     };
+    {
+      const b = Number(data.backlog);
+      data.backlog = Number.isFinite(b) && b > 0 ? b : 0;
+    }
     data.daily.day = Math.max(0, Math.floor(Number(data.daily.day) || 0));
     data.daily.streak = Math.max(0, Math.floor(Number(data.daily.streak) || 0));
     data.daily.qday = Math.max(0, Math.floor(Number(data.daily.qday) || 0));
@@ -856,6 +870,8 @@ export class GameState extends Phaser.Events.EventEmitter {
     this.data.boss.clearedArea = area;
     this.data.boss.outcome = success ? "success" : outcome === "skipped" ? "skipped" : "failed";
     const baseReward = this.stageCompletionVotes(area);
+    // 실패·건너뛰기: 검증이 밀린 만큼 미처리 표가 적체된다(용량 30초분, 하한 50)
+    if (!success) this.data.backlog = (this.data.backlog || 0) + Math.max(BOSS_FAIL_BACKLOG_MIN, this.capacityFor(this.data) * 30);
     const result = {
       area,
       outcome: this.data.boss.outcome,
@@ -1142,12 +1158,24 @@ export class GameState extends Phaser.Events.EventEmitter {
     const now = Date.now();
     this.syncFever(now);
     this.syncBoss(now);
-    const production = this.cps();
+    // 유입(intake)은 용량(capacity)까지만 표로 확정되고, 초과분은 적체로 쌓인다. 남는 용량은 적체를 소화한다.
+    const mult = this.liveMultiplier();
+    const intake = this.intakeFor(this.data) * mult;
+    const capacity = this.capacityFor(this.data) * mult;
+    let production;
+    if (intake > capacity) {
+      production = capacity;
+      this.data.backlog += intake - capacity;
+    } else {
+      const drain = Math.min(this.data.backlog || 0, capacity - intake);
+      this.data.backlog = Math.max(0, (this.data.backlog || 0) - drain);
+      production = intake + drain;
+    }
     this.addVotes(production);
     if (!this.bossUsesPatterns()) this.addBossProgress(production, now);
     this.data.explain += this.explainPerSecond();
     // 홍보(notice) 패시브 회복은 믿음이 높을수록 둔화 → 100%에 고정되지 않고 평형점에 수렴(위기/보너스 긴장 유지, 보너스는 능동 브리핑으로 진입).
-    this.data.trust = Phaser.Math.Clamp(this.data.trust - this.trustDecay() + this.level("notice") * 0.035 * (1 - this.data.trust / 100), 0, 100);
+    this.data.trust = Phaser.Math.Clamp(this.data.trust - this.trustDecay() - this.backlogTrustPenalty() + this.level("notice") * 0.035 * (1 - this.data.trust / 100), 0, 100);
     this._tickCommunism();
     this._tickAutoAide();
     this.reduceDays();
@@ -1653,17 +1681,48 @@ export class GameState extends Phaser.Events.EventEmitter {
     return true;
   }
 
-  // 직원 레벨 상한 — 로드 시 클램프와 동일한 단일 기준(P0-2): 채용·일괄채용·정규화가 모두 이 값을 쓴다
+  // 직원 담당 시설(데이터 worksAt, 없으면 시너지 시설)
+  staffWorksAt(id) {
+    const staff = this.staff(id);
+    return staff?.worksAt || staff?.synergy?.facility || null;
+  }
+
+  // 직원 레벨 상한 = min(직원 자체 상한 20, 담당 시설 레벨). 로드 시 클램프는 자체 상한만 쓴다(기존 세이브 보존).
   staffMaxLevel(id) {
-    return this.staff(id)?.maxLevel ?? 20;
+    const hard = this.staff(id)?.maxLevel ?? 20;
+    const fac = this.staffWorksAt(id);
+    if (!fac) return hard;
+    return Math.min(hard, this.level(fac));
+  }
+
+  // 담당 시설 레벨에 막혀 더 못 올리는 상태(기존 세이브가 상한을 넘긴 경우 포함)
+  staffCapped(id) {
+    const hard = this.staff(id)?.maxLevel ?? 20;
+    const cap = this.staffMaxLevel(id);
+    return cap < hard && this.staffLevel(id) >= cap;
+  }
+
+  // 채용 불가 사유: { facility, level }(담당 시설 레벨 필요) | { max: true } | null
+  hireBlockReason(id) {
+    const staff = this.staff(id);
+    if (!staff) return { max: true };
+    const fac = this.staffWorksAt(id);
+    if (fac && this.level(fac) < 1) return { facility: fac, level: 1 };
+    const level = this.staffLevel(id);
+    const hard = staff.maxLevel ?? 20;
+    if (level >= hard) return { max: true };
+    if (fac && level >= this.level(fac)) return { facility: fac, level: level + 1 };
+    return null;
   }
 
   hireStaff(id) {
     const staff = this.staff(id);
     if (!staff) return false;
     const level = this.staffLevel(id);
-    if (level >= this.staffMaxLevel(id)) {
-      this.emit("float", { text: "최대 레벨", x: 195, y: 720, color: "#ff8e8e" });
+    const block = this.hireBlockReason(id);
+    if (block) {
+      const fac = block.facility ? this.facility(block.facility) : null;
+      this.emit("float", { text: block.max ? "최대 레벨" : `${fac?.name || "시설"} Lv.${block.level} 필요`, x: 195, y: 720, color: "#ff8e8e" });
       return false;
     }
     const voteCost = this.staffCost(id);
@@ -1708,6 +1767,8 @@ export class GameState extends Phaser.Events.EventEmitter {
   staffBulkPlan(id, qty) {
     const staff = this.staff(id);
     if (!staff) return { levels: 0, voteCost: 0, explainCost: 0 };
+    const block = this.hireBlockReason(id);
+    if (block && block.facility && block.level <= 1) return { levels: 0, voteCost: 0, explainCost: 0 };
     const maxLv = this.staffMaxLevel(id);
     const want = qty === "max" ? Infinity : Math.max(1, qty);
     let lv = this.staffLevel(id), v = 0, e = 0, n = 0, bv = this.data.votes, be = this.data.explain;
@@ -2198,15 +2259,35 @@ export class GameState extends Phaser.Events.EventEmitter {
   }
 
   isUnlocked(id) {
+    return Boolean(this.facility(id)) && this.unlockReason(id) === null;
+  }
+
+  // 잠금 사유: { area } | { facility, level } | null(열림). 구역 조건을 먼저 본다.
+  unlockReason(id) {
     const facility = this.facility(id);
-    return Boolean(facility && this.data.stage.area >= (facility.unlock || 1));
+    if (!facility) return { area: Infinity };
+    if (this.data.stage.area < (facility.unlock || 1)) return { area: facility.unlock || 1 };
+    for (const [reqId, reqLevel] of Object.entries(facility.requires || {})) {
+      if (this.level(reqId) < reqLevel) return { facility: reqId, level: reqLevel };
+    }
+    return null;
+  }
+
+  // 브리핑·피버 실시간 배율(오프라인 정산엔 미적용)
+  liveMultiplier() {
+    return (this.briefActive() ? BRIEF_BUFF_MULT : 1) * this.feverProductionMultiplier();
   }
 
   cps() {
-    // 브리핑·피버는 실시간 생산에만 적용(오프라인 정산엔 미적용 — cpsFor를 직접 쓰는 경로)
-    return this.cpsFor(this.data)
-      * (this.briefActive() ? BRIEF_BUFF_MULT : 1)
-      * this.feverProductionMultiplier();
+    return this.cpsFor(this.data) * this.liveMultiplier();
+  }
+
+  // 적체가 분당 용량 대비 얼마나 쌓였는지에 비례한 초당 믿음 추가 하락
+  backlogTrustPenalty(data = this.data) {
+    const backlog = Math.max(0, Number(data.backlog) || 0);
+    if (backlog <= 0) return 0;
+    const perMinute = this.capacityFor(data) * 60 + 1;
+    return Math.min(BACKLOG_TRUST_MAX, (backlog / perMinute) * BACKLOG_TRUST_RATE);
   }
 
   // ----- 긴급 브리핑(액티브 트러스트 액션): 해명 소비 → 믿음 회복 + 짧은 생산 버프 -----
@@ -2265,12 +2346,33 @@ export class GameState extends Phaser.Events.EventEmitter {
     return this.activateFeverFinisher();
   }
 
-  cpsFor(data) {
+  // 전역 생산 배율(믿음·직원·감사·칭호·캐릭터·작전·결말·배치·도감) — 유입과 용량에 공통 적용
+  _globalProductionMultiplier(data) {
+    return (0.9 + data.trust / 230) * this.trustModifier(data.trust) * this.staffMultiplierFor(data) * this.prestigeMultiplierFor(data) * (1 + this.permanentEffectFor(data, "cpsPct") + this.titleEffectFor(data, "cpsPct") + this.charEffectFor("cpsPct", data) + this.operationEffectFor(data, "cpsPct") + this.eventChainEffectFor(data, "cpsPct") + this.staffDeploymentEffectFor(data, "cpsPct")) * (1 + this.dexBonusPct(data));
+  }
+
+  // 유입: 시설이 초당 끌어오는 표
+  intakeFor(data) {
     const raw = facilities.reduce((sum, item) => {
       const lv = data.facilities[item.id] || 0;
       return sum + lv * item.cps * this.facilityMilestoneFactor(lv);
     }, 0);
-    return raw * (0.9 + data.trust / 230) * this.trustModifier(data.trust) * this.staffMultiplierFor(data) * this.prestigeMultiplierFor(data) * (1 + this.permanentEffectFor(data, "cpsPct") + this.titleEffectFor(data, "cpsPct") + this.charEffectFor("cpsPct", data) + this.operationEffectFor(data, "cpsPct") + this.eventChainEffectFor(data, "cpsPct") + this.staffDeploymentEffectFor(data, "cpsPct")) * (1 + this.dexBonusPct(data));
+    return raw * this._globalProductionMultiplier(data);
+  }
+
+  // 용량: 분류·기록·전산이 초당 확정 처리할 수 있는 표. 운반·전산 직원과 운영 작전이 용량만 키운다.
+  capacityFor(data) {
+    const raw = facilities.reduce((sum, item) => {
+      const lv = data.facilities[item.id] || 0;
+      return sum + lv * item.cps * (item.capacity ?? 1) * this.facilityMilestoneFactor(lv);
+    }, 0);
+    const staffCap = staffDefinitions.reduce((sum, staff) => sum + (data.staff?.[staff.id] || 0) * (staff.capacityBonus || 0), 0);
+    return raw * this._globalProductionMultiplier(data) * (1 + staffCap + this.operationEffectFor(data, "capacityPct"));
+  }
+
+  // 실효 생산 = min(유입, 용량). 적체 소화는 tick에서만.
+  cpsFor(data) {
+    return Math.min(this.intakeFor(data), this.capacityFor(data));
   }
 
   // 시설 레벨이 마일스톤을 넘을 때마다 해당 시설 생산 ×2 누적(AdVenture Capitalist식 영구 보너스)
@@ -2407,7 +2509,9 @@ export class GameState extends Phaser.Events.EventEmitter {
 
   trustDecay() {
     const reduction = staffDefinitions.reduce((sum, staff) => sum + this.staffLevel(staff.id) * (staff.trustBonus || 0), 0);
-    return Math.max(0.015, 0.06 - reduction);
+    const area = Math.max(1, Number(this.data.stage?.area) || 1);
+    const base = Math.min(TRUST_DECAY_MAX, TRUST_DECAY_BASE + TRUST_DECAY_PER_AREA * (area - 1));
+    return Math.max(0.015, base - reduction);
   }
 
   offlineRateFor(data) {
@@ -2687,6 +2791,10 @@ export class GameState extends Phaser.Events.EventEmitter {
     const base = Math.max(0, Number(prestigeRuns) || 0) > 0
       ? REPEAT_RUN_STAGE_BASE
       : FIRST_RUN_STAGE_BASE;
-    return Math.floor(base * Math.max(1, Number(area) || 1) ** 1.38);
+    const a = Math.max(1, Number(area) || 1);
+    // 구역 7부터 지수가 1.38 → 1.5로 — 연속성을 위해 6구역 값에서 이어 붙인다
+    if (a < STAGE_STEEP_FROM) return Math.floor(base * a ** STAGE_EXP);
+    const pivot = STAGE_STEEP_FROM - 1;
+    return Math.floor(base * pivot ** STAGE_EXP * (a / pivot) ** STAGE_EXP_STEEP);
   }
 }

@@ -29,7 +29,7 @@ describe("직원 배치 저장 호환", () => {
 
     const gs = new GameState();
 
-    expect(gs.data.version).toBe(9);
+    expect(gs.data.version).toBe(10);
     expect(gs.staffSlots()).toEqual(["clerk", "runner", "engineer"]);
   });
 

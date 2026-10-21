@@ -32,7 +32,7 @@ describe("사건 체인 저장 정규화", () => {
     store.set(SAVE_KEY, JSON.stringify({ version: 6, lastSeenAt: now, lastSavedAt: now }));
     const gs = new GameState();
 
-    expect(gs.data.version).toBe(9);
+    expect(gs.data.version).toBe(10);
     expect(gs.eventChainStatus()).toMatchObject({ active: false, discovered: 0, totalEndings: 9 });
     expect(gs.data.eventChain.effects).toEqual([]);
     expect(gs.data.eventEndings).toEqual({});

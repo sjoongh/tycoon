@@ -29,7 +29,7 @@ describe("오프라인 구역 진행 이월", () => {
     const now = Date.now();
     store.set(SAVE_KEY, JSON.stringify({ version: 5, offlineCarryVotes: "broken", lastSeenAt: now, lastSavedAt: now }));
     const gs = new GameState();
-    expect(gs.data.version).toBe(9);
+    expect(gs.data.version).toBe(10);
     expect(gs.data.offlineCarryVotes).toBe(0);
   });
 
