@@ -19,7 +19,7 @@ import subprocess
 import tempfile
 from pathlib import Path
 
-from PIL import Image, ImageDraw, ImageFilter
+from PIL import Image, ImageChops, ImageDraw, ImageFilter
 
 ROOT = Path(__file__).resolve().parents[2]
 GI = ROOT / "assets" / "art-src" / "_packs" / "game-icons"
@@ -137,33 +137,61 @@ def sticker_tile(rim, S=CELL) -> Image.Image:
     ImageDraw.Draw(sh).rounded_rectangle([pad, pad + S * 0.05, S - pad, S - pad + S * 0.03], R, fill=(0, 0, 0, 110))
     im.alpha_composite(sh.filter(ImageFilter.GaussianBlur(S * 0.035)))
     d = ImageDraw.Draw(im)
-    d.rounded_rectangle([pad, pad, S - pad, S - pad], R, fill=(*rim, 255))
-    inner = pad + max(3, S // 28)
-    d.rounded_rectangle([inner, inner, S - inner, S - inner], R - 4, fill=(255, 250, 238, 255))
+    d.rounded_rectangle([pad, pad, S - pad, S - pad], R, fill=(*mix(rim, (0, 0, 0), 0.35), 255))
+    d.rounded_rectangle([pad + 1, pad + 1, S - pad - 1, S - pad - 1], R - 1, fill=(*rim, 255))
+    inner = pad + max(4, S // 22)
+    tile_mask = Image.new("L", (S, S), 0)
+    ImageDraw.Draw(tile_mask).rounded_rectangle([inner, inner, S - inner, S - inner], R - 5, fill=255)
+    im.paste(vgrad((S, S), (255, 255, 255), (250, 238, 214)), (0, 0), tile_mask)
     gloss = Image.new("RGBA", (S, S), (0, 0, 0, 0))
-    ImageDraw.Draw(gloss).rounded_rectangle([inner + 2, inner + 2, S - inner - 2, int(S * 0.5)], R - 6, fill=(255, 255, 255, 110))
+    ImageDraw.Draw(gloss).rounded_rectangle([inner + 2, inner + 2, S - inner - 2, int(S * 0.46)], R - 7, fill=(255, 255, 255, 120))
     im.alpha_composite(gloss)
     return im
 
 
+def _coverage(a: Image.Image) -> float:
+    bbox = a.getbbox()
+    if not bbox:
+        return 0.0
+    hist = a.crop(bbox).histogram()
+    solid = sum(hist[128:])
+    return solid / float((bbox[2] - bbox[0]) * (bbox[3] - bbox[1]))
+
+
 def colored_glyph(g: Image.Image, top, bottom) -> Image.Image:
-    """흰 글리프 알파 → 세로 그라데이션 채움 + 진한 외곽선 + 상단 하이라이트."""
+    """흰 글리프 알파 → 굵히기(가는 글리프) + 세로 그라데이션 + 3톤 베벨(좌상 밝음/우하 어두움) + 진한 외곽선 + 광택."""
     a = g.split()[3]
+    # 가는 글리프는 1~2px 굵혀 멀리서도 읽히게
+    cov = _coverage(a)
+    if cov < 0.30:
+        a = a.filter(ImageFilter.MaxFilter(5))
+    elif cov < 0.42:
+        a = a.filter(ImageFilter.MaxFilter(3))
+    a = a.point(lambda v: 255 if v > 110 else 0).filter(ImageFilter.GaussianBlur(0.6))
+    W, H = g.size
     grad = vgrad(g.size, top, bottom)
     body = Image.new("RGBA", g.size, (0, 0, 0, 0))
     body.paste(grad, (0, 0), a)
-    outline_mask = a.filter(ImageFilter.MaxFilter(5))
+    # 베벨: 알파를 우하/좌상으로 밀어 차이 영역을 밝게/어둡게
+    hi_mask = ImageChops.subtract(a, ImageChops.offset(a, 2, 2))
+    sh_mask = ImageChops.subtract(a, ImageChops.offset(a, -2, -2))
+    hi = Image.new("RGBA", g.size, (0, 0, 0, 0)); hi.paste((*mix(top, (255, 255, 255), 0.6), 200), (0, 0), hi_mask)
+    sh = Image.new("RGBA", g.size, (0, 0, 0, 0)); sh.paste((*mix(bottom, (0, 0, 0), 0.35), 170), (0, 0), sh_mask)
+    body.alpha_composite(sh)
+    body.alpha_composite(hi)
+    # 외곽선(굵고 진한 같은 계열)
+    outline_mask = a.filter(ImageFilter.MaxFilter(7))
     out = Image.new("RGBA", g.size, (0, 0, 0, 0))
-    out.paste((*mix(bottom, (0, 0, 0), 0.5), 255), (0, 0), outline_mask)
+    out.paste((*mix(bottom, (0, 0, 0), 0.55), 255), (0, 0), outline_mask)
     out.alpha_composite(body)
+    # 상단 광택(세로 페이드)
     hl = Image.new("RGBA", g.size, (0, 0, 0, 0))
-    hp = hl.load()
-    ap = a.load()
-    for y in range(g.height):
-        k = max(0.0, 1 - y / (g.height * 0.45))
-        for x in range(g.width):
+    hp = hl.load(); ap = a.load()
+    for y in range(H):
+        k = max(0.0, 1 - y / (H * 0.5))
+        for x in range(W):
             if ap[x, y] > 0:
-                hp[x, y] = (255, 255, 255, int(95 * k * ap[x, y] / 255))
+                hp[x, y] = (255, 255, 255, int(70 * k * ap[x, y] / 255))
     out.alpha_composite(hl)
     return out
 
@@ -215,7 +243,7 @@ def main():
     cache = {}
     for item in manifest["icons"]:
         name, src, color = item["name"], item["src"], item["color"]
-        gsize = int(CELL * 0.62)
+        gsize = int(CELL * 0.68)
         key = (src, gsize)
         if key not in cache:
             cache[key] = ballot_glyph(gsize) if src == "custom:ballot" else glyph(src[3:], gsize)

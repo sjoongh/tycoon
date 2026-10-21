@@ -665,7 +665,7 @@ body { background-color: var(--bg-deep); background-image: repeating-linear-grad
 
 /* ---------- 카툰 스킨 오버라이드 (토큰만으로 안 되는 형태 규칙) ---------- */
 .gp-chip { border-radius: 999px; padding: 4px 6px 4px 4px; gap: 5px; background: linear-gradient(180deg, #1b2244, #141a33); box-shadow: inset 0 2px 4px rgba(0,0,0,0.55), 0 2px 0 rgba(255,255,255,0.06); }
-.gp-chip__ic { width: 36px; height: 36px; margin: -6px 0; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.35)); }
+.gp-chip__ic { width: 36px !important; height: 36px !important; margin: -6px 0; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.35)); }
 .gp-chip__val { font-family: var(--f-num); font-size: 15px; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.6); letter-spacing: -0.2px; }
 .gp-chip--trust { flex-grow: 1.1; }
 .gp-chip--trust .gp-chip__val { font-size: 14px; }
@@ -688,14 +688,14 @@ body { background-color: var(--bg-deep); background-image: repeating-linear-grad
 .gp-qtybtn--on { background: linear-gradient(180deg, #ffe28a, #ffc53d); color: #4a2600; box-shadow: var(--px-out-sm), 0 2px 0 #b8720f; }
 .gp-tabs { gap: 6px; }
 .gp-tab { border-radius: var(--r); padding: 5px 4px 6px; font-family: var(--f-bold); font-size: 12px; background: var(--panel2); box-shadow: var(--px-out-sm), 0 3px 0 rgba(0,0,0,0.35); }
-.gp-tab__ic { width: 34px; height: 34px; margin: 0 auto 1px; }
+.gp-tab__ic { width: 34px !important; height: 34px !important; margin: 0 auto 1px; }
 .gp-tab--active { background: linear-gradient(180deg, #ffe28a 0%, #ffc53d 60%, #e39a16 100%); color: #4a2600; transform: translateY(-2px); box-shadow: var(--px-out-sm), 0 5px 0 #b8720f; }
 .gp-tab__dot { border-radius: 50%; width: 11px; height: 11px; background: #ff3b5c; border: 2px solid #141a33; box-shadow: 0 0 6px rgba(255,59,92,0.8); }
 .gp-card { border-radius: var(--r); box-shadow: var(--px-out-sm), 0 4px 10px rgba(0,0,0,0.3); }
-.gp-card__icon { width: 64px; height: 64px; filter: drop-shadow(0 3px 3px rgba(0,0,0,0.35)); }
+.gp-card__icon { width: 64px !important; height: 64px !important; filter: drop-shadow(0 3px 3px rgba(0,0,0,0.35)); }
 .gp-card__title { font-size: 16px; }
 .gp-fac { border-radius: var(--r); padding: 6px 2px 6px; background: var(--panel2); box-shadow: var(--px-out-sm), 0 3px 0 rgba(0,0,0,0.35); }
-.gp-fac__icon { width: 40px; height: 40px; }
+.gp-fac__icon { width: 40px !important; height: 40px !important; }
 .gp-fac__role { font-family: var(--f-bold); font-size: 12px; }
 .gp-fac--active { background: var(--panel3); box-shadow: var(--px-out-sm), 0 0 0 3px var(--gold), 0 4px 0 rgba(0,0,0,0.35); }
 .gp-fac--locked .gp-fac__icon { filter: grayscale(1) brightness(0.6); opacity: 0.6; }
@@ -715,13 +715,14 @@ body { background-color: var(--bg-deep); background-image: repeating-linear-grad
 .gp-map__x, .gp-dexdt__x, .gp-fever-recap__close { border-radius: 50%; background: linear-gradient(180deg, #ff8d9c, #e4455a); box-shadow: var(--px-out-sm), 0 3px 0 #8a1f30; }
 .gp-modal { box-shadow: var(--px-out), 0 0 0 3px var(--gold), 0 20px 40px rgba(0,0,0,0.6); }
 .gp-modal__badge { font-size: 0; }
-.gp-modal__badge .gp-ic { width: 84px; height: 84px; filter: drop-shadow(0 6px 8px rgba(0,0,0,0.45)); }
-.gp-gres__emoji .gp-ic { width: 96px; height: 96px; }
-.gp-char__ic .gp-ic { width: 64px; height: 64px; }
-.gp-cos__chip .gp-ic { width: 34px; height: 34px; }
-.gp-gacha__chip .gp-ic, .gp-gacha__eqname .gp-ic, .gp-g10__row .gp-ic { width: 22px; height: 22px; margin: -4px 2px -4px 0; }
-.gp-paneltitle .gp-ic, .gp-goal__section .gp-ic, .gp-gacha__hd .gp-ic, .gp-map__hd .gp-ic, .gp-map__era .gp-ic, .gp-set__row .gp-ic, .gp-rankbtn .gp-ic, .gp-mapnode__ic .gp-ic, .gp-opstatus__family .gp-ic, .gp-opstatus__pick .gp-ic, .gp-fever-recap__title .gp-ic { width: 26px; height: 26px; margin: -6px 4px -6px 0; }
-.gp-boss__icon .gp-ic, .gp-opcard__icon .gp-ic { width: 40px; height: 40px; }
+.gp-modal__badge .gp-ic { width: 84px !important; height: 84px !important; filter: drop-shadow(0 6px 8px rgba(0,0,0,0.45)); }
+.gp-gres__emoji .gp-ic { width: 96px !important; height: 96px !important; }
+.gp-char__ic { height: 60px; margin-bottom: 4px; }
+.gp-char__ic .gp-ic { width: 56px !important; height: 56px !important; }
+.gp-cos__chip .gp-ic { width: 34px !important; height: 34px !important; }
+.gp-gacha__chip .gp-ic, .gp-gacha__eqname .gp-ic, .gp-g10__row .gp-ic { width: 22px !important; height: 22px !important; margin: -4px 2px -4px 0; }
+.gp-paneltitle .gp-ic, .gp-goal__section .gp-ic, .gp-gacha__hd .gp-ic, .gp-map__hd .gp-ic, .gp-map__era .gp-ic, .gp-set__row .gp-ic, .gp-rankbtn .gp-ic, .gp-mapnode__ic .gp-ic, .gp-opstatus__family .gp-ic, .gp-opstatus__pick .gp-ic, .gp-fever-recap__title .gp-ic { width: 26px !important; height: 26px !important; margin: -6px 4px -6px 0; }
+.gp-boss__icon .gp-ic, .gp-opcard__icon .gp-ic { width: 40px !important; height: 40px !important; }
 .gp-boss__icon, .gp-opcard__icon { border: none; background: transparent; }
 .gp-ic { filter: drop-shadow(0 2px 2px rgba(0,0,0,0.3)); }
 .gp-bottom { border-top: 2px solid rgba(255,255,255,0.12); border-radius: var(--r-lg) var(--r-lg) 0 0; box-shadow: 0 -8px 24px rgba(0,0,0,0.45), inset 0 2px 0 rgba(255,255,255,0.08); }

@@ -226,6 +226,7 @@ P1 → P2 → P3 → P4 → P5 순서. P3와 P4는 독립이라 병렬 가능.
 - 월드: `scripts/art/build_world_vector.py` — Kenney Furniture Kit 아이소 렌더(CC0) 원본 합성, 방·공지판·투표지는 벡터 드로잉, 캐릭터는 Kenney Toon Characters(CC0; 국장=Male person 5단계 포즈/장식, 직원 4종 idle↔interact). 2x 소스 0.5배 표시.
 - 꾸미기 오버레이(픽셀)는 비표시. 레티나 선명도(캔버스 1x)는 후속.
 - 에셋 조사: `docs/superpowers/research/2026-10-21-cartoon-asset-sources.md`.
+- 출시 기준 마감(소유자: "무료 유지, 레퍼런스 없음, 출시용 기준으로"): 아이콘은 가는 글리프 굵히기(커버리지 기반 팽창)·3톤 베벨·굵은 외곽선·광택·흰→크림 타일로 재생성, 가는 글리프 28종은 굵은 game-icons로 교체. 캔버스는 DPR(최대 2)배 해상도 + 카메라 줌(`src/world/renderScale.js`)으로 레티나 선명. 배경 시대 상징물 제거.
 
 ## 7. 빌더에게 맡기는 것
 - 아틀라스 패킹 도구 선택(free-tex-packer-core 등 npm 내)과 webp 품질 값.

@@ -97,11 +97,13 @@ const cloudSync = createDebounced(() => { try { saveCloud(); } catch {} }, 10_00
 gameState.on("persist", () => cloudSync.request());
 window.addEventListener("pagehide", () => cloudSync.flush());
 
+// 레티나 선명도: 캔버스 해상도를 DPR(최대 2)배로 올리고 각 씬 카메라가 줌으로 390x844 월드 좌표를 유지한다
+export const RENDER_SCALE = Math.min(2, Math.max(1, Math.round((window.devicePixelRatio || 1) * 2) / 2));
 const config = {
   type: Phaser.AUTO,
   parent: "game",
-  width: GAME_WIDTH,
-  height: GAME_HEIGHT,
+  width: GAME_WIDTH * RENDER_SCALE,
+  height: GAME_HEIGHT * RENDER_SCALE,
   backgroundColor: "#141a33",
   pixelArt: false,
   roundPixels: false,
@@ -112,7 +114,7 @@ const config = {
   },
   scene: [BootScene, PreloadScene, GameScene],
   callbacks: {
-    preBoot: (g) => g.registry.set("gameState", gameState),
+    preBoot: (g) => { g.registry.set("gameState", gameState); g.registry.set("renderScale", RENDER_SCALE); },
   },
 };
 

@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { applyRenderScale } from "../world/renderScale.js";
 import { WorldView } from "../world/WorldView.js";
 
 export class GameScene extends Phaser.Scene {
@@ -7,6 +8,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   create() {
+    this.renderBase = applyRenderScale(this);
     this.gameState = this.registry.get("gameState");
     this.world = new WorldView(this, this.gameState);
 

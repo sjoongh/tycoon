@@ -176,7 +176,8 @@ export class WorldView {
       const target = Math.max(0, WORLD_BOTTOM - e.detail.topGame + 6);
       if (Math.abs((this._camTarget ?? -1) - target) < 1) return;
       this._camTarget = target;
-      scene.tweens.add({ targets: scene.cameras.main, scrollY: target, duration: 180, ease: "Quad.easeOut" });
+      const baseY = scene.renderBase?.baseScrollY || 0;
+      scene.tweens.add({ targets: scene.cameras.main, scrollY: baseY + target, duration: 180, ease: "Quad.easeOut" });
     };
     document.addEventListener("gp:sheet-top", this._onSheetTop);
     // 패널이 먼저 브로드캐스트한 초기값을 즉시 반영(초기 이벤트 유실 방지) + 재브로드캐스트 요청
@@ -194,7 +195,7 @@ export class WorldView {
     // 캔버스에 도달한 빈 공간 탭만 득표로 처리(하단 DOM 패널은 자체 처리)
     this._onPointer = (pointer, currentlyOver) => {
       if (currentlyOver && currentlyOver.length) return;
-      gameState.processClick(pointer.x, pointer.y);
+      gameState.processClick(pointer.worldX, pointer.worldY);
       this._squishGov();
       this._punchNum();
       this._bumpCombo();
@@ -273,8 +274,11 @@ export class WorldView {
     g.fillStyle(0xffffff, 0.06);
     g.fillEllipse(GAME_W / 2, 120, 420, 180);
 
-    // ── 체제 상징물 ──
-    if (key === "force") {
+    // ── 체제 상징물 — 카툰 스킨에서는 그리지 않는다(배경은 시대 색 그라데이션만) ──
+    const DRAW_ERA_SYMBOLS = false;
+    if (!DRAW_ERA_SYMBOLS) {
+      // skip
+    } else if (key === "force") {
       // 서치라이트 빔 + 상단 경계선
       g.fillStyle(0xfff4cf, 0.05);
       g.fillTriangle(70, 0, 30, GROUND_Y, 150, GROUND_Y);
@@ -421,7 +425,7 @@ export class WorldView {
       .setVisible(false);
     // 서버실 위 LED 개표 현황
     this.boardText = this.scene.add
-      .text(this.board.x + 34, this.board.y - 56, "", { fontFamily: '"DoHyeon", "Jua", sans-serif', fontSize: "8px", color: "#2ce8f5", align: "center", backgroundColor: "rgba(20,18,28,0.6)", padding: { x: 3, y: 2 } })
+      .text(this.board.x - 46, this.board.y - 58, "", { fontFamily: '"DoHyeon", "Jua", sans-serif', fontSize: "8px", color: "#2ce8f5", align: "center", backgroundColor: "rgba(20,18,28,0.6)", padding: { x: 3, y: 2 } })
       .setOrigin(0.5)
       .setDepth(stationDepth(this.board.y) + 2);
   }

@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { applyRenderScale } from "../world/renderScale.js";
 import { generatePlaceholders } from "../textures/devPlaceholders.js";
 import { buildGovTextures, buildPropTextures, buildWorkerTexture, buildCosmeticTextures } from "../world/dotChar.js";
 import { loadIconSheets, registerIconFrames } from "../assets/iconTextures.js";
@@ -10,6 +11,7 @@ export class PreloadScene extends Phaser.Scene {
   }
 
   preload() {
+    applyRenderScale(this);
     // 로딩 스크린(진행바) — 무거운 초기 에셋 로드 동안 검은화면/탭유실 방지
     const W = 390;
     const H = 844;

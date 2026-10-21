@@ -102,7 +102,7 @@
     },
     {
       "name": "fac-notice",
-      "src": "gi:delapouite/notebook",
+      "src": "gi:delapouite/files",
       "color": "#89d98b",
       "sizes": [
         32
@@ -110,7 +110,7 @@
     },
     {
       "name": "fac-server",
-      "src": "gi:delapouite/server-rack",
+      "src": "gi:delapouite/database",
       "color": "#7fc8ff",
       "sizes": [
         32
@@ -158,7 +158,7 @@
     },
     {
       "name": "staff-engineer",
-      "src": "gi:delapouite/keyboard",
+      "src": "gi:delapouite/laptop",
       "color": "#7fc8ff",
       "sizes": [
         32
@@ -166,7 +166,7 @@
     },
     {
       "name": "staff-analyst",
-      "src": "gi:delapouite/histogram",
+      "src": "gi:delapouite/chart",
       "color": "#bba2ff",
       "sizes": [
         32
@@ -214,7 +214,7 @@
     },
     {
       "name": "title-clerk9",
-      "src": "gi:delapouite/files",
+      "src": "gi:delapouite/id-card",
       "color": "glyph",
       "sizes": [
         32
@@ -222,7 +222,7 @@
     },
     {
       "name": "title-officer",
-      "src": "gi:delapouite/full-folder",
+      "src": "gi:delapouite/suitcase",
       "color": "gold",
       "sizes": [
         32
@@ -238,7 +238,7 @@
     },
     {
       "name": "title-director2",
-      "src": "gi:lorc/medal",
+      "src": "gi:lorc/checked-shield",
       "color": "trust",
       "sizes": [
         32
@@ -270,7 +270,7 @@
     },
     {
       "name": "cos-halo",
-      "src": "gi:lorc/spiked-halo",
+      "src": "gi:lorc/sun",
       "color": "gold",
       "sizes": [
         32
@@ -302,7 +302,7 @@
     },
     {
       "name": "item-doc",
-      "src": "gi:lorc/scroll-unfurled",
+      "src": "gi:delapouite/ticket",
       "color": "paper",
       "sizes": [
         32
@@ -375,7 +375,7 @@
     },
     {
       "name": "item-tip",
-      "src": "gi:delapouite/smartphone",
+      "src": "gi:delapouite/mailbox",
       "color": "explain",
       "sizes": [
         32
@@ -432,7 +432,7 @@
     },
     {
       "name": "op-moon",
-      "src": "gi:badges/moon",
+      "src": "gi:lorc/moon",
       "color": "explain",
       "sizes": [
         32
@@ -520,7 +520,7 @@
     },
     {
       "name": "boss-satellite-verification",
-      "src": "gi:lorc/satellite",
+      "src": "gi:delapouite/tv-tower",
       "color": "glyph",
       "sizes": [
         32
@@ -528,7 +528,7 @@
     },
     {
       "name": "boss-time-bureau",
-      "src": "gi:lorc/stopwatch",
+      "src": "gi:lorc/hourglass",
       "color": "trust",
       "sizes": [
         32
@@ -544,7 +544,7 @@
     },
     {
       "name": "region-2",
-      "src": "gi:delapouite/village",
+      "src": "gi:delapouite/family-house",
       "color": "wood",
       "sizes": [
         32
@@ -552,7 +552,7 @@
     },
     {
       "name": "region-3",
-      "src": "gi:lorc/capitol",
+      "src": "gi:delapouite/greek-temple",
       "color": "paper",
       "sizes": [
         32
@@ -584,7 +584,7 @@
     },
     {
       "name": "region-7",
-      "src": "gi:lorc/capitol",
+      "src": "gi:delapouite/greek-temple",
       "color": "gold",
       "sizes": [
         32
@@ -625,7 +625,7 @@
     },
     {
       "name": "region-12",
-      "src": "gi:lorc/satellite",
+      "src": "gi:lorc/ringed-planet",
       "color": "glyph",
       "sizes": [
         32
@@ -666,7 +666,7 @@
     },
     {
       "name": "era-space",
-      "src": "gi:delapouite/galaxy",
+      "src": "gi:lorc/ringed-planet",
       "color": "trust",
       "sizes": [
         32
@@ -674,7 +674,7 @@
     },
     {
       "name": "era-myth",
-      "src": "gi:delapouite/sparkles",
+      "src": "gi:lorc/sun",
       "color": "gold",
       "sizes": [
         32
@@ -690,7 +690,7 @@
     },
     {
       "name": "ui-map",
-      "src": "gi:lorc/treasure-map",
+      "src": "gi:delapouite/position-marker",
       "color": "paper",
       "sizes": [
         32
@@ -746,7 +746,7 @@
     },
     {
       "name": "ui-medal",
-      "src": "gi:lorc/medal",
+      "src": "gi:lorc/laurel-crown",
       "color": "gold",
       "sizes": [
         32
@@ -778,7 +778,7 @@
     },
     {
       "name": "ui-book",
-      "src": "gi:delapouite/book-cover",
+      "src": "gi:lorc/book-cover",
       "color": "wood",
       "sizes": [
         32
@@ -810,7 +810,7 @@
     },
     {
       "name": "ui-calendar",
-      "src": "gi:delapouite/notebook",
+      "src": "gi:delapouite/files",
       "color": "glyph",
       "sizes": [
         32
@@ -834,7 +834,7 @@
     },
     {
       "name": "ui-spark",
-      "src": "gi:delapouite/sparkles",
+      "src": "gi:delapouite/round-star",
       "color": "gold",
       "sizes": [
         32
