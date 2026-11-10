@@ -11,3 +11,6 @@ dist/
 .qa-test-automations/evidence/*/*-log.txt
 .tmp/
 assets/art-src/_packs/
+
+# AI 월드 아트 원본(1024~1536px, ~60MB) — 로컬 보관. 재생성: python3 scripts/art/aigen.py scripts/art/jobs/world.json
+assets/art-src/ai-world/

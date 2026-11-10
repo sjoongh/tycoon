@@ -5,11 +5,10 @@ Built by `scripts/art/build_icons_glossy.py` — sticker-style cartoon icons ren
 - Icons made by Lorc, Delapouite, Skoll, Carl Olsen, Caro Asercion and the "badges" set. Available on https://game-icons.net — CC BY 3.0 (https://creativecommons.org/licenses/by/3.0/).
 - Ballot icon: original vector art for this game.
 
-## World (`world/`)
-Built by `scripts/art/build_world_vector.py`:
-- Furniture: Kenney Furniture Kit isometric renders — CC0 (https://kenney.nl/assets/furniture-kit)
-- Characters: Kenney Toon Characters 1 — CC0 (https://kenney.nl/assets/toon-characters)
-- Room, notice board, ballot: original vector art for this game.
+## World (`world/`, `ballot.*`, `ballotbox.*`)
+Generated for this game with OpenAI gpt-image (prompts and chained tier edits in `scripts/art/aigen.py` job files),
+then normalized by `scripts/art/build_world_ai.py` (alpha trim, retina resize, anchors, atlas). Raw sources: `assets/art-src/ai-world/`.
+Previous Kenney-based vector world (`scripts/art/build_world_vector.py`) is retained in git history only.
 
 ## UI
 - Kenney UI Pack 2.0 used as structural reference (CC0, https://kenney.nl/assets/ui-pack). Panels and buttons are CSS.

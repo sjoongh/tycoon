@@ -1,0 +1,320 @@
+[
+ {
+  "chain": [
+   {
+    "out": "assets/art-src/ai-world/fac-desk-t2.png",
+    "ref": "assets/art-src/ai-world/fac-desk-t1.png",
+    "prompt": "Upgrade this exact object to its tier-2 version. Tier 2: add a small monitor, a number-ticket dispenser and a second paper tray; slightly bigger. Keep the identical art style, outline weight, palette family, camera angle, footprint orientation and overall silhouette; this is an upgraded version of the same object. Cozy cartoon mobile idle-tycoon game sprite. Soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow, no drop shadow outside the object. True 2:1 isometric camera from the front-left, 30 degree elevation. Transparent background, no floor, no text, single object centered."
+   },
+   {
+    "out": "assets/art-src/ai-world/fac-desk-t3.png",
+    "ref": "assets/art-src/ai-world/fac-desk-t2.png",
+    "prompt": "Upgrade this exact object to its tier-3 version. Tier 3: polished dark wood with gold trim, two monitors, taller paper stacks, a brass bell. Keep the identical art style, outline weight, palette family, camera angle, footprint orientation and overall silhouette; this is an upgraded version of the same object. Cozy cartoon mobile idle-tycoon game sprite. Soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow, no drop shadow outside the object. True 2:1 isometric camera from the front-left, 30 degree elevation. Transparent background, no floor, no text, single object centered."
+   },
+   {
+    "out": "assets/art-src/ai-world/fac-desk-t4.png",
+    "ref": "assets/art-src/ai-world/fac-desk-t3.png",
+    "prompt": "Upgrade this exact object to its tier-4 version. Tier 4: a grand curved marble-top counter with gold accents, three service windows with little signs, a queue rope post, flowers. Keep the identical art style, outline weight, palette family, camera angle, footprint orientation and overall silhouette; this is an upgraded version of the same object. Cozy cartoon mobile idle-tycoon game sprite. Soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow, no drop shadow outside the object. True 2:1 isometric camera from the front-left, 30 degree elevation. Transparent background, no floor, no text, single object centered."
+   },
+   {
+    "out": "assets/art-src/ai-world/fac-desk-t5.png",
+    "ref": "assets/art-src/ai-world/fac-desk-t4.png",
+    "prompt": "Upgrade this exact object to its tier-5 version. Tier 5: a majestic luxurious reception hall counter with a golden crest, glowing lamps, marble and gold, a tiny trophy and lots of neat paper stacks; the most impressive version. Keep the identical art style, outline weight, palette family, camera angle, footprint orientation and overall silhouette; this is an upgraded version of the same object. Cozy cartoon mobile idle-tycoon game sprite. Soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow, no drop shadow outside the object. True 2:1 isometric camera from the front-left, 30 degree elevation. Transparent background, no floor, no text, single object centered."
+   }
+  ]
+ },
+ {
+  "chain": [
+   {
+    "out": "assets/art-src/ai-world/fac-sorter-t1.png",
+    "prompt": "A single cute transparent acrylic sorting bin on short legs, with three labeled compartments holding pastel ballot papers, a few papers sticking out. Cozy cartoon mobile idle-tycoon game sprite. Soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow, no drop shadow outside the object. True 2:1 isometric camera from the front-left, 30 degree elevation. Transparent background, no floor, no text, single object centered."
+   },
+   {
+    "out": "assets/art-src/ai-world/fac-sorter-t2.png",
+    "ref": "assets/art-src/ai-world/fac-sorter-t1.png",
+    "prompt": "Upgrade this exact object to its tier-2 version. Tier 2: two stacked clear bins with more compartments and a small rotating paddle on top. Keep the identical art style, outline weight, palette family, camera angle, footprint orientation and overall silhouette; this is an upgraded version of the same object. Cozy cartoon mobile idle-tycoon game sprite. Soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow, no drop shadow outside the object. True 2:1 isometric camera from the front-left, 30 degree elevation. Transparent background, no floor, no text, single object centered."
+   },
+   {
+    "out": "assets/art-src/ai-world/fac-sorter-t3.png",
+    "ref": "assets/art-src/ai-world/fac-sorter-t2.png",
+    "prompt": "Upgrade this exact object to its tier-3 version. Tier 3: a compact sorting machine: clear bins fed by a small conveyor belt with a cute hopper, papers moving along. Keep the identical art style, outline weight, palette family, camera angle, footprint orientation and overall silhouette; this is an upgraded version of the same object. Cozy cartoon mobile idle-tycoon game sprite. Soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow, no drop shadow outside the object. True 2:1 isometric camera from the front-left, 30 degree elevation. Transparent background, no floor, no text, single object centered."
+   },
+   {
+    "out": "assets/art-src/ai-world/fac-sorter-t4.png",
+    "ref": "assets/art-src/ai-world/fac-sorter-t3.png",
+    "prompt": "Upgrade this exact object to its tier-4 version. Tier 4: a bigger sorting machine with two conveyor belts, a light bar showing progress, a stack of sorted bundles tied with ribbon. Keep the identical art style, outline weight, palette family, camera angle, footprint orientation and overall silhouette; this is an upgraded version of the same object. Cozy cartoon mobile idle-tycoon game sprite. Soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow, no drop shadow outside the object. True 2:1 isometric camera from the front-left, 30 degree elevation. Transparent background, no floor, no text, single object centered."
+   },
+   {
+    "out": "assets/art-src/ai-world/fac-sorter-t5.png",
+    "ref": "assets/art-src/ai-world/fac-sorter-t4.png",
+    "prompt": "Upgrade this exact object to its tier-5 version. Tier 5: a grand automated sorting factory module: glass tower of bins, conveyor loops, a gauge dial and little flags, gleaming chrome and gold trim. Keep the identical art style, outline weight, palette family, camera angle, footprint orientation and overall silhouette; this is an upgraded version of the same object. Cozy cartoon mobile idle-tycoon game sprite. Soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow, no drop shadow outside the object. True 2:1 isometric camera from the front-left, 30 degree elevation. Transparent background, no floor, no text, single object centered."
+   }
+  ]
+ },
+ {
+  "chain": [
+   {
+    "out": "assets/art-src/ai-world/fac-notice-t1.png",
+    "prompt": "A single cute cork notice board on two wooden legs, with three pastel paper notes pinned on it and a small green plant pot at its base. Cozy cartoon mobile idle-tycoon game sprite. Soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow, no drop shadow outside the object. True 2:1 isometric camera from the front-left, 30 degree elevation. Transparent background, no floor, no text, single object centered."
+   },
+   {
+    "out": "assets/art-src/ai-world/fac-notice-t2.png",
+    "ref": "assets/art-src/ai-world/fac-notice-t1.png",
+    "prompt": "Upgrade this exact object to its tier-2 version. Tier 2: a larger board with a wooden frame, five pinned notes and a little bell on top. Keep the identical art style, outline weight, palette family, camera angle, footprint orientation and overall silhouette; this is an upgraded version of the same object. Cozy cartoon mobile idle-tycoon game sprite. Soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow, no drop shadow outside the object. True 2:1 isometric camera from the front-left, 30 degree elevation. Transparent background, no floor, no text, single object centered."
+   },
+   {
+    "out": "assets/art-src/ai-world/fac-notice-t3.png",
+    "ref": "assets/art-src/ai-world/fac-notice-t2.png",
+    "prompt": "Upgrade this exact object to its tier-3 version. Tier 3: a two-panel board with a small roof, colorful notes, a bulletin lamp and a megaphone leaning on it. Keep the identical art style, outline weight, palette family, camera angle, footprint orientation and overall silhouette; this is an upgraded version of the same object. Cozy cartoon mobile idle-tycoon game sprite. Soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow, no drop shadow outside the object. True 2:1 isometric camera from the front-left, 30 degree elevation. Transparent background, no floor, no text, single object centered."
+   },
+   {
+    "out": "assets/art-src/ai-world/fac-notice-t4.png",
+    "ref": "assets/art-src/ai-world/fac-notice-t3.png",
+    "prompt": "Upgrade this exact object to its tier-4 version. Tier 4: a glass-front display board with LED strip, a digital ticker panel, a flower box. Keep the identical art style, outline weight, palette family, camera angle, footprint orientation and overall silhouette; this is an upgraded version of the same object. Cozy cartoon mobile idle-tycoon game sprite. Soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow, no drop shadow outside the object. True 2:1 isometric camera from the front-left, 30 degree elevation. Transparent background, no floor, no text, single object centered."
+   },
+   {
+    "out": "assets/art-src/ai-world/fac-notice-t5.png",
+    "ref": "assets/art-src/ai-world/fac-notice-t4.png",
+    "prompt": "Upgrade this exact object to its tier-5 version. Tier 5: a grand town-hall announcement kiosk with a big screen, golden frame, two lanterns and flags; the most impressive version. Keep the identical art style, outline weight, palette family, camera angle, footprint orientation and overall silhouette; this is an upgraded version of the same object. Cozy cartoon mobile idle-tycoon game sprite. Soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow, no drop shadow outside the object. True 2:1 isometric camera from the front-left, 30 degree elevation. Transparent background, no floor, no text, single object centered."
+   }
+  ]
+ },
+ {
+  "chain": [
+   {
+    "out": "assets/art-src/ai-world/fac-server-t1.png",
+    "prompt": "A single cute small server rack cabinet with rounded corners, a few blinking green lights, a tiny fan, a potted cactus on top. Cozy cartoon mobile idle-tycoon game sprite. Soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow, no drop shadow outside the object. True 2:1 isometric camera from the front-left, 30 degree elevation. Transparent background, no floor, no text, single object centered."
+   },
+   {
+    "out": "assets/art-src/ai-world/fac-server-t2.png",
+    "ref": "assets/art-src/ai-world/fac-server-t1.png",
+    "prompt": "Upgrade this exact object to its tier-2 version. Tier 2: two server cabinets side by side with more lights and a cooling vent. Keep the identical art style, outline weight, palette family, camera angle, footprint orientation and overall silhouette; this is an upgraded version of the same object. Cozy cartoon mobile idle-tycoon game sprite. Soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow, no drop shadow outside the object. True 2:1 isometric camera from the front-left, 30 degree elevation. Transparent background, no floor, no text, single object centered."
+   },
+   {
+    "out": "assets/art-src/ai-world/fac-server-t3.png",
+    "ref": "assets/art-src/ai-world/fac-server-t2.png",
+    "prompt": "Upgrade this exact object to its tier-3 version. Tier 3: three taller cabinets with glass doors, blue status lights, cable loops, a small AC unit. Keep the identical art style, outline weight, palette family, camera angle, footprint orientation and overall silhouette; this is an upgraded version of the same object. Cozy cartoon mobile idle-tycoon game sprite. Soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow, no drop shadow outside the object. True 2:1 isometric camera from the front-left, 30 degree elevation. Transparent background, no floor, no text, single object centered."
+   },
+   {
+    "out": "assets/art-src/ai-world/fac-server-t4.png",
+    "ref": "assets/art-src/ai-world/fac-server-t3.png",
+    "prompt": "Upgrade this exact object to its tier-4 version. Tier 4: a server room module: four cabinets, a raised floor edge, a monitor on a stand showing a graph, cold-blue glow. Keep the identical art style, outline weight, palette family, camera angle, footprint orientation and overall silhouette; this is an upgraded version of the same object. Cozy cartoon mobile idle-tycoon game sprite. Soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow, no drop shadow outside the object. True 2:1 isometric camera from the front-left, 30 degree elevation. Transparent background, no floor, no text, single object centered."
+   },
+   {
+    "out": "assets/art-src/ai-world/fac-server-t5.png",
+    "ref": "assets/art-src/ai-world/fac-server-t4.png",
+    "prompt": "Upgrade this exact object to its tier-5 version. Tier 5: a majestic data center module with glowing cabinets, a holographic-looking globe on top, gold accents and a spinning cooling tower; the most impressive version. Keep the identical art style, outline weight, palette family, camera angle, footprint orientation and overall silhouette; this is an upgraded version of the same object. Cozy cartoon mobile idle-tycoon game sprite. Soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow, no drop shadow outside the object. True 2:1 isometric camera from the front-left, 30 degree elevation. Transparent background, no floor, no text, single object centered."
+   }
+  ]
+ },
+ {
+  "chain": [
+   {
+    "out": "assets/art-src/ai-world/fac-archive-t1.png",
+    "prompt": "A single cute low wooden bookshelf with rounded corners holding pastel binders and document boxes, a small label on each shelf. Cozy cartoon mobile idle-tycoon game sprite. Soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow, no drop shadow outside the object. True 2:1 isometric camera from the front-left, 30 degree elevation. Transparent background, no floor, no text, single object centered."
+   },
+   {
+    "out": "assets/art-src/ai-world/fac-archive-t2.png",
+    "ref": "assets/art-src/ai-world/fac-archive-t1.png",
+    "prompt": "Upgrade this exact object to its tier-2 version. Tier 2: a taller shelf with more binders and a rolling ladder. Keep the identical art style, outline weight, palette family, camera angle, footprint orientation and overall silhouette; this is an upgraded version of the same object. Cozy cartoon mobile idle-tycoon game sprite. Soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow, no drop shadow outside the object. True 2:1 isometric camera from the front-left, 30 degree elevation. Transparent background, no floor, no text, single object centered."
+   },
+   {
+    "out": "assets/art-src/ai-world/fac-archive-t3.png",
+    "ref": "assets/art-src/ai-world/fac-archive-t2.png",
+    "prompt": "Upgrade this exact object to its tier-3 version. Tier 3: two tall shelves side by side packed with colorful binders and boxes, a small desk lamp. Keep the identical art style, outline weight, palette family, camera angle, footprint orientation and overall silhouette; this is an upgraded version of the same object. Cozy cartoon mobile idle-tycoon game sprite. Soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow, no drop shadow outside the object. True 2:1 isometric camera from the front-left, 30 degree elevation. Transparent background, no floor, no text, single object centered."
+   },
+   {
+    "out": "assets/art-src/ai-world/fac-archive-t4.png",
+    "ref": "assets/art-src/ai-world/fac-archive-t3.png",
+    "prompt": "Upgrade this exact object to its tier-4 version. Tier 4: a library-style archive wall with a wooden ladder, drawers with brass handles, a globe on top. Keep the identical art style, outline weight, palette family, camera angle, footprint orientation and overall silhouette; this is an upgraded version of the same object. Cozy cartoon mobile idle-tycoon game sprite. Soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow, no drop shadow outside the object. True 2:1 isometric camera from the front-left, 30 degree elevation. Transparent background, no floor, no text, single object centered."
+   },
+   {
+    "out": "assets/art-src/ai-world/fac-archive-t5.png",
+    "ref": "assets/art-src/ai-world/fac-archive-t4.png",
+    "prompt": "Upgrade this exact object to its tier-5 version. Tier 5: a grand vault-like archive with golden drawer fronts, glass cabinets, a treasure-chest style records safe and a tiny crown ornament; the most impressive version. Keep the identical art style, outline weight, palette family, camera angle, footprint orientation and overall silhouette; this is an upgraded version of the same object. Cozy cartoon mobile idle-tycoon game sprite. Soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow, no drop shadow outside the object. True 2:1 isometric camera from the front-left, 30 degree elevation. Transparent background, no floor, no text, single object centered."
+   }
+  ]
+ },
+ {
+  "chain": [
+   {
+    "out": "assets/art-src/ai-world/fac-studio-t1.png",
+    "prompt": "A single cute small wooden podium with a microphone, a handheld camera on a tripod beside it. Cozy cartoon mobile idle-tycoon game sprite. Soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow, no drop shadow outside the object. True 2:1 isometric camera from the front-left, 30 degree elevation. Transparent background, no floor, no text, single object centered."
+   },
+   {
+    "out": "assets/art-src/ai-world/fac-studio-t2.png",
+    "ref": "assets/art-src/ai-world/fac-studio-t1.png",
+    "prompt": "Upgrade this exact object to its tier-2 version. Tier 2: a podium with two microphones, a studio light and a small backdrop board. Keep the identical art style, outline weight, palette family, camera angle, footprint orientation and overall silhouette; this is an upgraded version of the same object. Cozy cartoon mobile idle-tycoon game sprite. Soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow, no drop shadow outside the object. True 2:1 isometric camera from the front-left, 30 degree elevation. Transparent background, no floor, no text, single object centered."
+   },
+   {
+    "out": "assets/art-src/ai-world/fac-studio-t3.png",
+    "ref": "assets/art-src/ai-world/fac-studio-t2.png",
+    "prompt": "Upgrade this exact object to its tier-3 version. Tier 3: a mini TV studio set: desk with microphones, a camera, a ring light and a backdrop with a sun logo. Keep the identical art style, outline weight, palette family, camera angle, footprint orientation and overall silhouette; this is an upgraded version of the same object. Cozy cartoon mobile idle-tycoon game sprite. Soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow, no drop shadow outside the object. True 2:1 isometric camera from the front-left, 30 degree elevation. Transparent background, no floor, no text, single object centered."
+   },
+   {
+    "out": "assets/art-src/ai-world/fac-studio-t4.png",
+    "ref": "assets/art-src/ai-world/fac-studio-t3.png",
+    "prompt": "Upgrade this exact object to its tier-4 version. Tier 4: a broadcast set with a big screen behind the desk, two cameras, spotlights on a truss. Keep the identical art style, outline weight, palette family, camera angle, footprint orientation and overall silhouette; this is an upgraded version of the same object. Cozy cartoon mobile idle-tycoon game sprite. Soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow, no drop shadow outside the object. True 2:1 isometric camera from the front-left, 30 degree elevation. Transparent background, no floor, no text, single object centered."
+   },
+   {
+    "out": "assets/art-src/ai-world/fac-studio-t5.png",
+    "ref": "assets/art-src/ai-world/fac-studio-t4.png",
+    "prompt": "Upgrade this exact object to its tier-5 version. Tier 5: a grand press briefing stage: golden podium, large curved screen, four spotlights, red carpet step and flags; the most impressive version. Keep the identical art style, outline weight, palette family, camera angle, footprint orientation and overall silhouette; this is an upgraded version of the same object. Cozy cartoon mobile idle-tycoon game sprite. Soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow, no drop shadow outside the object. True 2:1 isometric camera from the front-left, 30 degree elevation. Transparent background, no floor, no text, single object centered."
+   }
+  ]
+ },
+ {
+  "chain": [
+   {
+    "out": "assets/art-src/ai-world/gov-2.png",
+    "ref": "assets/art-src/ai-world/gov-1.png",
+    "prompt": "Redraw this exact character as he becomes more successful. Stage 2: same man, now tidy: clean beige vest, neat red tie, a small bronze badge, confident smile. Keep the identical face, mustache, body proportions, pose (hands on hips), art style, outline weight and palette family. Cute chibi character for a cozy cartoon idle-tycoon game: big head, small body, full body visible, simple dot eyes, friendly face. Soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow, no ground shadow. Transparent background, no text, single character centered."
+   },
+   {
+    "out": "assets/art-src/ai-world/gov-3.png",
+    "ref": "assets/art-src/ai-world/gov-2.png",
+    "prompt": "Redraw this exact character as he becomes more successful. Stage 3: same man, now in a smart navy suit with a silver name badge, a clipboard under one arm. Keep the identical face, mustache, body proportions, pose (hands on hips), art style, outline weight and palette family. Cute chibi character for a cozy cartoon idle-tycoon game: big head, small body, full body visible, simple dot eyes, friendly face. Soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow, no ground shadow. Transparent background, no text, single character centered."
+   },
+   {
+    "out": "assets/art-src/ai-world/gov-4.png",
+    "ref": "assets/art-src/ai-world/gov-3.png",
+    "prompt": "Redraw this exact character as he becomes more successful. Stage 4: same man, now in a navy suit with a red-and-gold sash and three gold medals, proud expression. Keep the identical face, mustache, body proportions, pose (hands on hips), art style, outline weight and palette family. Cute chibi character for a cozy cartoon idle-tycoon game: big head, small body, full body visible, simple dot eyes, friendly face. Soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow, no ground shadow. Transparent background, no text, single character centered."
+   },
+   {
+    "out": "assets/art-src/ai-world/gov-5.png",
+    "ref": "assets/art-src/ai-world/gov-4.png",
+    "prompt": "Redraw this exact character as he becomes more successful. Stage 5: legendary: same man in a white-and-gold ceremonial uniform with epaulettes, a short red cape, many medals, a tiny golden laurel, sparkles around him. Keep the identical face, mustache, body proportions, pose (hands on hips), art style, outline weight and palette family. Cute chibi character for a cozy cartoon idle-tycoon game: big head, small body, full body visible, simple dot eyes, friendly face. Soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow, no ground shadow. Transparent background, no text, single character centered."
+   }
+  ]
+ },
+ {
+  "chain": [
+   {
+    "out": "assets/art-src/ai-world/worker-0-1.png",
+    "ref": "assets/art-src/ai-world/worker-0-0.png",
+    "prompt": "Second animation frame of this exact same character: identical design, pose and camera, but the arms are raised a bit higher mid-typing and the head tilts slightly down, mouth slightly open. Keep everything else identical. Cute chibi character for a cozy cartoon idle-tycoon game: big head, small body, full body visible, simple dot eyes, friendly face. Soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow, no ground shadow. Transparent background, no text, single character centered."
+   }
+  ]
+ },
+ {
+  "chain": [
+   {
+    "out": "assets/art-src/ai-world/worker-2-0.png",
+    "prompt": "A single office clerk: a young woman with a short brown bob and round glasses, pale-yellow sweater, lanyard badge, facing front-right three-quarter view, standing with both arms slightly forward as if typing at a desk. Cute chibi character for a cozy cartoon idle-tycoon game: big head, small body, full body visible, simple dot eyes, friendly face. Soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow, no ground shadow. Transparent background, no text, single character centered."
+   },
+   {
+    "out": "assets/art-src/ai-world/worker-2-1.png",
+    "ref": "assets/art-src/ai-world/worker-2-0.png",
+    "prompt": "Second animation frame of this exact same character: identical design, pose and camera, but the arms are raised a bit higher mid-typing and the head tilts slightly down, mouth slightly open. Keep everything else identical. Cute chibi character for a cozy cartoon idle-tycoon game: big head, small body, full body visible, simple dot eyes, friendly face. Soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow, no ground shadow. Transparent background, no text, single character centered."
+   }
+  ]
+ },
+ {
+  "chain": [
+   {
+    "out": "assets/art-src/ai-world/worker-3-0.png",
+    "prompt": "A single office clerk: a man with curly dark hair and a gray vest, orange tie, lanyard badge, facing front-right three-quarter view, standing with both arms slightly forward as if typing at a desk. Cute chibi character for a cozy cartoon idle-tycoon game: big head, small body, full body visible, simple dot eyes, friendly face. Soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow, no ground shadow. Transparent background, no text, single character centered."
+   },
+   {
+    "out": "assets/art-src/ai-world/worker-3-1.png",
+    "ref": "assets/art-src/ai-world/worker-3-0.png",
+    "prompt": "Second animation frame of this exact same character: identical design, pose and camera, but the arms are raised a bit higher mid-typing and the head tilts slightly down, mouth slightly open. Keep everything else identical. Cute chibi character for a cozy cartoon idle-tycoon game: big head, small body, full body visible, simple dot eyes, friendly face. Soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow, no ground shadow. Transparent background, no text, single character centered."
+   }
+  ]
+ },
+ {
+  "chain": [
+   {
+    "out": "assets/art-src/ai-world/cos-cap.png",
+    "prompt": "A single accessory item for a chibi character: a red baseball cap, front view. Cozy cartoon style, soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow. Transparent background, no text, item only, centered, large."
+   }
+  ]
+ },
+ {
+  "chain": [
+   {
+    "out": "assets/art-src/ai-world/cos-tophat.png",
+    "prompt": "A single accessory item for a chibi character: a black top hat with a gold band, front view. Cozy cartoon style, soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow. Transparent background, no text, item only, centered, large."
+   }
+  ]
+ },
+ {
+  "chain": [
+   {
+    "out": "assets/art-src/ai-world/cos-halo.png",
+    "prompt": "A single accessory item for a chibi character: a glowing golden halo ring, floating, slight tilt. Cozy cartoon style, soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow. Transparent background, no text, item only, centered, large."
+   }
+  ]
+ },
+ {
+  "chain": [
+   {
+    "out": "assets/art-src/ai-world/cos-shades.png",
+    "prompt": "A single accessory item for a chibi character: a pair of dark sunglasses, front view. Cozy cartoon style, soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow. Transparent background, no text, item only, centered, large."
+   }
+  ]
+ },
+ {
+  "chain": [
+   {
+    "out": "assets/art-src/ai-world/cos-mask.png",
+    "prompt": "A single accessory item for a chibi character: a white face mask with ear loops, front view. Cozy cartoon style, soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow. Transparent background, no text, item only, centered, large."
+   }
+  ]
+ },
+ {
+  "chain": [
+   {
+    "out": "assets/art-src/ai-world/sig-band.png",
+    "prompt": "A single accessory item for a chibi character: a red headband tied with a knot at the side, front view. Cozy cartoon style, soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow. Transparent background, no text, item only, centered, large."
+   }
+  ]
+ },
+ {
+  "chain": [
+   {
+    "out": "assets/art-src/ai-world/sig-glasses.png",
+    "prompt": "A single accessory item for a chibi character: a pair of round silver-rimmed glasses, front view. Cozy cartoon style, soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow. Transparent background, no text, item only, centered, large."
+   }
+  ]
+ },
+ {
+  "chain": [
+   {
+    "out": "assets/art-src/ai-world/ballot.png",
+    "prompt": "A single cute ballot paper slip: cream paper with a red stamp mark and a blue check, slightly tilted, cozy cartoon style, thick clean dark-brown outlines, warm pastel palette, no outer glow. Transparent background, no text, item only, centered, large."
+   }
+  ]
+ },
+ {
+  "chain": [
+   {
+    "out": "assets/art-src/ai-world/ballotbox.png",
+    "prompt": "A single cute golden ballot box with a slot on top and a tiny padlock, sparkling, cozy cartoon style, 2:1 isometric view. Cozy cartoon mobile idle-tycoon game sprite. Soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow, no drop shadow outside the object. True 2:1 isometric camera from the front-left, 30 degree elevation. Transparent background, no floor, no text, single object centered."
+   }
+  ]
+ },
+ {
+  "chain": [
+   {
+    "out": "assets/art-src/ai-world/room-tall.png",
+    "ref": "assets/art-src/ai-world/room.png",
+    "prompt": "Redraw this exact empty isometric room with the same style, wallpaper, door and round window, but make the two back walls about 1.6 times taller and make the floor diamond a true 2:1 isometric rhombus (exactly twice as wide as tall) with a clean 7 by 7 grid of wood tiles. No furniture, no people, nothing on the floor. Transparent background outside the room. No text.",
+    "size": "1536x1024"
+   }
+  ]
+ },
+ {
+  "chain": [
+   {
+    "out": "assets/art-src/ai-world/worker-1-0.png",
+    "prompt": "A single office clerk: a young man with short black hair, mint-green cardigan over a white shirt, lanyard badge, facing front-right three-quarter view, standing with both arms slightly forward as if typing at a desk. Cute chibi character for a cozy cartoon idle-tycoon game: big head, small body, full body visible, simple dot eyes, friendly face. Soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow, no ground shadow. Fully transparent background with no backdrop, no card, no frame; no text; single character centered."
+   },
+   {
+    "out": "assets/art-src/ai-world/worker-1-1.png",
+    "ref": "assets/art-src/ai-world/worker-1-0.png",
+    "prompt": "Second animation frame of this exact same character: identical design, pose and camera, but the arms are raised a bit higher mid-typing and the head tilts slightly down, mouth slightly open. Keep everything else identical. Cute chibi character for a cozy cartoon idle-tycoon game: big head, small body, full body visible, simple dot eyes, friendly face. Soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow, no ground shadow. Fully transparent background with no backdrop, no card, no frame; no text; single character centered."
+   }
+  ]
+ }
+]

@@ -35,7 +35,8 @@ npm run preview
 
 ```bash
 npm run art:icons   # game-icons.net SVG → 스티커 스타일 카툰 아이콘 96px 아틀라스(public/art/icons96.png) + src/assets/iconAtlas.js
-npm run art:world   # Kenney 가구·툰 캐릭터 → 아이소 방·시설 티어·국장·직원 스프라이트(public/art/world) + src/world/worldAtlas.js
+npm run art:gen     # gpt-image(로컬 프록시) 로 월드 원본 생성 → assets/art-src/ai-world (gitignore, 체인 edits 로 티어 일관성)
+npm run art:world   # 원본 트림·리사이즈·앵커 → public/art/world/*.webp + src/world/worldAtlas.js
 npm run fonts:subset   # Jua·Do Hyeon(OFL) 서브셋 woff2
 ```
 
