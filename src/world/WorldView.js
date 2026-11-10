@@ -9,7 +9,7 @@ import { WORLD_SCALE, ROOM_X, ROOM_Y, ROOM_BOTTOM, FACILITY_SLOTS, GOV_TILE, BIG
 import { staffDefinitions } from "../data/staff.js";
 import { staffRankForLevel } from "../data/staffDeployment.js";
 import { tierForLevel } from "./facilityTiers.js";
-import { eraTheme } from "../data/regions.js";
+import { eraTheme, regionFor } from "../data/regions.js";
 import { pickRandomItem } from "../data/items.js";
 import { pickPress } from "../data/worldPress.js";
 import { RARITY_COLOR } from "../data/titles.js";
@@ -149,6 +149,17 @@ export class WorldView {
     this._onFloat = (p) => this.effects.float(p);
     this._onBallots = (p) => this.effects.ballots(p);
     this._onUpgraded = (facility) => { this._squishGov(); this._pulseProp(facility); };
+    // 마일스톤(생산 ×2) 축하 — 피드백 위계 3단: 탭 < 구매 < 마일스톤. 시설 크게 펀치 + 투표지 분출 + 국장 환호.
+    this._onMilestone = (p) => {
+      const obj = this.propByFacility?.[p?.facility?.id];
+      if (obj && obj.active) {
+        this._stopPropIdle(p.facility.id);
+        this.scene.tweens.add({ targets: obj, scaleX: WORLD_SCALE * 1.4, scaleY: WORLD_SCALE * 1.4, angle: -6, yoyo: true, duration: 220, ease: "Back.easeOut", onComplete: () => this._startPropIdle(p.facility.id, obj) });
+        if (!motionReduced()) this.effects.ballots({ x: obj.x, y: obj.y - obj.displayHeight * 0.5, count: 12 });
+        this.effects.float({ text: `★ Lv.${p.level} 생산 ×2!`, x: obj.x, y: obj.y - obj.displayHeight - 14, color: "#ffd34d" });
+      }
+      this._govReact();
+    };
     // 큰 성취 순간 국장이 기뻐서 폴짝 + 반응 대사(같은 프레임 대량 연쇄 시 쿨다운으로 1회만)
     this._onCelebrate = () => {
       const now = this.scene.time.now;
@@ -160,6 +171,7 @@ export class WorldView {
     gameState.on("float", this._onFloat);
     gameState.on("ballots", this._onBallots);
     gameState.on("upgraded", this._onUpgraded);
+    gameState.on("milestone", this._onMilestone);
     gameState.on("celebrate", this._onCelebrate);
     // 사이다! 정의구현 순간 — 통쾌한 연출
     this._onCider = (p) => this._ciderMoment(p);
@@ -388,7 +400,7 @@ export class WorldView {
     g.fillRoundedRect(x + 3, top + 3, w - 6, h / 2, 10);
     this.titleBg = g;
     this.titleTop = this.scene.add
-      .text(cx, top + 12, "믿어주세요", { fontFamily: '"DoHyeon", "Jua", sans-serif', fontSize: "10px", color: "#94b0c2" })
+      .text(cx, top + 12, regionFor(this.gameState.data.stage?.area || 1).name, { fontFamily: '"DoHyeon", "Jua", sans-serif', fontSize: "10px", color: "#94b0c2" })
       .setOrigin(0.5)
       .setDepth(111);
     this.titleMain = this.scene.add
@@ -823,6 +835,34 @@ export class WorldView {
     }
   }
 
+  // 현판: 지역명 갱신(승격 시 위로 톡 튀며 교체)
+  _syncSign(area, promoted) {
+    if (!this.titleTop) return;
+    const name = regionFor(area).name;
+    if (!promoted || motionReduced()) { this.titleTop.setText(name); return; }
+    this.scene.tweens.add({ targets: [this.titleTop, this.titleMain], y: "-=6", alpha: 0.2, duration: 140, yoyo: true, ease: "Quad.easeOut" });
+    this.scene.time.delayedCall(140, () => { if (this.titleTop?.active) this.titleTop.setText(name); });
+  }
+
+  // 벽 뱃지: 주간 랭킹 등급(브론즈~엘리트)을 왼쪽 벽 액자로 전시(최근 4개)
+  _syncBadges() {
+    const list = this.gameState.latestBadges ? this.gameState.latestBadges(4) : [];
+    const sig = list.map((b) => `${b.week}:${b.tier}`).join("|");
+    if (sig === this._badgeSig) return;
+    this._badgeSig = sig;
+    (this._badgeObjs || []).forEach((o) => o.destroy());
+    this._badgeObjs = [];
+    const COLOR = { elite: 0xb18cff, gold: 0xffc53d, silver: 0xc9d3e0, bronze: 0xc98a4b };
+    list.forEach((b, i) => {
+      const t = tileCenter(0, 4.3 + i * 0.62);
+      const x = t.x + 10, y = t.y - 60 - i * 5;
+      const frame = this.scene.add.rectangle(x, y, 16, 20, 0x5a3a22).setStrokeStyle(2, 0x3a2414).setDepth(6);
+      const medal = this.scene.add.circle(x, y - 1, 5, COLOR[b.tier] || 0xffffff).setStrokeStyle(1, 0x3a2414).setDepth(7);
+      const ribbon = this.scene.add.rectangle(x, y + 6, 6, 5, 0xb13e53).setDepth(7);
+      this._badgeObjs.push(frame, medal, ribbon);
+    });
+  }
+
   // ── 직원 모션 ──
   // 작업 루프: 제자리에서 타이핑하듯 몸이 납작해졌다 펴지는 squash·stretch(프레임 교체와 겹쳐 리듬이 생긴다)
   _startWorkLoop(worker) {
@@ -992,8 +1032,10 @@ export class WorldView {
         if (this.gov?.active) this._pressFlash({ outlet: "월드 프레스", text: `'${d.stage.area}구역 개표국' 승승장구 — 세계가 주목`, tone: "praise" });
       });
     }
+    if (this._prevArea !== d.stage.area) this._syncSign(d.stage.area, this._prevArea != null && d.stage.area > this._prevArea);
     this._prevArea = d.stage.area;
     this._applyEra(d.stage.area);
+    this._syncBadges();
     const st = govStageFor(d);
     if (st !== this._govStage) {
       this._govStage = st;
@@ -1077,6 +1119,7 @@ export class WorldView {
     this.gameState.off("float", this._onFloat);
     this.gameState.off("ballots", this._onBallots);
     this.gameState.off("upgraded", this._onUpgraded);
+    this.gameState.off("milestone", this._onMilestone);
     this.gameState.off("celebrate", this._onCelebrate);
     this.gameState.off("cider", this._onCider);
     document.removeEventListener("gp:sheet-top", this._onSheetTop);

@@ -1,4 +1,5 @@
 import { pickPress } from "../data/worldPress.js";
+import { regionFor, eraTheme } from "../data/regions.js";
 import { shortNumber } from "../utils/format.js";
 import { GOV_MAPS, PROP_MAPS, dotSvgUri } from "../world/dotChar.js";
 import { iconHtml } from "./icon.js";
@@ -61,6 +62,8 @@ export class DOMModalLayer {
       if (this.gameState.offlineReward) this._showOfflineReward(() => this._maybeDaily());
       else this._maybeDaily();
     }
+    this._onWeeklyBadge = () => { if (!this.root.querySelector(".gp-modal-ov")) this._maybeWeeklyBadge(); };
+    this.gameState.on("weekly-badge", this._onWeeklyBadge);
     this._maybeHint();
     this._maybeBossChallenge();
     this._maybeOperationDraft();
@@ -141,8 +144,8 @@ export class DOMModalLayer {
     const a = this.gameState.data.stage.area;
     if (a > this._prevArea) {
       this._prevArea = a;
-      this._banner(`${a}구역 진입!`, { priority: 3, tone: "stage" });
       this._flash();
+      this._promotionCard(a);
     } else if (a < this._prevArea) {
       this._prevArea = a; // prestige reset
     }
@@ -630,6 +633,40 @@ export class DOMModalLayer {
       ${carryTotal > 0 ? `<div class="gp-offline-note">미처리 개표함 ${shortNumber(carryTotal)}표${previousCarry > 0 ? ` · 기존 ${shortNumber(previousCarry)} 포함` : ""}<br>지역 완료 때 자동 반영되며 보스·작전 앞에서 멈춥니다.</div>` : ""}
       ${this._awayHeadlines()}
       ${footer}`, () => this.gameState.claimOfflineBonus(), onClose);
+  }
+
+  // 승격 1컷 카드(단기 #8): 지역이 바뀔 때 신문 1면처럼 — 지역명·한 줄 설명·외신 헤드라인. 거지키우기의 회상카드, AdCap의 행성 전환 모델.
+  _promotionCard(area) {
+    const region = regionFor(area);
+    const era = eraTheme(area);
+    const gs = this.gameState;
+    const press = pickPress(gs.trustState ? gs.trustState() : "normal", 0);
+    const headline = press?.text || "개표국, 상급 기관으로 승격";
+    this._openModal(`
+      <div class="gp-promo">
+        <div class="gp-promo__masthead"><span>개표일보</span><span>${era.name} · ${area}구역</span></div>
+        <div class="gp-promo__icon">${iconHtml(region.icon, { size: 72 })}</div>
+        <div class="gp-promo__kicker">승격 통지</div>
+        <div class="gp-promo__title">${region.name}</div>
+        <div class="gp-promo__desc">${region.desc}</div>
+        <div class="gp-promo__press"><b>${press?.outlet || "월드 프레스"}</b> ${headline}</div>
+        <button class="gp-btn gp-btn--gold gp-btn--upgrade" data-close>개표 시작</button>
+      </div>`, null, null);
+  }
+
+  // 주간 랭킹 결과: 주가 바뀌며 확정된 뱃지 + 보상
+  _maybeWeeklyBadge() {
+    const b = this.gameState.takePendingBadge ? this.gameState.takePendingBadge() : null;
+    if (!b) return false;
+    const LABEL = { elite: "엘리트", gold: "골드", silver: "실버", bronze: "브론즈" };
+    const reward = [b.reward?.explain ? `해명 +${b.reward.explain}` : null, b.reward?.seals ? `인장 +${b.reward.seals}` : null].filter(Boolean).join(" · ");
+    this._openModal(`
+      <div class="gp-modal__badge">${iconHtml("ui-trophy", { size: 72 })}</div>
+      <div class="gp-mtitle">지난주 개표 랭킹 ${b.rank}위</div>
+      <div class="gp-msub">${b.total}명 중 ${b.rank}위 · <span class="gp-badge gp-badge--${b.tier}">${LABEL[b.tier]}</span> 뱃지가 개표소 벽에 걸렸습니다</div>
+      ${reward ? `<div class="gp-mbig" style="font-size:16px">${reward}</div>` : ""}
+      <button class="gp-btn gp-btn--gold" data-close>확인</button>`, null, null);
+    return true;
   }
 
   // 자리 비운 사이 — 외신 헤드라인 3줄 + 기다리는 사건. 복귀 순간에 "세계가 돌아가고 있었다"를 보여 준다(복귀 모달 3단).
