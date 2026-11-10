@@ -296,6 +296,17 @@
 .gp-tab__dot { position: absolute; top: 4px; right: 6px; width: 9px; height: 9px; background: #ff5a5a; border: 1px solid #000; animation: gp-dot-pulse 1.1s ease-in-out infinite; }
 @keyframes gp-dot-pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.4); } }
 .gp-tab--active { background: var(--gold); color: #4a2600; transform: translateY(-1px); }
+.gp-tab--locked { opacity: 0.45; filter: grayscale(1); cursor: not-allowed; }
+.gp-tab--ready:not(.gp-tab--active) { animation: gp-tab-ready 1.3s ease-in-out infinite; }
+@keyframes gp-tab-ready { 0%,100% { box-shadow: var(--px-out-sm); } 50% { box-shadow: var(--px-out-sm), 0 0 0 3px var(--buy); } }
+.gp-away { margin: 10px 0 2px; text-align: left; background: var(--panel-sunk); border: 2px solid var(--line); border-radius: var(--r-sm); padding: 8px 10px; }
+.gp-away__t { font-family: var(--f-small); font-size: var(--type-label); color: var(--gold-hi); margin-bottom: 4px; }
+.gp-away__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3px; }
+.gp-away__l { font-family: var(--f-small); font-size: var(--type-body-sm); color: #c7d8e3; line-height: 1.35; }
+.gp-away__l::before { content: "▸ "; color: var(--ink-soft); }
+.gp-away__l--praise { color: #8df0b0; }
+.gp-away__l--mock { color: #ff9a8e; }
+.gp-away__l--event { color: var(--gold-hi); }
 
 /* ---------- atlas icons (public/art/icons32.png, 1x=32px, 2x=64px) ---------- */
 .gp-ic { display: inline-block; vertical-align: middle; flex: none; background-repeat: no-repeat; }

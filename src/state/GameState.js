@@ -67,7 +67,7 @@ const COMM_THRESHOLD = 5; // 믿음이 이 이하로 바닥나면 '공산화' �
 const COMM_LIMIT = 40; // 게이지가 이 값(≈40초)에 도달하면 체제 전복(하드 리셋)
 const COMM_RECOVER = 3; // 믿음 회복 시 게이지가 1틱당 이만큼 감소(짧은 하락은 안전)
 const EVENT_COOLDOWN_MS = 45000; // 사건 대응 후 재대기 시간(스팸 방지 + 주기적 참여 비트)
-const FACILITY_MILESTONES = [25, 50, 100]; // 시설 레벨 마일스톤 기본값: 도달 시 해당 시설 생산 ×2(영구, 누적). 시설별 maxLevel을 넘는 값은 제외된다(로드맵 #17)
+const FACILITY_MILESTONES = [10, 20, 30, 40, 50]; // 시설 레벨 마일스톤: 도달 시 해당 시설 생산 ×2(영구, 누적). 비용 ×1.48의 짧은 사다리(maxLevel 35~60)에서 모든 시설이 2~5개를 밟게 한다(레퍼런스 로드맵 단기 #4). maxLevel을 넘는 값은 제외
 const TUTORIAL_STEPS = ["click", "upgrade", "staff", "event", "stage"]; // 온보딩 코치 단계(통계 파생)
 const LIFETIME_KEYS = ["totalVotes", "totalClicks", "totalUpgrades", "totalEvents", "totalOfflineMs", "totalItems", "ciders"]; // 평생 누적 대상(로드맵 #11)
 const BRIEF_COOLDOWN_MS = 90000; // 긴급 브리핑 재사용 90초
@@ -162,6 +162,8 @@ const fallbackState = {
   // 평생 통계 기준점(로드맵 #11): 감사·전복으로 stats가 리셋될 때 그때까지의 런 통계를 여기에 접어 넣는다.
   // 평생값 = lifetime[k] + stats[k] (lifetimeStat). 업적·도감은 평생값, 주간 목표·감사 미리보기·피버 세션은 런값(stats)을 쓴다.
   lifetime: { totalVotes: 0, totalClicks: 0, totalUpgrades: 0, totalEvents: 0, totalOfflineMs: 0, totalItems: 0, ciders: 0 },
+  // 첫 도달 시각(ms, 계측용·영구): 첫 플레이 기준으로 첫 직원·첫 감사·온보딩 완료까지 걸린 시간을 분석 이벤트로 보낸다.
+  firsts: { playAt: 0, staffAt: 0, prestigeAt: 0, tutorialDoneAt: 0 },
   commGauge: 0, // 공산화 게이지(믿음 바닥 지속 시간 누적) — COMM_LIMIT 도달 시 하드 리셋
   achievements: {},
   quests: {},
@@ -276,6 +278,7 @@ export class GameState extends Phaser.Events.EventEmitter {
       equippedCos: (parsed?.equippedCos && typeof parsed.equippedCos === "object") ? { ...parsed.equippedCos } : {},
       selectedChar: (parsed?.selectedChar && characterById(parsed.selectedChar)?.id === parsed.selectedChar) ? parsed.selectedChar : "classic",
       stats: { ...fallbackState.stats, ...(parsed?.stats || {}) },
+      firsts: { ...fallbackState.firsts, ...(parsed?.firsts && typeof parsed.firsts === "object" ? parsed.firsts : {}) },
       stage: { ...fallbackState.stage, ...(parsed?.stage || {}) },
       prestige: { ...fallbackState.prestige, ...(parsed?.prestige || {}) },
       tutorial: { ...fallbackState.tutorial, ...(parsed?.tutorial || {}) },
@@ -486,6 +489,8 @@ export class GameState extends Phaser.Events.EventEmitter {
     }
     data.lastSavedAt = Number(data.lastSavedAt) || now;
     data.lastSeenAt = Number(data.lastSeenAt) || now;
+    if (!data.firsts || typeof data.firsts !== "object") data.firsts = { ...fallbackState.firsts };
+    if (!(Number(data.firsts.playAt) > 0)) data.firsts.playAt = now;
     data.prestige.seals = Math.max(0, Number(data.prestige.seals) || 0);
     data.prestige.runs = Math.max(0, Number(data.prestige.runs) || 0);
     data.prestige.bestArea = Math.max(1, Number(data.prestige.bestArea) || 1);
@@ -651,6 +656,47 @@ export class GameState extends Phaser.Events.EventEmitter {
     this.emit("changed");
   }
 
+  // 첫 도달 기록 + 분석 이벤트("first", {key, sec}) — 한 번만. playAt이 없으면 지금을 기준으로 삼는다.
+  markFirst(field, key) {
+    const f = this.data.firsts || (this.data.firsts = { ...fallbackState.firsts });
+    if (Number(f[field]) > 0) return;
+    const now = clock.now();
+    if (!(Number(f.playAt) > 0)) f.playAt = now;
+    f[field] = now;
+    this.emit("first", { key, sec: Math.max(0, Math.round((now - f.playAt) / 1000)) });
+  }
+
+  // 점진 공개: 사건 탭은 첫 직원 채용 후, 감사 탭은 첫 구역 돌파 후 열린다(온보딩 완료·감사 경험자는 항상 열림).
+  tabLocked(tab) {
+    const t = this.data.tutorial;
+    if (!t || t.done) return false;
+    if ((this.data.prestige?.runs || 0) > 0) return false;
+    const p = this.tutorialProgress();
+    if (tab === "events") return !p.staff;
+    if (tab === "prestige") return !p.stage;
+    return false;
+  }
+
+  tabLockHint(tab) {
+    if (tab === "events") return "직원을 먼저 채용하면 사건 대응이 열립니다";
+    if (tab === "prestige") return "첫 구역을 돌파하면 감사가 열립니다";
+    return "";
+  }
+
+  // 탭 점등용: 지금 살 수 있는 것이 있는가
+  upgradeAffordable(id = this.data.selected) {
+    if (!this.facility(id) || !this.isUnlocked(id)) return false;
+    const plan = this.facilityBulkPlan(id, 1);
+    return plan.levels > 0 && this.data.votes >= plan.voteCost && this.data.explain >= plan.explainCost;
+  }
+
+  anyHireAffordable() {
+    return staffDefinitions.some((st) => {
+      const plan = this.staffBulkPlan(st.id, 1);
+      return plan.levels > 0 && this.data.votes >= plan.voteCost && this.data.explain >= plan.explainCost;
+    });
+  }
+
   // 온보딩 진행은 행동 순서가 아니라 누적 통계에서 파생한다(로드맵 #14).
   // 채용을 업그레이드보다 먼저 해도, 예전 세이브가 중간 단계에 멈춰 있어도 실제 진행과 항상 일치한다.
   tutorialProgress(data = this.data) {
@@ -678,6 +724,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     t.step = TUTORIAL_STEPS.filter((k) => p[k]).length;
     if (t.step >= TUTORIAL_STEPS.length) {
       t.done = true;
+      this.markFirst("tutorialDoneAt", "tutorial_done");
       this.data.explain += 30;
       this.addLog("운영 안내 완료");
       this.emit("float", { text: "튜토리얼 완료", x: 195, y: 190, color: "#89d98b" });
@@ -1849,6 +1896,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     this.data.explain -= plan.explainCost;
     this.data.staff[id] = previousLevel + plan.levels;
     this._autoDeployNewStaff(id, previousLevel);
+    this.markFirst("staffAt", "staff");
     this.advanceTutorial("staff");
     this.data.trust = Phaser.Math.Clamp(this.data.trust + (staff.trustBonus || 0) * 20 * plan.levels, 0, 100);
     this.addLog(`${staff.name} Lv.${this.staffLevel(id)}${plan.levels > 1 ? ` (+${plan.levels})` : ""}`);
@@ -1958,6 +2006,7 @@ export class GameState extends Phaser.Events.EventEmitter {
       return false;
     }
     const medalEarned = this.medalPreview();
+    this.markFirst("prestigeAt", "prestige");
 
     const kept = {
       prestige: {

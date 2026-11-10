@@ -106,16 +106,17 @@ describe("#17 시설 마일스톤: 시설별 상한을 넘는 마일스톤은 �
     }
   });
 
-  it("도달 가능한 마일스톤(25/50)의 배율은 기존과 같다 — 밸런스 보존", () => {
+  it("마일스톤 10/20/30/40/50 — 모든 시설이 2개 이상 밟고 maxLevel 안에서만 센다(이사형 경제)", () => {
     const gs = new GameState();
-    expect(gs.facilityMilestoneFactor(24, "desk")).toBe(1);
-    expect(gs.facilityMilestoneFactor(25, "desk")).toBe(2);
-    expect(gs.facilityMilestoneFactor(50, "desk")).toBe(4);
-    expect(gs.facilityMilestoneFactor(60, "desk")).toBe(4);
-    // studio(max 35)는 25만 도달 가능
-    expect(gs.facilityMilestoneFactor(35, "studio")).toBe(2);
-    expect(gs.nextFacilityMilestone(25, "studio")).toBe(null);
-    expect(gs.nextFacilityMilestone(10, "studio")).toBe(25);
+    expect(gs.facilityMilestoneFactor(9, "desk")).toBe(1);
+    expect(gs.facilityMilestoneFactor(10, "desk")).toBe(2);
+    expect(gs.facilityMilestoneFactor(20, "desk")).toBe(4);
+    expect(gs.facilityMilestoneFactor(50, "desk")).toBe(32);
+    expect(gs.facilityMilestoneFactor(60, "desk")).toBe(32);
+    // studio(max 35)는 10/20/30까지
+    expect(gs.facilityMilestoneFactor(35, "studio")).toBe(8);
+    expect(gs.nextFacilityMilestone(30, "studio")).toBe(null);
+    expect(gs.nextFacilityMilestone(10, "studio")).toBe(20);
   });
 
   it("시설 데이터의 milestones 필드가 있으면 그것을 우선 사용한다", () => {

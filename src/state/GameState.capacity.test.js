@@ -55,14 +55,15 @@ describe("처리 용량과 적체(병목)", () => {
 
   it("용량이 생기면 적체가 남는 용량만큼 소화되어 생산에 더해진다", () => {
     const gs = setup({ desk: 2, sorter: 20, archive: 20 });
-    gs.data.backlog = 1000;
+    gs.data.backlog = 100000; // 마일스톤(10/20 ×2) 적용 후 여유 용량이 커졌으므로 한 틱에 다 소화되지 않을 만큼 크게
     const votesBefore = gs.data.votes;
     const intake = gs.intakeFor(gs.data);
     const capacity = gs.capacityFor(gs.data);
     gs.tick();
     const spare = capacity - intake;
     expect(spare).toBeGreaterThan(0);
-    expect(gs.data.backlog).toBeCloseTo(1000 - spare, 3);
+    expect(spare).toBeLessThan(100000);
+    expect(gs.data.backlog).toBeCloseTo(100000 - spare, 3);
     expect(gs.data.votes - votesBefore).toBeCloseTo(intake + spare, 3);
   });
 
