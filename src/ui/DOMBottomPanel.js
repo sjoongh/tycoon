@@ -1,4 +1,4 @@
-import { shortNumber } from "../utils/format.js";
+import { shortNumber, formatDuration, rateNumber } from "../utils/format.js";
 import { facilities } from "../data/facilities.js";
 import { staffDefinitions, rarityColors } from "../data/staff.js";
 import {
@@ -374,13 +374,16 @@ export class DOMBottomPanel {
     const upgradeBtn = unlocked
       ? `<button class="gp-btn gp-btn--gold gp-btn--upgrade ${canBuy ? "gp-btn--ready" : "gp-btn--disabled"}" data-action="upgradeFac">업그레이드<small>${costStr}${this.buyQty !== 1 ? ` · ${qtyTag}` : ""}</small></button>`
       : `<button class="gp-btn gp-btn--upgrade gp-btn--disabled" data-action="upgradeFac">잠김</button>`;
+    // 로드맵 #6: 다음 레벨 비용을 되찾는 시간 — '지금 사면 몇 분 뒤 본전'을 바로 보여준다
+    const payback = unlocked ? gs.upgradePaybackSeconds(sel) : null;
+    const paybackText = payback === null ? "" : `<div class="gp-card__gain gp-card__payback">⏱ 비용 회수 ${formatDuration(payback)}</div>`;
     this.panel.innerHTML = `
       <div class="gp-card">
         <div class="gp-card__icon" style="${iconStyle(facilityIcon(sel), 64)}"></div>
         <div class="gp-card__body">
           <div class="gp-card__title">${f.name} Lv.${gs.level(sel)}</div>
           <div class="gp-card__sub">${unlocked ? `${shortNumber(cost)}표 · 해명 ${shortNumber(ex)}` : this._lockText(sel)}</div>
-          ${unlocked ? `<div class="gp-card__gain">▲ 업그레이드 시 초당 +${f.cps}표</div>` : ""}
+          ${unlocked ? `<div class="gp-card__gain">▲ 업그레이드 시 초당 +${rateNumber(gs.upgradeGain(sel) ?? f.cps)}표</div>${paybackText}` : ""}
           ${unlocked && gs.nextFacilityMilestone(gs.level(sel), sel) != null
             ? `<div class="gp-card__milestone">★ Lv.${gs.nextFacilityMilestone(gs.level(sel), sel)} 달성 시 생산 ×2</div>`
             : ""}
