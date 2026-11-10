@@ -69,6 +69,7 @@ const COMM_RECOVER = 3; // 믿음 회복 시 게이지가 1틱당 이만큼 감�
 const EVENT_COOLDOWN_MS = 45000; // 사건 대응 후 재대기 시간(스팸 방지 + 주기적 참여 비트)
 const FACILITY_MILESTONES = [25, 50, 100]; // 시설 레벨 마일스톤 기본값: 도달 시 해당 시설 생산 ×2(영구, 누적). 시설별 maxLevel을 넘는 값은 제외된다(로드맵 #17)
 const TUTORIAL_STEPS = ["click", "upgrade", "staff", "event", "stage"]; // 온보딩 코치 단계(통계 파생)
+const LIFETIME_KEYS = ["totalVotes", "totalClicks", "totalUpgrades", "totalEvents", "totalOfflineMs", "totalItems", "ciders"]; // 평생 누적 대상(로드맵 #11)
 const BRIEF_COOLDOWN_MS = 90000; // 긴급 브리핑 재사용 90초
 const BRIEF_BUFF_MS = 15000; // 브리핑 생산 버프 15초
 const BRIEF_TRUST = 12; // 브리핑 시 믿음 +12(능동적 트러스트 관리 — 위기 탈출/보너스 진입)
@@ -158,6 +159,9 @@ const fallbackState = {
     collapses: 0, // 공산화(체제 전복) 누적 횟수
     ciders: 0, // 사이다(정의구현) 순간 누적
   },
+  // 평생 통계 기준점(로드맵 #11): 감사·전복으로 stats가 리셋될 때 그때까지의 런 통계를 여기에 접어 넣는다.
+  // 평생값 = lifetime[k] + stats[k] (lifetimeStat). 업적·도감은 평생값, 주간 목표·감사 미리보기·피버 세션은 런값(stats)을 쓴다.
+  lifetime: { totalVotes: 0, totalClicks: 0, totalUpgrades: 0, totalEvents: 0, totalOfflineMs: 0, totalItems: 0, ciders: 0 },
   commGauge: 0, // 공산화 게이지(믿음 바닥 지속 시간 누적) — COMM_LIMIT 도달 시 하드 리셋
   achievements: {},
   quests: {},
@@ -331,6 +335,8 @@ export class GameState extends Phaser.Events.EventEmitter {
     ["totalVotes", "totalClicks", "totalUpgrades", "totalEvents", "totalOfflineMs", "totalItems"].forEach((k) => {
       data.stats[k] = Math.max(0, Number(data.stats[k]) || 0);
     });
+    data.lifetime = { ...fallbackState.lifetime, ...(parsed?.lifetime && typeof parsed.lifetime === "object" ? parsed.lifetime : {}) };
+    for (const k of LIFETIME_KEYS) data.lifetime[k] = Math.max(0, Number(data.lifetime[k]) || 0);
     data.weekly = { ...fallbackState.weekly, ...(parsed?.weekly || {}) };
     data.weekly.week = Math.max(0, Math.floor(Number(data.weekly.week) || 0));
     data.weekly.baseVotes = Math.max(0, Number(data.weekly.baseVotes) || 0);
@@ -1261,6 +1267,7 @@ export class GameState extends Phaser.Events.EventEmitter {
       tutorial: this.data.tutorial,
       daily: this.data.daily,
       weekly: this.data.weekly,
+      lifetime: this.foldLifetime(), // 전복으로 런 통계가 날아가도 평생 통계는 유지
     };
     const collapses = (this.data.stats.collapses || 0) + 1;
 
@@ -1977,6 +1984,7 @@ export class GameState extends Phaser.Events.EventEmitter {
       tutorial: this.data.tutorial, // 베테랑이 감사(프레스티지) 후 신규 오프닝/튜토리얼을 다시 보지 않도록 유지
       daily: this.data.daily, // 감사(프레스티지)는 진행이지 새 세이브가 아님 — 출석 연속/일일 진행 유지
       weekly: this.data.weekly, // 주간 한정 목표(주차/목표/수령여부) 유지 — 안 그러면 재청구 악용 + 목표 리셋
+      lifetime: this.foldLifetime(), // 평생 통계: 이번 런의 stats를 접어 넣고 유지(업적·도감 기준)
     };
 
     this.data = this.normalize({
@@ -2049,22 +2057,34 @@ export class GameState extends Phaser.Events.EventEmitter {
     });
   }
 
+  // 평생 통계 = 리셋 전 누적(lifetime) + 이번 런(stats). 감사·전복에도 줄지 않는다(로드맵 #11).
+  lifetimeStat(key, data = this.data) {
+    return (Number(data.lifetime?.[key]) || 0) + (Number(data.stats?.[key]) || 0);
+  }
+
+  // 런 통계를 리셋하기 직전에 호출: 지금까지의 stats를 lifetime 기준점에 접어 넣은 새 객체를 돌려준다.
+  foldLifetime(data = this.data) {
+    const folded = { ...fallbackState.lifetime, ...(data.lifetime || {}) };
+    for (const k of LIFETIME_KEYS) folded[k] = (Number(folded[k]) || 0) + (Number(data.stats?.[k]) || 0);
+    return folded;
+  }
+
   achievementProgress(metric) {
     switch (metric) {
-      case "totalVotes": return this.data.stats.totalVotes;
+      case "totalVotes": return this.lifetimeStat("totalVotes");
       case "cps": return this.cps();
       case "trust": return this.data.trust;
       case "facilityTotal": return this.facilityTotal();
       case "area": return this.data.stage.area;
       case "prestigeRuns": return this.data.prestige.runs;
-      case "totalEvents": return this.data.stats.totalEvents;
-      case "totalClicks": return this.data.stats.totalClicks || 0;
-      case "totalItems": return this.data.stats.totalItems || 0;
+      case "totalEvents": return this.lifetimeStat("totalEvents");
+      case "totalClicks": return this.lifetimeStat("totalClicks");
+      case "totalItems": return this.lifetimeStat("totalItems");
       case "medals": return this.data.prestige.totalMedals || 0;
       case "dexSeen": return this.seenEventCount();
       case "titlesOwned": return this.ownedTitleCount();
       case "titleDraws": return this.data.titleDraws || 0;
-      case "ciders": return this.data.stats.ciders || 0;
+      case "ciders": return this.lifetimeStat("ciders");
       default: return 0;
     }
   }
@@ -2773,6 +2793,24 @@ export class GameState extends Phaser.Events.EventEmitter {
   staffExplainCost(id) {
     const staff = this.staff(id);
     return this.staffExplainCostAt(staff, this.staffLevel(id));
+  }
+
+  // 업그레이드 1회로 늘어나는 실제 초당 표(배율·마일스톤·용량 병목 반영). 잠김·최대 레벨이면 null(로드맵 #6).
+  upgradeGain(id = this.data.selected) {
+    const item = this.facility(id);
+    if (!item || !this.isUnlocked(id)) return null;
+    const lv = this.level(id);
+    if (lv >= (item.maxLevel || 99)) return null;
+    const next = { ...this.data, facilities: { ...this.data.facilities, [id]: lv + 1 } };
+    return Math.max(0, (this.cpsFor(next) - this.cpsFor(this.data)) * this.liveMultiplier());
+  }
+
+  // 업그레이드 비용을 늘어난 초당 표로 되찾는 데 걸리는 초. 증가량이 0이면 Infinity, 불가하면 null.
+  upgradePaybackSeconds(id = this.data.selected) {
+    const gain = this.upgradeGain(id);
+    if (gain === null) return null;
+    if (gain <= 0) return Infinity;
+    return this.cost(id) / gain;
   }
 
   cost(id) {

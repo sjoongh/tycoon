@@ -126,3 +126,104 @@ describe("#17 시설 마일스톤: 시설별 상한을 넘는 마일스톤은 �
     expect(gs.facilityMilestoneFactor(20, custom)).toBe(4);
   });
 });
+
+describe("#11 평생 통계(lifetime)와 런 통계(stats) 분리", () => {
+  function prestigeReady(gs) {
+    gs.data.stage.area = 8;
+    gs.data.prestige.bestArea = 8;
+    gs.data.facilities.desk = 30;
+    return gs;
+  }
+
+  it("감사(프레스티지) 뒤 런 통계는 리셋되지만 lifetimeStat은 누적을 유지한다", () => {
+    const gs = prestigeReady(rich(new GameState()));
+    gs.data.stats.totalVotes = 5000;
+    gs.data.stats.totalClicks = 120;
+    gs.data.stats.totalEvents = 9;
+    expect(gs.lifetimeStat("totalVotes")).toBe(5000);
+    expect(gs.canPrestige()).toBe(true);
+    expect(gs.prestigeReset()).toBe(true);
+    expect(gs.data.stats.totalVotes).toBe(0);
+    expect(gs.lifetimeStat("totalVotes")).toBe(5000);
+    expect(gs.lifetimeStat("totalClicks")).toBe(120);
+    expect(gs.lifetimeStat("totalEvents")).toBe(9);
+    gs.data.stats.totalVotes = 100;
+    expect(gs.lifetimeStat("totalVotes")).toBe(5100);
+  });
+
+  it("업적 metric(totalVotes·totalClicks·totalEvents·totalItems·ciders)은 lifetime을 읽고, 주간 목표·감사 미리보기는 런 통계를 쓴다", () => {
+    const gs = prestigeReady(rich(new GameState()));
+    gs.data.stats.totalVotes = 900;
+    gs.data.stats.totalEvents = 6;
+    gs.prestigeReset();
+    gs.weeklyProgress(); // 주차 초기화(기준점 고정) 뒤 이번 런 득표를 쌓는다
+    gs.data.stats.totalVotes = 200;
+    expect(gs.achievementProgress("totalVotes")).toBe(1100);
+    expect(gs.achievementProgress("totalEvents")).toBe(6);
+    // 주간 목표 진행은 런 기준점(baseVotes) 대비 — 감사 직후 0에서 다시 센다
+    expect(gs.weeklyProgress()).toBe(200);
+    // 감사 미리보기는 이번 런의 사건 수만 반영한다(0건 → eventValue 0)
+    prestigeReady(gs);
+    const withoutEvents = gs.prestigePreview();
+    gs.data.stats.totalEvents = 3;
+    expect(gs.prestigePreview()).toBeGreaterThanOrEqual(withoutEvents);
+  });
+
+  it("lifetime이 없는 예전 세이브는 현재 런 통계를 그대로 평생 통계로 본다(회귀 없음)", () => {
+    const base = new GameState();
+    const data = { ...base.data, stats: { ...base.data.stats, totalVotes: 777 }, lastSeenAt: Date.now(), lastSavedAt: Date.now() };
+    delete data.lifetime;
+    store.set(SAVE_KEY, JSON.stringify(data));
+    const gs = new GameState();
+    expect(gs.lifetimeStat("totalVotes")).toBe(777);
+    expect(gs.data.lifetime).toBeTruthy();
+  });
+
+  it("손상된 lifetime 값(NaN·음수·문자열)은 0으로 정규화된다", () => {
+    const base = new GameState();
+    store.set(SAVE_KEY, JSON.stringify({ ...base.data, lifetime: { totalVotes: "abc", totalClicks: -5, totalEvents: null }, lastSeenAt: Date.now(), lastSavedAt: Date.now() }));
+    const gs = new GameState();
+    expect(gs.data.lifetime.totalVotes).toBe(0);
+    expect(gs.data.lifetime.totalClicks).toBe(0);
+    expect(gs.lifetimeStat("totalEvents")).toBe(0);
+  });
+});
+
+describe("#6 업그레이드 회수 시간 — 실제 초당 증가량 기반", () => {
+  it("upgradeGain은 레벨 1 증가 시 cps 실증가량이고, payback은 비용/증가량(초)이다", () => {
+    const gs = rich(new GameState());
+    const before = gs.cps();
+    const gain = gs.upgradeGain("desk");
+    expect(gain).toBeGreaterThan(0);
+    const payback = gs.upgradePaybackSeconds("desk");
+    expect(payback).toBeCloseTo(gs.cost("desk") / gain, 6);
+    gs.upgrade("desk");
+    expect(gs.cps() - before).toBeCloseTo(gain, 6);
+  });
+
+  it("잠긴 시설·최대 레벨은 null을 돌려준다", () => {
+    const gs = rich(new GameState());
+    expect(gs.upgradePaybackSeconds("studio")).toBe(null); // 선행 조건 미충족
+    gs.data.facilities.desk = 60; // maxLevel
+    expect(gs.upgradePaybackSeconds("desk")).toBe(null);
+  });
+
+  it("formatDuration은 초를 사람이 읽는 한국어로 줄인다", async () => {
+    const { formatDuration } = await import("../utils/format.js");
+    expect(formatDuration(0.4)).toBe("1초 미만");
+    expect(formatDuration(42)).toBe("42초");
+    expect(formatDuration(95)).toBe("1분 35초");
+    expect(formatDuration(3600 * 2 + 60 * 5)).toBe("2시간 5분");
+    expect(formatDuration(86400 * 3 + 3600 * 4)).toBe("3일 4시간");
+    expect(formatDuration(Infinity)).toBe("∞");
+  });
+
+  it("rateNumber는 작은 초당 값을 0으로 뭉개지 않는다", async () => {
+    const { rateNumber } = await import("../utils/format.js");
+    expect(rateNumber(0.33)).toBe("0.33");
+    expect(rateNumber(0.3)).toBe("0.3");
+    expect(rateNumber(12.34)).toBe("12.3");
+    expect(rateNumber(250.6)).toBe("251");
+    expect(rateNumber(0)).toBe("0");
+  });
+});
