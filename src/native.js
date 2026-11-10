@@ -31,6 +31,9 @@ export async function initNative() {
       }
       const dt = document.querySelector(".gp-dexdt");
       if (dt) { const x = dt.querySelector(".gp-dexdt__x"); if (x) x.click(); else dt.remove(); return; }
+      // 하단 시트가 펼쳐져 있으면 한 단계 접는다(전체→반→접힘). 접힘이면 백그라운드.
+      const sheet = document.querySelector(".gp-bottom:not(.gp-bottom--peek)");
+      if (sheet) { document.dispatchEvent(new CustomEvent("gp:sheet-collapse")); return; }
       App.minimizeApp(); // 모달 없으면 백그라운드(종료 대신)
     });
     // 앱이 백그라운드↔포그라운드 전환 시 세이브 보장(데이터 손실 방지)

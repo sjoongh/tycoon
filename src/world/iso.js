@@ -2,9 +2,9 @@
 // 모든 값은 표시(display) px. 소스 px × WORLD_SCALE.
 import { WORLD_ATLAS } from "./worldAtlas.js";
 
-export const WORLD_SCALE = WORLD_ATLAS.scale; // 3
-export const ROOM_X = 21;   // room.png 좌상단
-export const ROOM_Y = 222;  // 간판(170~216) 아래에서 벽이 시작하도록
+export const WORLD_SCALE = WORLD_ATLAS.scale; // 0.58 — 방 404px(화면보다 14px 넓게, 벽 끝 블리드)
+export const ROOM_X = -7;   // room.png 좌상단(양옆 7px 블리드)
+export const ROOM_Y = 262;  // 간판(175~215)·지도 힌트 아래에서 벽이 시작. 접힘 상태에서 HUD~시트 사이 중앙
 export const ROOM_W = WORLD_ATLAS.room.width * WORLD_SCALE;
 export const ROOM_H = WORLD_ATLAS.room.height * WORLD_SCALE;
 export const ROOM_BOTTOM = ROOM_Y + ROOM_H;
@@ -33,7 +33,7 @@ export const FACILITY_SLOTS = {
 };
 
 export const GOV_TILE = { i: 2, j: 4 };
-export const BIG_NUM_TILE = { i: 4, j: 6 }; // 국장 앞 바닥에 큰 숫자
+export const BIG_NUM_TILE = { i: 5.3, j: 5.3 }; // 바닥 앞 꼭짓점 중앙에 큰 숫자(왼쪽 FAB와 안 겹치게)
 
 export function facilityPos(id) {
   const s = FACILITY_SLOTS[id];

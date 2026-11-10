@@ -34,6 +34,11 @@ const TABS = [
 const hex = (c) => "#" + Number(c).toString(16).padStart(6, "0");
 const PANEL_REFRESH_BUDGET_MS = 100;
 
+// 하단 시트 3단: peek(한 줄 요약) < half(패널 스크롤) < full(HUD 아래까지). 탭별 마지막 펼침 상태를 기억한다.
+const SHEET_STATES = ["peek", "half", "full"];
+const SHEET_DEFAULT = { facilities: "half", crew: "half", events: "half", goals: "full", prestige: "full" };
+const SHEET_STORE_KEY = "gp-sheet-v1";
+
 const nowMs = () => globalThis.performance?.now?.() ?? Date.now();
 
 export class DOMBottomPanel {
@@ -43,7 +48,8 @@ export class DOMBottomPanel {
     this.buyQty = 1; // 일괄구매 수량: 1 | 10 | "max" (시설/직원 공유)
     this.root = document.createElement("div");
     this.root.className = "gp-bottom";
-    this.root.innerHTML = `<div class="gp-panel" data-k="panel"></div><div class="gp-tabs" data-k="tabs"></div>`;
+    this.root.innerHTML = `<div class="gp-handle" data-k="handle"><button class="gp-handle__chev" data-k="chev" aria-label="접기/펼치기"></button></div><div class="gp-peek" data-k="peek"></div><div class="gp-panel" data-k="panel"></div><div class="gp-tabs" data-k="tabs"></div>`;
+    this._sheet = this._loadSheet();
 
     const tabsEl = this.root.querySelector('[data-k="tabs"]');
     TABS.forEach(([id, label]) => {
@@ -51,12 +57,21 @@ export class DOMBottomPanel {
       b.className = "gp-tab";
       b.dataset.tab = id;
       b.innerHTML = `<span class="gp-tab__ic" data-tabic="${id}" style="${iconStyle(tabIcon(id), 34)}"></span>${label}<span class="gp-tab__dot" data-dot="${id}" hidden></span>`;
-      b.addEventListener("click", () => this.gameState.setTab(id));
+      b.addEventListener("click", () => this._onTabClick(id));
       tabsEl.appendChild(b);
     });
 
     this.panel = this.root.querySelector('[data-k="panel"]');
     this.panel.addEventListener("click", (e) => this._onClick(e));
+    this.peek = this.root.querySelector('[data-k="peek"]');
+    this.peek.addEventListener("click", (e) => {
+      if (e.target.closest("[data-action]")) { this._onClick(e); return; }
+      this._setSheet(this._sheet.perTab[this._activeTab()] || "half");
+    });
+    this.root.querySelector('[data-k="chev"]').addEventListener("click", (e) => { e.stopPropagation(); this._toggleSheet(); });
+    this._bindDrag(this.root.querySelector('[data-k="handle"]'));
+    this._bindDrag(this.peek);
+    this._applySheetClass();
     this._lastChangedAt = -Infinity;
     this._lastRenderAt = -Infinity;
     this._refreshTimer = null;
@@ -87,9 +102,15 @@ export class DOMBottomPanel {
     // 패널 실높이를 게임좌표로 환산해 브로드캐스트 — 월드 카메라가 따라 올라가
     // 어떤 탭/기기에서도 국장·시설·초당표가 패널에 잘리지 않게 한다(BUG2).
     this._panelParent = parent;
+    this._applySheetClass();
     this._ro = new ResizeObserver(() => this._emitSheetTop());
     this._ro.observe(this.root);
+    this._roParent = new ResizeObserver(() => this._measureSheet());
+    this._roParent.observe(parent);
+    this._measureSheet();
     this._emitSheetTop();
+    this._onSheetCollapse = () => this._stepSheet(-1);
+    document.addEventListener("gp:sheet-collapse", this._onSheetCollapse);
     // WorldView가 늦게 준비되면(씬 로드 후) 재브로드캐스트 — 초기 이벤트 유실 방지
     this._onWorldReady = () => this._emitSheetTop();
     document.addEventListener("gp:world-ready", this._onWorldReady);
@@ -104,13 +125,16 @@ export class DOMBottomPanel {
       // FAB(러시/브리핑) 동적 앵커용 — 패널 실높이를 CSS 변수로 기록
       this._panelParent.style.setProperty("--panel-h", `${Math.round(ui.bottom - t)}px`);
       this.gameState.uiSheetTopGame = topGame; // 늦게 생성되는 WorldView가 초기값을 읽어가도록 기록
-      document.dispatchEvent(new CustomEvent("gp:sheet-top", { detail: { topGame } }));
+      this.gameState.uiSheetState = this._sheet.state;
+      document.dispatchEvent(new CustomEvent("gp:sheet-top", { detail: { topGame, state: this._sheet.state } }));
     } catch {}
   }
 
   destroy() {
     this._cancelScheduledRefresh();
     this._ro?.disconnect();
+    this._roParent?.disconnect();
+    document.removeEventListener("gp:sheet-collapse", this._onSheetCollapse);
     document.removeEventListener("gp:world-ready", this._onWorldReady);
     document.removeEventListener("visibilitychange", this._onVisibility);
     this.gameState.off("changed", this._refresh);
@@ -173,7 +197,8 @@ export class DOMBottomPanel {
       case "deployStaff": gs.deployStaff(id); this.refresh(); break;
       case "undeployStaff": gs.undeployStaff(id); this.refresh(); break;
       case "setBuyQty": this.buyQty = (id === "max" ? "max" : Number(id)); this.refresh(); break;
-      case "getEvent": if (gs.eventReady()) { this.currentEvent = this._pickEvent(); gs.uiEventOpen = true; this.refresh(); } break;
+      case "getEvent": if (gs.eventReady()) { this.currentEvent = this._pickEvent(); gs.uiEventOpen = true; if (this._sheet.state === "peek") this._setSheet("half"); this.refresh(); } break;
+      case "expandSheet": this._setSheet(this._sheet.perTab[this._activeTab()] === "full" ? "full" : "half"); break;
       case "eventChoice": {
         const ev = this.currentEvent?.id === id ? this.currentEvent : null;
         const result = gs.resolveEventChoice?.(ev, el.dataset.side);
@@ -228,7 +253,7 @@ export class DOMBottomPanel {
         events: () => this._patchEvents(),
         prestige: () => true,
       }[tab] || (() => false))();
-      if (patched) { this._updateBadges(tab); return; }
+      if (patched) { this._updateBadges(tab); this._renderPeek(tab); return; }
     }
     const prevScroll = this.panel.querySelector(".gp-stafflist")?.scrollTop || 0;
     const goalsSignature = tab === "goals" ? this._goalsStructureSignature() : null;
@@ -250,9 +275,165 @@ export class DOMBottomPanel {
     this.root.querySelectorAll(".gp-tab").forEach((el) => {
       const on = el.dataset.tab === tab;
       el.classList.toggle("gp-tab--active", on);
-      applyIcon(el.querySelector("[data-tabic]"), tabIcon(el.dataset.tab, on), 34);
+      applyIcon(el.querySelector("[data-tabic]"), tabIcon(el.dataset.tab, on), 26);
     });
     this._updateBadges(tab);
+    this._renderPeek(tab);
+  }
+
+  // ── 시트 상태 ──
+  _activeTab() { return this.gameState.data.activeTab || "facilities"; }
+
+  _loadSheet() {
+    let saved = null;
+    try { saved = JSON.parse(localStorage.getItem(SHEET_STORE_KEY) || "null"); } catch {}
+    const perTab = { ...SHEET_DEFAULT, ...(saved?.perTab || {}) };
+    const state = SHEET_STATES.includes(saved?.state) ? saved.state : (perTab[this.gameState.data.activeTab] || "half");
+    return { state, perTab };
+  }
+
+  _saveSheet() {
+    try { localStorage.setItem(SHEET_STORE_KEY, JSON.stringify({ state: this._sheet.state, perTab: this._sheet.perTab })); } catch {}
+  }
+
+  _setSheet(state, { remember = true } = {}) {
+    if (!SHEET_STATES.includes(state)) return;
+    const prev = this._sheet.state;
+    this._sheet.state = state;
+    if (remember && state !== "peek") this._sheet.perTab[this._activeTab()] = state;
+    this._applySheetClass();
+    this._saveSheet();
+    if (prev === "peek" && state !== "peek") this.refresh(); // 접힘 동안 멈춘 패널을 현재 상태로
+  }
+
+  _toggleSheet() {
+    if (this._sheet.state === "peek") this._setSheet(this._sheet.perTab[this._activeTab()] || "half");
+    else this._setSheet("peek");
+  }
+
+  _stepSheet(dir) {
+    const i = SHEET_STATES.indexOf(this._sheet.state) + dir;
+    this._setSheet(SHEET_STATES[Math.max(0, Math.min(SHEET_STATES.length - 1, i))]);
+  }
+
+  _applySheetClass() {
+    SHEET_STATES.forEach((st) => this.root.classList.toggle(`gp-bottom--${st}`, this._sheet.state === st));
+    // 전체 상태면 월드 위 플로팅 버튼(브리핑·러시)을 숨긴다 — 시트가 덮은 영역이라 누를 대상이 없다
+    this._panelParent?.classList.toggle("gp-ui--sheet-full", this._sheet.state === "full");
+  }
+
+  // 다른 탭: 그 탭의 기억된 상태로 펼침. 같은 탭: 접힘 ↔ 펼침 토글.
+  _onTabClick(id) {
+    if (id === this._activeTab()) { this._toggleSheet(); return; }
+    this.gameState.setTab(id);
+    this._setSheet(this._sheet.perTab[id] || "half", { remember: false });
+  }
+
+  // 반펼침·전체 높이를 UI 레이어 실측으로 계산(FIT 스케일·기기 높이 대응). 전체는 HUD 바로 아래까지.
+  _measureSheet() {
+    const ui = this._panelParent?.getBoundingClientRect();
+    if (!ui || !ui.height) return;
+    const hud = this._panelParent.querySelector(".gp-hud")?.getBoundingClientRect();
+    const hudBottom = hud ? hud.bottom - ui.top : ui.height * 0.16;
+    const tabs = this.root.querySelector('[data-k="tabs"]')?.getBoundingClientRect().height || 54;
+    const chrome = 22 + tabs + 14; // 핸들 + 탭바 + 패딩
+    const half = Math.round(ui.height * 0.46 - chrome);
+    const full = Math.round(ui.height - hudBottom - chrome);
+    this.root.style.setProperty("--sheet-half", `${Math.max(200, half)}px`);
+    this.root.style.setProperty("--sheet-full", `${Math.max(half, full)}px`);
+  }
+
+  // 핸들·요약 줄 드래그: 40px 이상 위로 → 한 단계 펼침, 아래로 → 한 단계 접힘
+  _bindDrag(el) {
+    let startY = null;
+    let moved = false;
+    el.addEventListener("pointerdown", (e) => {
+      if (e.target.closest("[data-action], [data-k=\"chev\"]")) return;
+      startY = e.clientY; moved = false;
+      try { el.setPointerCapture(e.pointerId); } catch {} // 손가락이 핸들 밖으로 나가도 pointerup을 받는다
+    });
+    el.addEventListener("pointermove", (e) => { if (startY !== null && Math.abs(e.clientY - startY) > 8) moved = true; });
+    const end = (e) => {
+      if (startY === null) return;
+      const dy = e.clientY - startY;
+      startY = null;
+      if (dy <= -40) { this._stepSheet(1); this._suppressClick = true; }
+      else if (dy >= 40) { this._stepSheet(-1); this._suppressClick = true; }
+      else if (moved) this._suppressClick = true;
+      if (this._suppressClick) setTimeout(() => { this._suppressClick = false; }, 0);
+    };
+    el.addEventListener("pointerup", end);
+    el.addEventListener("pointercancel", () => { startY = null; });
+    el.addEventListener("click", (e) => { if (this._suppressClick) { e.stopImmediatePropagation(); e.preventDefault(); } }, true);
+  }
+
+  // ── 접힘 요약 줄: 탭별 핵심 한 줄 + 바로 쓸 버튼 하나 ──
+  _renderPeek(tab) {
+    if (!this.peek) return;
+    const gs = this.gameState;
+    let html = "";
+    if (tab === "facilities") {
+      const sel = gs.facility(gs.data.selected) ? gs.data.selected : "desk";
+      const f = gs.facility(sel);
+      const unlocked = gs.isUnlocked(sel);
+      const plan = unlocked ? gs.facilityBulkPlan(sel, this.buyQty) : { levels: 0, voteCost: 0, explainCost: 0 };
+      const canBuy = unlocked && plan.levels > 0 && gs.data.votes >= plan.voteCost && gs.data.explain >= plan.explainCost;
+      const costStr = plan.levels > 0 ? `${shortNumber(plan.voteCost)}표` : "부족";
+      const qtyTag = this.buyQty === "max" ? (plan.levels > 0 ? `+${plan.levels}Lv` : "MAX") : `×${plan.levels || this.buyQty}`;
+      const sub = unlocked
+        ? `▲ 초당 <b>+${rateNumber(gs.upgradeGain(sel) ?? f.cps)}표</b>${gs.intakeFor && gs.capacityFor ? ` · 유입 ${shortNumber(gs.intakeFor(gs.data))}/용량 ${shortNumber(gs.capacityFor(gs.data))}` : ""}`
+        : this._lockText(sel);
+      html = `<div class="gp-peek__icon" style="${iconStyle(facilityIcon(sel), 36)}"></div><div class="gp-peek__body"><div class="gp-peek__title">${f.name} Lv.${gs.level(sel)}</div><div class="gp-peek__sub">${sub}</div></div>${
+        unlocked
+          ? `<button class="gp-btn gp-btn--gold gp-btn--upgrade ${canBuy ? "gp-btn--ready" : "gp-btn--disabled"}" data-action="upgradeFac">업그레이드<small>${costStr}${this.buyQty !== 1 ? ` · ${qtyTag}` : ""}</small></button>`
+          : `<button class="gp-btn gp-btn--upgrade gp-btn--disabled" data-action="expandSheet">잠김</button>`}`;
+    } else if (tab === "crew") {
+      const slots = gs.staffSlots ? gs.staffSlots() : [];
+      const mult = gs.staffMultiplierFor ? gs.staffMultiplierFor(gs.data) : 1;
+      const slotHtml = Array.from({ length: STAFF_SLOT_LIMIT }, (_, i) => slots[i]
+        ? `<span class="gp-peek__slot"><i class="gp-ic" style="${iconStyle(staffIcon(slots[i]), 24)}"></i></span>`
+        : `<span class="gp-peek__slot gp-peek__slot--empty"></span>`).join("");
+      html = `<div class="gp-peek__icon" style="${iconStyle(tabIcon("crew", true), 36)}"></div><div class="gp-peek__body"><div class="gp-peek__title">현장 개표팀 ${slots.length}/${STAFF_SLOT_LIMIT}</div><div class="gp-peek__sub"><b>${mult < 10 ? `+${((mult - 1) * 100).toFixed(0)}%` : `x${mult.toFixed(1)}`}</b> 생산 보너스</div></div><div class="gp-peek__slots">${slotHtml}</div>`;
+    } else if (tab === "events") {
+      const ev = this.currentEvent;
+      if (ev) {
+        html = `<div class="gp-peek__icon" style="${iconStyle(tabIcon("events", true), 36)}"></div><div class="gp-peek__body"><div class="gp-peek__title">${ev.title}</div><div class="gp-peek__sub">선택 대기 중</div></div><button class="gp-btn gp-btn--sm gp-btn--gold" data-action="expandSheet">보기</button>`;
+      } else {
+        const ready = gs.eventReady();
+        const sec = Math.ceil((gs.eventCooldownRemainingMs ? gs.eventCooldownRemainingMs() : 0) / 1000);
+        const scale = gs.eventRewardScale ? gs.eventRewardScale() : 1;
+        html = `<div class="gp-peek__icon" style="${iconStyle(tabIcon("events", true), 36)}"></div><div class="gp-peek__body"><div class="gp-peek__title">사건 대응실</div><div class="gp-peek__sub">${ready ? `보상 <b>x${scale.toFixed(1)}</b>` : `다음 사건까지 <b data-k="evsec">${sec}</b>초`}</div></div>${
+          ready ? `<button class="gp-btn gp-btn--sm gp-btn--ready" style="background:var(--event);color:#fff" data-action="getEvent">사건 받기</button>` : ""}`;
+      }
+    } else if (tab === "goals") {
+      const st = gs.dailyStatus ? gs.dailyStatus() : null;
+      const weekly = gs.weeklyClaimable ? gs.weeklyClaimable() : false;
+      const q = gs.nextQuest ? gs.nextQuest() : null;
+      if (st?.available) html = `<div class="gp-peek__icon" style="${iconStyle(tabIcon("goals", true), 36)}"></div><div class="gp-peek__body"><div class="gp-peek__title">출석 보상 ${st.streak}일차</div><div class="gp-peek__sub">해명 +${st.reward.explain} · 표 +${shortNumber(st.reward.votes)}</div></div><button class="gp-btn gp-btn--sm gp-btn--gold gp-btn--ready" data-action="claimAttendance">받기</button>`;
+      else if (weekly) html = `<div class="gp-peek__icon" style="${iconStyle(tabIcon("goals", true), 36)}"></div><div class="gp-peek__body"><div class="gp-peek__title">주간 목표 달성</div><div class="gp-peek__sub">보상을 받을 수 있습니다</div></div><button class="gp-btn gp-btn--sm gp-btn--gold gp-btn--ready" data-action="claimWeekly">받기</button>`;
+      else if (q) { const pr = gs.questProgress(q); html = `<div class="gp-peek__icon" style="${iconStyle(tabIcon("goals", true), 36)}"></div><div class="gp-peek__body"><div class="gp-peek__title">${q.title}</div><div class="gp-peek__sub"><b>${shortNumber(Math.min(pr, q.target))}</b> / ${shortNumber(q.target)} · ${rewardLabel(q.reward)}</div></div>`; }
+      else html = `<div class="gp-peek__icon" style="${iconStyle(tabIcon("goals", true), 36)}"></div><div class="gp-peek__body"><div class="gp-peek__title">운영 목표</div><div class="gp-peek__sub">정규 목표 완료 · 끝없는 목표 진행 중</div></div>`;
+    } else if (tab === "prestige") {
+      const pj = gs.prestigeProjection ? gs.prestigeProjection() : { earned: 0 };
+      const can = pj.earned > 0;
+      html = `<div class="gp-peek__icon" style="${iconStyle(tabIcon("prestige", true), 36)}"></div><div class="gp-peek__body"><div class="gp-peek__title">감사 재정비</div><div class="gp-peek__sub">${can ? `인장 <b>+${shortNumber(pj.earned)}</b> · 영구 생산 +${(pj.gainPct || 0).toFixed(1)}%` : (pj.advice?.detail || "감사 조건을 달성하세요")}</div></div>${can ? `<button class="gp-btn gp-btn--sm gp-btn--gold" data-action="expandSheet">보기</button>` : ""}`;
+    }
+    // 같은 구조면 숫자만 패치해 눌리는 중인 버튼을 갈아끼우지 않는다
+    const sig = `${tab}|${html.replace(/[\d.,]+/g, "#")}`;
+    if (sig === this._peekSig && this.peek.firstElementChild) {
+      const tmp = document.createElement("div"); tmp.innerHTML = html;
+      const a = this.peek.querySelectorAll("*"); const b = tmp.querySelectorAll("*");
+      if (a.length === b.length) {
+        a.forEach((el, i) => {
+          const nb = b[i];
+          if (el.children.length === 0 && el.textContent !== nb.textContent) el.textContent = nb.textContent;
+          if (el.className !== nb.className) el.className = nb.className;
+        });
+        return;
+      }
+    }
+    this._peekSig = sig;
+    this.peek.innerHTML = html;
   }
 
   // 탭 알림 점: 사건 대응 가능 시 사건 탭에 표시(해당 탭을 보고 있으면 숨김)
