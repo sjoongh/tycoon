@@ -1,3 +1,4 @@
+import "./ui/a11y.js"; // 접근성 옵션(큰 글씨·움직임 줄이기) 클래스를 첫 렌더 전에 적용
 import Phaser from "phaser";
 import "./style.css";
 import "./ui/dom-ui.css";

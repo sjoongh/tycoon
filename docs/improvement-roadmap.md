@@ -2,6 +2,11 @@
 
 > 출처: `.omc/artifacts/ask/codex-...2026-07-24...md` (Codex 게임 전반 리뷰, 18건)
 > 대상 버전: 1.0.1 출시 완료 상태 기준. 이 문서는 **계획만** 담으며 구현은 포함하지 않는다.
+>
+> **진행 현황 (2026-11-10 갱신)**
+> - 완료(1.2.0까지): #1 finiteOr, #2 staffMaxLevel, #3 saveWinner(SaveService 분리는 미착수), #4 grantReward, #5 DOM 부분 갱신, #12 오프라인 이월(offlineCarryVotes), #13 clock.js 보정·되감김 가드, #9 일부(Firebase 동적 import·커스텀 Phaser 청크).
+> - 완료(2026-11-10 UX 패스, `docs/impl-notes/2026-11-10-roadmap-ux-pass.md`): #14 온보딩 통계 파생, #15 44px 터치·글자 바닥·큰 글씨·움직임 줄이기, #17 시설별 마일스톤 상한, #18 비행 표·반짝임 풀링(백그라운드 정지는 Phaser VisibilityHandler가 담당), #9 잔여(SW 버전 해시에 Jua/DoHyeon/아이콘 아틀라스 포함).
+> - 미착수(밸런스·기획 결정 필요): #6 비용/생산 곡선, #7 성장 시스템 개편, #8 사건 주기, #16 지역 규칙, #11 lifetimeStats/runStats 분리, #10 GameState 분리.
 > 우선순위: `세이브 정확성 → 직원 상한/보상 집계 버그 → DOM 리렌더 → 성장 곡선 재설계 → 온보딩·가독성`
 
 ## 핵심 진단 3줄

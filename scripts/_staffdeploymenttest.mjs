@@ -37,6 +37,8 @@ try {
     gameState.data.tutorial = { step: 5, done: true, openingSeen: true };
     gameState.data.votes = 1_000_000_000;
     gameState.data.explain = 1_000_000;
+    // 1.2.0 채용 선행 조건(직원 상한 = 담당 시설 Lv): 시설을 먼저 올려 두어야 채용이 막히지 않는다
+    for (const id of Object.keys(gameState.data.facilities)) gameState.data.facilities[id] = Math.max(gameState.data.facilities[id] || 0, 10);
     gameState.emit("changed");
   });
 
@@ -69,9 +71,10 @@ try {
   const promotion = await page.evaluate(() => {
     const gameState = window.__game.registry.get("gameState");
     const worker = window.__game.scene.getScene("GameScene").world._workers.clerk;
-    return { level: gameState.staffLevel("clerk"), rank: gameState.staffRank("clerk"), worldRank: worker?.rank, texture: worker?.badge?.texture?.key };
+    // 1.2.0 카툰 월드: 직급 배지는 스프라이트가 아니라 텍스트 라벨(티어 숫자)이다
+    return { level: gameState.staffLevel("clerk"), rank: gameState.staffRank("clerk"), worldRank: worker?.rank, badgeText: worker?.badge?.text };
   });
-  if (promotion.level !== 5 || promotion.rank?.tier !== 2 || promotion.worldRank !== 2 || promotion.texture !== "worker-rank-2") {
+  if (promotion.level !== 5 || promotion.rank?.tier !== 2 || promotion.worldRank !== 2 || promotion.badgeText !== "2") {
     throw new Error(`promotion mismatch: ${JSON.stringify(promotion)}`);
   }
 
@@ -91,7 +94,7 @@ try {
     try { gameState.normalize(saved, Date.now()); } catch (error) { normalizeError = `${error.message}\n${error.stack}`; }
     return { version: saved?.version, staff: saved?.staff, slots: saved?.staffSlots, normalizeError };
   });
-  if (savedBeforeReload.version !== 9 || JSON.stringify(savedBeforeReload.slots) !== JSON.stringify(swapped) || savedBeforeReload.normalizeError) {
+  if (savedBeforeReload.version < 10 || JSON.stringify(savedBeforeReload.slots) !== JSON.stringify(swapped) || savedBeforeReload.normalizeError) {
     throw new Error(`deployment was not saved before reload: ${JSON.stringify(savedBeforeReload)}`);
   }
 
