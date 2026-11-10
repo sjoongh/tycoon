@@ -43,6 +43,7 @@ export class PreloadScene extends Phaser.Scene {
       for (let f = 0; f < WORLD_ATLAS.workers.frames; f += 1) this.load.image(workerSpriteKey(v, f), `/art/world/worker-${v}-${f}.webp`);
     }
     this.load.image("world/ballot", "/art/world/ballot.webp");
+    for (let v = 0; v < (WORLD_ATLAS.visitors?.variants || 0); v += 1) this.load.image(`world/visitor-${v}`, `/art/world/visitor-${v}.webp`);
     for (const cid of Object.keys(WORLD_ATLAS.cosmetics || {})) this.load.image(`world/${cid}`, `/art/world/${cid}.webp`);
   }
 

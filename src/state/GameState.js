@@ -2226,6 +2226,8 @@ export class GameState extends Phaser.Events.EventEmitter {
   dailyQuestClaimable(id) {
     return this.dailyQuestDone(id) && !this.dailyQuestClaimed(id);
   }
+  dailyQuestDefs() { return dailyQuestDefinitions; }
+
   anyDailyQuestClaimable() {
     return dailyQuestDefinitions.some((q) => this.dailyQuestClaimable(q.id));
   }
