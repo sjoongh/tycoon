@@ -16,7 +16,7 @@ page.on("console", (m) => { if (m.type() === "error") errors.push(m.text()); });
 
 try {
   await page.goto(baseUrl, { waitUntil: "domcontentloaded", timeout: 30000 });
-  await page.waitForFunction(() => window.__game?.registry.get("gameState") && document.querySelector(".gp-hud"));
+  await page.waitForFunction(() => window.__game?.registry.get("gameState") && window.__game?.scene?.getScene("GameScene")?.world && document.querySelector(".gp-hud"), null, { timeout: 30000 });
   const skip = page.locator("[data-skip]");
   if (await skip.count()) await skip.click();
 
@@ -40,7 +40,7 @@ try {
 
   // 새로고침 후에도 설정이 유지되어야 한다
   await page.reload({ waitUntil: "domcontentloaded" });
-  await page.waitForFunction(() => window.__game?.registry.get("gameState") && document.querySelector(".gp-hud"));
+  await page.waitForFunction(() => window.__game?.registry.get("gameState") && window.__game?.scene?.getScene("GameScene")?.world && document.querySelector(".gp-hud"), null, { timeout: 30000 });
   const persisted = await page.evaluate(() => document.documentElement.className);
 
   // 움직임 줄이기 중에는 탭해도 비행 표 장식 효과가 생성되지 않는다

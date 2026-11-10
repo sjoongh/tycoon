@@ -6,7 +6,8 @@ import { govTextureKey, govStageFor } from "./dotChar.js";
 import { facilities } from "../data/facilities.js";
 import { facilitySpriteKey, govSpriteKey, workerSpriteKey, WORLD_ATLAS } from "./worldAtlas.js";
 import { stationDepth, workerDepth } from "./depth.js";
-import { WORLD_SCALE, ROOM_X, ROOM_Y, ROOM_BOTTOM, FACILITY_SLOTS, GOV_TILE, BIG_NUM_TILE, tileCenter, facilityPos, workerPos, randomFloorPoint, facilitySpriteMeta } from "./iso.js";
+import * as ISO from "./iso.js";
+import { WORLD_SCALE, ROOM_BOTTOM, tileCenter, facilityPos, workerPos, randomFloorPoint, facilitySpriteMeta, roomStageFor, setRoomStage, roomStageLabel } from "./iso.js";
 import { staffDefinitions } from "../data/staff.js";
 import { staffRankForLevel } from "../data/staffDeployment.js";
 import { tierForLevel } from "./facilityTiers.js";
@@ -19,13 +20,19 @@ import { shortNumber } from "../utils/format.js";
 // 거지키우기식 심플 월드: 미니멀 픽셀 배경 + 중앙 도트 국장 + 큰 숫자 + 바닥.
 // (구 버전의 이소 오피스 다이어그램·화분·시계·창문·워커·시설 스테이션은 전부 제거)
 const GAME_W = 390;
-const GOV_POS = tileCenter(GOV_TILE.i, GOV_TILE.j);
-const GROUND_Y = GOV_POS.y;     // 국장 발이 닿는 타일 중앙
+let GOV_POS = tileCenter(ISO.GOV_TILE.i, ISO.GOV_TILE.j);
+let GROUND_Y = GOV_POS.y;     // 국장 발이 닿는 타일 중앙(방 단계가 바뀌면 _applyRoomStage 가 갱신)
 const GOV_SCALE = WORLD_SCALE;  // 16px 도트 → 48px (월드 전역 3x)
 const GOV_BOB_MS = 900;
 const WORKER_SCALE = WORLD_SCALE;
-const BIG_NUM_POS = tileCenter(BIG_NUM_TILE.i, BIG_NUM_TILE.j);
-const BIG_NUM_Y = BIG_NUM_POS.y;  // 국장 앞 바닥에 큰 숫자
+let BIG_NUM_POS = tileCenter(ISO.BIG_NUM_TILE.i, ISO.BIG_NUM_TILE.j);
+let BIG_NUM_Y = BIG_NUM_POS.y;
+function recomputeAnchors() {
+  GOV_POS = tileCenter(ISO.GOV_TILE.i, ISO.GOV_TILE.j);
+  GROUND_Y = GOV_POS.y;
+  BIG_NUM_POS = tileCenter(ISO.BIG_NUM_TILE.i, ISO.BIG_NUM_TILE.j);
+  BIG_NUM_Y = BIG_NUM_POS.y;
+}  // 국장 앞 바닥에 큰 숫자
 
 const GOV_LINES = [
   "한 표만 믿어주세요!", "분류기는 정상입니다.", "소쿠리는 이제 그만…",
@@ -84,6 +91,8 @@ export class WorldView {
     this.scene = scene;
     this.gameState = gameState;
 
+    this._roomStage = setRoomStage(roomStageFor(gameState.data.stage?.area || 1));
+    recomputeAnchors();
     this._buildBackground();
     this._buildTitle();
     this._buildProps();
@@ -129,7 +138,7 @@ export class WorldView {
 
     // 클릭 콤보 카운터(연타 시 등장)
     this.comboText = scene.add
-      .text(10, ROOM_Y + 100, "", {
+      .text(10, ISO.ROOM_Y + 100, "", {
         fontFamily: '"Jua", "DoHyeon", sans-serif', fontSize: "13px", color: "#ffcd75",
         backgroundColor: "rgba(20,18,28,0.78)", padding: { x: 4, y: 3 },
       })
@@ -431,9 +440,9 @@ export class WorldView {
     this.props = [];
     this.propByFacility = {};
     this.propLabels = {};
-    this.room = this.scene.add.image(ROOM_X, ROOM_Y, "world/room").setOrigin(0, 0).setScale(WORLD_SCALE).setDepth(5);
+    this.room = this.scene.add.image(ISO.ROOM_X, ISO.ROOM_Y, `world/${ISO.ROOM_KEY}`).setOrigin(0, 0).setScale(WORLD_SCALE).setDepth(5);
     for (const f of facilities) {
-      const pos = facilityPos(f.id);
+      const pos = facilityPos(f.id) || tileCenter(-2, -2);
       const meta = facilitySpriteMeta(f.id, 1);
       const s = this.scene.add.image(pos.x, pos.y, facilitySpriteKey(f.id, 1))
         .setOrigin(meta.ax / meta.w, meta.ay / meta.h)
@@ -481,8 +490,8 @@ export class WorldView {
       if (!obj) return;
       const l = lvl(id);
       const label = this.propLabels[id];
-      if (label) { label.setText(l > 0 ? `Lv.${l}` : ""); label.setVisible(l > 0); }
-      obj.setVisible(l > 0);
+      if (label) { label.setText(l > 0 ? `Lv.${l}` : ""); label.setVisible(l > 0 && !!ISO.FACILITY_SLOTS[id]); }
+      obj.setVisible(l > 0 && !!ISO.FACILITY_SLOTS[id]);
       const t = tierForLevel(l);
       const tierN = t === "locked" ? 1 : Number(String(t).replace("t", "")) || 1;
       const key = facilitySpriteKey(id, tierN);
@@ -525,7 +534,7 @@ export class WorldView {
       const d = this.gameState.data;
       const pct = Math.min(100, Math.round((d.stage.progress / d.stage.target) * 100));
       this.boardText.setText(`${d.stage.area}구역\n개표 ${pct}%`);
-      this.boardText.setVisible(lvl("server") > 0);
+      this.boardText.setVisible(lvl("server") > 0 && !!ISO.FACILITY_SLOTS.server);
     }
   }
 
@@ -844,6 +853,55 @@ export class WorldView {
     }
   }
 
+  // ── 개표소 확장(중기 #1): 방 단계 전환 — 방 이미지·모든 앵커 재배치 + 확장 연출 ──
+  _applyRoomStage(stage, animate) {
+    const prev = this._roomStage;
+    this._roomStage = setRoomStage(stage);
+    recomputeAnchors();
+    const scene = this.scene;
+    // 방 이미지
+    this.room.setTexture(`world/${ISO.ROOM_KEY}`).setPosition(ISO.ROOM_X, ISO.ROOM_Y).setScale(WORLD_SCALE);
+    // 시설·라벨
+    for (const f of facilities) {
+      const obj = this.propByFacility[f.id];
+      const pos = facilityPos(f.id) || tileCenter(-2, -2);
+      obj.setPosition(pos.x, pos.y).setDepth(stationDepth(pos.y));
+      this.propLabels[f.id]?.setPosition(pos.x, pos.y + 6).setDepth(stationDepth(pos.y) + 1);
+    }
+    const pile = workerPos("desk");
+    this._backlogPile?.forEach((b, k) => b.setPosition(pile.x - 26 + (k % 3) * 10, pile.y - 6 - Math.floor(k / 3) * 7).setDepth(stationDepth(pile.y) - 2));
+    this._backlogBadge?.setPosition(pile.x, pile.y - 30).setDepth(stationDepth(pile.y) + 50);
+    if (this.boardText && this.board) this.boardText.setPosition(this.board.x - 46, this.board.y - 58).setDepth(stationDepth(this.board.y) + 2);
+    // 국장·명패·큰 숫자
+    scene.tweens.killTweensOf(this.gov);
+    this.gov.setPosition(GOV_POS.x, GROUND_Y).setDepth(workerDepth(GROUND_Y));
+    this._startBob();
+    this.titlePlate?.setPosition(GOV_POS.x, GROUND_Y - 70);
+    this.bigNum?.setPosition(BIG_NUM_POS.x, BIG_NUM_Y);
+    this.bigSub?.setPosition(BIG_NUM_POS.x, BIG_NUM_Y + 26);
+    Object.values(this._cosSprites || {}).forEach((spr) => spr?.setDepth(workerDepth(GROUND_Y) + 1));
+    // 직원: 홈 좌표가 바뀌므로 전부 제거 후 재배치
+    Object.entries(this._workers).forEach(([id, w]) => { scene.tweens.killTweensOf([w.body, w.badge]); w.body.destroy(); w.badge.destroy(); w.shadow.destroy(); delete this._workers[id]; });
+    this._syncWorkers();
+    // 표 뭉치·유권자·뱃지: 재생성
+    (this._pileSprites || []).forEach((o) => o.destroy()); this._pileSprites = null; this._pileZone?.destroy(); this._pileZone = null; this._pileCount = 0;
+    (this._visitors || []).forEach((v) => { scene.tweens.killTweensOf(v.body); v.body.destroy(); }); this._visitors = [];
+    this._badgeSig = null; this._syncBadges();
+    this._drawBackground(this._eraArea);
+    if (!animate) return;
+    // 확장 연출: 방이 0.92 → 1 로 펴지며 플래시, 바닥에서 투표지 분출, 안내 플로팅
+    if (!motionReduced()) {
+      this.room.setScale(WORLD_SCALE * 0.92).setAlpha(0.6);
+      scene.tweens.add({ targets: this.room, scaleX: WORLD_SCALE, scaleY: WORLD_SCALE, alpha: 1, duration: 420, ease: "Back.easeOut" });
+      const f = scene.add.rectangle(GAME_W / 2, 422, GAME_W, 844, 0xfff4cf, 0.45).setDepth(6000);
+      scene.tweens.add({ targets: f, alpha: 0, duration: 380, onComplete: () => f.destroy() });
+      const c = tileCenter(ISO.ROOM_COLS / 2, ISO.ROOM_COLS / 2);
+      this.effects.ballots({ x: c.x, y: c.y - 20, count: 16 });
+    }
+    this.effects.float({ text: `개표소 확장! ${roomStageLabel(prev)} → ${roomStageLabel(this._roomStage)}`, x: GAME_W / 2, y: ISO.ROOM_Y + 40, color: "#ffd34d" });
+    this._govReact();
+  }
+
   // 현판: 지역명 갱신(승격 시 위로 톡 튀며 교체)
   _syncSign(area, promoted) {
     if (!this.titleTop) return;
@@ -863,7 +921,7 @@ export class WorldView {
     this._badgeObjs = [];
     const COLOR = { elite: 0xb18cff, gold: 0xffc53d, silver: 0xc9d3e0, bronze: 0xc98a4b };
     list.forEach((b, i) => {
-      const t = tileCenter(0, 4.3 + i * 0.62);
+      const t = tileCenter(ISO.BADGE_WALL.i, ISO.BADGE_WALL.j + i * 0.62);
       const x = t.x + 10, y = t.y - 60 - i * 5;
       const frame = this.scene.add.rectangle(x, y, 16, 20, 0x5a3a22).setStrokeStyle(2, 0x3a2414).setDepth(6);
       const medal = this.scene.add.circle(x, y - 1, 5, COLOR[b.tier] || 0xffffff).setStrokeStyle(1, 0x3a2414).setDepth(7);
@@ -923,7 +981,7 @@ export class WorldView {
   _syncPile(n) {
     if (!this._pileSprites) {
       this._pileSprites = [];
-      const p = tileCenter(4.6, 4.6);
+      const p = tileCenter(ISO.PILE_TILE.i, ISO.PILE_TILE.j);
       this._pilePos = p;
       this._pileZone = this.scene.add.zone(p.x, p.y - 10, 44, 36).setInteractive({ useHandCursor: true }).setDepth(stationDepth(p.y) + 60);
       this._pileZone.on("pointerdown", () => this._collectPile());
@@ -977,10 +1035,10 @@ export class WorldView {
     const nVis = WORLD_ATLAS.visitors?.variants || 0;
     const v = (Math.random() * (nVis || WORLD_ATLAS.workers.variants)) | 0;
     const texKey = nVis ? `world/visitor-${v}` : workerSpriteKey(v, 0);
-    const door = tileCenter(0.3, 2.6);
+    const door = tileCenter(ISO.DOOR_TILE.i, ISO.DOOR_TILE.j);
     // 대기열: 문과 접수창구 사이(뒤쪽 왼벽 앞)로 한 줄 — 창구 앞 표 뭉치·국장과 겹치지 않게
     const qi = this._visitors.length;
-    const spot = tileCenter(2.3 - qi * 0.7 + Math.random() * 0.15, 2.5 - qi * 0.12);
+    const spot = tileCenter(ISO.QUEUE.i + qi * ISO.QUEUE.di + Math.random() * 0.15, ISO.QUEUE.j + qi * ISO.QUEUE.dj);
     const body = this.scene.add.sprite(door.x, door.y, texKey).setOrigin(0.5, 1).setScale(WORKER_SCALE * 0.92).setDepth(workerDepth(door.y)).setAlpha(0);
     body.setInteractive({ useHandCursor: true });
     const visitor = { body, thanked: false };
@@ -1164,8 +1222,8 @@ export class WorldView {
       const staff = staffDefinitions[staffIndex];
       if (!staff) return;
       const rank = staffRankForLevel(this.gameState.staffLevel(id));
-      const facId = FACILITY_SLOTS[staff.synergy?.facility] ? staff.synergy.facility : "desk";
-      const slot = FACILITY_SLOTS[facId];
+      const facId = ISO.FACILITY_SLOTS[staff.synergy?.facility] ? staff.synergy.facility : "desk";
+      const slot = ISO.FACILITY_SLOTS[facId];
       const pos = workerPos(facId);
       const variant = staffIndex % variants;
       let worker = this._workers[id];
@@ -1254,6 +1312,8 @@ export class WorldView {
       });
     }
     if (this._prevArea !== d.stage.area) this._syncSign(d.stage.area, this._prevArea != null && d.stage.area > this._prevArea);
+    const wantStage = roomStageFor(d.stage.area);
+    if (wantStage !== this._roomStage) this._applyRoomStage(wantStage, this._prevArea != null && wantStage > this._roomStage);
     this._prevArea = d.stage.area;
     this._applyEra(d.stage.area);
     this._syncBadges();

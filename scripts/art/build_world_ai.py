@@ -72,8 +72,17 @@ def iso_anchor(im: Image.Image):
     return im.width // 2, im.height - round(im.width * 0.12)
 
 
-def room():
-    im = trim(load("room"), 40)
+# 방 4단계(개표소 확장): 원본 키, 타일 수, 표시 폭. 캐릭터·시설 배율은 고정이고 방만 바뀌므로 타일이 커지면(5×5) 비좁게, 작아지면(11×11) 넓게 보인다.
+ROOM_STAGES = [
+    {"key": "room-s", "cols": 5, "displayW": 330},
+    {"key": "room", "cols": 7, "displayW": 404},
+    {"key": "room-l", "cols": 9, "displayW": 404},
+    {"key": "room-xl", "cols": 11, "displayW": 404},
+]
+
+
+def room(key="room", display_w=ROOM_DISPLAY_W, cols=ROOM_COLS):
+    im = trim(load(key), 40)
     W, H = im.size
     a = im.split()[3]
     px = a.load()
@@ -84,13 +93,15 @@ def room():
     corner_y = (left_y + right_y) / 2
     floor_h = (H - 1 - corner_y) * 2
     top = (bottom_x, H - 1 - floor_h)
-    k = ROOM_DISPLAY_W / SCALE / W
+    k = display_w / DISPLAY_SCALE / W
     out = im.resize((round(W * k), round(H * k)), Image.LANCZOS)
     meta = {
+        "key": key, "cols": cols,
         "width": out.width, "height": out.height,
         "top": [round(top[0] * k, 1), round(top[1] * k, 1)],
         "floor": [round(W * k, 1), round(floor_h * k, 1)],
         "wallH": round(top[1] * k, 1),
+        "tile": [round(W * k / cols, 2), round(floor_h * k / cols, 2)],
     }
     return out, meta
 
@@ -149,11 +160,16 @@ def main():
     meta = {"scale": DISPLAY_SCALE, "tile": None, "roomCols": ROOM_COLS, "roomRows": ROOM_ROWS, "facilities": {}, "style": "ai"}
     previews = []
 
-    rm, rmeta = room()
-    save(rm, OUT / "room.png")
-    meta["room"] = rmeta
-    meta["tile"] = [round(rmeta["floor"][0] / ROOM_COLS, 2), round(rmeta["floor"][1] / ROOM_ROWS, 2)]
-    previews.append(rm)
+    meta["rooms"] = []
+    for st in ROOM_STAGES:
+        rm, rmeta = room(st["key"], st["displayW"], st["cols"])
+        save(rm, OUT / f'{st["key"]}.png')
+        meta["rooms"].append(rmeta)
+        previews.append(rm)
+    # 하위 호환: 기본(7×7) 방을 room/tile에도 둔다
+    rmeta = meta["rooms"][1]
+    meta["room"] = {k: rmeta[k] for k in ("width", "height", "top", "floor", "wallH")}
+    meta["tile"] = rmeta["tile"]
 
     for fid, boxes in FAC_BOX.items():
         meta["facilities"][fid] = []
@@ -242,7 +258,7 @@ def main():
         prev.alpha_composite(p.resize((pw, ph), Image.LANCZOS), (px_, py_))
     PREVIEW.parent.mkdir(exist_ok=True)
     prev.save(PREVIEW)
-    print(f"room {rm.size} tile {meta['tile']} top {rmeta['top']} wallH {rmeta['wallH']} gov {gw}x{gh} worker {ww}x{wh}")
+    print("rooms", [(r["key"], r["cols"], r["width"], r["height"], r["tile"]) for r in meta["rooms"]], f"gov {gw}x{gh} worker {ww}x{wh}")
     print(f"preview: {PREVIEW.relative_to(ROOT)}")
 
 

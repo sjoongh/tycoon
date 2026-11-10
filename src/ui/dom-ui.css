@@ -816,6 +816,8 @@ body { background-color: var(--bg-deep); background-image: repeating-linear-grad
 .gp-promo__kicker { font-family: var(--f-small); font-size: 11px; color: var(--gold-hi); letter-spacing: 0.1em; }
 .gp-promo__title { font-family: var(--f-bold); font-size: 22px; color: var(--ink); margin: 2px 0 4px; }
 .gp-promo__desc { font-family: var(--f-small); font-size: var(--type-body-sm); color: #c7d8e3; margin-bottom: 10px; }
+.gp-promo__expand { display: inline-block; margin: 0 auto 10px; padding: 4px 10px; border-radius: 999px; background: var(--buy); color: #04220f; font-family: var(--f-small); font-size: 11px; }
+.gp-promo__expand b { font-family: var(--f-bold); }
 .gp-promo__press { font-family: var(--f-small); font-size: var(--type-label); color: #e8d9b8; background: var(--panel-sunk); border: 2px solid var(--line); border-radius: var(--r-sm); padding: 8px 10px; margin-bottom: 12px; text-align: left; line-height: 1.4; }
 .gp-promo__press b { color: var(--gold-hi); margin-right: 4px; }
 

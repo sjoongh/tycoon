@@ -32,7 +32,7 @@ export class PreloadScene extends Phaser.Scene {
     this.load.image("ballot", "/art/ballot.webp");
     loadIconSheets(this); // 아이콘 아틀라스(DOM과 공용)
     // 아이소 개표소 월드(scripts/art/build_world.py 산출물)
-    this.load.image("world/room", "/art/world/room.webp");
+    for (const r of (WORLD_ATLAS.rooms || [{ key: "room" }])) this.load.image(`world/${r.key}`, `/art/world/${r.key}.webp`);
     for (const id of Object.keys(WORLD_ATLAS.facilities)) {
       for (let t = 1; t <= WORLD_ATLAS.facilities[id].length; t += 1) {
         this.load.image(facilitySpriteKey(id, t), `/art/world/fac-${id}-t${t}.webp`);

@@ -1,5 +1,6 @@
 import { pickPress } from "../data/worldPress.js";
 import { regionFor, eraTheme } from "../data/regions.js";
+import { roomStageFor, roomStageLabel } from "../world/iso.js";
 import { shortNumber } from "../utils/format.js";
 import { GOV_MAPS, PROP_MAPS, dotSvgUri } from "../world/dotChar.js";
 import { iconHtml } from "./icon.js";
@@ -649,6 +650,7 @@ export class DOMModalLayer {
         <div class="gp-promo__kicker">승격 통지</div>
         <div class="gp-promo__title">${region.name}</div>
         <div class="gp-promo__desc">${region.desc}</div>
+        ${roomStageFor(area) > roomStageFor(area - 1) ? `<div class="gp-promo__expand">개표소 확장 ${roomStageLabel(roomStageFor(area - 1))} → <b>${roomStageLabel(roomStageFor(area))}</b></div>` : ""}
         <div class="gp-promo__press"><b>${press?.outlet || "월드 프레스"}</b> ${headline}</div>
         <button class="gp-btn gp-btn--gold gp-btn--upgrade" data-close>개표 시작</button>
       </div>`, null, null);

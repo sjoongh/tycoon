@@ -22,7 +22,7 @@ await page.route("**/*", async (route) => {
 try {
   await page.addInitScript(() => localStorage.clear());
   await page.goto(baseUrl, { waitUntil: "domcontentloaded", timeout: 30000 });
-  await page.waitForFunction(() => window.__game?.registry.get("gameState") && document.querySelector(".gp-hud"));
+  await page.waitForFunction(() => window.__game?.registry.get("gameState") && window.__game?.scene?.getScene("GameScene")?.world && document.querySelector(".gp-hud"), null, { timeout: 30000 });
   const skip = page.locator("[data-skip]");
   if (await skip.count()) await skip.click();
 
@@ -48,7 +48,10 @@ try {
       if (timer) timer.paused = true;
     });
   });
-  await page.locator('[data-tab="crew"]').click();
+  // 상태 점프로 뜬 승격 카드·배너 모달을 닫는다(탭바를 가려 클릭이 막힘)
+  for (let i = 0; i < 3; i += 1) { const x = page.locator(".gp-modal-ov [data-close]").first(); if (!(await x.count())) break; await x.click().catch(() => {}); await page.waitForTimeout(200); }
+  // activeTab 이 이미 crew 라 탭을 다시 누르면 접힘으로 토글된다 → 시트 열기 이벤트로 반펼침을 보장
+  await page.evaluate(() => document.dispatchEvent(new CustomEvent("gp:sheet-open", { detail: { tab: "crew" } })));
   await page.locator(".gp-fieldslots").waitFor({ state: "visible" });
   await page.waitForFunction(() => !document.querySelector(".gp-banner"), null, { timeout: 12000 });
   await page.waitForTimeout(1000);

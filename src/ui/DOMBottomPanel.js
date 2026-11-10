@@ -16,6 +16,7 @@ import { govTitles, titleById, RARITY_LABEL, RARITY_COLOR } from "../data/titles
 import { cosmetics, COSMETIC_SLOTS } from "../data/cosmetics.js";
 import { characters } from "../data/characters.js";
 import { cloudEnabled } from "../firebaseConfig.js";
+import { roomStageFor, nextRoomStageArea, roomStageLabel, ROOM_STAGE_COUNT } from "../world/iso.js";
 
 const rewardLabel = (r) => [
   r.votes ? `표 +${shortNumber(r.votes)}` : null,
@@ -637,9 +638,13 @@ export class DOMBottomPanel {
   _nextUnlockTeaser() {
     const gs = this.gameState;
     const locked = gs.lockedFacilities ? gs.lockedFacilities() : [];
-    if (!locked.length) return "";
+    const area = gs.data.stage.area;
+    const st = roomStageFor(area);
+    const nextArea = nextRoomStageArea(area);
+    const room = `개표소 ${roomStageLabel(st)} (${st + 1}/${ROOM_STAGE_COUNT})${nextArea ? ` · <b>${nextArea}구역</b>에서 ${roomStageLabel(st + 1)} 확장` : ""}`;
+    if (!locked.length) return `<div class="gp-nextunlock">${room}</div>`;
     const next = locked.reduce((a, b) => ((b.unlock || 1) < (a.unlock || 1) ? b : a));
-    return `<div class="gp-nextunlock"><span style="font-size:9px;color:var(--ink-soft);vertical-align:middle">&#9632;</span> 다음 해금: <b>${next.name}</b> · ${this._lockText(next.id)}</div>`;
+    return `<div class="gp-nextunlock"><span style="font-size:9px;color:var(--ink-soft);vertical-align:middle">&#9632;</span> 다음 해금: <b>${next.name}</b> · ${this._lockText(next.id)}<br>${room}</div>`;
   }
 
   _renderCrew() {
