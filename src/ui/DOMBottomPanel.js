@@ -275,6 +275,10 @@ export class DOMBottomPanel {
     this.root.querySelectorAll(".gp-tab").forEach((el) => {
       const on = el.dataset.tab === tab;
       el.classList.toggle("gp-tab--active", on);
+      const locked = !!this.gameState.tabLocked?.(el.dataset.tab);
+      el.classList.toggle("gp-tab--locked", locked);
+      // aria-disabled 대신 data-locked: 버튼은 눌리되(잠금 안내 플로팅) 자동화 도구가 '비활성'으로 막지 않게
+      if (locked) el.setAttribute("data-locked", "1"); else el.removeAttribute("data-locked");
       applyIcon(el.querySelector("[data-tabic]"), tabIcon(el.dataset.tab, on), 26);
     });
     this._updateBadges(tab);
@@ -324,6 +328,10 @@ export class DOMBottomPanel {
 
   // 다른 탭: 그 탭의 기억된 상태로 펼침. 같은 탭: 접힘 ↔ 펼침 토글.
   _onTabClick(id) {
+    if (this.gameState.tabLocked?.(id)) {
+      this.gameState.emit("float", { text: this.gameState.tabLockHint(id), x: 195, y: 470, color: "#ffd479" });
+      return;
+    }
     if (id === this._activeTab()) { this._toggleSheet(); return; }
     this.gameState.setTab(id);
     this._setSheet(this._sheet.perTab[id] || "half", { remember: false });
@@ -440,11 +448,17 @@ export class DOMBottomPanel {
   _updateBadges(activeTab) {
     const gs = this.gameState;
     const eventDot = this.root.querySelector('[data-dot="events"]');
-    if (eventDot) eventDot.hidden = !(gs.eventReady() && activeTab !== "events");
+    if (eventDot) eventDot.hidden = !(gs.eventReady() && activeTab !== "events") || !!gs.tabLocked?.("events");
     // 목표 탭: 일일 퀘스트 수령 가능 시 알림 점
     const goalDot = this.root.querySelector('[data-dot="goals"]');
     const goalClaimable = (gs.anyDailyQuestClaimable && gs.anyDailyQuestClaimable()) || (gs.weeklyClaimable && gs.weeklyClaimable()) || (gs.dailyStatus && gs.dailyStatus().available);
     if (goalDot) goalDot.hidden = !(goalClaimable && activeTab !== "goals");
+    // 살 수 있는 것이 생기면 그 탭이 켜진다(AdVenture Capitalist의 Managers 탭 점등). 보고 있는 탭은 제외.
+    const ready = {
+      facilities: activeTab !== "facilities" && !!gs.upgradeAffordable?.(),
+      crew: activeTab !== "crew" && !!gs.anyHireAffordable?.() && !gs.tabLocked?.("crew"),
+    };
+    this.root.querySelectorAll(".gp-tab").forEach((el) => el.classList.toggle("gp-tab--ready", !!ready[el.dataset.tab]));
   }
 
   // 일괄구매 수량 토글(x1 / x10 / MAX) — 시설·직원 탭 공유

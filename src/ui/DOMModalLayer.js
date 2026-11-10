@@ -1,3 +1,4 @@
+import { pickPress } from "../data/worldPress.js";
 import { shortNumber } from "../utils/format.js";
 import { GOV_MAPS, PROP_MAPS, dotSvgUri } from "../world/dotChar.js";
 import { iconHtml } from "./icon.js";
@@ -6,7 +7,7 @@ import { RARITY_LABEL, RARITY_COLOR } from "../data/titles.js";
 import { FEVER_FAMILY_PROFILES, OPERATION_FAMILIES, operationDefinitions } from "../data/operations.js";
 import { BOSS_DURATION_MS } from "../data/bosses.js";
 
-const MILESTONES = [5, 10, 25, 45];
+const MILESTONES = [10, 20, 30, 40, 50]; // GameState.FACILITY_MILESTONES와 동일(생산 ×2 지점)
 
 // 오프라인 보상 모달 + 마일스톤 연출 + 신규 온보딩 힌트
 export class DOMModalLayer {
@@ -627,7 +628,24 @@ export class DOMModalLayer {
         <div class="gp-offline-split__carry"><small>다음 지역 이월</small><b>+${shortNumber(carryAdded)}</b></div>
       </div>
       ${carryTotal > 0 ? `<div class="gp-offline-note">미처리 개표함 ${shortNumber(carryTotal)}표${previousCarry > 0 ? ` · 기존 ${shortNumber(previousCarry)} 포함` : ""}<br>지역 완료 때 자동 반영되며 보스·작전 앞에서 멈춥니다.</div>` : ""}
+      ${this._awayHeadlines()}
       ${footer}`, () => this.gameState.claimOfflineBonus(), onClose);
+  }
+
+  // 자리 비운 사이 — 외신 헤드라인 3줄 + 기다리는 사건. 복귀 순간에 "세계가 돌아가고 있었다"를 보여 준다(복귀 모달 3단).
+  _awayHeadlines() {
+    const gs = this.gameState;
+    const state = gs.trustState ? gs.trustState() : "normal";
+    const lines = [];
+    const seen = new Set();
+    for (let i = 0; i < 8 && lines.length < 3; i += 1) {
+      const p = pickPress(state, 0);
+      const text = p?.text || p?.headline || p?.title;
+      if (text && !seen.has(text)) { seen.add(text); lines.push(`<li class="gp-away__l gp-away__l--${p.tone || "neutral"}">${text}</li>`); }
+    }
+    const pending = gs.eventReady && gs.eventReady() ? `<li class="gp-away__l gp-away__l--event">사건 1건이 대응을 기다립니다</li>` : "";
+    if (!lines.length && !pending) return "";
+    return `<div class="gp-away"><div class="gp-away__t">자리 비운 사이</div><ul class="gp-away__list">${lines.join("")}${pending}</ul></div>`;
   }
 
   _checkMilestone(f) {

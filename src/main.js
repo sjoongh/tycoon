@@ -158,6 +158,14 @@ game.events.once("ready", () => {
     }
   });
   // 주요 게임 이벤트 분석 로깅
+  // 계측(레퍼런스 로드맵 단기 #1): 첫 직원·첫 감사·온보딩 완료까지 걸린 초, 세션 길이, 오프라인 정산 노출
+  gameState.on("first", (p) => logEvt(`first_${p?.key}`, { sec: p?.sec }));
+  let _sessionStartAt = Date.now();
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") logEvt("session_end", { sec: Math.round((Date.now() - _sessionStartAt) / 1000), area: gameState.data.stage.area });
+    else _sessionStartAt = Date.now();
+  });
+  if (gameState.offlineReward) logEvt("offline_reward", { min: Math.round(gameState.offlineReward.elapsed / 60000), area: gameState.data.stage.area });
   gameState.on("comm-collapse", () => logEvt("communist_collapse", {}));
   gameState.on("dex-milestone", (p) => logEvt("dex_milestone", { n: p?.n }));
   gameState.on("event-chain-ending", (p) => logEvt("event_chain_ending", {
