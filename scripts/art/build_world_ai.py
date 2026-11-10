@@ -22,7 +22,8 @@ OUT = ROOT / "public" / "art" / "world"
 OUT_JS = ROOT / "src" / "world" / "worldAtlas.js"
 PREVIEW = ROOT / ".tmp" / "world-ai-preview.png"
 
-SCALE = 0.5                 # Phaser 표시 배율(소스는 2x 레티나)
+SCALE = 0.5                 # 소스 렌더 기준(2x 레티나). 표시 배율은 DISPLAY_SCALE
+DISPLAY_SCALE = 0.58        # Phaser 표시 배율 — 방 696px 소스 → 404px(화면 390 + 양옆 7px 블리드)
 ROOM_DISPLAY_W = 348        # 390 - ROOM_X*2
 ROOM_COLS = ROOM_ROWS = 7
 ALPHA_T = 24                # 트림 임계(외곽 글로우 제거)
@@ -145,7 +146,7 @@ def cosmetic(cid: str, canvas: tuple[int, int], hb: dict):
 
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
-    meta = {"scale": SCALE, "tile": None, "roomCols": ROOM_COLS, "roomRows": ROOM_ROWS, "facilities": {}, "style": "ai"}
+    meta = {"scale": DISPLAY_SCALE, "tile": None, "roomCols": ROOM_COLS, "roomRows": ROOM_ROWS, "facilities": {}, "style": "ai"}
     previews = []
 
     rm, rmeta = room()

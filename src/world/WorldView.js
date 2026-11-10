@@ -165,7 +165,8 @@ export class WorldView {
     this._onCider = (p) => this._ciderMoment(p);
     gameState.on("cider", this._onCider);
     this._onCentralVisual = (event) => {
-      const visible = !event.detail?.active;
+      this._centralVisualActive = !!event.detail?.active;
+      const visible = !this._centralVisualActive && !this._signHiddenByScroll;
       [this.titleBg, this.titleTop, this.titleMain, this.titleHint].forEach((item) => item?.setVisible(visible));
       if (this.titleZone?.input) this.titleZone.input.enabled = visible;
     };
@@ -174,16 +175,24 @@ export class WorldView {
     // 하단 패널 높이에 맞춰 카메라를 위로 스크롤 — 국장·시설·초당표가 패널에 절대 안 잘리게(BUG2).
     // WORLD_BOTTOM = cps 라벨 하단(GROUND_Y+34). 패널 top이 그보다 위면 그 차이만큼 카메라를 올린다.
     this._onSheetTop = (e) => {
-      const WORLD_BOTTOM = ROOM_BOTTOM + 28;
-      const target = Math.max(0, WORLD_BOTTOM - e.detail.topGame + 6);
+      // 시트가 반펼침이면 방 바닥 전체 대신 국장·접수창구·큰 숫자(GROUND_Y+78)까지만 보장해 덜 밀어 올린다.
+      const WORLD_BOTTOM = GROUND_Y + 78;
+      // 전체 시트는 월드를 덮으므로 밀어 올리지 않는다(HUD 뒤로 방이 삐져나오는 것 방지)
+      const full = e.detail.state === "full";
+      const target = full ? 0 : Math.max(0, WORLD_BOTTOM - e.detail.topGame + 6);
       if (Math.abs((this._camTarget ?? -1) - target) < 1) return;
       this._camTarget = target;
       const baseY = scene.renderBase?.baseScrollY || 0;
-      scene.tweens.add({ targets: scene.cameras.main, scrollY: baseY + target, duration: 180, ease: "Quad.easeOut" });
+      scene.tweens.add({ targets: scene.cameras.main, scrollY: baseY + target, duration: 220, ease: "Quad.easeOut" });
+      // 밀려 올라가 HUD와 겹치는 간판은 숨긴다
+      const signVisible = target < 40;
+      this._signHiddenByScroll = !signVisible;
+      [this.titleBg, this.titleTop, this.titleMain, this.titleHint].forEach((item) => item?.setVisible(signVisible && !this._centralVisualActive));
+      if (this.titleZone?.input) this.titleZone.input.enabled = signVisible && !this._centralVisualActive;
     };
     document.addEventListener("gp:sheet-top", this._onSheetTop);
     // 패널이 먼저 브로드캐스트한 초기값을 즉시 반영(초기 이벤트 유실 방지) + 재브로드캐스트 요청
-    if (typeof gameState.uiSheetTopGame === "number") this._onSheetTop({ detail: { topGame: gameState.uiSheetTopGame } });
+    if (typeof gameState.uiSheetTopGame === "number") this._onSheetTop({ detail: { topGame: gameState.uiSheetTopGame, state: gameState.uiSheetState } });
     document.dispatchEvent(new CustomEvent("gp:world-ready"));
 
     // 실화 모티프 사건 해결 시 월드에 "📺 속보" 배너 연출
@@ -362,7 +371,7 @@ export class WorldView {
   // 상단 간판: "믿어주세요 / 개표국"
   _buildTitle() {
     const cx = GAME_W / 2;
-    const w = 300, h = 46, top = 170, x = cx - w / 2;
+    const w = 300, h = 40, top = 175, x = cx - w / 2;
     const g = this.scene.add.graphics().setDepth(110);
     // 현수막 끈
     g.fillStyle(0x14121c, 1);
@@ -379,11 +388,11 @@ export class WorldView {
     g.fillRoundedRect(x + 3, top + 3, w - 6, h / 2, 10);
     this.titleBg = g;
     this.titleTop = this.scene.add
-      .text(cx, top + 14, "믿어주세요", { fontFamily: '"DoHyeon", "Jua", sans-serif', fontSize: "11px", color: "#94b0c2" })
+      .text(cx, top + 12, "믿어주세요", { fontFamily: '"DoHyeon", "Jua", sans-serif', fontSize: "10px", color: "#94b0c2" })
       .setOrigin(0.5)
       .setDepth(111);
     this.titleMain = this.scene.add
-      .text(cx, top + 31, "개 표 국", { fontFamily: '"Jua", "DoHyeon", sans-serif', fontSize: "19px", color: "#ffe3a8" })
+      .text(cx, top + 27, "개 표 국", { fontFamily: '"Jua", "DoHyeon", sans-serif', fontSize: "17px", color: "#ffe3a8" })
       .setOrigin(0.5)
       .setDepth(111);
     // 간판 아래 "지도" 힌트 + 클릭 영역(탭하면 전국 지도 모달)
