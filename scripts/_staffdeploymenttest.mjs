@@ -28,7 +28,7 @@ page.on("console", (message) => {
 
 try {
   await page.goto(baseUrl, { waitUntil: "domcontentloaded", timeout: 30000 });
-  await page.waitForFunction(() => window.__game?.registry.get("gameState") && document.querySelector(".gp-hud"));
+  await page.waitForFunction(() => window.__game?.registry.get("gameState") && window.__game?.scene?.getScene("GameScene")?.world && document.querySelector(".gp-hud"), null, { timeout: 30000 });
   const skip = page.locator("[data-skip]");
   if (await skip.count()) await skip.click();
   await page.evaluate(() => {
@@ -100,7 +100,7 @@ try {
 
   await page.screenshot({ path: `${evidenceDir}/SC-STAFF-001-deployment-promotion-mobile.png` });
   await page.reload({ waitUntil: "domcontentloaded" });
-  await page.waitForFunction(() => window.__game?.registry.get("gameState") && document.querySelector(".gp-hud"));
+  await page.waitForFunction(() => window.__game?.registry.get("gameState") && window.__game?.scene?.getScene("GameScene")?.world && document.querySelector(".gp-hud"), null, { timeout: 30000 });
   const loadedBeforeModals = await page.evaluate(() => ({
     slots: window.__game.registry.get("gameState").staffSlots(),
     staff: window.__game.registry.get("gameState").data.staff,
