@@ -126,7 +126,12 @@ export async function saveCloud() {
 // ── 랭킹(도달 구역) ──
 function myScore() {
   const d = _gs.data;
-  return { area: Math.max(d.stage?.area || 1, d.prestige?.bestArea || 1), votes: Math.floor(d.stats?.totalVotes || 0) };
+  return {
+    area: Math.max(d.stage?.area || 1, d.prestige?.bestArea || 1),
+    votes: Math.floor(d.stats?.totalVotes || 0),
+    week: _gs._weekIndex ? _gs._weekIndex() : 0,
+    weekVotes: Math.floor(_gs.weeklyProgress ? _gs.weeklyProgress() : 0),
+  };
 }
 
 export async function submitScore() {
@@ -136,8 +141,36 @@ export async function submitScore() {
   try {
     const { db, fs } = await fb();
     const s = myScore();
-    await fs.setDoc(fs.doc(db, "scores", _uid), { nick, area: s.area, votes: s.votes, updatedAt: Date.now() });
+    await fs.setDoc(fs.doc(db, "scores", _uid), { nick, area: s.area, votes: s.votes, week: s.week, weekVotes: s.weekVotes, updatedAt: Date.now() });
   } catch {}
+}
+
+// 이번 주 랭킹: 최근 갱신 순 100명을 받아 이번 주(week) 기록만 주간 처리 표(weekVotes)로 정렬. 단일 필드 정렬이라 복합 색인 불필요.
+async function fetchWeekly(n = 100) {
+  const { db, fs } = await fb();
+  const wk = _gs?._weekIndex ? _gs._weekIndex() : 0;
+  const q = fs.query(fs.collection(db, "scores"), fs.orderBy("updatedAt", "desc"), fs.limit(n));
+  const res = await fs.getDocs(q);
+  const rows = [];
+  res.forEach((doc) => { const d = doc.data(); if (d.week === wk) rows.push({ id: doc.id, ...d }); });
+  rows.sort((a, b) => ((b.weekVotes || 0) - (a.weekVotes || 0)) || ((b.area || 0) - (a.area || 0)));
+  return rows;
+}
+
+function recordMyRank(rows) {
+  const i = rows.findIndex((r) => r.id === _uid);
+  if (i >= 0 && _gs?.recordWeeklyRank) { _gs.recordWeeklyRank(i + 1, rows.length); _gs.save?.(false); }
+  return i + 1;
+}
+
+// 세션 시작 시 조용히 1회: 점수 올리고 이번 주 내 순위를 기록(주가 바뀌면 뱃지 확정 근거)
+export async function refreshWeeklyRank() {
+  if (!_ready || !_gs || !getNick()) return null;
+  try {
+    await submitScore();
+    const rows = await fetchWeekly(100);
+    return recordMyRank(rows);
+  } catch { return null; }
 }
 
 async function fetchTop(n = 50) {
@@ -171,8 +204,9 @@ export async function openLeaderboard(readyPromise = null) {
   renderLeaderboard("불러오는 중…", null);
   try {
     await submitScore(); // 최신 점수 반영 후 조회
-    const rows = await fetchTop(50);
-    renderLeaderboard(null, rows);
+    const [rows, weekly] = await Promise.all([fetchTop(50), fetchWeekly(100)]);
+    recordMyRank(weekly);
+    renderLeaderboard(null, rows, weekly);
   } catch (e) {
     renderLeaderboard("랭킹을 불러오지 못했어요(네트워크 확인)", null);
   }
@@ -201,7 +235,9 @@ function promptNickname() {
   });
 }
 
-function renderLeaderboard(message, rows) {
+const TIER_LABEL = { elite: "엘리트", gold: "골드", silver: "실버", bronze: "브론즈" };
+
+function renderLeaderboard(message, rows, weekly = null) {
   let ov = document.querySelector(".gp-rank-ov");
   if (!ov) {
     ov = document.createElement("div");
@@ -209,26 +245,39 @@ function renderLeaderboard(message, rows) {
     ov.addEventListener("click", (e) => { if (e.target === ov || e.target.closest(".gp-map__x")) ov.remove(); });
     (document.querySelector(".gp-ui") || document.body).appendChild(ov);
   }
+  const mode = ov.dataset.mode || "weekly";
   let body;
+  const rowHtml = (r, i, valueHtml) => `<div class="gp-rank__row${r.id === _uid ? " gp-rank__row--me" : ""}"><span class="gp-rank__no">${i + 1}</span><span class="gp-rank__nick">${escapeHtml(r.nick || "익명")}</span><span class="gp-rank__area">${valueHtml}</span></div>`;
   if (message) body = `<div class="gp-rank__msg">${message}</div>`;
-  else {
-    body = rows.map((r, i) => {
-      const me = r.id === _uid ? " gp-rank__row--me" : "";
-      const medal = `${i + 1}`;
-      return `<div class="gp-rank__row${me}"><span class="gp-rank__no">${medal}</span><span class="gp-rank__nick">${escapeHtml(r.nick || "익명")}</span><span class="gp-rank__area">${r.area}구역</span></div>`;
-    }).join("") || `<div class="gp-rank__msg">아직 기록이 없어요. 1등 하세요!</div>`;
+  else if (mode === "weekly") {
+    body = (weekly || []).map((r, i) => rowHtml(r, i, `${fmtNum(r.weekVotes || 0)}표`)).join("") || `<div class="gp-rank__msg">이번 주 기록이 아직 없어요. 첫 주자가 되세요!</div>`;
+  } else {
+    body = rows.map((r, i) => rowHtml(r, i, `${r.area}구역`)).join("") || `<div class="gp-rank__msg">아직 기록이 없어요. 1등 하세요!</div>`;
   }
+  const myRank = weekly ? weekly.findIndex((r) => r.id === _uid) + 1 : 0;
+  const daysLeft = _gs?.weeklyDaysLeft ? _gs.weeklyDaysLeft() : (_gs?.weeklyRemainingDays ? _gs.weeklyRemainingDays() : null);
+  const tierNow = myRank > 0 && _gs?.constructor?.badgeTierFor ? _gs.constructor.badgeTierFor(myRank, weekly.length) : null;
+  const badges = (_gs?.latestBadges ? _gs.latestBadges(4) : []).map((b) => `<span class="gp-badge gp-badge--${b.tier}" title="${b.week}주차 ${b.rank}위">${TIER_LABEL[b.tier]}</span>`).join("");
   ov.innerHTML = `<div class="gp-map">
-    <div class="gp-map__hd"><span>${iconHtml("ui-trophy", { size: 32 })}도달 구역 랭킹</span><button class="gp-map__x" aria-label="닫기">✕</button></div>
-    <div class="gp-map__sub">내 닉네임: ${escapeHtml(getNick() || "(미설정)")} · 탭으로 변경</div>
+    <div class="gp-map__hd"><span>${iconHtml("ui-trophy", { size: 32 })}랭킹</span><button class="gp-map__x" aria-label="닫기">✕</button></div>
+    <div class="gp-rank__tabs"><button class="gp-rank__tab${mode === "weekly" ? " gp-rank__tab--on" : ""}" data-mode="weekly">이번 주 개표${daysLeft != null ? ` · ${daysLeft}일 남음` : ""}</button><button class="gp-rank__tab${mode === "all" ? " gp-rank__tab--on" : ""}" data-mode="all">도달 구역</button></div>
+    <div class="gp-map__sub">내 닉네임: ${escapeHtml(getNick() || "(미설정)")} · 탭으로 변경${myRank > 0 && mode === "weekly" ? ` · 현재 ${myRank}위${tierNow ? ` → ${TIER_LABEL[tierNow]} 예정` : ""}` : ""}</div>
+    ${badges ? `<div class="gp-rank__badges">${badges}</div>` : ""}
     <div class="gp-map__list gp-rank__list">${body}</div>
-    <div class="gp-map__foot">구역을 더 정복할수록 순위가 오릅니다</div>
+    <div class="gp-map__foot">${mode === "weekly" ? "주가 끝나면 순위에 따라 브론즈~엘리트 뱃지와 해명·인장을 받습니다. 뱃지는 개표소 벽에 걸립니다." : "구역을 더 정복할수록 순위가 오릅니다"}</div>
   </div>`;
+  ov.querySelectorAll("[data-mode]").forEach((b) => b.addEventListener("click", () => { ov.dataset.mode = b.dataset.mode; renderLeaderboard(null, rows, weekly); }));
   // 닉네임 변경
   ov.querySelector(".gp-map__sub")?.addEventListener("click", async () => {
     const ok = await promptNickname();
     if (ok) { await submitScore(); openLeaderboard(); }
   });
+}
+
+function fmtNum(v) {
+  if (v >= 1e8) return `${(v / 1e8).toFixed(v >= 1e9 ? 0 : 1)}억`;
+  if (v >= 1e4) return `${(v / 1e4).toFixed(v >= 1e5 ? 0 : 1)}만`;
+  return String(Math.floor(v));
 }
 
 function escapeHtml(t) {

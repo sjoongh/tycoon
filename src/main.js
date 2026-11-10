@@ -17,7 +17,7 @@ import { ServiceWorkerUpdateController } from "./pwa/ServiceWorkerUpdateControll
 import { Sfx } from "./audio/sfx.js";
 import { Notifications } from "./notifications.js";
 import { initNative } from "./native.js";
-import { initCloud, openLeaderboard, saveCloud, submitScore, logEvt } from "./cloud.js";
+import { initCloud, openLeaderboard, saveCloud, submitScore, logEvt, refreshWeeklyRank } from "./cloud.js";
 import { mirrorNativeSave, restoreNativeSave, seedLocalStorageFromDurableSave } from "./state/persistence.js";
 import { createDebounced } from "./state/saveWinner.js";
 
@@ -51,6 +51,7 @@ const startCloud = () => {
   window.removeEventListener("pointerdown", scheduleCloudStart, true);
   window.removeEventListener("keydown", scheduleCloudStart, true);
   cloudInitPromise = initCloud(gameState);
+  cloudInitPromise.then(() => document.dispatchEvent(new CustomEvent("gp:cloud-ready"))).catch(() => {});
   return cloudInitPromise;
 };
 // 첫 조작은 게임 프레임에 양보한다. 입력이 잠잠해진 뒤 브라우저 idle에서 시작하되,
@@ -160,6 +161,9 @@ game.events.once("ready", () => {
   // 주요 게임 이벤트 분석 로깅
   // 계측(레퍼런스 로드맵 단기 #1): 첫 직원·첫 감사·온보딩 완료까지 걸린 초, 세션 길이, 오프라인 정산 노출
   gameState.on("first", (p) => logEvt(`first_${p?.key}`, { sec: p?.sec }));
+  // 주간 랭킹: 클라우드 준비 후 1회 내 순위 기록(주가 바뀌면 뱃지 확정 근거), 이후 5분마다 점수 갱신
+  const _weeklyKick = () => { refreshWeeklyRank(); setInterval(() => submitScore(), 5 * 60 * 1000); };
+  if (cloudInitPromise) cloudInitPromise.then(_weeklyKick); else document.addEventListener("gp:cloud-ready", _weeklyKick, { once: true });
   let _sessionStartAt = Date.now();
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "hidden") logEvt("session_end", { sec: Math.round((Date.now() - _sessionStartAt) / 1000), area: gameState.data.stage.area });

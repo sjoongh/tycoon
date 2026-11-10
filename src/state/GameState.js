@@ -186,6 +186,9 @@ const fallbackState = {
   endless: 0,
   daily: { day: 0, streak: 0, qday: 0, clicks: 0, events: 0, upgrades: 0, items: 0, newdex: 0, claimed: {} },
   weekly: { week: 0, baseVotes: 0, target: 0, claimed: false },
+  // 주간 랭킹: 이번 주 마지막으로 확인한 내 순위(rank/total). 주가 바뀌면 등급 뱃지로 확정해 badges에 쌓인다(최근 8개).
+  weeklyRank: { week: 0, rank: 0, total: 0 },
+  badges: [],
   eventReadyAt: 0,
   rushReadyAt: 0,
   rushEndsAt: 0,
@@ -345,6 +348,8 @@ export class GameState extends Phaser.Events.EventEmitter {
     data.weekly.baseVotes = Math.max(0, Number(data.weekly.baseVotes) || 0);
     data.weekly.target = Math.max(0, Number(data.weekly.target) || 0);
     data.weekly.claimed = !!data.weekly.claimed;
+    data.weeklyRank = { ...fallbackState.weeklyRank, ...(parsed?.weeklyRank && typeof parsed.weeklyRank === "object" ? parsed.weeklyRank : {}) };
+    data.badges = Array.isArray(parsed?.badges) ? parsed.badges.filter((b) => b && Number.isFinite(b.week) && b.tier).slice(-8) : [];
 
     data.operations.lastId = operationById(data.operations.lastId)?.id || null;
     const draft = data.operations.draft;
@@ -1710,6 +1715,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     this.addFever("upgrade", 8);
     this.trackFeverAction();
     this.emit("upgraded", facility);
+    this._emitMilestoneIfHit(facility, currentLevel, this.level(facility.id));
     this.checkProgression();
     this.emit("changed");
     this.save(false); // 구매 직후 앱이 죽어도 유실되지 않게 즉시 저장
@@ -1866,6 +1872,7 @@ export class GameState extends Phaser.Events.EventEmitter {
       return false;
     }
     const fac = this.facility(id);
+    const previousLevelForMilestone = this.level(id);
     this.data.votes -= plan.voteCost;
     this.data.explain -= plan.explainCost;
     this.data.facilities[id] = this.level(id) + plan.levels;
@@ -1878,6 +1885,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     this.addFever("upgrade", Math.min(24, 6 + plan.levels * 2));
     this.trackFeverAction();
     this.emit("upgraded", fac);
+    this._emitMilestoneIfHit(fac, previousLevelForMilestone, this.level(fac.id));
     this.checkProgression();
     this.emit("changed");
     this.save(false);
@@ -2258,6 +2266,7 @@ export class GameState extends Phaser.Events.EventEmitter {
   _ensureWeekly() {
     const wk = this._weekIndex();
     if (this.data.weekly.week !== wk) {
+      this._finalizeWeeklyBadge(wk);
       const def = weeklyGoalDefinitions[wk % weeklyGoalDefinitions.length];
       this.data.weekly.week = wk;
       this.data.weekly.baseVotes = this.data.stats.totalVotes;
@@ -2270,6 +2279,47 @@ export class GameState extends Phaser.Events.EventEmitter {
     this._ensureWeekly();
     return Math.max(0, this.data.stats.totalVotes - this.data.weekly.baseVotes);
   }
+
+  // ── 주간 랭킹 뱃지(레퍼런스 로드맵 단기 #6: Codigames Carnival 주간 랭킹 + IMT 5단계 뱃지) ──
+  // 순위는 클라이언트가 랭킹을 조회할 때마다 기록하고, 주가 넘어가는 순간 마지막 기록으로 등급을 확정한다.
+  static badgeTierFor(rank, total) {
+    if (!(rank > 0)) return null;
+    if (rank <= 3) return "elite";
+    if (rank <= 10) return "gold";
+    if (total > 0 && rank <= Math.max(20, Math.ceil(total * 0.5))) return "silver";
+    return "bronze";
+  }
+
+  recordWeeklyRank(rank, total) {
+    const wk = this._weekIndex();
+    if (!(rank > 0)) return;
+    this.data.weeklyRank = { week: wk, rank: Math.floor(rank), total: Math.max(0, Math.floor(total || 0)) };
+  }
+
+  // 업그레이드로 마일스톤(생산 ×2)을 지났으면 축하 연출용 이벤트
+  _emitMilestoneIfHit(facility, fromLevel, toLevel) {
+    if (!facility || !(toLevel > fromLevel)) return;
+    const hit = this.facilityMilestones(facility).filter((m) => m > fromLevel && m <= toLevel);
+    if (hit.length) this.emit("milestone", { facility, level: hit[hit.length - 1], count: hit.length });
+  }
+
+  _finalizeWeeklyBadge(newWeek) {
+    const r = this.data.weeklyRank;
+    if (!r || !(r.rank > 0) || r.week >= newWeek) return;
+    const tier = GameState.badgeTierFor(r.rank, r.total);
+    if (!tier) return;
+    this.data.badges = [...(this.data.badges || []), { week: r.week, tier, rank: r.rank, total: r.total }].slice(-8);
+    this.data.weeklyRank = { week: newWeek, rank: 0, total: 0 };
+    const reward = { elite: { explain: 300, seals: 2 }, gold: { explain: 180, seals: 1 }, silver: { explain: 90 }, bronze: { explain: 40 } }[tier];
+    if (reward.explain) this.data.explain += reward.explain;
+    if (reward.seals) this.data.prestige.seals = (this.data.prestige.seals || 0) + reward.seals;
+    this._pendingBadge = { week: r.week, tier, rank: r.rank, total: r.total, reward };
+    this.emit("weekly-badge", this._pendingBadge);
+  }
+
+  takePendingBadge() { const b = this._pendingBadge; this._pendingBadge = null; return b || null; }
+
+  latestBadges(n = 4) { return (this.data.badges || []).slice(-n); }
   weeklyTarget() {
     this._ensureWeekly();
     return this.data.weekly.target;
