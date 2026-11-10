@@ -1,10 +1,10 @@
-// 아이소메트릭 방 좌표계 — scripts/art/build_world.py 가 만든 room.png 와 같은 격자.
+// 아이소메트릭 방 좌표계 — scripts/art/build_world_ai.py 가 만든 room.png 와 같은 격자(바닥 다이아몬드 실측).
 // 모든 값은 표시(display) px. 소스 px × WORLD_SCALE.
 import { WORLD_ATLAS } from "./worldAtlas.js";
 
 export const WORLD_SCALE = WORLD_ATLAS.scale; // 3
 export const ROOM_X = 21;   // room.png 좌상단
-export const ROOM_Y = 160;
+export const ROOM_Y = 222;  // 간판(170~216) 아래에서 벽이 시작하도록
 export const ROOM_W = WORLD_ATLAS.room.width * WORLD_SCALE;
 export const ROOM_H = WORLD_ATLAS.room.height * WORLD_SCALE;
 export const ROOM_BOTTOM = ROOM_Y + ROOM_H;

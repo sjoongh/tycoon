@@ -1,4 +1,7 @@
 import { textStyle } from "../utils/format.js";
+import { DEPTH_BASE } from "../world/depth.js";
+
+const FX_DEPTH = DEPTH_BASE.fx + 950;
 
 export class FloatTextPool {
   constructor(scene, size = 18) {
@@ -20,7 +23,7 @@ export class FloatTextPool {
         : Math.max(34, Math.min(356, x + laneX));
       y += laneY;
     }
-    const label = this.items.pop() || this.scene.add.text(0, 0, "", textStyle(this.size, color)).setOrigin(0.5);
+    const label = this.items.pop() || this.scene.add.text(0, 0, "", textStyle(this.size, color)).setOrigin(0.5).setDepth(FX_DEPTH);
     label.setText(text);
     label.setStyle(textStyle(this.size, color));
     label.setStroke("#4b3428", 5);

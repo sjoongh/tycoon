@@ -32,18 +32,18 @@ export class PreloadScene extends Phaser.Scene {
     this.load.image("ballot", "/art/ballot.webp");
     loadIconSheets(this); // 아이콘 아틀라스(DOM과 공용)
     // 아이소 개표소 월드(scripts/art/build_world.py 산출물)
-    this.load.image("world/room", "/art/world/room.png");
+    this.load.image("world/room", "/art/world/room.webp");
     for (const id of Object.keys(WORLD_ATLAS.facilities)) {
       for (let t = 1; t <= WORLD_ATLAS.facilities[id].length; t += 1) {
-        this.load.image(facilitySpriteKey(id, t), `/art/world/fac-${id}-t${t}.png`);
+        this.load.image(facilitySpriteKey(id, t), `/art/world/fac-${id}-t${t}.webp`);
       }
     }
-    for (let g = 1; g <= WORLD_ATLAS.gov.length; g += 1) this.load.image(govSpriteKey(g), `/art/world/gov-${g}.png`);
+    for (let g = 1; g <= WORLD_ATLAS.gov.length; g += 1) this.load.image(govSpriteKey(g), `/art/world/gov-${g}.webp`);
     for (let v = 0; v < WORLD_ATLAS.workers.variants; v += 1) {
-      for (let f = 0; f < WORLD_ATLAS.workers.frames; f += 1) this.load.image(workerSpriteKey(v, f), `/art/world/worker-${v}-${f}.png`);
+      for (let f = 0; f < WORLD_ATLAS.workers.frames; f += 1) this.load.image(workerSpriteKey(v, f), `/art/world/worker-${v}-${f}.webp`);
     }
-    this.load.image("world/ballot", "/art/world/ballot.png");
-    for (const cid of Object.keys(WORLD_ATLAS.cosmetics || {})) this.load.image(`world/${cid}`, `/art/world/${cid}.png`);
+    this.load.image("world/ballot", "/art/world/ballot.webp");
+    for (const cid of Object.keys(WORLD_ATLAS.cosmetics || {})) this.load.image(`world/${cid}`, `/art/world/${cid}.webp`);
   }
 
   create() {
