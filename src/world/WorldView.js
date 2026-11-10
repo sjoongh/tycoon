@@ -143,6 +143,7 @@ export class WorldView {
     this._workers = {}; // 현장 배치 직원 도트(staffId → container)
     this._workerShadows = {};
     this._propTier = {}; // 시설별 시각 티어(승급 색 진화 추적)
+    this._propIdle = {}; // 시설별 가동 모션 트윈(승급 펀치와 충돌하지 않게 멈췄다 재시작)
 
     this._onChanged = () => this._refresh();
     this._onFloat = (p) => this.effects.float(p);
@@ -201,6 +202,7 @@ export class WorldView {
       this._punchNum();
       this._bumpCombo();
       this.effects.deskPop(this.gov.x, GROUND_Y - 30);
+      if (!motionReduced()) this.effects.ballots({ x: this.gov.x, y: GROUND_Y - 56, count: 2 });
       this._flyBallotToBox(); // 처리한 표가 투표함으로 날아가 모인다(의미 + 손맛)
     };
     scene.input.on("pointerdown", this._onPointer);
@@ -227,6 +229,16 @@ export class WorldView {
     this._govIdleTimer = scene.time.addEvent({
       delay: 4500, loop: true,
       callback: () => { if (this.gov?.active && Math.random() < 0.5) this._govGesture(); },
+    });
+    // 직원 심부름: 가끔 한 명이 표 뭉치를 들고 접수창구까지 걸어갔다 돌아온다 — 방이 살아 보이게
+    this._courierTimer = scene.time.addEvent({
+      delay: 6500, loop: true,
+      callback: () => { if (Math.random() < 0.75) this._courierRun(); },
+    });
+    // 브리핑룸 카메라 플래시
+    this._studioTimer = scene.time.addEvent({
+      delay: 3800, loop: true,
+      callback: () => this._studioFlash(),
     });
     // 국장 풍자 대사(가끔)
     this._speakTimer = scene.time.addEvent({
@@ -449,11 +461,19 @@ export class WorldView {
         const prev = this._propTier[id];
         obj.setTexture(key).setOrigin(meta.ax / meta.w, meta.ay / meta.h);
         if (prev !== undefined && tierN > prev && l > 0) {
-          this.scene.tweens.add({ targets: obj, scaleX: WORLD_SCALE * 1.25, scaleY: WORLD_SCALE * 1.25, yoyo: true, duration: 180, ease: "Back.easeOut" });
+          this._stopPropIdle(id);
+          this.scene.tweens.add({
+            targets: obj, scaleX: WORLD_SCALE * 1.25, scaleY: WORLD_SCALE * 1.25, angle: 4, yoyo: true, duration: 180, ease: "Back.easeOut",
+            onComplete: () => this._startPropIdle(id, obj),
+          });
           this.effects.float({ text: `★ ${TIER_NAME[tierN] || "기본"} 시설 승급!`, x: obj.x, y: obj.y - obj.displayHeight - 10, color: "#ffd34d" });
+          this.effects.ballots({ x: obj.x, y: obj.y - obj.displayHeight * 0.5, count: 6 });
         }
       }
       this._propTier[id] = tierN;
+      // 가동 모션: 보이는 시설만, 아직 안 돌고 있으면 시작
+      if (l > 0 && !this._propIdle[id]) this._startPropIdle(id, obj);
+      else if (l <= 0 && this._propIdle[id]) this._stopPropIdle(id);
     });
 
     if (this._backlogPile) {
@@ -487,11 +507,55 @@ export class WorldView {
 
   // 시설 업그레이드 시 대응 장비가 반짝 커지는 연출
   _pulseProp(facility) {
-    const obj = this.propByFacility?.[facility && facility.id];
+    const id = facility && facility.id;
+    const obj = this.propByFacility?.[id];
     if (!obj) return;
-    const s = obj.scaleX;
-    this.scene.tweens.add({ targets: obj, scaleX: s * 1.22, scaleY: s * 1.22, yoyo: true, duration: 150, ease: "Quad.easeOut" });
+    this._stopPropIdle(id);
+    this.scene.tweens.add({
+      targets: obj, scaleX: WORLD_SCALE * 1.22, scaleY: WORLD_SCALE * 1.22, yoyo: true, duration: 150, ease: "Quad.easeOut",
+      onComplete: () => this._startPropIdle(id, obj),
+    });
     this.effects.deskPop(obj.x, obj.y - 40);
+  }
+
+  // ── 시설 가동 모션 — 종류별로 "돌아가고 있다"가 보이는 아주 작은 루프(움직임 줄이기면 생략) ──
+  _startPropIdle(id, obj) {
+    this._stopPropIdle(id);
+    if (!obj || !obj.active) return;
+    obj.setScale(WORLD_SCALE).setAngle(0);
+    if (motionReduced() || !obj.visible) return;
+    const S = WORLD_SCALE;
+    const cfg = {
+      sorter:  { angle: 1.6, duration: 900 },                      // 분류기: 좌우로 달그락
+      server:  { scaleY: S * 1.012, duration: 700 },                // 서버: 팬 진동처럼 미세하게
+      notice:  { scaleX: S * 1.025, duration: 1100 },               // 게시판: 종이 펄럭임
+      archive: { scaleY: S * 1.008, duration: 1600 },               // 보관소: 느린 숨
+      studio:  { scaleY: S * 1.015, duration: 800 },                // 브리핑룸: 조명 맥동
+      desk:    { scaleY: S * 1.01, duration: 1300 },                // 접수창구: 숨
+    }[id];
+    if (!cfg) return;
+    const { duration, ...props } = cfg;
+    this._propIdle[id] = this.scene.tweens.add({ targets: obj, ...props, yoyo: true, repeat: -1, duration, ease: "Sine.easeInOut", delay: Math.random() * 600 });
+  }
+
+  _stopPropIdle(id) {
+    const t = this._propIdle[id];
+    if (t) { t.stop(); t.remove?.(); }
+    this._propIdle[id] = null;
+    const obj = this.propByFacility?.[id];
+    if (obj && obj.active) obj.setScale(WORLD_SCALE).setAngle(0);
+  }
+
+  // 브리핑룸 카메라 플래시(보일 때만) — 작은 흰 원이 번쩍 커지며 사라진다
+  _studioFlash() {
+    const obj = this.propByFacility?.studio;
+    if (!obj || !obj.visible || !obj.active || motionReduced()) return;
+    if (!this._flashDot) this._flashDot = this.scene.add.circle(0, 0, 7, 0xffffff, 0.95).setDepth(stationDepth(obj.y) + 5).setVisible(false);
+    const dot = this._flashDot;
+    dot.setPosition(obj.x + obj.displayWidth * 0.28, obj.y - obj.displayHeight * 0.72).setScale(0.4).setAlpha(0.95).setVisible(true);
+    this.scene.tweens.killTweensOf(dot);
+    this.scene.tweens.add({ targets: dot, scale: 2.4, alpha: 0, duration: 340, ease: "Quad.easeOut", onComplete: () => dot.setVisible(false) });
+    this.effects.deskPop(obj.x - obj.displayWidth * 0.2, obj.y - obj.displayHeight * 0.5);
   }
 
   // 처리한 표 한 장이 국장 → 좌측 투표함으로 포물선을 그리며 날아가 모인다
@@ -536,12 +600,24 @@ export class WorldView {
 
   _startBob() {
     this.gov.y = GROUND_Y;
+    this.gov.setScale(GOV_SCALE);
     this._govBob = this.scene.tweens.add({
       targets: this.gov,
       y: GROUND_Y - 4,
       yoyo: true,
       repeat: -1,
       duration: GOV_BOB_MS,
+      ease: "Sine.easeInOut",
+    });
+    if (motionReduced()) return;
+    // 숨쉬기(세로로 살짝 늘었다 줄었다) — 꾸미기 오버레이는 update()에서 스케일을 따라간다
+    this._govBreath = this.scene.tweens.add({
+      targets: this.gov,
+      scaleY: GOV_SCALE * 1.025,
+      scaleX: GOV_SCALE * 0.99,
+      yoyo: true,
+      repeat: -1,
+      duration: 1400,
       ease: "Sine.easeInOut",
     });
   }
@@ -676,11 +752,11 @@ export class WorldView {
     this.gov.y = GROUND_Y;
     this.scene.tweens.add({
       targets: this.gov,
-      scaleX: GOV_SCALE * 1.08,
-      scaleY: GOV_SCALE * 0.92,
-      duration: 80,
+      scaleX: GOV_SCALE * 1.12,
+      scaleY: GOV_SCALE * 0.88,
+      duration: 70,
       yoyo: true,
-      ease: "Quad.easeOut",
+      ease: "Back.easeOut",
       onComplete: () => { if (this.gov && this.gov.active) this._startBob(); },
     });
   }
@@ -738,6 +814,71 @@ export class WorldView {
     }
   }
 
+  // ── 직원 모션 ──
+  // 작업 루프: 제자리에서 타이핑하듯 몸이 납작해졌다 펴지는 squash·stretch(프레임 교체와 겹쳐 리듬이 생긴다)
+  _startWorkLoop(worker) {
+    const { body, badge } = worker;
+    if (!body || !body.active) return;
+    this.scene.tweens.killTweensOf([body, badge]);
+    body.setScale(WORKER_SCALE).setPosition(worker.home.x, worker.home.y).setDepth(workerDepth(worker.home.y));
+    body.setFlipX(worker.facing === "left");
+    if (body.anims) body.anims.timeScale = 1;
+    badge.setScale(1).setPosition(worker.home.x + 14, worker.home.y - 54).setDepth(workerDepth(worker.home.y) + 1);
+    worker.shadow.setPosition(worker.home.x, worker.home.y + 1);
+    worker.busy = false;
+    if (motionReduced()) return;
+    const delay = Math.random() * 500;
+    this.scene.tweens.add({ targets: body, scaleY: WORKER_SCALE * 0.962, scaleX: WORKER_SCALE * 1.035, yoyo: true, repeat: -1, duration: 400, delay, ease: "Sine.easeInOut" });
+    this.scene.tweens.add({ targets: badge, y: badge.y - 2, yoyo: true, repeat: -1, duration: 800, delay, ease: "Sine.easeInOut" });
+  }
+
+  // 걷기: 목표 지점까지 총총(짧은 바운스) 이동. 깊이·배지·그림자가 따라간다.
+  _walkWorker(worker, tx, ty, done) {
+    const { body, badge } = worker;
+    if (!body || !body.active) return;
+    worker.busy = true;
+    this.scene.tweens.killTweensOf([body, badge]);
+    body.setScale(WORKER_SCALE).setFlipX(tx < body.x);
+    if (body.anims) body.anims.timeScale = 1.8;
+    const dist = Math.hypot(tx - body.x, ty - body.y);
+    const duration = Math.max(320, (dist / 58) * 1000);
+    const hop = this.scene.tweens.add({ targets: body, scaleY: WORKER_SCALE * 1.06, scaleX: WORKER_SCALE * 0.95, yoyo: true, repeat: -1, duration: 125, ease: "Sine.easeInOut" });
+    this.scene.tweens.add({
+      targets: body, x: tx, y: ty, duration, ease: "Sine.easeInOut",
+      onUpdate: () => {
+        body.setDepth(workerDepth(body.y));
+        badge.setPosition(body.x + 14, body.y - 54).setDepth(workerDepth(body.y) + 1);
+        worker.shadow.setPosition(body.x, body.y + 1);
+      },
+      onComplete: () => {
+        hop.stop();
+        if (!body.active) return;
+        body.setScale(WORKER_SCALE);
+        if (body.anims) body.anims.timeScale = 1;
+        done();
+      },
+    });
+  }
+
+  // 심부름: 접수창구 밖 직원 한 명이 표 뭉치를 창구 앞 더미까지 가져다 놓고 돌아온다
+  _courierRun() {
+    if (motionReduced()) return;
+    const pool = Object.values(this._workers).filter((w) => !w.busy && w.facId !== "desk" && w.body?.active);
+    if (!pool.length) return;
+    const worker = pool[(Math.random() * pool.length) | 0];
+    const pile = workerPos("desk");
+    const tx = pile.x + (Math.random() * 20 - 10) + 18;
+    const ty = pile.y + 14;
+    this._walkWorker(worker, tx, ty, () => {
+      this.effects.ballots({ x: tx, y: ty - 34, count: 3 });
+      this._flyBallotToBox();
+      this.scene.time.delayedCall(420, () => {
+        if (!worker.body?.active) return;
+        this._walkWorker(worker, worker.home.x, worker.home.y, () => this._startWorkLoop(worker));
+      });
+    });
+  }
+
   // 현장 배치 직원 — 담당(시너지) 시설 앞 타일에서 타이핑 루프. 직급 배지는 머리 위 오버레이.
   _syncWorkers() {
     const deployed = this.gameState.staffSlots ? this.gameState.staffSlots() : [];
@@ -766,16 +907,19 @@ export class WorldView {
         body.setFlipX(slot.facing === "left");
         body.play(`worker-type-${variant}`);
         const badge = this.scene.add.text(pos.x + 14, pos.y - 54, rank.tier ? String(rank.tier) : "", { fontFamily: '"Jua", sans-serif', fontSize: "11px", color: "#4a2600", backgroundColor: "#ffc53d", padding: { x: 4, y: 1 } }).setOrigin(0.5, 1).setScale(0).setDepth(workerDepth(pos.y) + 1);
-        worker = { facId, rank: rank.tier, body, badge, shadow };
+        worker = { facId, rank: rank.tier, body, badge, shadow, home: { x: pos.x, y: pos.y }, facing: slot.facing, busy: false };
         this._workers[id] = worker;
-        this.scene.tweens.add({ targets: body, scaleX: WORKER_SCALE, scaleY: WORKER_SCALE, duration: 280, ease: "Back.easeOut" });
+        this.scene.tweens.add({ targets: body, scaleX: WORKER_SCALE, scaleY: WORKER_SCALE, duration: 280, ease: "Back.easeOut", onComplete: () => this._startWorkLoop(worker) });
         this.scene.tweens.add({ targets: badge, scaleX: 1, scaleY: 1, duration: 280, ease: "Back.easeOut" });
-        this.scene.tweens.add({ targets: [body, badge], y: "-=2", yoyo: true, repeat: -1, duration: 1200, ease: "Sine.easeInOut" });
         this.effects.deskPop(pos.x, pos.y - 30);
       } else if (worker.rank !== rank.tier) {
         worker.rank = rank.tier;
         worker.badge.setText(String(rank.tier));
-        this.scene.tweens.add({ targets: worker.body, scaleX: WORKER_SCALE * 1.2, scaleY: WORKER_SCALE * 1.2, yoyo: true, duration: 180, ease: "Back.easeOut" });
+        if (!worker.busy) {
+          this.scene.tweens.killTweensOf([worker.body, worker.badge]);
+          worker.body.setScale(WORKER_SCALE);
+          this.scene.tweens.add({ targets: worker.body, scaleX: WORKER_SCALE * 1.2, scaleY: WORKER_SCALE * 1.2, yoyo: true, duration: 180, ease: "Back.easeOut", onComplete: () => this._startWorkLoop(worker) });
+        }
         this.effects.float({ text: `★ ${rank.name} 승급!`, x: worker.body.x, y: worker.body.y - 56, color: "#ffd34d" });
       }
     });
@@ -933,6 +1077,10 @@ export class WorldView {
     this._incomeTimer?.remove();
     this._speakTimer?.remove();
     this._pressTimer?.remove();
+    this._courierTimer?.remove();
+    this._studioTimer?.remove();
+    Object.keys(this._propIdle || {}).forEach((id) => { const t = this._propIdle[id]; if (t) { t.stop(); t.remove?.(); } });
+    if (this._flashDot) { this.scene.tweens.killTweensOf(this._flashDot); this._flashDot.destroy(); this._flashDot = null; }
     this._goldenTimer?.remove();
     this._itemTimer?.remove();
     this._comboTimer?.remove();
