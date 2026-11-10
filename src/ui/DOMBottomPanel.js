@@ -111,6 +111,14 @@ export class DOMBottomPanel {
     this._emitSheetTop();
     this._onSheetCollapse = () => this._stepSheet(-1);
     document.addEventListener("gp:sheet-collapse", this._onSheetCollapse);
+    // 월드 오브젝트 탭 → 해당 탭을 반펼침으로(이미 펼쳐져 있으면 유지)
+    this._onSheetOpen = (e) => {
+      const tab = e.detail?.tab;
+      if (tab && tab !== this._activeTab() && !this.gameState.tabLocked?.(tab)) this.gameState.setTab(tab);
+      if (this._sheet.state === "peek") this._setSheet("half", { remember: false });
+      else this.refresh();
+    };
+    document.addEventListener("gp:sheet-open", this._onSheetOpen);
     // WorldView가 늦게 준비되면(씬 로드 후) 재브로드캐스트 — 초기 이벤트 유실 방지
     this._onWorldReady = () => this._emitSheetTop();
     document.addEventListener("gp:world-ready", this._onWorldReady);
@@ -135,6 +143,7 @@ export class DOMBottomPanel {
     this._ro?.disconnect();
     this._roParent?.disconnect();
     document.removeEventListener("gp:sheet-collapse", this._onSheetCollapse);
+    document.removeEventListener("gp:sheet-open", this._onSheetOpen);
     document.removeEventListener("gp:world-ready", this._onWorldReady);
     document.removeEventListener("visibilitychange", this._onVisibility);
     this.gameState.off("changed", this._refresh);

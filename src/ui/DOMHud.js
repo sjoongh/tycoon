@@ -83,11 +83,44 @@ export class DOMHud {
     parent.appendChild(this._muteBtn);
     parent.appendChild(this._rushBtn);
     parent.appendChild(this._briefBtn);
+    // 오늘의 할 일 칩(Idle Theme Park 미션 아이콘): 가장 가까운 일일 퀘스트 진행·보상. 탭하면 목표 탭.
+    this._todayChip = document.createElement("button");
+    this._todayChip.className = "gp-today";
+    this._todayChip.hidden = true;
+    this._todayChip.addEventListener("click", () => {
+      if (this.gameState.tabLocked?.("goals")) return;
+      this.gameState.setTab("goals");
+      document.dispatchEvent(new CustomEvent("gp:sheet-open", { detail: { tab: "goals" } }));
+    });
+    parent.appendChild(this._todayChip);
     this.gameState.on("changed", this._refresh);
     this.refresh();
   }
 
+  _syncToday() {
+    const chip = this._todayChip;
+    if (!chip) return;
+    const gs = this.gameState;
+    if (!gs.dailyQuestProgress || !(gs.data.tutorial?.done)) { chip.hidden = true; return; }
+    const defs = this._dailyDefs || (this._dailyDefs = (gs.dailyQuestDefs ? gs.dailyQuestDefs() : null));
+    if (!defs) { chip.hidden = true; return; }
+    const claimable = defs.find((q) => gs.dailyQuestClaimable(q.id));
+    const next = claimable || defs
+      .filter((q) => !gs.dailyQuestClaimed?.(q.id))
+      .map((q) => ({ q, r: gs.dailyQuestProgress(q.id) / q.target }))
+      .sort((a, b) => b.r - a.r)[0]?.q;
+    if (!next) { chip.hidden = true; return; }
+    const p = Math.min(gs.dailyQuestProgress(next.id), next.target);
+    const html = claimable
+      ? `<b>${next.title}</b><span>완료 · 보상 받기</span>`
+      : `<b>${next.title}</b><span>${p}/${next.target}</span><i style="transform:scaleX(${(p / next.target).toFixed(3)})"></i>`;
+    if (chip.innerHTML !== html) chip.innerHTML = html;
+    chip.classList.toggle("gp-today--ready", !!claimable);
+    chip.hidden = false;
+  }
+
   refresh() {
+    this._syncToday();
     const d = this.gameState.data;
     this._setText(this._els.votes, shortNumber(d.votes));
     this._setText(this._els.explain, shortNumber(d.explain));

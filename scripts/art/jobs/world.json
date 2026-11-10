@@ -316,5 +316,29 @@
     "prompt": "Second animation frame of this exact same character: identical design, pose and camera, but the arms are raised a bit higher mid-typing and the head tilts slightly down, mouth slightly open. Keep everything else identical. Cute chibi character for a cozy cartoon idle-tycoon game: big head, small body, full body visible, simple dot eyes, friendly face. Soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow, no ground shadow. Fully transparent background with no backdrop, no card, no frame; no text; single character centered."
    }
   ]
+ },
+ {
+  "chain": [
+   {
+    "out": "assets/art-src/ai-world/visitor-0.png",
+    "prompt": "A single voter visiting a vote-counting office: an elderly grandmother voter with grey bun hair, floral cardigan, holding a small handbag and a folded ballot paper, facing front-right three-quarter view, standing. Cute chibi character for a cozy cartoon idle-tycoon game: big head, small body, full body visible, simple dot eyes, friendly face. Soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow, no ground shadow. Fully transparent background with no backdrop, no card, no frame; no text; single character centered."
+   }
+  ]
+ },
+ {
+  "chain": [
+   {
+    "out": "assets/art-src/ai-world/visitor-1.png",
+    "prompt": "A single voter visiting a vote-counting office: a middle-aged man voter in a brown jacket and flat cap, holding a folded ballot paper, facing front-right three-quarter view, standing. Cute chibi character for a cozy cartoon idle-tycoon game: big head, small body, full body visible, simple dot eyes, friendly face. Soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow, no ground shadow. Fully transparent background with no backdrop, no card, no frame; no text; single character centered."
+   }
+  ]
+ },
+ {
+  "chain": [
+   {
+    "out": "assets/art-src/ai-world/visitor-2.png",
+    "prompt": "A single voter visiting a vote-counting office: a young student voter with a backpack and headphones around the neck, hoodie, holding a folded ballot paper, facing front-right three-quarter view, standing. Cute chibi character for a cozy cartoon idle-tycoon game: big head, small body, full body visible, simple dot eyes, friendly face. Soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow, no ground shadow. Fully transparent background with no backdrop, no card, no frame; no text; single character centered."
+   }
+  ]
  }
 ]

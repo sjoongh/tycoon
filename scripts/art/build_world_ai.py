@@ -189,6 +189,17 @@ def main():
             if f == 0:
                 previews.append(img)
 
+    # 유권자 NPC 3종(문→창구 대기열)
+    vs = [character(f"visitor-{v}", WORKER_H) for v in range(3)]
+    vw = max(w.width for w, _ in vs)
+    vh = max(w.height for w, _ in vs)
+    meta["visitors"] = {"variants": 3}
+    for v in range(3):
+        img, (ax, ay) = character(f"visitor-{v}", WORKER_H, (vw, vh))
+        save(img, OUT / f"visitor-{v}.png")
+        meta["visitors"].update({"w": img.width, "h": img.height, "ax": ax, "ay": ay})
+        previews.append(img)
+
     # 투표지(적체 더미·비행) + 파티클 + 황금 투표함
     ballot = fit(trim(load("ballot")), 16, 20)
     save(ballot, OUT / "ballot.png")

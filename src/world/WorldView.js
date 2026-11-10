@@ -1,3 +1,4 @@
+import Phaser from "phaser";
 import { iconRef } from "../assets/iconTextures.js";
 import { motionReduced } from "../ui/a11y.js";
 import { WorldEffects } from "./WorldEffects.js";
@@ -218,6 +219,7 @@ export class WorldView {
     // 캔버스에 도달한 빈 공간 탭만 득표로 처리(하단 DOM 패널은 자체 처리)
     this._onPointer = (pointer, currentlyOver) => {
       if (currentlyOver && currentlyOver.length) return;
+      if (this._camDragging) return;
       gameState.processClick(pointer.worldX, pointer.worldY);
       this._squishGov();
       this._punchNum();
@@ -227,6 +229,7 @@ export class WorldView {
       this._flyBallotToBox(); // 처리한 표가 투표함으로 날아가 모인다(의미 + 손맛)
     };
     scene.input.on("pointerdown", this._onPointer);
+    this._setupCameraGestures();
 
     // 패시브 수입 가시화: 국장 위로 주기적 +표 플로팅
     this._incomeTimer = scene.time.addEvent({
@@ -256,6 +259,10 @@ export class WorldView {
       delay: 6500, loop: true,
       callback: () => { if (Math.random() < 0.75) this._courierRun(); },
     });
+    // 창구 앞 표 뭉치: 수입이 쌓이면 뭉치가 늘고, 탭하면 보너스와 함께 수금(Idle Supermarket의 현금 더미)
+    this._pileTimer = scene.time.addEvent({ delay: 1000, loop: true, callback: () => this._accruePile() });
+    // 유권자 방문: 문으로 들어와 창구 앞에 줄 섰다가 나간다(수입이 클수록 자주)
+    this._visitorTimer = scene.time.addEvent({ delay: 2500, loop: true, callback: () => this._maybeSpawnVisitor() });
     // 브리핑룸 카메라 플래시
     this._studioTimer = scene.time.addEvent({
       delay: 3800, loop: true,
@@ -432,6 +439,8 @@ export class WorldView {
         .setOrigin(meta.ax / meta.w, meta.ay / meta.h)
         .setScale(WORLD_SCALE)
         .setDepth(stationDepth(pos.y));
+      s.setInteractive({ useHandCursor: true });
+      s.on("pointerdown", (pointer) => this._onFacilityTap(f.id, pointer));
       this.props.push(s);
       this.propByFacility[f.id] = s;
       this.propLabels[f.id] = this.scene.add
@@ -863,6 +872,216 @@ export class WorldView {
     });
   }
 
+  // ── 월드 상호작용(레퍼런스: Idle Miner 갱도 탭, 고양이와 스프 고양이 탭, Idle Supermarket 현금 더미) ──
+  _onFacilityTap(id, pointer) {
+    const gs = this.gameState;
+    const obj = this.propByFacility[id];
+    if (!obj || !obj.visible) return;
+    if (this._camDragging) return;
+    gs.select(id);
+    document.dispatchEvent(new CustomEvent("gp:sheet-open", { detail: { tab: "facilities" } }));
+    this._stopPropIdle(id);
+    this.scene.tweens.add({ targets: obj, scaleX: WORLD_SCALE * 1.12, scaleY: WORLD_SCALE * 0.92, yoyo: true, duration: 90, ease: "Quad.easeOut", onComplete: () => this._startPropIdle(id, obj) });
+    this.effects.deskPop(obj.x, obj.y - obj.displayHeight * 0.6);
+    const f = gs.facility(id);
+    this.effects.float({ text: `${f?.name || id} Lv.${gs.level(id)}`, x: obj.x, y: obj.y - obj.displayHeight - 8, color: "#ffe9c0" });
+  }
+
+  _onWorkerTap(staffId) {
+    const w = this._workers[staffId];
+    if (!w || !w.body?.active || this._camDragging) return;
+    const gs = this.gameState;
+    const now = this.scene.time.now;
+    const LINES = ["열심히 하고 있습니다!", "커피 한 잔만요…", "이 표는 제가 책임집니다", "국장님, 믿어 주세요", "오늘도 야근각", "정확하게, 빠르게!"];
+    const line = LINES[(Math.random() * LINES.length) | 0];
+    this.effects.float({ text: `"${line}"`, x: w.body.x, y: w.body.y - 62, color: "#cfe9ff" });
+    if (!w.busy) {
+      this.scene.tweens.killTweensOf(w.body);
+      this.scene.tweens.add({ targets: w.body, scaleX: WORKER_SCALE * 1.15, scaleY: WORKER_SCALE * 0.85, yoyo: true, duration: 90, ease: "Quad.easeOut", onComplete: () => this._startWorkLoop(w) });
+    }
+    // 격려 보너스: 직원당 45초 쿨다운, 초당 생산 8초치
+    if (now - (w.lastCheerAt || 0) > 45000) {
+      w.lastCheerAt = now;
+      const bonus = Math.max(1, Math.round((gs.cps ? gs.cps() : 0) * 8));
+      gs.grantReward({ votes: bonus });
+      gs.emit("changed", { economy: true });
+      this.effects.float({ text: `격려 +${shortNumber(bonus)}표`, x: w.body.x, y: w.body.y - 80, color: "#8df0b0" });
+      this.effects.deskPop(w.body.x, w.body.y - 50);
+    }
+  }
+
+  // 표 뭉치: 1초마다 초당 생산을 적립. 뭉치 1개 = 20초치, 최대 6개. 탭하면 적립분의 12%를 보너스로 수금(최대 5분치).
+  _accruePile() {
+    const gs = this.gameState;
+    const cps = gs.cps ? gs.cps() : 0;
+    if (cps <= 0) return;
+    this._pileVotes = Math.min((this._pileVotes || 0) + cps, cps * 300);
+    const n = Math.min(6, Math.floor(this._pileVotes / (cps * 20)));
+    this._syncPile(n);
+  }
+
+  _syncPile(n) {
+    if (!this._pileSprites) {
+      this._pileSprites = [];
+      const p = tileCenter(4.6, 4.6);
+      this._pilePos = p;
+      this._pileZone = this.scene.add.zone(p.x, p.y - 10, 44, 36).setInteractive({ useHandCursor: true }).setDepth(stationDepth(p.y) + 60);
+      this._pileZone.on("pointerdown", () => this._collectPile());
+      for (let k = 0; k < 6; k += 1) {
+        const b = this.scene.add.image(p.x - 10 + (k % 2) * 12, p.y - 2 - Math.floor(k / 2) * 6, "world/ballot")
+          .setScale(0.6).setAngle(-10 + (k * 23) % 20).setDepth(stationDepth(p.y) + 1 + k).setVisible(false);
+        this._pileSprites.push(b);
+      }
+    }
+    const prev = this._pileCount || 0;
+    this._pileCount = n;
+    this._pileSprites.forEach((b, k) => {
+      const show = k < n;
+      if (show && !b.visible && !motionReduced()) {
+        b.setVisible(true).setScale(0.1);
+        this.scene.tweens.add({ targets: b, scale: 0.6, duration: 220, ease: "Back.easeOut" });
+      } else b.setVisible(show);
+    });
+    if (this._pileZone) this._pileZone.input.enabled = n > 0;
+    if (n >= 3 && prev < 3 && !motionReduced()) {
+      // 쌓이면 살짝 흔들려 "수금해 달라"고 신호
+      this.scene.tweens.add({ targets: this._pileSprites.slice(0, n), angle: "+=4", yoyo: true, repeat: 3, duration: 120 });
+    }
+  }
+
+  _collectPile() {
+    if (this._camDragging) return;
+    const gs = this.gameState;
+    const n = this._pileCount || 0;
+    if (n <= 0) return;
+    const bonus = Math.max(1, Math.round((this._pileVotes || 0) * 0.12));
+    gs.grantReward({ votes: bonus });
+    gs.emit("changed", { economy: true });
+    const p = this._pilePos;
+    this.effects.float({ text: `수금 +${shortNumber(bonus)}표`, x: p.x, y: p.y - 40, color: "#ffd34d" });
+    if (!motionReduced()) this.effects.ballots({ x: p.x, y: p.y - 10, count: Math.min(12, 2 + n * 2) });
+    for (let i = 0; i < Math.min(n, 4); i += 1) this.scene.time.delayedCall(i * 60, () => this._flyBallotToBox());
+    this._pileVotes = 0;
+    this._syncPile(0);
+    this._squishGov();
+  }
+
+  // 유권자 NPC: 문(왼쪽 벽) → 창구 앞 대기 → 다시 문으로. 동시에 최대 3명, 수입이 클수록 자주.
+  _maybeSpawnVisitor() {
+    if (motionReduced()) return;
+    this._visitors = (this._visitors || []).filter((v) => v.body.active);
+    if (this._visitors.length >= 3) return;
+    const cps = this.gameState.cps ? this.gameState.cps() : 0;
+    const chance = cps <= 0 ? 0.15 : Math.min(0.75, 0.25 + Math.log10(1 + cps) * 0.1);
+    if (Math.random() > chance) return;
+    const nVis = WORLD_ATLAS.visitors?.variants || 0;
+    const v = (Math.random() * (nVis || WORLD_ATLAS.workers.variants)) | 0;
+    const texKey = nVis ? `world/visitor-${v}` : workerSpriteKey(v, 0);
+    const door = tileCenter(0.3, 2.6);
+    // 대기열: 문과 접수창구 사이(뒤쪽 왼벽 앞)로 한 줄 — 창구 앞 표 뭉치·국장과 겹치지 않게
+    const qi = this._visitors.length;
+    const spot = tileCenter(2.3 - qi * 0.7 + Math.random() * 0.15, 2.5 - qi * 0.12);
+    const body = this.scene.add.sprite(door.x, door.y, texKey).setOrigin(0.5, 1).setScale(WORKER_SCALE * 0.92).setDepth(workerDepth(door.y)).setAlpha(0);
+    body.setInteractive({ useHandCursor: true });
+    const visitor = { body, thanked: false };
+    body.on("pointerdown", () => this._onVisitorTap(visitor));
+    this._visitors.push(visitor);
+    const walk = (tx, ty, done) => {
+      const dist = Math.hypot(tx - body.x, ty - body.y);
+      body.setFlipX(tx < body.x);
+      const hop = this.scene.tweens.add({ targets: body, scaleY: WORKER_SCALE * 0.98, scaleX: WORKER_SCALE * 0.86, yoyo: true, repeat: -1, duration: 130 });
+      this.scene.tweens.add({ targets: body, x: tx, y: ty, duration: Math.max(400, (dist / 50) * 1000), ease: "Sine.easeInOut",
+        onUpdate: () => body.setDepth(workerDepth(body.y)),
+        onComplete: () => { hop.stop(); if (body.active) { body.setScale(WORKER_SCALE * 0.92); done(); } } });
+    };
+    this.scene.tweens.add({ targets: body, alpha: 1, duration: 200 });
+    walk(spot.x, spot.y, () => {
+      // 창구 앞에서 잠깐 기다리며 표를 낸다
+      this.scene.time.delayedCall(1800 + Math.random() * 1500, () => {
+        if (!body.active) return;
+        this._flyBallotToBox();
+        this.effects.deskPop(body.x, body.y - 48);
+        walk(door.x, door.y, () => {
+          this.scene.tweens.add({ targets: body, alpha: 0, duration: 200, onComplete: () => body.destroy() });
+        });
+      });
+    });
+  }
+
+  _onVisitorTap(visitor) {
+    const { body } = visitor;
+    if (!body.active || this._camDragging) return;
+    const LINES = ["투표하러 왔어요", "줄이 기네요…", "믿고 맡깁니다", "빨리 끝내 주세요", "개표 잘 보고 있어요"];
+    this.effects.float({ text: `"${LINES[(Math.random() * LINES.length) | 0]}"`, x: body.x, y: body.y - 58, color: "#ffe9c0" });
+    this.scene.tweens.add({ targets: body, scaleX: WORKER_SCALE * 1.05, scaleY: WORKER_SCALE * 0.8, yoyo: true, duration: 90 });
+    if (!visitor.thanked) {
+      visitor.thanked = true;
+      this.gameState.data.trust = Math.min(100, (this.gameState.data.trust || 0) + 0.3);
+      this.effects.float({ text: "믿음 +0.3", x: body.x, y: body.y - 76, color: "#ff9ac0" });
+    }
+  }
+
+  // 카메라: 핀치로 1.0~1.6배 확대, 확대 상태에서 드래그로 이동. 탭은 pointerdown에서 이미 처리되므로 드래그 임계(12px)로 구분한다.
+  _setupCameraGestures() {
+    const scene = this.scene;
+    const cam = scene.cameras.main;
+    if (scene.input.pointer2 === undefined || !scene.input.pointer2) scene.input.addPointer(1);
+    this._camZoom = 1;
+    this._camDragging = false;
+    let dragStart = null;
+    let pinchStart = null;
+    const baseZoom = () => scene.renderBase?.zoom || 1;
+    const clampScroll = () => {
+      const z = this._camZoom;
+      const maxX = (GAME_W * (1 - 1 / z)) / 2 * 1.0;
+      const maxY = (844 * (1 - 1 / z)) / 2;
+      const bx = scene.renderBase?.baseScrollX || 0, by = (scene.renderBase?.baseScrollY || 0) + (this._camTarget || 0);
+      cam.scrollX = Phaser.Math.Clamp(cam.scrollX, bx - maxX, bx + maxX);
+      cam.scrollY = Phaser.Math.Clamp(cam.scrollY, by - maxY, by + maxY);
+    };
+    this._onCamMove = (pointer) => {
+      const p1 = scene.input.pointer1, p2 = scene.input.pointer2;
+      if (p1?.isDown && p2?.isDown) {
+        const d = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+        if (!pinchStart) pinchStart = { d, zoom: this._camZoom };
+        else {
+          this._camZoom = Phaser.Math.Clamp(pinchStart.zoom * (d / pinchStart.d), 1, 1.6);
+          cam.setZoom(baseZoom() * this._camZoom);
+          clampScroll();
+          this._camDragging = true;
+        }
+        return;
+      }
+      pinchStart = null;
+      if (!pointer.isDown || this._camZoom <= 1.001) return;
+      if (!dragStart) { dragStart = { x: pointer.x, y: pointer.y, sx: cam.scrollX, sy: cam.scrollY }; return; }
+      const dx = pointer.x - dragStart.x, dy = pointer.y - dragStart.y;
+      if (!this._camDragging && Math.hypot(dx, dy) < 12) return;
+      this._camDragging = true;
+      cam.scrollX = dragStart.sx - dx / cam.zoom;
+      cam.scrollY = dragStart.sy - dy / cam.zoom;
+      clampScroll();
+    };
+    this._onCamUp = () => {
+      dragStart = null;
+      if (!scene.input.pointer1?.isDown && !scene.input.pointer2?.isDown) pinchStart = null;
+      // 드래그 직후의 pointerup이 탭으로 오인되지 않게 한 프레임 뒤 해제
+      if (this._camDragging) scene.time.delayedCall(60, () => { this._camDragging = false; });
+      if (this._camZoom <= 1.001) { this._camZoom = 1; cam.setZoom(baseZoom()); cam.scrollX = scene.renderBase?.baseScrollX || 0; }
+    };
+    scene.input.on("pointermove", this._onCamMove);
+    scene.input.on("pointerup", this._onCamUp);
+    // 더블탭: 줌 리셋
+    let lastTap = 0;
+    scene.input.on("pointerdown", (pointer, over) => {
+      const now = scene.time.now;
+      if (now - lastTap < 280 && this._camZoom > 1.001 && !(over && over.length)) {
+        this._camZoom = 1; cam.setZoom(baseZoom()); cam.scrollX = scene.renderBase?.baseScrollX || 0; cam.scrollY = (scene.renderBase?.baseScrollY || 0) + (this._camTarget || 0);
+      }
+      lastTap = now;
+    });
+  }
+
   // ── 직원 모션 ──
   // 작업 루프: 제자리에서 타이핑하듯 몸이 납작해졌다 펴지는 squash·stretch(프레임 교체와 겹쳐 리듬이 생긴다)
   _startWorkLoop(worker) {
@@ -955,6 +1174,8 @@ export class WorldView {
         const body = this.scene.add.sprite(pos.x, pos.y, workerSpriteKey(variant, 0)).setOrigin(0.5, 1).setScale(0).setDepth(workerDepth(pos.y));
         body.setFlipX(slot.facing === "left");
         body.play(`worker-type-${variant}`);
+        body.setInteractive({ useHandCursor: true });
+        body.on("pointerdown", () => this._onWorkerTap(id));
         const badge = this.scene.add.text(pos.x + 14, pos.y - 54, rank.tier ? String(rank.tier) : "", { fontFamily: '"Jua", sans-serif', fontSize: "11px", color: "#4a2600", backgroundColor: "#ffc53d", padding: { x: 4, y: 1 } }).setOrigin(0.5, 1).setScale(0).setDepth(workerDepth(pos.y) + 1);
         worker = { facId, rank: rank.tier, body, badge, shadow, home: { x: pos.x, y: pos.y }, facing: slot.facing, busy: false };
         this._workers[id] = worker;
@@ -1131,6 +1352,13 @@ export class WorldView {
     this._pressTimer?.remove();
     this._courierTimer?.remove();
     this._studioTimer?.remove();
+    this._pileTimer?.remove();
+    this._visitorTimer?.remove();
+    (this._pileSprites || []).forEach((o) => o.destroy());
+    this._pileZone?.destroy();
+    (this._visitors || []).forEach((v) => { this.scene.tweens.killTweensOf(v.body); v.body.destroy(); });
+    this.scene.input.off("pointermove", this._onCamMove);
+    this.scene.input.off("pointerup", this._onCamUp);
     Object.keys(this._propIdle || {}).forEach((id) => { const t = this._propIdle[id]; if (t) { t.stop(); t.remove?.(); } });
     if (this._flashDot) { this.scene.tweens.killTweensOf(this._flashDot); this._flashDot.destroy(); this._flashDot = null; }
     this._goldenTimer?.remove();
