@@ -52,7 +52,7 @@ export class PreloadScene extends Phaser.Scene {
     for (let v = 0; v < WORLD_ATLAS.workers.variants; v += 1) {
       const key = `worker-type-${v}`;
       if (!this.anims.exists(key)) {
-        this.anims.create({ key, frames: Array.from({ length: WORLD_ATLAS.workers.frames }, (_, f) => ({ key: workerSpriteKey(v, f) })), frameRate: 3, repeat: -1 });
+        this.anims.create({ key, frames: Array.from({ length: WORLD_ATLAS.workers.frames }, (_, f) => ({ key: workerSpriteKey(v, f) })), frameRate: 5, repeat: -1 });
       }
     }
     generatePlaceholders(this); // ballot 폴백 등 안전망(존재하면 건너뜀)

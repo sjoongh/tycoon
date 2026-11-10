@@ -8,7 +8,7 @@ export class BallotPool {
   constructor(scene, size = 40) {
     this.scene = scene;
     this.items = Array.from({ length: size }, () =>
-      scene.add.sprite(-100, -100, "ballot").setScale(1.5).setDepth(FX_DEPTH).setVisible(false).setActive(false),
+      scene.add.sprite(-100, -100, "ballot").setScale(1.1).setDepth(FX_DEPTH).setVisible(false).setActive(false),
     );
   }
 
@@ -24,8 +24,8 @@ export class BallotPool {
 
       this.scene.tweens.add({
         targets: ballot,
-        x: Phaser.Math.Between(88, 300),
-        y: Phaser.Math.Between(360, 560),
+        x: x + Phaser.Math.Between(-90, 90),
+        y: y + Phaser.Math.Between(30, 120),
         angle: Phaser.Math.Between(-160, 160),
         alpha: 0,
         duration: 650,

@@ -25,11 +25,11 @@ export function tileCenter(i, j) {
 // 시설 슬롯 — 벽을 따라 뒤쪽, 중앙에 접수창구. 직원은 facing 방향으로 한 타일 앞에 선다.
 export const FACILITY_SLOTS = {
   server:  { i: 0, j: 1, workerDx: 1,  workerDy: 0, facing: "left" },
-  archive: { i: 0, j: 4, workerDx: 1,  workerDy: 0, facing: "left" },
+  archive: { i: 0, j: 5, workerDx: 1,  workerDy: 0, facing: "left" },
   notice:  { i: 2, j: 0, workerDx: 0,  workerDy: 1, facing: "right" },
   studio:  { i: 5, j: 0, workerDx: 0,  workerDy: 1, facing: "right" },
-  desk:    { i: 3, j: 2, workerDx: 1,  workerDy: 0, facing: "left" },
-  sorter:  { i: 6, j: 2, workerDx: -1, workerDy: 1, facing: "right" },
+  desk:    { i: 3, j: 3, workerDx: 1,  workerDy: 0, facing: "left" },
+  sorter:  { i: 6, j: 3, workerDx: -1, workerDy: 1, facing: "right" },
 };
 
 export const GOV_TILE = { i: 2, j: 4 };
