@@ -381,8 +381,8 @@ export class DOMBottomPanel {
           <div class="gp-card__title">${f.name} Lv.${gs.level(sel)}</div>
           <div class="gp-card__sub">${unlocked ? `${shortNumber(cost)}표 · 해명 ${shortNumber(ex)}` : this._lockText(sel)}</div>
           ${unlocked ? `<div class="gp-card__gain">▲ 업그레이드 시 초당 +${f.cps}표</div>` : ""}
-          ${unlocked && gs.nextFacilityMilestone(gs.level(sel)) != null
-            ? `<div class="gp-card__milestone">★ Lv.${gs.nextFacilityMilestone(gs.level(sel))} 달성 시 생산 ×2</div>`
+          ${unlocked && gs.nextFacilityMilestone(gs.level(sel), sel) != null
+            ? `<div class="gp-card__milestone">★ Lv.${gs.nextFacilityMilestone(gs.level(sel), sel)} 달성 시 생산 ×2</div>`
             : ""}
         </div>
         ${upgradeBtn}

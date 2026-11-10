@@ -1,4 +1,5 @@
 import { iconRef } from "../assets/iconTextures.js";
+import { motionReduced } from "../ui/a11y.js";
 import { WorldEffects } from "./WorldEffects.js";
 import { govTextureKey, govStageFor } from "./dotChar.js";
 import { facilities } from "../data/facilities.js";
@@ -494,22 +495,36 @@ export class WorldView {
   }
 
   // 처리한 표 한 장이 국장 → 좌측 투표함으로 포물선을 그리며 날아가 모인다
+  // 비행 표는 매 탭·매 수입 틱마다 생기므로 생성/파괴 대신 작은 풀을 돌려쓴다(로드맵 #18). 움직임 줄이기 설정이면 장식 효과라 생략한다.
+  _acquireFlyBallot(x, y) {
+    if (!this._flyPool) this._flyPool = [];
+    const b = this._flyPool.pop() || this.scene.add.image(0, 0, "world/ballot").setDepth(2400);
+    b.setPosition(x, y).setScale(0).setAngle(0).setAlpha(1).setVisible(true).setActive(true);
+    return b;
+  }
+
+  _releaseFlyBallot(b) {
+    this.scene.tweens.killTweensOf(b); // 동시 x/scale 트윈이 반납된 오브젝트를 만지지 않게(BUG-08)
+    b.setVisible(false).setActive(false);
+    if (this._flyPool && this._flyPool.length < 8) this._flyPool.push(b);
+    else b.destroy();
+  }
+
   _flyBallotToBox() {
-    if (!this.ballotbox || this._flying > 6) return; // 동시 비행 표 상한(성능)
+    if (!this.ballotbox || this._flying > 6 || motionReduced()) return; // 동시 비행 표 상한(성능)
     this._flying = (this._flying || 0) + 1;
     const sx = this.gov.x + (Math.random() * 30 - 15);
     const sy = GROUND_Y - 44;
     const tx = this.ballotbox.x + (Math.random() * 10 - 5);
     const ty = this.ballotbox.y - this.ballotbox.displayHeight * 0.6;
-    const b = this.scene.add.image(sx, sy, "world/ballot").setDepth(2400).setScale(0);
+    const b = this._acquireFlyBallot(sx, sy);
     this.scene.tweens.add({ targets: b, scale: 0.4, duration: 110, ease: "Back.easeOut" });
     this.scene.tweens.add({ targets: b, x: tx, angle: -160, duration: 440, ease: "Sine.easeIn" });
     this.scene.tweens.add({
       targets: b, y: ty - 34, duration: 220, yoyo: true, ease: "Sine.easeOut",
       onComplete: () => {
         this._flying = Math.max(0, (this._flying || 1) - 1);
-        this.scene.tweens.killTweensOf(b); // 동시 x/scale 트윈이 파괴된 오브젝트를 만지지 않게(BUG-08)
-        b.destroy();
+        this._releaseFlyBallot(b);
         // 투표함이 표를 받아 살짝 들썩
         if (this.ballotbox && this.ballotbox.active) {
           const s = this.ballotbox.scaleX;
@@ -556,8 +571,8 @@ export class WorldView {
     const y = 150;
     const bar = this.scene.add.rectangle(GAME_W / 2, y, GAME_W, 28, 0xb13e53, 0.96).setDepth(200).setScale(1, 0).setScrollFactor(0);
     const live = this.scene.add.rectangle(40, y, 52, 28, 0x14121c, 1).setDepth(201).setScale(1, 0).setScrollFactor(0);
-    const liveTx = this.scene.add.text(40, y, "● 속보", { fontFamily: '"DoHyeon", "Jua", sans-serif', fontSize: "9px", color: "#ff6a7c" }).setOrigin(0.5).setDepth(202).setAlpha(0).setScrollFactor(0);
-    const tx = this.scene.add.text(96, y, `${title || "개표국 사건"}`, { fontFamily: '"DoHyeon", "Jua", sans-serif', fontSize: "10px", color: "#ffffff" }).setOrigin(0, 0.5).setDepth(202).setAlpha(0).setScrollFactor(0);
+    const liveTx = this.scene.add.text(40, y, "● 속보", { fontFamily: '"DoHyeon", "Jua", sans-serif', fontSize: "11px", color: "#ff6a7c" }).setOrigin(0.5).setDepth(202).setAlpha(0).setScrollFactor(0);
+    const tx = this.scene.add.text(96, y, `${title || "개표국 사건"}`, { fontFamily: '"DoHyeon", "Jua", sans-serif', fontSize: "12px", color: "#ffffff" }).setOrigin(0, 0.5).setDepth(202).setAlpha(0).setScrollFactor(0);
     this.scene.tweens.add({ targets: [bar, live], scaleY: 1, duration: 150, ease: "Back.easeOut" });
     this.scene.tweens.add({ targets: [tx, liveTx], alpha: 1, duration: 200, delay: 90 });
     this._govGesture();
@@ -607,8 +622,8 @@ export class WorldView {
     const accent = item.tone === "praise" ? "#8df0b0" : item.tone === "mock" ? "#ff9a8e" : "#9fd0e0";
     // 2줄 레이아웃 — 위: 📰 외신 · 매체명 / 아래: 헤드라인. 가독성↑
     const bar = this.scene.add.rectangle(GAME_W / 2, y, GAME_W, 42, col, 0.95).setDepth(200).setScale(1, 0).setScrollFactor(0);
-    const top = this.scene.add.text(12, y - 10, `외신 · ${item.outlet}`, { fontFamily: '"DoHyeon", "Jua", sans-serif', fontSize: "9px", color: accent }).setOrigin(0, 0.5).setDepth(202).setAlpha(0).setScrollFactor(0);
-    const head = this.scene.add.text(12, y + 8, item.text, { fontFamily: '"DoHyeon", "Jua", sans-serif', fontSize: "10px", color: "#ffffff", wordWrap: { width: GAME_W - 24 } }).setOrigin(0, 0.5).setDepth(202).setAlpha(0).setScrollFactor(0);
+    const top = this.scene.add.text(12, y - 10, `외신 · ${item.outlet}`, { fontFamily: '"DoHyeon", "Jua", sans-serif', fontSize: "11px", color: accent }).setOrigin(0, 0.5).setDepth(202).setAlpha(0).setScrollFactor(0);
+    const head = this.scene.add.text(12, y + 8, item.text, { fontFamily: '"DoHyeon", "Jua", sans-serif', fontSize: "12px", color: "#ffffff", wordWrap: { width: GAME_W - 24 } }).setOrigin(0, 0.5).setDepth(202).setAlpha(0).setScrollFactor(0);
     this._pressEls = [bar, top, head];
     this.scene.tweens.add({ targets: bar, scaleY: 1, duration: 140, ease: "Back.easeOut" });
     this.scene.tweens.add({ targets: [top, head], alpha: 1, duration: 200, delay: 80 });

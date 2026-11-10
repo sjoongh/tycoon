@@ -639,7 +639,8 @@ export class DOMModalLayer {
     }
   }
 
-  // 단계형 온보딩 코치: 탭 → 업그레이드 → 채용 → 사건. stats 기반이라 진행과 항상 일치.
+  // 단계형 온보딩 코치: 탭 → 업그레이드 → 채용 → 사건 → 첫 구역 돌파.
+  // 단계는 GameState.tutorialNextStep()(누적 통계 파생)에서 가져오므로 순서가 바뀌어도 실제 진행과 일치한다(로드맵 #14).
   _maybeHint() {
     const gs = this.gameState;
     const d = gs.data;
@@ -647,15 +648,17 @@ export class DOMModalLayer {
     if (d.tutorial && d.tutorial.done) { this._clearHint(); return; }
 
     const clicks = d.stats.totalClicks || 0;
-    const upgrades = d.stats.totalUpgrades || 0;
-    const staffHired = Object.values(d.staff || {}).some((lv) => lv > 0);
-    const events = d.stats.totalEvents || 0;
+    const next = gs.tutorialNextStep ? gs.tutorialNextStep() : null;
+    const STEP_HINTS = {
+      upgrade: { txt: "↓ 시설 탭에서 접수창구를 업그레이드하세요", arrow: true },
+      staff: { txt: "↓ 직원 탭에서 직원을 채용하세요", arrow: true },
+      event: { txt: "↓ 사건 탭에서 첫 사건에 대응하세요", arrow: true },
+      stage: { txt: "구역 목표를 채우면 다음 구역으로 진출합니다" },
+    };
 
     let step; // { txt, hand, arrow }
     if (clicks < 5) step = { txt: "화면을 탭해 표를 처리하세요!", hand: true };
-    else if (upgrades === 0) step = { txt: "↓ 시설 탭에서 접수창구를 업그레이드하세요", arrow: true };
-    else if (!staffHired) step = { txt: "↓ 직원 탭에서 직원을 채용하세요", arrow: true };
-    else if (events === 0) step = { txt: "↓ 사건 탭에서 첫 사건에 대응하세요", arrow: true };
+    else if (next && STEP_HINTS[next]) step = STEP_HINTS[next];
     else { this._clearHint(); return; }
 
     if (!this._hint) {

@@ -67,7 +67,8 @@ const COMM_THRESHOLD = 5; // 믿음이 이 이하로 바닥나면 '공산화' �
 const COMM_LIMIT = 40; // 게이지가 이 값(≈40초)에 도달하면 체제 전복(하드 리셋)
 const COMM_RECOVER = 3; // 믿음 회복 시 게이지가 1틱당 이만큼 감소(짧은 하락은 안전)
 const EVENT_COOLDOWN_MS = 45000; // 사건 대응 후 재대기 시간(스팸 방지 + 주기적 참여 비트)
-const FACILITY_MILESTONES = [25, 50, 100]; // 시설 레벨 마일스톤: 도달 시 해당 시설 생산 ×2(영구, 누적). Lv25 미만은 영향 0 → 초반 곡선 보존
+const FACILITY_MILESTONES = [25, 50, 100]; // 시설 레벨 마일스톤 기본값: 도달 시 해당 시설 생산 ×2(영구, 누적). 시설별 maxLevel을 넘는 값은 제외된다(로드맵 #17)
+const TUTORIAL_STEPS = ["click", "upgrade", "staff", "event", "stage"]; // 온보딩 코치 단계(통계 파생)
 const BRIEF_COOLDOWN_MS = 90000; // 긴급 브리핑 재사용 90초
 const BRIEF_BUFF_MS = 15000; // 브리핑 생산 버프 15초
 const BRIEF_TRUST = 12; // 브리핑 시 믿음 +12(능동적 트러스트 관리 — 위기 탈출/보너스 진입)
@@ -644,13 +645,33 @@ export class GameState extends Phaser.Events.EventEmitter {
     this.emit("changed");
   }
 
-  advanceTutorial(action) {
-    if (this.data.tutorial.done) return;
-    const expected = ["click", "upgrade", "staff", "event", "stage"];
-    if (expected[this.data.tutorial.step] !== action) return;
-    this.data.tutorial.step += 1;
-    if (this.data.tutorial.step >= expected.length) {
-      this.data.tutorial.done = true;
+  // 온보딩 진행은 행동 순서가 아니라 누적 통계에서 파생한다(로드맵 #14).
+  // 채용을 업그레이드보다 먼저 해도, 예전 세이브가 중간 단계에 멈춰 있어도 실제 진행과 항상 일치한다.
+  tutorialProgress(data = this.data) {
+    const stats = data.stats || {};
+    return {
+      click: (stats.totalClicks || 0) >= 1,
+      upgrade: (stats.totalUpgrades || 0) >= 1,
+      staff: Object.values(data.staff || {}).some((lv) => (Number(lv) || 0) > 0),
+      event: (stats.totalEvents || 0) >= 1,
+      stage: (data.stage?.completed || 0) >= 1,
+    };
+  }
+
+  // 다음 코치 힌트 키(click→upgrade→staff→event→stage). 완료면 null.
+  tutorialNextStep() {
+    if (this.data.tutorial?.done) return null;
+    const p = this.tutorialProgress();
+    return TUTORIAL_STEPS.find((k) => !p[k]) || null;
+  }
+
+  advanceTutorial() {
+    const t = this.data.tutorial;
+    if (!t || t.done) return;
+    const p = this.tutorialProgress();
+    t.step = TUTORIAL_STEPS.filter((k) => p[k]).length;
+    if (t.step >= TUTORIAL_STEPS.length) {
+      t.done = true;
       this.data.explain += 30;
       this.addLog("운영 안내 완료");
       this.emit("float", { text: "튜토리얼 완료", x: 195, y: 190, color: "#89d98b" });
@@ -2369,7 +2390,7 @@ export class GameState extends Phaser.Events.EventEmitter {
   intakeFor(data) {
     const raw = facilities.reduce((sum, item) => {
       const lv = data.facilities[item.id] || 0;
-      return sum + lv * item.cps * this.facilityMilestoneFactor(lv);
+      return sum + lv * item.cps * this.facilityMilestoneFactor(lv, item);
     }, 0);
     return raw * this._globalProductionMultiplier(data);
   }
@@ -2378,7 +2399,7 @@ export class GameState extends Phaser.Events.EventEmitter {
   capacityFor(data) {
     const raw = facilities.reduce((sum, item) => {
       const lv = data.facilities[item.id] || 0;
-      return sum + lv * item.cps * (item.capacity ?? 1) * this.facilityMilestoneFactor(lv);
+      return sum + lv * item.cps * (item.capacity ?? 1) * this.facilityMilestoneFactor(lv, item);
     }, 0);
     const staffCap = staffDefinitions.reduce((sum, staff) => sum + (data.staff?.[staff.id] || 0) * (staff.capacityBonus || 0), 0);
     return raw * this._globalProductionMultiplier(data) * (1 + staffCap + this.operationEffectFor(data, "capacityPct"));
@@ -2389,16 +2410,24 @@ export class GameState extends Phaser.Events.EventEmitter {
     return Math.min(this.intakeFor(data), this.capacityFor(data));
   }
 
+  // 시설별 도달 가능한 마일스톤 목록. 데이터의 milestones가 있으면 우선, 없으면 기본값을 maxLevel로 거른다.
+  facilityMilestones(facilityOrId) {
+    const facility = typeof facilityOrId === "string" ? this.facility(facilityOrId) : facilityOrId;
+    const max = facility?.maxLevel || 99;
+    const source = Array.isArray(facility?.milestones) ? facility.milestones : FACILITY_MILESTONES;
+    return source.filter((m) => m <= max);
+  }
+
   // 시설 레벨이 마일스톤을 넘을 때마다 해당 시설 생산 ×2 누적(AdVenture Capitalist식 영구 보너스)
-  facilityMilestoneFactor(level) {
+  facilityMilestoneFactor(level, facilityOrId) {
     let f = 1;
-    for (const m of FACILITY_MILESTONES) if (level >= m) f *= 2;
+    for (const m of this.facilityMilestones(facilityOrId)) if (level >= m) f *= 2;
     return f;
   }
 
-  // 해당 레벨 기준 다음 마일스톤(없으면 null) — 시설 카드 "다음 보너스 LvN" 표기용
-  nextFacilityMilestone(level) {
-    for (const m of FACILITY_MILESTONES) if (level < m) return m;
+  // 해당 레벨 기준 다음 마일스톤(없으면 null) — 시설 카드 "다음 보너스 LvN" 표기용. maxLevel을 넘는 값은 돌려주지 않는다.
+  nextFacilityMilestone(level, facilityOrId) {
+    for (const m of this.facilityMilestones(facilityOrId)) if (level < m) return m;
     return null;
   }
 

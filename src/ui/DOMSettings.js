@@ -2,6 +2,7 @@ import { iconHtml } from "./icon.js";
 import pkg from "../../package.json";
 import { cloudEnabled } from "../firebaseConfig.js";
 import { mirrorNativeSave, clearNativeSave } from "../state/persistence.js";
+import { a11yPrefs, setA11yPref } from "./a11y.js";
 
 const SAVE_KEY = "trust-office-phaser-v2";
 const PRIVACY_URL = "https://gaepyo-tycoon.web.app/privacy.html";
@@ -38,6 +39,7 @@ export class DOMSettings {
     const bellRow = n && n.supported && n.supported() && n.granted()
       ? `<div class="gp-set__row"><span>${iconHtml("ui-bell", { size: 32 })}알림</span><button class="gp-btn gp-btn--sm" data-set="bell">${n.muted() ? "꺼짐" : "켜짐"}</button></div>`
       : "";
+    const a11y = a11yPrefs();
     const cloudRow = cloudEnabled()
       ? `<div class="gp-set__row"><span>클라우드 저장</span><b class="gp-set__ok">자동 동기화 중</b></div>`
       : "";
@@ -47,6 +49,9 @@ export class DOMSettings {
         <div class="gp-set__row"><span>소리</span><button class="gp-btn gp-btn--sm" data-set="mute">${this._muted ? "꺼짐" : "켜짐"}</button></div>
         ${bellRow}
         ${cloudRow}
+        <div class="gp-map__era">보기</div>
+        <div class="gp-set__row"><span>큰 글씨</span><button class="gp-btn gp-btn--sm" data-set="bigtext" aria-pressed="${a11y.bigText}">${a11y.bigText ? "켜짐" : "꺼짐"}</button></div>
+        <div class="gp-set__row"><span>움직임 줄이기</span><button class="gp-btn gp-btn--sm" data-set="reducemotion" aria-pressed="${a11y.reduceMotion}">${a11y.reduceMotion ? "켜짐" : "꺼짐"}</button></div>
         <div class="gp-map__era">데이터</div>
         <div class="gp-set__row"><span>세이브 내보내기</span><button class="gp-btn gp-btn--sm" data-set="export">복사</button></div>
         <div class="gp-set__row"><span>세이브 가져오기</span><button class="gp-btn gp-btn--sm" data-set="import">붙여넣기</button></div>
@@ -54,7 +59,7 @@ export class DOMSettings {
         <div class="gp-map__era">정보</div>
         <div class="gp-set__row"><span>버전</span><b>v${pkg.version}</b></div>
         <div class="gp-set__row"><span>개인정보처리방침</span><button class="gp-btn gp-btn--sm" data-set="privacy">보기</button></div>
-        <div class="gp-set__note">폰트: Galmuri(quiple), Press Start 2P — OFL 라이선스 · 엔진: Phaser 3</div>
+        <div class="gp-set__note">폰트: Jua·Do Hyeon(우아한형제들), Galmuri(quiple) — SIL OFL · 아트 출처: /art/CREDITS.md · 엔진: Phaser 3</div>
         <div class="gp-set__note">※ 본 게임은 창작 픽션입니다. 등장하는 기관·사건·인물은 실존과 무관하며 특정 대상을 비방할 의도가 없습니다.</div>
       </div>
       <div class="gp-map__foot">믿어주세요, 개표국</div>
@@ -72,6 +77,12 @@ export class DOMSettings {
     } else if (act === "bell") {
       const n = this.notifications;
       if (n) { n.setMuted(!n.muted()); this._render(); }
+    } else if (act === "bigtext") {
+      setA11yPref("bigText", !a11yPrefs().bigText);
+      this._render();
+    } else if (act === "reducemotion") {
+      setA11yPref("reduceMotion", !a11yPrefs().reduceMotion);
+      this._render();
     } else if (act === "export") {
       try {
         this.gameState.save(false);

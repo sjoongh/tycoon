@@ -10,6 +10,10 @@ const PWA_VERSION_FILES = [
   "icon.svg",
   "icons/icon-192.png",
   "fonts/fonts.css",
+  // 카툰 UI 본폰트·아이콘 아틀라스도 버전 해시에 포함 — 바뀌면 SW 캐시가 갱신된다(로드맵 #9 잔여)
+  "fonts/Jua.woff2",
+  "fonts/DoHyeon.woff2",
+  "art/icons96.png",
   "fonts/Galmuri9.woff2",
   "fonts/Galmuri11.woff2",
   "fonts/Galmuri14.woff2",
