@@ -29,8 +29,6 @@ export class DOMRewardUI {
     parent.appendChild(this.toast);
     this._onOffer = (e) => this._offer(e.detail);
     document.addEventListener("gp:reward-offer", this._onOffer);
-    this._onFail = () => this.gameState.emit("float", { text: "광고를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요", x: 195, y: 470, color: "#ff9a8e" });
-    document.addEventListener("gp:reward-failed", this._onFail);
     // 생산 2배 부스트 칩(오늘의 할 일 칩 아래)
     this.boost = document.createElement("button");
     this.boost.className = "gp-boost";
@@ -76,8 +74,8 @@ export class DOMRewardUI {
     if (left > 0) { html = `<b>생산 2배</b><span>${fmtClock(left)}</span>`; cls += " gp-boost--on"; }
     else {
       const st = rewardStatus("boost");
-      if (st.ready) { html = `<b>생산 2배</b><span>${st.mode === "ad" ? "▶ 광고 4시간" : "4시간 받기"}</span>`; cls += " gp-boost--ready"; }
-      else html = `<b>생산 2배</b><span>${st.capped ? "오늘 끝" : `${fmtWait(st.waitMs)} 후`}</span>`;
+      if (st.ready) { html = `<b>생산 2배</b><span>4시간 받기</span>`; cls += " gp-boost--ready"; }
+      else html = `<b>생산 2배</b><span>${fmtWait(st.waitMs)} 후</span>`;
     }
     if (this.boost.innerHTML !== html) this.boost.innerHTML = html;
     this.boost.className = cls;
