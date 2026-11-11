@@ -1110,7 +1110,7 @@ export class DOMBottomPanel {
     const selCost = selDef ? gs.prestigeUpgradeCost(sel) : 0;
     const selCanBuy = selDef && gs.data.prestige.medals >= selCost && selLv < selDef.maxLevel;
 
-    const grid = medalUpgrades.map((u) => {
+    const grid = medalUpgrades.filter((u) => !u.rule).map((u) => {
       const lv = gs.prestigeUpgradeLevel(u.id);
       const cost = gs.prestigeUpgradeCost(u.id);
       const isActive = u.id === sel;
@@ -1128,8 +1128,17 @@ export class DOMBottomPanel {
       <button class="gp-btn gp-btn--sm gp-btn--gold ${selCanBuy ? "gp-btn--ready" : "gp-btn--disabled"}" data-action="buyPrestige" data-id="${sel}">구매</button>
     </div>` : "";
 
+    // 조례: 1회 구매로 규칙이 바뀌는 해금(중반 사막 해소)
+    const rules = medalUpgrades.filter((u) => u.rule).map((u) => {
+      const owned = gs.hasRule?.(u.id);
+      const cost = gs.prestigeUpgradeCost(u.id);
+      const can = !owned && gs.data.prestige.medals >= cost;
+      return `<div class="gp-rule${owned ? " gp-rule--on" : ""}"><span class="gp-rule__body"><b>${u.name}</b><small>${u.desc}</small></span>${owned ? `<em>시행 중</em>` : `<button class="gp-btn gp-btn--sm gp-btn--gold ${can ? "gp-btn--ready" : "gp-btn--disabled"}" data-action="buyPrestige" data-id="${u.id}">훈장 ${cost}</button>`}</div>`;
+    }).join("");
     return `<div class="gp-goal__section" style="margin-top:10px">${iconHtml("ui-medal", { size: 32 })}훈장 전당 · 2차 · 보유 ${gs.data.prestige.medals}</div>
       <div class="gp-sealgrid">${grid}</div>
-      ${detail}`;
+      ${detail}
+      <div class="gp-goal__section" style="margin-top:10px">조례 · 새 규칙</div>
+      <div class="gp-rules">${rules}</div>`;
   }
 }

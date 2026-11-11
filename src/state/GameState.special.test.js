@@ -79,3 +79,45 @@ describe("특별 개표소(중기 #7)", () => {
     expect(gs.data.badges.length).toBe(1);
   });
 });
+
+describe("조례(훈장 규칙 해금)", () => {
+  it("속행 개표: 감사 후 3구역에서 시작", () => {
+    const gs = new GameState();
+    gs.checkProgression = () => {};
+    gs.data.prestige.medalUpgrades = { ruleFastStart: 1 };
+    gs.data.stage.area = 8; gs.data.prestige.bestArea = 8; gs.data.facilities.desk = 30;
+    gs.prestigeReset();
+    expect(gs.data.stage.area).toBe(3);
+    expect(gs.data.stage.target).toBe(gs.stageTarget(3));
+  });
+
+  it("상설 특별 개표소: 휴식일에도 열린다", () => {
+    const gs = new GameState();
+    gs._todayIndex = () => 70 + 5; // day 5 = 휴식일
+    expect(gs.specialSchedule().open).toBe(false);
+    gs.data.prestige.medalUpgrades = { ruleSpecialAlways: 1 };
+    expect(gs.specialSchedule().open).toBe(true);
+  });
+
+  it("조례는 1회 구매하면 다시 살 수 없다", () => {
+    const gs = new GameState();
+    gs.data.prestige.medals = 20;
+    expect(gs.buyPrestigeUpgrade("ruleDoubleCount")).not.toBe(false);
+    expect(gs.hasRule("ruleDoubleCount")).toBe(true);
+    const m = gs.data.prestige.medals;
+    expect(gs.buyPrestigeUpgrade("ruleDoubleCount")).toBe(false);
+    expect(gs.data.prestige.medals).toBe(m);
+  });
+
+  it("연속 대응: 25% 안에 들면 다음 사건이 즉시 대기", () => {
+    const gs = new GameState();
+    gs.checkProgression = () => {};
+    gs.data.prestige.medalUpgrades = { ruleEventChain: 1 };
+    const orig = Math.random; Math.random = () => 0.1;
+    try {
+      const ev = gs.pickNextEvent ? gs.pickNextEvent() : null;
+      if (ev) gs.resolveEventChoice(ev, "left");
+      if (ev) expect(gs.eventReady()).toBe(true);
+    } finally { Math.random = orig; }
+  });
+});

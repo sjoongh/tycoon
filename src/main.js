@@ -176,6 +176,10 @@ game.events.once("ready", () => {
   if (gameState.offlineReward) logEvt("offline_reward", { min: Math.round(gameState.offlineReward.elapsed / 60000), area: gameState.data.stage.area });
   gameState.on("golden", (p) => logEvt("golden_tap", { kind: p?.kind }));
   gameState.on("special-tier", (p) => logEvt("special_tier", { tier: p?.id }));
+  gameState.on("prestige-done", (p) => logEvt("prestige_done", { runs: p?.runs, seals: p?.seals, medals: p?.medals }));
+  gameState.on("rule-bought", (p) => logEvt("rule_buy", { id: p?.id }));
+  gameState.on("dex-set", (p) => logEvt("dex_set", { id: p?.id }));
+  gameState.on("weekly-badge", (p) => logEvt("weekly_badge", { tier: p?.tier, rank: p?.rank }));
   document.addEventListener("gp:special-open", () => logEvt("special_open", {}));
   document.addEventListener("gp:reward-claimed", (e) => logEvt("reward_claim", { kind: e.detail?.kind, mode: e.detail?.mode }));
   gameState.on("comm-collapse", () => logEvt("communist_collapse", {}));
