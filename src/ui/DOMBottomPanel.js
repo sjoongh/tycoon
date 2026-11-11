@@ -302,7 +302,9 @@ export class DOMBottomPanel {
     let saved = null;
     try { saved = JSON.parse(localStorage.getItem(SHEET_STORE_KEY) || "null"); } catch {}
     const perTab = { ...SHEET_DEFAULT, ...(saved?.perTab || {}) };
-    const state = SHEET_STATES.includes(saved?.state) ? saved.state : (perTab[this.gameState.data.activeTab] || "half");
+    // 첫 플레이(온보딩 전)는 월드를 크게 — 접힘에서 시작해 "화면을 탭하세요" 안내와 손가락이 시트에 가리지 않게
+    const fresh = !saved && !this.gameState.data.tutorial?.done;
+    const state = SHEET_STATES.includes(saved?.state) ? saved.state : (fresh ? "peek" : (perTab[this.gameState.data.activeTab] || "half"));
     return { state, perTab };
   }
 

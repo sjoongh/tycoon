@@ -229,7 +229,8 @@ export class WorldView {
 
     // 캔버스에 도달한 빈 공간 탭만 득표로 처리(하단 DOM 패널은 자체 처리)
     this._onPointer = (pointer, currentlyOver) => {
-      if (currentlyOver && currentlyOver.length) return;
+      // 시설·직원·유권자(passTap)는 각자 반응하면서 득표 탭도 그대로 센다. 황금 투표함·아이템·표 뭉치 같은 수집 대상은 막는다.
+      if (currentlyOver && currentlyOver.some((o) => !o.getData?.("passTap"))) return;
       if (this._camDragging) return;
       gameState.processClick(pointer.worldX, pointer.worldY);
       this._squishGov();
@@ -488,7 +489,7 @@ export class WorldView {
         .setOrigin(meta.ax / meta.w, meta.ay / meta.h)
         .setScale(WORLD_SCALE)
         .setDepth(stationDepth(pos.y));
-      s.setInteractive({ useHandCursor: true });
+      s.setInteractive({ useHandCursor: true }).setData("passTap", true);
       s.on("pointerdown", (pointer) => this._onFacilityTap(f.id, pointer));
       this.props.push(s);
       this.propByFacility[f.id] = s;
@@ -982,13 +983,15 @@ export class WorldView {
     const obj = this.propByFacility[id];
     if (!obj || !obj.visible) return;
     if (this._camDragging) return;
-    gs.select(id);
-    document.dispatchEvent(new CustomEvent("gp:sheet-open", { detail: { tab: "facilities" } }));
+    const changed = gs.data.selected !== id;
+    // 선택만 바꾼다(접힘이면 요약 줄, 펼침이면 카드가 이 시설로). 득표 탭은 _onPointer 가 그대로 처리.
+    if (changed && gs.isUnlocked(id)) gs.select(id);
     this._stopPropIdle(id);
     this.scene.tweens.add({ targets: obj, scaleX: WORLD_SCALE * 1.12, scaleY: WORLD_SCALE * 0.92, yoyo: true, duration: 90, ease: "Quad.easeOut", onComplete: () => this._startPropIdle(id, obj) });
-    this.effects.deskPop(obj.x, obj.y - obj.displayHeight * 0.6);
-    const f = gs.facility(id);
-    this.effects.float({ text: `${f?.name || id} Lv.${gs.level(id)}`, x: obj.x, y: obj.y - obj.displayHeight - 8, color: "#ffe9c0" });
+    if (changed) {
+      const f = gs.facility(id);
+      this.effects.float({ text: `${f?.name || id} Lv.${gs.level(id)}`, x: obj.x, y: obj.y - obj.displayHeight - 8, color: "#ffe9c0" });
+    }
   }
 
   _onWorkerTap(staffId) {
@@ -1089,7 +1092,7 @@ export class WorldView {
     const qi = this._visitors.length;
     const spot = tileCenter(ISO.QUEUE.i + qi * ISO.QUEUE.di + Math.random() * 0.15, ISO.QUEUE.j + qi * ISO.QUEUE.dj);
     const body = this.scene.add.sprite(door.x, door.y, texKey).setOrigin(0.5, 1).setScale(WORKER_SCALE * 0.92).setDepth(workerDepth(door.y)).setAlpha(0);
-    body.setInteractive({ useHandCursor: true });
+    body.setInteractive({ useHandCursor: true }).setData("passTap", true);
     const visitor = { body, thanked: false };
     body.on("pointerdown", () => this._onVisitorTap(visitor));
     this._visitors.push(visitor);
@@ -1290,7 +1293,7 @@ export class WorldView {
         const body = this.scene.add.sprite(pos.x, pos.y, workerSpriteKey(variant, 0)).setOrigin(0.5, 1).setScale(0).setDepth(workerDepth(pos.y));
         body.setFlipX(slot.facing === "left");
         body.play(`worker-type-${variant}`);
-        body.setInteractive({ useHandCursor: true });
+        body.setInteractive({ useHandCursor: true }).setData("passTap", true);
         body.on("pointerdown", () => this._onWorkerTap(id));
         const badge = this.scene.add.text(pos.x + 14, pos.y - 54, rank.tier ? String(rank.tier) : "", { fontFamily: '"Jua", sans-serif', fontSize: "11px", color: "#4a2600", backgroundColor: "#ffc53d", padding: { x: 4, y: 1 } }).setOrigin(0.5, 1).setScale(0).setDepth(workerDepth(pos.y) + 1);
         worker = { facId, rank: rank.tier, body, badge, shadow, home: { x: pos.x, y: pos.y }, facing: slot.facing, busy: false };

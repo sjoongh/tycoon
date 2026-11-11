@@ -23,7 +23,8 @@ export async function initNative() {
   try {
     const { App } = await import("@capacitor/app");
     App.addListener("backButton", () => {
-      const ov = document.querySelector(".gp-modal-ov, .gp-map-ov");
+      // 지도·설정 오버레이는 숨긴 채(hidden) 항상 DOM에 있으므로 '보이는' 것만 대상으로 한다
+      const ov = [...document.querySelectorAll(".gp-modal-ov, .gp-map-ov")].find((el) => !el.hidden && el.getClientRects().length > 0);
       if (ov) {
         const x = ov.querySelector("[data-close], .gp-map__x, .gp-dexdt__x, [data-confirm]");
         if (x) x.click(); else ov.remove();
