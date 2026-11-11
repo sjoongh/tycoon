@@ -1,7 +1,7 @@
 {
   "name": "trust-counting-office",
   "private": true,
-  "version": "1.8.0",
+  "version": "1.9.0",
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0 --port 5178",
@@ -32,7 +32,6 @@
     "test:a11y": "node scripts/_a11ytest.mjs"
   },
   "dependencies": {
-    "@capacitor-community/admob": "^8.3.0",
     "@capacitor/android": "^8.5.0",
     "@capacitor/app": "^8.1.1",
     "@capacitor/core": "^8.5.0",

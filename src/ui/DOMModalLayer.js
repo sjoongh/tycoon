@@ -1,5 +1,4 @@
 import { pickPress } from "../data/worldPress.js";
-import { rewardMode, rewardStatus, claimReward } from "../ads/rewardSlot.js";
 import { regionFor, eraTheme } from "../data/regions.js";
 import { roomStageFor, roomStageLabel } from "../world/iso.js";
 import { shortNumber } from "../utils/format.js";
@@ -620,13 +619,7 @@ export class DOMModalLayer {
     const previousCarry = Math.max(0, carryTotal - carryAdded);
     // FIX P0: 2× button uses gold+ready theme (premium CTA), physically larger than plain claim
     // Plain claim uses gp-btn--disabled style so gold 2× is the obvious choice
-    const adOffline = !can2x && rewardMode() === "ad" && rewardStatus("offline2x").ready;
-    const footer = adOffline
-      ? `<div class="gp-confirm-row" style="align-items:stretch">
-           <button class="gp-btn gp-btn--disabled" data-close style="flex:1">그냥 수령</button>
-           <button class="gp-btn gp-btn--gold gp-btn--ready gp-btn--upgrade" data-ad2x style="flex:1.4;font-size:15px">▶ 광고 보고 2배<small>이월도 추가</small></button>
-         </div>`
-      : can2x
+    const footer = can2x
       ? `<div class="gp-confirm-row" style="align-items:stretch">
            <button class="gp-btn gp-btn--disabled" data-close style="flex:1">그냥 수령</button>
            <button class="gp-btn gp-btn--gold gp-btn--ready gp-btn--upgrade" data-confirm style="flex:1.4;font-size:15px">2배로 받기<small>이월도 추가 · 하루 1회</small></button>
@@ -644,15 +637,6 @@ export class DOMModalLayer {
       ${carryTotal > 0 ? `<div class="gp-offline-note">미처리 개표함 ${shortNumber(carryTotal)}표${previousCarry > 0 ? ` · 기존 ${shortNumber(previousCarry)} 포함` : ""}<br>지역 완료 때 자동 반영되며 보스·작전 앞에서 멈춥니다.</div>` : ""}
       ${this._awayHeadlines()}
       ${footer}`, () => this.gameState.claimOfflineBonus(), onClose);
-    if (adOffline) {
-      const btn = this.root.querySelector(".gp-modal-ov [data-ad2x]");
-      btn?.addEventListener("click", async () => {
-        btn.disabled = true;
-        const ok = await claimReward("offline2x");
-        if (ok) this.gameState.claimOfflineBonus({ force: true });
-        this.root.querySelector(".gp-modal-ov [data-close]")?.click();
-      });
-    }
   }
 
   // 승격 1컷 카드(단기 #8): 지역이 바뀔 때 신문 1면처럼 — 지역명·한 줄 설명·외신 헤드라인. 거지키우기의 회상카드, AdCap의 행성 전환 모델.

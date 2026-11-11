@@ -3,7 +3,6 @@ import pkg from "../../package.json";
 import { cloudEnabled } from "../firebaseConfig.js";
 import { mirrorNativeSave, clearNativeSave } from "../state/persistence.js";
 import { a11yPrefs, setA11yPref } from "./a11y.js";
-import { privacyOptionsRequired, showPrivacyOptions } from "../ads/admob.js";
 
 const SAVE_KEY = "trust-office-phaser-v2";
 const PRIVACY_URL = "https://gaepyo-tycoon.web.app/privacy.html";
@@ -17,8 +16,6 @@ export class DOMSettings {
     this._muted = false;
     this._onMute = (e) => { this._muted = e.detail; this._syncRows(); };
     document.addEventListener("gp:mute-changed", this._onMute);
-    this._adPrivacy = false; // 유럽 등 동의 규정 지역에서만 true(UMP 판단)
-    privacyOptionsRequired().then((v) => { this._adPrivacy = v; this._syncRows(); }).catch(() => {});
 
     this.root = document.createElement("div");
     this.root.className = "gp-map-ov gp-settings-ov";
@@ -62,7 +59,6 @@ export class DOMSettings {
         <div class="gp-map__era">정보</div>
         <div class="gp-set__row"><span>버전</span><b>v${pkg.version}</b></div>
         <div class="gp-set__row"><span>개인정보처리방침</span><button class="gp-btn gp-btn--sm" data-set="privacy">보기</button></div>
-        ${this._adPrivacy ? `<div class="gp-set__row"><span>광고 개인정보 설정</span><button class="gp-btn gp-btn--sm" data-set="adprivacy">변경</button></div>` : ""}
         <div class="gp-set__note">폰트: Jua·Do Hyeon(우아한형제들), Galmuri(quiple) — SIL OFL · 아트 출처: /art/CREDITS.md · 엔진: Phaser 3</div>
         <div class="gp-set__note">※ 본 게임은 창작 픽션입니다. 등장하는 기관·사건·인물은 실존과 무관하며 특정 대상을 비방할 의도가 없습니다.</div>
       </div>
@@ -128,8 +124,6 @@ export class DOMSettings {
       }
     } else if (act === "privacy") {
       window.open(PRIVACY_URL, "_blank", "noopener");
-    } else if (act === "adprivacy") {
-      showPrivacyOptions();
     }
   }
 
