@@ -615,7 +615,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     data.stats.totalOfflineMs += elapsed;
     // 특별 개표소: 열려 있는 주에만 50% 속도로 오프라인 적립(최대 8시간)
     try {
-      const sch = specialSchedule(this._todayIndex());
+      const sch = this.data ? this.specialSchedule() : specialSchedule(this._todayIndex());
       if (sch.open && data.special?.week === sch.week) addSpecialVotes(data.special, specialOfflineGain(data.special, elapsed));
     } catch {}
 
@@ -778,7 +778,11 @@ export class GameState extends Phaser.Events.EventEmitter {
     const comboMult = 1 + comboBonus * (1 + this.operationEffectFor(this.data, "comboBonusPct"));
     // 열기를 가득 채운 바로 그 탭부터 피버 배율이 적용되어 임계점의 손맛이 즉시 느껴진다.
     this.addFever("tap", 2);
-    const amount = Math.round(this.clickPower() * comboMult);
+    let amount = Math.round(this.clickPower() * comboMult);
+    if (this.hasRule("ruleDoubleCount") && Math.random() < 0.12) {
+      amount *= 5;
+      this.emit("float", { text: `이중 개표 ×5`, x: x ?? 195, y: (y ?? 400) - 30, color: "#ffd34d" });
+    }
     this.addVotes(amount);
     const bossPattern = this.bossPatternStatus();
     if (bossPattern?.phase.type === "rapid") this.bossAction("rapid");
@@ -1622,6 +1626,10 @@ export class GameState extends Phaser.Events.EventEmitter {
     if (fever) this.addFever("event", 28);
     this._bumpDaily("events");
     this.data.eventReadyAt = clock.now() + this.eventCooldownTotalMs();
+    if (this.hasRule("ruleEventChain") && Math.random() < 0.25) {
+      this.data.eventReadyAt = clock.now();
+      this.emit("float", { text: "연속 대응! 다음 사건 대기", x: 195, y: 510, color: "#ffd479" });
+    }
     this.trackFeverAction();
     this.advanceTutorial("event");
     this.addLog(`사건 대응: 믿음 ${Math.round(this.data.trust)}%`);
@@ -2113,9 +2121,17 @@ export class GameState extends Phaser.Events.EventEmitter {
     if (startDesk > 0) this.data.facilities.desk = Math.max(this.data.facilities.desk, 1 + startDesk);
     const startTrust = this.permanentEffectFor(this.data, "startTrust");
     if (startTrust > 0) this.data.trust = Phaser.Math.Clamp(this.data.trust + startTrust, 0, 95);
+    if (this.hasRule("ruleFastStart") && this.data.stage.area < 3) {
+      this.data.stage.completed += 3 - this.data.stage.area;
+      this.data.stage.area = 3;
+      this.data.stage.progress = 0;
+      this.data.stage.target = this.stageTarget(3);
+      this.addLog("속행 개표 · 3구역에서 시작");
+    }
     this.offlineReward = null;
     this.emit("float", { text: `제도인장 +${earned}`, x: 195, y: 190, color: "#bba2ff" });
     if (medalEarned > 0) this.emit("float", { text: `훈장 +${medalEarned}`, x: 195, y: 158, color: "#ffd479" });
+    this.emit("prestige-done", { runs: this.data.prestige.runs, seals: earned, medals: medalEarned });
     this.emit("changed");
     this.save(false);
     return true;
@@ -2144,6 +2160,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     this.emit("float", { text: `${upgrade.shortName} 강화`, x: 195, y: 604, color: isMedal ? "#ffd479" : "#bba2ff" });
     this.emit("changed");
     this.save(false);
+    if (upgrade.rule) this.emit("rule-bought", { id });
     return true;
   }
 
@@ -2372,8 +2389,15 @@ export class GameState extends Phaser.Events.EventEmitter {
 
   latestBadges(n = 4) { return (this.data.badges || []).slice(-n); }
 
+  // ── 조례(훈장 규칙 해금, 중반 사막 해소) ──
+  hasRule(id) { return (this.data.prestige?.medalUpgrades?.[id] || 0) > 0; }
+
   // ── 특별 개표소(중기 #7) ──
-  specialSchedule() { return specialSchedule(this._todayIndex()); }
+  specialSchedule() {
+    const s = specialSchedule(this._todayIndex());
+    if (!s.open && this.hasRule("ruleSpecialAlways")) return { ...s, open: true, daysLeft: 7 - s.day, daysUntilOpen: 0 };
+    return s;
+  }
 
   _ensureSpecial() {
     const sch = this.specialSchedule();
@@ -2426,7 +2450,7 @@ export class GameState extends Phaser.Events.EventEmitter {
   }
 
   _tickSpecial() {
-    const sch = specialSchedule(this._todayIndex());
+    const sch = this.specialSchedule();
     if (!sch.open) return;
     if (this.data.special.week !== sch.week) this._ensureSpecial();
     const g = specialPerSecond(this.data.special);

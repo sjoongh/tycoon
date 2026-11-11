@@ -869,7 +869,9 @@ export class WorldView {
       // 보상 슬롯: 후원금·특보는 키울 수 있다(광고 모드면 광고, 아니면 무료 쿨다운)
       if (out.kind === "donation" || out.kind === "breaking") document.dispatchEvent(new CustomEvent("gp:reward-offer", { detail: { kind: "golden3x", out } }));
       this._despawnGolden();
-      this._scheduleGolden(GOLDEN_NEXT_MS());
+      const chain = this.gameState.hasRule?.("ruleGoldenChain") && Math.random() < 0.2;
+      if (chain) this.effects.float({ text: "연쇄 특보 예고!", x, y: y - 50, color: "#ffd479" });
+      this._scheduleGolden(chain ? 30000 : GOLDEN_NEXT_MS());
     });
     // 비서 Lv3 — 잠시 후 자동 수령(80%). 직접 탭하면 100%라 수동이 여전히 이득.
     if (this.gameState.autoAideLevel && this.gameState.autoAideLevel() >= 3) {
@@ -1020,6 +1022,7 @@ export class WorldView {
     this._pileVotes = Math.min((this._pileVotes || 0) + cps, cps * 300);
     const n = Math.min(6, Math.floor(this._pileVotes / (cps * 20)));
     this._syncPile(n);
+    if (n >= 6 && gs.hasRule?.("ruleAutoPile")) this._collectPile(0.7);
   }
 
   _syncPile(n) {
@@ -1051,12 +1054,12 @@ export class WorldView {
     }
   }
 
-  _collectPile() {
-    if (this._camDragging) return;
+  _collectPile(factor = 1) {
+    if (this._camDragging && factor === 1) return;
     const gs = this.gameState;
     const n = this._pileCount || 0;
     if (n <= 0) return;
-    const bonus = Math.max(1, Math.round((this._pileVotes || 0) * 0.12));
+    const bonus = Math.max(1, Math.round((this._pileVotes || 0) * 0.12 * factor));
     gs.grantReward({ votes: bonus });
     gs.emit("changed", { economy: true });
     const p = this._pilePos;

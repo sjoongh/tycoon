@@ -167,4 +167,22 @@ export const AUTO_UPGRADE = {
 };
 medalUpgrades.push(AUTO_UPGRADE);
 
+// 조례(새 규칙) — 훈장으로 1회 구매하면 게임 규칙 자체가 바뀐다(중반 사막 해소, Realm Grinder·Clicker Heroes 2차 레이어 모델).
+// effect 는 비어 있고 GameState.hasRule(id)로 각 시스템이 직접 확인한다.
+export const RULE_UPGRADES = [
+  { id: "ruleFastStart", name: "속행 개표 조례", shortName: "속행", currency: "medal", baseCost: 3, costMul: 1, maxLevel: 1, rule: true,
+    desc: "감사 후 3구역에서 시작(1~2구역 자동 통과)", effect: {} },
+  { id: "ruleDoubleCount", name: "이중 개표 조례", shortName: "이중개표", currency: "medal", baseCost: 3, costMul: 1, maxLevel: 1, rule: true,
+    desc: "탭할 때 12% 확률로 ×5 처리", effect: {} },
+  { id: "ruleAutoPile", name: "자동 수금 조례", shortName: "자동수금", currency: "medal", baseCost: 4, costMul: 1, maxLevel: 1, rule: true,
+    desc: "창구 앞 표 뭉치가 가득 차면 자동 수금(70%)", effect: {} },
+  { id: "ruleGoldenChain", name: "연쇄 특보 조례", shortName: "연쇄특보", currency: "medal", baseCost: 4, costMul: 1, maxLevel: 1, rule: true,
+    desc: "황금 투표함을 잡으면 20% 확률로 30초 뒤 하나 더 등장", effect: {} },
+  { id: "ruleEventChain", name: "연속 대응 조례", shortName: "연속대응", currency: "medal", baseCost: 5, costMul: 1, maxLevel: 1, rule: true,
+    desc: "사건 대응 후 25% 확률로 다음 사건 즉시 대기", effect: {} },
+  { id: "ruleSpecialAlways", name: "상설 특별 개표소", shortName: "상설개소", currency: "medal", baseCost: 6, costMul: 1, maxLevel: 1, rule: true,
+    desc: "특별 개표소가 휴식일 없이 주 7일 열림", effect: {} },
+];
+medalUpgrades.push(...RULE_UPGRADES);
+
 export const allPrestigeUpgrades = [...prestigeUpgrades, ...medalUpgrades];
