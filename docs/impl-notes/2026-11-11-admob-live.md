@@ -5,7 +5,9 @@
 - `public/app-ads.txt` 배포(`google.com, pub-8097341368838823, DIRECT, f08c47fec0942fa0`). AdMob 앱 검토는 app-ads.txt 확인 대기.
 - Play Console: 광고 포함=예, 광고 ID=예(광고·마케팅), 데이터 보안 양식 갱신(기기 ID·대략적 위치·앱 상호작용·진단 = 수집·공유, 사용자 ID = 수집만), 삭제 URL `privacy.html#delete`. 검토 제출.
 - 개인정보처리방침 2026-11-11 개정(광고 ID, AdMob 처리자, 거부 방법, 삭제 요청 절차).
-- **미완(수동)**: AdMob '개인정보 보호 및 메시지 → 유럽 규정' 동의 메시지 생성·게시. 게시 전에는 UMP가 "no form(s) configured" 오류를 내고, 유럽 이용자에게 광고가 나가지 않는다.
+- AdMob 유럽 규정 메시지 게시(2026-11-11): 앱 '믿어주세요 개표국', 기본 언어 영어, 개인정보처리방침 URL `https://gaepyo-tycoon.web.app/privacy.html`, 동의·옵션 관리 사용, '동의하지 않음' 버튼은 기본값(미설정). 게시 후 앱의 UMP 요청에서 "no form(s) configured" 오류가 사라지고 CMP ID 300이 기록됨.
+- Play 스토어 등록정보 연락처에 웹사이트 `https://gaepyo-tycoon.web.app` 추가(즉시 게시). AdMob 앱 인증은 이 도메인 루트의 app-ads.txt를 읽는다. 추가 전에는 "세부정보가 일치하지 않음"으로 인증 실패.
+- 판매자 상태 선언(계정 단위, 기한 2027-02-01): 미제출. 판매자로 선언하면 개인 계정의 법적 이름·주소가 EU 이용자에게 공개되므로 계정 소유자 결정 필요.
 
 ## 코드
 - `src/ads/admob.js`: 초기화 직후 UMP `requestConsentInfo` → `REQUIRED`이고 양식이 있으면 `showConsentForm`. `showRewarded()`는 `"rewarded" | "dismissed" | "failed"`를 돌려준다.
