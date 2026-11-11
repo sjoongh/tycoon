@@ -55,3 +55,20 @@ describe("주간 랭킹 뱃지(단기 #6)", () => {
     expect(hits).toEqual([10, 20]);
   });
 });
+
+describe("인장 공식(중기 #3)", () => {
+  it("이번 런 처리 표가 많을수록 인장이 늘고(√), 1시간 미리보기는 지금보다 크거나 같다", () => {
+    const gs = new GameState();
+    gs.data.stage.area = 6;
+    gs.data.prestige.bestArea = 6;
+    gs.data.facilities.desk = 30;
+    gs.data.stats.totalVotes = 44000 * 4;
+    const a = gs.prestigePreview();
+    gs.data.stats.totalVotes = 44000 * 16;
+    const b = gs.prestigePreview();
+    expect(a).toBeGreaterThan(0);
+    expect(b).toBeGreaterThan(a);
+    const pj = gs.prestigeProjection();
+    expect(pj.earnedIn1h).toBeGreaterThanOrEqual(pj.earned);
+  });
+});

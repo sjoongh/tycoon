@@ -829,3 +829,10 @@ body { background-color: var(--bg-deep); background-image: repeating-linear-grad
 .gp-today--ready { background: var(--buy); color: #04220f; animation: gp-rush-pulse 1.4s ease-in-out infinite; }
 .gp-today--ready span { color: #04220f; }
 .gp-ui--sheet-full .gp-today { display: none; }
+
+/* ---------- 감사 미리보기·병목 강조 (중기 #3·#4) ---------- */
+.gp-prestige-later { margin-top: 8px; text-align: center; font-family: var(--f-small); font-size: var(--type-body-sm); color: #c7d8e3; background: var(--panel-sunk); border: 2px solid var(--line); border-radius: var(--r-sm); padding: 6px 10px; }
+.gp-prestige-later b { color: var(--gem); }
+.gp-fac--need { box-shadow: var(--px-out-sm), 0 0 0 3px #ff6b6b !important; }
+.gp-fac--need::after { content: "용량"; position: absolute; top: -7px; right: -4px; font-family: var(--f-small); font-size: 9px; background: #ff6b6b; color: #fff; border: 1px solid var(--line); border-radius: 6px; padding: 0 4px; }
+.gp-fac { position: relative; }
