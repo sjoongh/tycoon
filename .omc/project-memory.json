@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastScanned": 1782532438508,
+  "lastScanned": 1794295226745,
   "projectRoot": "/Users/manager/aidp/gaepyo-master",
   "techStack": {
     "languages": [
@@ -15,18 +15,23 @@
     ],
     "frameworks": [
       {
+        "name": "esbuild",
+        "version": "0.28.1",
+        "category": "build"
+      },
+      {
         "name": "playwright",
-        "version": "1.61.1",
+        "version": "1.62.1",
         "category": "testing"
       },
       {
         "name": "vite",
-        "version": "7.0.0",
+        "version": "7.3.6",
         "category": "build"
       },
       {
         "name": "vitest",
-        "version": "4.1.9",
+        "version": "4.1.10",
         "category": "testing"
       }
     ],
@@ -43,11 +48,31 @@
       "build": "vite build",
       "preview": "vite preview --host 0.0.0.0 --port 4178",
       "test": "vitest run",
-      "test:watch": "vitest"
+      "test:watch": "vitest",
+      "test:phaser-core": "node scripts/_phasercoretest.mjs",
+      "test:phaser-stock-rollback": "node scripts/_phaserstockrollbacktest.mjs",
+      "test:phaser-startup": "node scripts/_phaserstartupmeasure.mjs",
+      "test:pwa": "node scripts/_pwaupdatetest.mjs",
+      "test:balance": "node scripts/_balancesim.mjs",
+      "test:staff": "node scripts/_staffdeploymenttest.mjs",
+      "icons:generate": "node scripts/_gen_icons.mjs",
+      "screenshots:generate": "node scripts/_pwascreenshots.mjs",
+      "fonts:subset": "node scripts/_subsetfonts.mjs",
+      "phaser:build": "node tools/phaser/build-custom-phaser.mjs",
+      "phaser:check": "node tools/phaser/assert-custom-phaser.mjs",
+      "phaser:prepare": "node tools/phaser/prepare-phaser.mjs",
+      "prebuild": "npm run fonts:subset && npm run phaser:prepare",
+      "build:android": "npm run build && cap copy android",
+      "android:open": "cap open android",
+      "android:sync": "npm run build && cap sync android",
+      "android:bundle": "npm run android:sync && cd android && ./gradlew --no-daemon clean bundleRelease",
+      "art:icons": "python3 scripts/art/build_icons_glossy.py",
+      "art:world": "python3 scripts/art/build_world_vector.py",
+      "test:a11y": "node scripts/_a11ytest.mjs"
     }
   },
   "conventions": {
-    "namingStyle": null,
+    "namingStyle": "camelCase",
     "importStyle": null,
     "testPattern": null,
     "fileOrganization": null
@@ -63,82 +88,116 @@
       "src",
       "test"
     ],
-    "gitBranches": null
+    "gitBranches": {
+      "defaultBranch": "main",
+      "branchingStrategy": null
+    }
   },
   "customNotes": [],
   "directoryMap": {
+    "android": {
+      "path": "android",
+      "purpose": null,
+      "fileCount": 10,
+      "lastAccessed": 1794295226711,
+      "keyFiles": [
+        "build.gradle",
+        "capacitor.settings.gradle",
+        "gradle.properties",
+        "gradlew",
+        "gradlew.bat"
+      ]
+    },
     "assets": {
       "path": "assets",
       "purpose": "Static assets",
-      "fileCount": 1,
-      "lastAccessed": 1782532438494,
+      "fileCount": 4,
+      "lastAccessed": 1794295226712,
       "keyFiles": [
+        "icon-background.png",
+        "icon-foreground.png",
+        "icon-only.png",
         "office-map.png"
       ]
     },
     "dist": {
       "path": "dist",
       "purpose": "Distribution/build output",
-      "fileCount": 7,
-      "lastAccessed": 1782532438494,
+      "fileCount": 5,
+      "lastAccessed": 1794295226713,
       "keyFiles": [
-        "char.html",
-        "concept6.html",
-        "concepts.html",
         "icon.svg",
-        "index.html"
+        "index.html",
+        "manifest.webmanifest",
+        "privacy.html",
+        "sw.js"
       ]
     },
     "docs": {
       "path": "docs",
       "purpose": "Documentation",
-      "fileCount": 0,
-      "lastAccessed": 1782532438496,
-      "keyFiles": []
+      "fileCount": 2,
+      "lastAccessed": 1794295226714,
+      "keyFiles": [
+        "improvement-roadmap.md",
+        "privacy.html"
+      ]
     },
     "public": {
       "path": "public",
       "purpose": "Public files",
-      "fileCount": 6,
-      "lastAccessed": 1782532438496,
+      "fileCount": 4,
+      "lastAccessed": 1794295226740,
       "keyFiles": [
-        "char.html",
-        "concept6.html",
-        "concepts.html",
         "icon.svg",
-        "manifest.webmanifest"
+        "manifest.webmanifest",
+        "privacy.html",
+        "sw.js"
       ]
     },
     "scripts": {
       "path": "scripts",
       "purpose": "Build/utility scripts",
-      "fileCount": 98,
-      "lastAccessed": 1782532438496,
+      "fileCount": 74,
+      "lastAccessed": 1794295226740,
       "keyFiles": [
+        "_a11ytest.mjs",
         "_achtest.mjs",
         "_balance.mjs",
-        "_brieftest.mjs",
-        "_buffjuicetest.mjs",
-        "_celebtest.mjs"
+        "_balancesim.mjs",
+        "_bosschecktest.mjs"
       ]
     },
     "src": {
       "path": "src",
       "purpose": "Source code",
-      "fileCount": 4,
-      "lastAccessed": 1782532438496,
+      "fileCount": 8,
+      "lastAccessed": 1794295226741,
       "keyFiles": [
+        "cloud.js",
         "config.js",
+        "firebaseConfig.js",
         "main.js",
-        "notifications.js",
-        "style.css"
+        "native.js"
+      ]
+    },
+    "store": {
+      "path": "store",
+      "purpose": null,
+      "fileCount": 5,
+      "lastAccessed": 1794295226741,
+      "keyFiles": [
+        "STORE_LISTING.md",
+        "feature-graphic.png",
+        "icon-512.png",
+        "privacy.html"
       ]
     },
     "test": {
       "path": "test",
       "purpose": "Test files",
-      "fileCount": 7,
-      "lastAccessed": 1782532438497,
+      "fileCount": 8,
+      "lastAccessed": 1794295226741,
       "keyFiles": [
         "assetManifest.test.js",
         "data.test.js",
@@ -147,42 +206,71 @@
         "events.test.js"
       ]
     },
-    "tmp": {
-      "path": "tmp",
+    "tools": {
+      "path": "tools",
       "purpose": null,
       "fileCount": 0,
-      "lastAccessed": 1782532438497,
+      "lastAccessed": 1794295226741,
+      "keyFiles": []
+    },
+    "android/app": {
+      "path": "android/app",
+      "purpose": "Application code",
+      "fileCount": 5,
+      "lastAccessed": 1794295226742,
+      "keyFiles": [
+        "build.gradle",
+        "capacitor.build.gradle",
+        "gaepyo-release.keystore"
+      ]
+    },
+    "android/build": {
+      "path": "android/build",
+      "purpose": "Build output",
+      "fileCount": 0,
+      "lastAccessed": 1794295226743,
       "keyFiles": []
     },
     "dist/assets": {
       "path": "dist/assets",
       "purpose": "Static assets",
-      "fileCount": 3,
-      "lastAccessed": 1782532438497,
+      "fileCount": 15,
+      "lastAccessed": 1794295226743,
       "keyFiles": [
-        "index-D9qap_7b.js",
-        "index-Do5RC4EH.css",
-        "phaser-DFK5Ua9d.js"
+        "index-9RdSKlJu.js",
+        "index-BWLkU21n.js",
+        "index-C207aYua.css"
       ]
     },
     "src/assets": {
       "path": "src/assets",
       "purpose": "Static assets",
-      "fileCount": 1,
-      "lastAccessed": 1782532438498,
+      "fileCount": 3,
+      "lastAccessed": 1794295226744,
       "keyFiles": [
-        "assetManifest.js"
+        "assetManifest.js",
+        "iconAtlas.js",
+        "iconTextures.js"
       ]
     },
     "src/data": {
       "path": "src/data",
       "purpose": "Data files",
-      "fileCount": 10,
-      "lastAccessed": 1782532438498,
+      "fileCount": 22,
+      "lastAccessed": 1794295226745,
       "keyFiles": [
         "achievements.js",
-        "dailyQuests.js",
-        "events.js"
+        "bosses.js",
+        "bosses.test.js"
+      ]
+    },
+    "test/helpers": {
+      "path": "test/helpers",
+      "purpose": "Helper functions",
+      "fileCount": 1,
+      "lastAccessed": 1794295226745,
+      "keyFiles": [
+        "phaser-stub.js"
       ]
     }
   },
@@ -200,6 +288,24 @@
       "type": "file"
     },
     {
+      "path": "research_notes/모바일 타이쿤 레퍼런스 고도화 방향/world_progression.md",
+      "accessCount": 2,
+      "lastAccessed": 1794307894598,
+      "type": "file"
+    },
+    {
+      "path": "research_notes/모바일 타이쿤 레퍼런스 고도화 방향/retention_liveops.md",
+      "accessCount": 2,
+      "lastAccessed": 1794307896192,
+      "type": "file"
+    },
+    {
+      "path": "research_notes/모바일 타이쿤 레퍼런스 고도화 방향/ui_ux_juice.md",
+      "accessCount": 2,
+      "lastAccessed": 1794307896752,
+      "type": "file"
+    },
+    {
       "path": "scripts/_shotmobile.mjs",
       "accessCount": 1,
       "lastAccessed": 1782532748780,
@@ -209,6 +315,114 @@
       "path": "scripts/_shotsizes.mjs",
       "accessCount": 1,
       "lastAccessed": 1782532847152,
+      "type": "file"
+    },
+    {
+      "path": "assets/design/world-office-source.png",
+      "accessCount": 1,
+      "lastAccessed": 1794298332503,
+      "type": "file"
+    },
+    {
+      "path": "assets/design/service-ui-target.png",
+      "accessCount": 1,
+      "lastAccessed": 1794298332791,
+      "type": "file"
+    },
+    {
+      "path": ".tmp/artgen/test-desk.png",
+      "accessCount": 1,
+      "lastAccessed": 1794298462852,
+      "type": "file"
+    },
+    {
+      "path": ".tmp/artgen/test-worker.png",
+      "accessCount": 1,
+      "lastAccessed": 1794298601047,
+      "type": "file"
+    },
+    {
+      "path": ".tmp/artgen/test-gov.png",
+      "accessCount": 1,
+      "lastAccessed": 1794298601556,
+      "type": "file"
+    },
+    {
+      "path": ".tmp/artgen/test-room-a.png",
+      "accessCount": 1,
+      "lastAccessed": 1794298677825,
+      "type": "file"
+    },
+    {
+      "path": ".tmp/artgen/test-room-b.png",
+      "accessCount": 1,
+      "lastAccessed": 1794298678327,
+      "type": "file"
+    },
+    {
+      "path": "assets/art-src/ai-world/room-tall.png",
+      "accessCount": 1,
+      "lastAccessed": 1794299163483,
+      "type": "file"
+    },
+    {
+      "path": ".tmp/world-ai-preview.png",
+      "accessCount": 1,
+      "lastAccessed": 1794299215516,
+      "type": "file"
+    },
+    {
+      "path": "docs/impl-notes/2026-11-10-world-art-ai.md",
+      "accessCount": 1,
+      "lastAccessed": 1794299612874,
+      "type": "file"
+    },
+    {
+      "path": "tools/play/upload-aab.mjs",
+      "accessCount": 1,
+      "lastAccessed": 1794300353224,
+      "type": "file"
+    },
+    {
+      "path": "research_notes/모바일 타이쿤 레퍼런스 고도화 방향/core_loop_economy.md",
+      "accessCount": 1,
+      "lastAccessed": 1794307895490,
+      "type": "file"
+    },
+    {
+      "path": "research_notes/모바일 타이쿤 레퍼런스 고도화 방향/market_positioning.md",
+      "accessCount": 1,
+      "lastAccessed": 1794307897524,
+      "type": "file"
+    },
+    {
+      "path": "reports/모바일 타이쿤 레퍼런스 고도화 방향.md",
+      "accessCount": 1,
+      "lastAccessed": 1794308336501,
+      "type": "file"
+    },
+    {
+      "path": "assets/art-src/ai-world/room-s.png",
+      "accessCount": 1,
+      "lastAccessed": 1794313298542,
+      "type": "file"
+    },
+    {
+      "path": "assets/art-src/ai-world/room-l.png",
+      "accessCount": 1,
+      "lastAccessed": 1794313299148,
+      "type": "file"
+    },
+    {
+      "path": "assets/art-src/ai-world/room-xl.png",
+      "accessCount": 1,
+      "lastAccessed": 1794313299796,
+      "type": "file"
+    },
+    {
+      "path": "public/screenshots/game-mobile.png",
+      "accessCount": 1,
+      "lastAccessed": 1794314010675,
       "type": "file"
     }
   ],
