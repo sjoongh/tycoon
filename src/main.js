@@ -8,6 +8,7 @@ import { GameScene } from "./scenes/GameScene.js";
 import { PreloadScene } from "./scenes/PreloadScene.js";
 import { DOMHud } from "./ui/DOMHud.js";
 import { DOMBottomPanel } from "./ui/DOMBottomPanel.js";
+import { DOMRewardUI } from "./ui/DOMRewardUI.js";
 import { DOMModalLayer } from "./ui/DOMModalLayer.js";
 import { DOMMapModal } from "./ui/DOMMapModal.js";
 import { DOMSettings } from "./ui/DOMSettings.js";
@@ -142,6 +143,7 @@ document.addEventListener("gp:open-leaderboard", () => {
 game.events.once("ready", () => {
   new DOMHud(gameState, notifications).mount(uiLayer);
   new DOMBottomPanel(gameState).mount(uiLayer);
+  new DOMRewardUI(gameState).mount(uiLayer);
   new DOMModalLayer(gameState, notifications).mount(uiLayer);
   new DOMMapModal(gameState).mount(uiLayer);
   new DOMSettings(gameState, notifications).mount(uiLayer);
@@ -170,6 +172,8 @@ game.events.once("ready", () => {
     else _sessionStartAt = Date.now();
   });
   if (gameState.offlineReward) logEvt("offline_reward", { min: Math.round(gameState.offlineReward.elapsed / 60000), area: gameState.data.stage.area });
+  gameState.on("golden", (p) => logEvt("golden_tap", { kind: p?.kind }));
+  document.addEventListener("gp:reward-claimed", (e) => logEvt("reward_claim", { kind: e.detail?.kind, mode: e.detail?.mode }));
   gameState.on("comm-collapse", () => logEvt("communist_collapse", {}));
   gameState.on("dex-milestone", (p) => logEvt("dex_milestone", { n: p?.n }));
   gameState.on("event-chain-ending", (p) => logEvt("event_chain_ending", {

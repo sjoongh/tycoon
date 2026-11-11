@@ -198,6 +198,8 @@ const fallbackState = {
   rushEndsAt: 0,
   briefReadyAt: 0,
   briefEndsAt: 0,
+  // 골든 이벤트·보상 슬롯 버프(ms 타임스탬프): 특보(생산 ×7), 탭 광풍(클릭 ×20), 생산 2배 부스트
+  buffs: { prodUntil: 0, prodMult: 1, clickUntil: 0, clickMult: 1, boostUntil: 0 },
   operations: { picks: {}, draft: null, lastId: null }, // 감사 런 전용 3택1 작전
   boss: {
     active: false,
@@ -430,6 +432,11 @@ export class GameState extends Phaser.Events.EventEmitter {
     data.rushEndsAt = Math.max(0, Number(data.rushEndsAt) || 0);
     data.briefReadyAt = Math.max(0, Number(data.briefReadyAt) || 0);
     data.briefEndsAt = Math.max(0, Number(data.briefEndsAt) || 0);
+    {
+      const b = parsed?.buffs && typeof parsed.buffs === "object" ? parsed.buffs : {};
+      const num = (v, d) => (Number.isFinite(Number(v)) ? Number(v) : d);
+      data.buffs = { prodUntil: num(b.prodUntil, 0), prodMult: Math.max(1, num(b.prodMult, 1)), clickUntil: num(b.clickUntil, 0), clickMult: Math.max(1, num(b.clickMult, 1)), boostUntil: num(b.boostUntil, 0) };
+    }
     // 미래값으로 변조되면 2배 보상이 영구 비활성되므로 오늘 인덱스로 상한 클램프
     data.offline2xDay = Phaser.Math.Clamp(Math.floor(Number(data.offline2xDay) || 0), 0, this._todayIndex());
     data.stage.area = Math.max(1, Number(data.stage.area) || 1);
@@ -613,14 +620,14 @@ export class GameState extends Phaser.Events.EventEmitter {
     return this._todayIndex() > (this.data.offline2xDay || 0);
   }
 
-  claimOfflineBonus() {
+  claimOfflineBonus({ force = false } = {}) {
     const r = this.offlineReward;
-    if (!r || !this.offline2xAvailable()) return null;
+    if (!r || (!force && !this.offline2xAvailable())) return null;
     const stageAllocation = this.applyOfflineStageProgress(this.data, r.votes);
     this.data.votes += r.votes;
     this.data.explain += r.explain;
     this.data.stats.totalVotes += r.votes;
-    this.data.offline2xDay = this._todayIndex();
+    if (!force) this.data.offline2xDay = this._todayIndex();
     this.offlineReward = null;
     this.emit("changed");
     this.save(false);
@@ -2440,8 +2447,72 @@ export class GameState extends Phaser.Events.EventEmitter {
   }
 
   // 브리핑·피버 실시간 배율(오프라인 정산엔 미적용)
-  liveMultiplier() {
-    return (this.briefActive() ? BRIEF_BUFF_MULT : 1) * this.feverProductionMultiplier();
+  liveMultiplier(now = clock.now()) {
+    const b = this.data.buffs || {};
+    const golden = now < (b.prodUntil || 0) ? (b.prodMult || 1) : 1;
+    const boost = now < (b.boostUntil || 0) ? 2 : 1;
+    return (this.briefActive() ? BRIEF_BUFF_MULT : 1) * this.feverProductionMultiplier() * golden * boost;
+  }
+
+  goldenClickMultiplier(now = clock.now()) {
+    const b = this.data.buffs || {};
+    return now < (b.clickUntil || 0) ? (b.clickMult || 1) : 1;
+  }
+
+  boostRemainingMs(now = clock.now()) { return Math.max(0, (this.data.buffs?.boostUntil || 0) - now); }
+  goldenBuffRemainingMs(now = clock.now()) { return Math.max(0, (this.data.buffs?.prodUntil || 0) - now); }
+
+  // 생산 2배 4시간(보상 슬롯) — 중첩 불가
+  activateBoost(hours = 4, now = clock.now()) {
+    if (this.boostRemainingMs(now) > 0) return false;
+    this.data.buffs.boostUntil = now + hours * 3600000;
+    this.emit("celebrate", { text: `생산 2배 ${hours}시간` });
+    this.emit("changed");
+    this.save(false);
+    return true;
+  }
+
+  // ── 골든 이벤트(중기 #5, Cookie Clicker 골든쿠키 분포) ──
+  // 특보 40%: 생산 ×7 77초 / 후원금 40%: min(보유 표 15%, 15분치 생산) / 국장 담화 15%: 믿음 +8·해명 2분치 / 탭 광풍 5%: 클릭 ×20 13초
+  rollGoldenEvent(factor = 1, { fever = true, rand = Math.random() } = {}) {
+    const now = clock.now();
+    const operationFactor = 1 + this.operationEffectFor(this.data, "goldenPct");
+    let out;
+    if (rand < 0.4) {
+      const ms = Math.round(77000 * factor);
+      this.data.buffs.prodUntil = now + ms; this.data.buffs.prodMult = 7;
+      out = { kind: "breaking", text: `개표 특보! 생산 ×7 · ${Math.round(ms / 1000)}초`, ms };
+    } else if (rand < 0.8) {
+      const amount = Math.max(50, Math.round(Math.min(this.data.votes * 0.15 + 13, this.cps() * 900) * factor * operationFactor * this.feverResponseRewardMultiplier()));
+      this.addVotes(amount);
+      out = { kind: "donation", text: `후원금 +${shortNumber(amount)}표`, amount };
+    } else if (rand < 0.95) {
+      const explain = Math.round(this.explainPerSecond() * 120 * factor);
+      this.data.explain += explain;
+      this.data.trust = Phaser.Math.Clamp(this.data.trust + 8 * factor, 0, 100);
+      out = { kind: "address", text: `국장 담화 · 믿음 +${Math.round(8 * factor)} · 해명 +${shortNumber(explain)}`, explain };
+    } else {
+      const ms = Math.round(13000 * factor);
+      this.data.buffs.clickUntil = now + ms; this.data.buffs.clickMult = 20;
+      out = { kind: "frenzy", text: `탭 광풍! 클릭 ×20 · ${Math.round(ms / 1000)}초`, ms };
+    }
+    if (fever) this.addFever("field", 30);
+    this.trackFeverAction();
+    this.data.stats.goldenTaps = (this.data.stats.goldenTaps || 0) + 1;
+    this.emit("golden", out);
+    this.emit("celebrate", { text: `★ ${out.text}` });
+    this.emit("changed");
+    return out;
+  }
+
+  // 보상 슬롯으로 골든 결과를 키운다: 후원금은 2배 더(총 3배), 특보는 시간 2배
+  amplifyGolden(out, now = clock.now()) {
+    if (!out) return null;
+    if (out.kind === "donation") { this.addVotes(out.amount * 2); this.emit("float", { text: `후원금 ×3 · +${shortNumber(out.amount * 2)}표`, x: 195, y: 300, color: "#ffd34d" }); }
+    else if (out.kind === "breaking") { this.data.buffs.prodUntil = Math.max(this.data.buffs.prodUntil, now) + out.ms; this.emit("float", { text: `특보 연장 +${Math.round(out.ms / 1000)}초`, x: 195, y: 300, color: "#ffd34d" }); }
+    else return null;
+    this.emit("changed");
+    return out;
   }
 
   cps() {
@@ -2694,7 +2765,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     }, 0);
     const clerkSkill = Math.floor(this.staffLevel("clerk") / 5);
     const raw = 1 + facilityPower + staffPower + clerkSkill + this.operationEffectFor(this.data, "clickFlat") + this.eventChainEffectFor(this.data, "clickFlat") + this.staffDeploymentEffectFor(this.data, "clickFlat");
-    return Math.round(raw * (1 + this.permanentEffectFor(this.data, "clickPct") + this.titleEffectFor(this.data, "clickPct") + this.charEffectFor("clickPct") + this.operationEffectFor(this.data, "clickPct")) * this.feverClickMultiplier());
+    return Math.round(raw * (1 + this.permanentEffectFor(this.data, "clickPct") + this.titleEffectFor(this.data, "clickPct") + this.charEffectFor("clickPct") + this.operationEffectFor(this.data, "clickPct")) * this.feverClickMultiplier() * this.goldenClickMultiplier());
   }
 
   trustDecay() {

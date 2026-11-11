@@ -24,6 +24,8 @@ let GOV_POS = tileCenter(ISO.GOV_TILE.i, ISO.GOV_TILE.j);
 let GROUND_Y = GOV_POS.y;     // 국장 발이 닿는 타일 중앙(방 단계가 바뀌면 _applyRoomStage 가 갱신)
 const GOV_SCALE = WORLD_SCALE;  // 16px 도트 → 48px (월드 전역 3x)
 const GOV_BOB_MS = 900;
+// 골든 이벤트 간격(중기 #5): 2~5분. Cookie Clicker(5~15분)보다 짧게 — 우리 평균 세션이 약 7분이라 세션당 1~3회 보이게.
+const GOLDEN_NEXT_MS = () => 120000 + Math.random() * 180000;
 const WORKER_SCALE = WORLD_SCALE;
 let BIG_NUM_POS = tileCenter(ISO.BIG_NUM_TILE.i, ISO.BIG_NUM_TILE.j);
 let BIG_NUM_Y = BIG_NUM_POS.y;
@@ -858,27 +860,30 @@ export class WorldView {
     this.scene.tweens.add({ targets: disc, scale: 0.6, alpha: 1, duration: 280, ease: "Back.easeOut" });
     this._goldenPulse = this.scene.tweens.add({ targets: disc, scale: 0.68, yoyo: true, repeat: -1, duration: 560, ease: "Sine.easeInOut", delay: 290 });
     disc.on("pointerdown", () => {
-      if (!this._golden) return;
-      const reward = this.gameState.collectGoldenBallot();
-      this.effects.float({ text: `+${shortNumber(reward)}`, x, y: y - 28, color: "#ffd34d" });
+      if (!this._golden || this._camDragging) return;
+      const out = this.gameState.rollGoldenEvent();
+      this.effects.float({ text: out.text, x, y: y - 28, color: "#ffd34d" });
       this.effects.deskPop(x, y);
+      if (!motionReduced()) this.effects.ballots({ x, y: y - 10, count: 10 });
       document.dispatchEvent(new CustomEvent("gp:sfx", { detail: "coin" }));
+      // 보상 슬롯: 후원금·특보는 키울 수 있다(광고 모드면 광고, 아니면 무료 쿨다운)
+      if (out.kind === "donation" || out.kind === "breaking") document.dispatchEvent(new CustomEvent("gp:reward-offer", { detail: { kind: "golden3x", out } }));
       this._despawnGolden();
-      this._scheduleGolden(60000 + Math.random() * 60000);
+      this._scheduleGolden(GOLDEN_NEXT_MS());
     });
     // 비서 Lv3 — 잠시 후 자동 수령(80%). 직접 탭하면 100%라 수동이 여전히 이득.
     if (this.gameState.autoAideLevel && this.gameState.autoAideLevel() >= 3) {
       this.scene.time.delayedCall(2600, () => {
         if (!this._golden || this._golden !== disc) return;
-        const reward = this.gameState.collectGoldenBallot(0.8, { fever: false });
-        this.effects.float({ text: `비서 +${shortNumber(reward)}`, x, y: y - 28, color: "#ffd34d" });
+        const out = this.gameState.rollGoldenEvent(0.8, { fever: false });
+        this.effects.float({ text: `비서 · ${out.text}`, x, y: y - 28, color: "#ffd34d" });
         this._despawnGolden();
-        this._scheduleGolden(60000 + Math.random() * 60000);
+        this._scheduleGolden(GOLDEN_NEXT_MS());
       });
     }
-    this._goldenLife = this.scene.time.delayedCall(9000, () => {
+    this._goldenLife = this.scene.time.delayedCall(13000, () => {
       this._despawnGolden();
-      this._scheduleGolden(60000 + Math.random() * 60000);
+      this._scheduleGolden(GOLDEN_NEXT_MS());
     });
   }
 
