@@ -437,7 +437,7 @@ export class WorldView {
   // 상단 간판: "믿어주세요 / 개표국"
   _buildTitle() {
     const cx = GAME_W / 2;
-    const w = 300, h = 40, top = 175, x = cx - w / 2;
+    const w = 220, h = 40, top = 175, x = cx - w / 2; // 오른쪽 HUD 칩(할 일·부스트·특별 개표소)과 겹치지 않는 폭
     const g = this.scene.add.graphics().setDepth(110);
     // 현수막 끈
     g.fillStyle(0x14121c, 1);
