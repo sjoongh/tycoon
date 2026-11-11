@@ -3,7 +3,6 @@ import { rewardMode, rewardStatus, claimReward } from "../ads/rewardSlot.js";
 import { regionFor, eraTheme } from "../data/regions.js";
 import { roomStageFor, roomStageLabel } from "../world/iso.js";
 import { shortNumber } from "../utils/format.js";
-import { GOV_MAPS, PROP_MAPS, dotSvgUri } from "../world/dotChar.js";
 import { iconHtml } from "./icon.js";
 import { clock } from "../state/clock.js";
 import { RARITY_LABEL, RARITY_COLOR } from "../data/titles.js";
@@ -113,9 +112,9 @@ export class DOMModalLayer {
     if (d.tutorial) d.tutorial.openingSeen = true;
     this.gameState.save && this.gameState.save(false);
     const cards = [
-      { art: dotSvgUri(GOV_MAPS[0]), t: "믿어주세요, 개표국", s: "오늘부터 당신이 개표국장입니다. 믿음도 바닥, 서류도 엉망. 밑바닥에서 시작합니다." },
-      { art: dotSvgUri(PROP_MAPS["prop-sorter"]), t: "표를 처리하라", s: "화면을 탭해 표를 처리하고, 시설을 키우고, 직원을 채용하세요. 해명 서류는 사건 대응·브리핑·뽑기에 쓰는 두 번째 자원입니다." },
-      { art: dotSvgUri(PROP_MAPS["prop-board"]), t: "사건에 대응하라", s: "터지는 사건마다 믿음이 걸려 있습니다. 전국이 지켜봅니다. 자, 분류 시작!" },
+      { art: "/art/world/gov-1.webp", t: "믿어주세요, 개표국", s: "오늘부터 당신이 개표국장입니다. 믿음도 바닥, 서류도 엉망. 밑바닥에서 시작합니다." },
+      { art: "/art/world/fac-sorter-t3.webp", t: "표를 처리하라", s: "화면을 탭해 표를 처리하고, 시설을 키우고, 직원을 채용하세요. 해명 서류는 사건 대응·브리핑·뽑기에 쓰는 두 번째 자원입니다." },
+      { art: "/art/world/fac-notice-t3.webp", t: "사건에 대응하라", s: "터지는 사건마다 믿음이 걸려 있습니다. 전국이 지켜봅니다. 자, 분류 시작!" },
     ];
     let i = 0;
     const ov = document.createElement("div");

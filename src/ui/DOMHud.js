@@ -154,9 +154,10 @@ export class DOMHud {
     const bEl = this._els.backlog;
     if (bEl) {
       const backlog = Math.max(0, d.backlog || 0);
-      if (backlog >= 1) {
+      const pen = this.gameState.backlogTrustPenalty ? this.gameState.backlogTrustPenalty() : 0;
+      // 1분치 용량까지는 유예(믿음 하락 없음) — 경고는 실제로 믿음이 깎일 때만 띄운다
+      if (backlog >= 1 && pen > 0) {
         bEl.hidden = false;
-        const pen = this.gameState.backlogTrustPenalty ? this.gameState.backlogTrustPenalty() : 0;
         const perMin = pen * 60;
         this._setText(this._els.backlogText, `적체 ${shortNumber(backlog)}표 · 믿음 ${perMin < 0.05 ? "-0.1 미만" : `-${perMin.toFixed(1)}`}/분 · 분류·기록 용량 부족`);
         bEl.classList.toggle("gp-backlog--danger", pen >= 0.05);
