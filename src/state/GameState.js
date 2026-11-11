@@ -27,6 +27,7 @@ import {
 } from "../data/staffDeployment.js";
 import { achievementDefinitions } from "../data/achievements.js";
 import { dailyQuestDefinitions } from "../data/dailyQuests.js";
+import { dexSets, dexSetByEvent } from "../data/dexSets.js";
 import { weeklyGoalDefinitions } from "../data/weeklyGoals.js";
 import {
   FEVER_FAMILY_PROFILES,
@@ -1619,6 +1620,11 @@ export class GameState extends Phaser.Events.EventEmitter {
     const before = this.seenEventCount();
     this.data.seenEvents[id] = 1;
     this._bumpDaily("newdex"); // 오늘의 도감 — 새 사건 첫 수집 카운트
+    const set = dexSetByEvent[id];
+    if (set && this.dexSetProgress(set).done) {
+      this.addLog(`도감 세트 완성 · ${set.name}`);
+      this.emit("dex-set", { id: set.id, name: set.name, effectText: set.effectText });
+    }
     const after = before + 1;
     // 수집 보상 마일스톤을 새로 넘었으면 해금 연출 신호
     const crossed = DEX_MILESTONES.find((m) => m.n === after);
@@ -2476,7 +2482,7 @@ export class GameState extends Phaser.Events.EventEmitter {
   // 특보 40%: 생산 ×7 77초 / 후원금 40%: min(보유 표 15%, 15분치 생산) / 국장 담화 15%: 믿음 +8·해명 2분치 / 탭 광풍 5%: 클릭 ×20 13초
   rollGoldenEvent(factor = 1, { fever = true, rand = Math.random() } = {}) {
     const now = clock.now();
-    const operationFactor = 1 + this.operationEffectFor(this.data, "goldenPct");
+    const operationFactor = 1 + this.operationEffectFor(this.data, "goldenPct") + this.dexSetEffectFor(this.data, "goldenPct");
     let out;
     if (rand < 0.4) {
       const ms = Math.round(77000 * factor);
@@ -2620,7 +2626,7 @@ export class GameState extends Phaser.Events.EventEmitter {
       return sum + lv * item.cps * (item.capacity ?? 1) * this.facilityMilestoneFactor(lv, item);
     }, 0);
     const staffCap = staffDefinitions.reduce((sum, staff) => sum + (data.staff?.[staff.id] || 0) * (staff.capacityBonus || 0), 0);
-    return raw * this._globalProductionMultiplier(data) * (1 + staffCap + this.operationEffectFor(data, "capacityPct"));
+    return raw * this._globalProductionMultiplier(data) * (1 + staffCap + this.operationEffectFor(data, "capacityPct") + this.dexSetEffectFor(data, "capacityPct"));
   }
 
   // 실효 생산 = min(유입, 용량). 적체 소화는 tick에서만.
@@ -2772,7 +2778,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     const reduction = staffDefinitions.reduce((sum, staff) => sum + this.staffLevel(staff.id) * (staff.trustBonus || 0), 0);
     const area = Math.max(1, Number(this.data.stage?.area) || 1);
     const base = Math.min(TRUST_DECAY_MAX, TRUST_DECAY_BASE + TRUST_DECAY_PER_AREA * (area - 1));
-    return Math.max(0.015, base - reduction);
+    return Math.max(0.015, (base - reduction) * (1 - this.dexSetEffectFor(this.data, "trustDecayPct")));
   }
 
   offlineRateFor(data) {
@@ -2791,7 +2797,38 @@ export class GameState extends Phaser.Events.EventEmitter {
       const store = upgrade.currency === "medal" ? data.prestige?.medalUpgrades : data.prestige?.upgrades;
       const level = store?.[upgrade.id] || 0;
       return sum + level * (upgrade.effect[key] || 0);
-    }, 0);
+    }, 0) + this.dexSetEffectFor(data, key); // 도감 세트 영구 효과도 같은 키 버킷에 합산(중기 #6)
+  }
+
+  // ── 도감 세트(중기 #6) ──
+  dexSetProgress(set, data = this.data) {
+    const seen = data?.seenEvents || {};
+    const got = set.events.filter((id) => seen[id]).length;
+    return { got, total: set.events.length, done: got >= set.events.length };
+  }
+
+  dexSetEffectFor(data, key) {
+    const seen = data?.seenEvents;
+    if (!seen) return 0;
+    let sum = 0;
+    for (const set of dexSets) {
+      const v = set.effect[key];
+      if (!v) continue;
+      if (set.events.every((id) => seen[id])) sum += v;
+    }
+    return sum;
+  }
+
+  // 완성에 가장 가까운 미완성 세트(UI 안내)
+  nextDexSet(data = this.data) {
+    let best = null;
+    for (const set of dexSets) {
+      const p = this.dexSetProgress(set, data);
+      if (p.done) continue;
+      const r = p.got / p.total;
+      if (!best || r > best.r || (r === best.r && p.total - p.got < best.left)) best = { set, ...p, r, left: p.total - p.got };
+    }
+    return best;
   }
 
   // ----- 국장 칭호(인사 발령 뽑기) -----

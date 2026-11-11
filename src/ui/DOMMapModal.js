@@ -2,6 +2,7 @@ import { iconHtml } from "./icon.js";
 import { regions, regionFor, eraTheme } from "../data/regions.js";
 import { shortNumber } from "../utils/format.js";
 import { officeEvents, realEventIds } from "../data/events.js";
+import { dexSets } from "../data/dexSets.js";
 
 // 전국 개표 지도 모달 — 간판 탭으로 열림("gp:open-map" 이벤트).
 // 정복한 구역(✓)·현재 구역(진행%)·잠긴 구역을 세로 경로로 보여준다.
@@ -86,18 +87,20 @@ export class DOMMapModal {
     const dexBonusLine = nextM
       ? `현재 생산 +${dexPct}% · ${nextM.n}종 수집 시 +${Math.round(nextM.pct * 100)}%`
       : `전종 수집 완료! 생산 +${dexPct}% 영구`;
-    const dexCells = officeEvents
-      .slice()
-      .sort((a, b) => (a.minStage || 1) - (b.minStage || 1))
-      .map((ev) => {
-        const got = gs.hasSeenEvent(ev.id);
-        const real = realEventIds.has(ev.id);
-        if (!got) return `<div class="gp-dex__cell gp-dex__cell--lock" title="미발견 사건">？</div>`;
-        const cls = real ? "gp-dex__cell gp-dex__cell--real" : "gp-dex__cell";
-        const mark = "";
-        return `<div class="${cls}" data-dexid="${ev.id}" title="${ev.title.replace(/"/g, "&quot;")}">${mark}${ev.title}</div>`;
-      })
-      .join("");
+    // 세트별로 묶어 보여 준다 — 완성 세트는 효과가 영구 적용(중기 #6)
+    const evById = Object.fromEntries(officeEvents.map((e) => [e.id, e]));
+    const cell = (ev) => {
+      const got = gs.hasSeenEvent(ev.id);
+      const real = realEventIds.has(ev.id);
+      if (!got) return `<div class="gp-dex__cell gp-dex__cell--lock" title="미발견 사건">？</div>`;
+      const cls = real ? "gp-dex__cell gp-dex__cell--real" : "gp-dex__cell";
+      return `<div class="${cls}" data-dexid="${ev.id}" title="${ev.title.replace(/"/g, "&quot;")}">${ev.title}</div>`;
+    };
+    const setDone = dexSets.filter((s) => gs.dexSetProgress(s).done).length;
+    const dexCells = dexSets.map((s) => {
+      const p = gs.dexSetProgress(s);
+      return `<div class="gp-dexgrp${p.done ? " gp-dexgrp--done" : ""}"><div class="gp-dexgrp__hd"><b>${s.name}</b><span>${p.got}/${p.total}</span><em>${s.effectText}${p.done ? " · 적용 중" : ""}</em></div><div class="gp-dex">${s.events.map((id) => evById[id]).filter(Boolean).map(cell).join("")}</div></div>`;
+    }).join("");
 
     this.root.innerHTML = `<div class="gp-map">
       <div class="gp-map__hd"><span>${iconHtml("ui-map", { size: 32 })}전국 개표 지도</span><button class="gp-map__x" aria-label="닫기">✕</button></div>
@@ -105,10 +108,9 @@ export class DOMMapModal {
       <div class="gp-map__list">${nodes}
         <div class="gp-map__era">${iconHtml("staff-analyst", { size: 32 })}내 개표 기록</div>
         <div class="gp-stats">${statRows}</div>
-        <div class="gp-map__era">${iconHtml("ui-book", { size: 32 })}사건 도감 <span class="gp-dex__count">${seenN}/${total}종</span></div>
+        <div class="gp-map__era">${iconHtml("ui-book", { size: 32 })}사건 도감 <span class="gp-dex__count">${seenN}/${total}종 · 세트 ${setDone}/${dexSets.length}</span></div>
         <div class="gp-dex__bonus">${dexBonusLine}</div>
-        <div class="gp-dex__tip">수집한 사건을 눌러 다시 읽어보세요</div>
-        <div class="gp-dex">${dexCells}</div>
+        ${dexCells}
       </div>
       <div class="gp-map__foot">구역을 정복할수록 더 높은 권위의 개표소로 이동합니다<br><span class="gp-disclaimer">※ 창작 픽션 — 실존 기관·인물·단체와 무관하며 비방 의도가 없습니다</span></div>
     </div>`;

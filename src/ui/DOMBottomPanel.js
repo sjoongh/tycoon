@@ -635,6 +635,13 @@ export class DOMBottomPanel {
     </div>`;
   }
 
+  // 완성에 가장 가까운 도감 세트 한 줄(중기 #6)
+  _dexSetLine() {
+    const n = this.gameState.nextDexSet ? this.gameState.nextDexSet() : null;
+    if (!n) return `<div class="gp-dexset">도감 세트 전부 완성</div>`;
+    return `<div class="gp-dexset"><b>${n.set.name}</b> ${n.got}/${n.total} · 완성 시 ${n.set.effectText}</div>`;
+  }
+
   // 다음 해금 티저: 아직 잠긴 시설 중 가장 먼저 열리는 것을 한 줄 안내(진행 동기 부여)
   // FIX P1: emoji 🔒 replaced with CSS-safe unicode square to avoid Android WebView glyph fallback failure
   _nextUnlockTeaser() {
@@ -760,7 +767,7 @@ export class DOMBottomPanel {
       const effectLine = chainStatus?.effects?.length
         ? `<div class="gp-chainfx"><b>이번 런 효과</b>${chainStatus.effects.map((ending) => `<span>${ending.title} · ${ending.effectText.replace("이번 런 ", "")}</span>`).join("")}</div>`
         : "";
-      this.panel.innerHTML = `<div class="gp-paneltitle">${iconHtml("ui-clipboard", { size: 32 })}사건 대응실 · 처리 ${gs.data.stats.totalEvents}건</div><div class="gp-card__sub">사건 대응으로 표·믿음을 얻으세요 · 보상 x${gs.eventRewardScale().toFixed(1)}</div>${btn}${chainLine}${effectLine}<div class="gp-dexline">${dexLine}</div><div class="gp-log">${log}</div>`;
+      this.panel.innerHTML = `<div class="gp-paneltitle">${iconHtml("ui-clipboard", { size: 32 })}사건 대응실 · 처리 ${gs.data.stats.totalEvents}건</div><div class="gp-card__sub">보상 x${gs.eventRewardScale().toFixed(1)}</div>${btn}${chainLine}${effectLine}<div class="gp-dexline">${dexLine}</div>${this._dexSetLine()}<div class="gp-log">${log}</div>`;
       // transform 기반 쿨다운 스윕으로 레이아웃 재계산을 피한다.
       if (!ready && totalMs > 0) {
         const btnEl = this.panel.querySelector(".gp-btn--event");

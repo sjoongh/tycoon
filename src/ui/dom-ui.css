@@ -848,3 +848,13 @@ body { background-color: var(--bg-deep); background-image: repeating-linear-grad
 .gp-boost--on { background: #1f9e49; color: #fff; }
 .gp-boost--on span { color: #d8ffe4; }
 .gp-ui--sheet-full .gp-boost, .gp-ui--sheet-full .gp-rtoast { display: none; }
+
+/* ---------- 도감 세트 (중기 #6) ---------- */
+.gp-dexset { margin-top: 6px; text-align: center; font-family: var(--f-small); font-size: var(--type-label); color: #c7d8e3; background: var(--panel-sunk); border: 2px solid var(--line); border-radius: var(--r-sm); padding: 6px 8px; }
+.gp-dexset b { color: var(--gold-hi); }
+.gp-dexgrp { margin: 6px 10px 0; border: 2px solid var(--line); border-radius: var(--r-sm); background: var(--panel-sunk); }
+.gp-dexgrp--done { border-color: var(--gold); box-shadow: 0 0 0 2px rgba(255,197,61,0.35); }
+.gp-dexgrp__hd { display: flex; align-items: baseline; gap: 6px; padding: 6px 10px 0; font-family: var(--f-small); font-size: var(--type-label); color: var(--ink-soft); }
+.gp-dexgrp__hd b { font-family: var(--f-bold); font-size: 12px; color: var(--ink); }
+.gp-dexgrp__hd em { margin-left: auto; font-style: normal; color: #8df0b0; }
+.gp-dexgrp .gp-dex { padding: 4px 8px 8px; }

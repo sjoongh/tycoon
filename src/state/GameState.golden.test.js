@@ -63,3 +63,40 @@ describe("골든 이벤트(중기 #5)", () => {
     expect(d.buffs).toMatchObject({ prodUntil: 0, prodMult: 1, boostUntil: 123 });
   });
 });
+
+import { dexSets } from "../data/dexSets.js";
+import { officeEvents } from "../data/events.js";
+
+describe("도감 세트(중기 #6)", () => {
+  it("75개 사건이 정확히 한 세트씩 속한다", () => {
+    const all = dexSets.flatMap((s) => s.events);
+    expect(new Set(all).size).toBe(all.length);
+    expect(all.length).toBe(officeEvents.length);
+    const ids = new Set(officeEvents.map((e) => e.id));
+    all.forEach((id) => expect(ids.has(id)).toBe(true));
+  });
+
+  it("세트를 완성하면 효과가 적용되고 dex-set 이벤트가 난다", () => {
+    const gs = ready();
+    const set = dexSets.find((s) => s.id === "office");
+    const c0 = gs.clickPower();
+    let fired = null;
+    gs.on("dex-set", (p) => { fired = p; });
+    set.events.forEach((id) => gs.markEventSeen(id));
+    expect(fired?.id).toBe("office");
+    expect(gs.dexSetEffectFor(gs.data, "clickPct")).toBeCloseTo(0.10, 6);
+    expect(gs.clickPower()).toBeGreaterThanOrEqual(c0);
+    // 수집 수 마일스톤(10종 +3%)이 유입·용량에 함께 붙으므로 용량/유입 비율로 세트 효과만 본다
+    const r0 = gs.capacityFor(gs.data) / gs.intakeFor(gs.data);
+    dexSets.find((s) => s.id === "recount").events.forEach((id) => gs.markEventSeen(id));
+    const r1 = gs.capacityFor(gs.data) / gs.intakeFor(gs.data);
+    expect(r1 / r0).toBeCloseTo(1.10, 6);
+  });
+
+  it("nextDexSet 은 완성에 가장 가까운 미완성 세트를 고른다", () => {
+    const gs = ready();
+    const s = dexSets.find((x) => x.id === "history");
+    s.events.slice(0, 4).forEach((id) => gs.markEventSeen(id));
+    expect(gs.nextDexSet().set.id).toBe("history");
+  });
+});
