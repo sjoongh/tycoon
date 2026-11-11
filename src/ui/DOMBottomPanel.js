@@ -598,9 +598,11 @@ export class DOMBottomPanel {
       ${unlocked ? this._qtyToggle() : ""}
       ${this._capacityLine()}
       <div class="gp-facsel">${facilities.map((ff) => {
+        const choked = gs.intakeFor && gs.capacityFor ? gs.intakeFor(gs.data) > gs.capacityFor(gs.data) * 1.0001 : false;
         const u = gs.isUnlocked(ff.id);
         // P1 fix: facility picker icon — use webp asset as background-image, color as fallback
-      return `<button class="gp-fac ${ff.id === sel ? "gp-fac--active" : ""} ${u ? "" : "gp-fac--locked"}" data-action="selectFac" data-id="${ff.id}"><span class="gp-fac__icon" style="${iconStyle(facilityIcon(ff.id), 40)}"></span><span class="gp-fac__role">${ff.role}</span><span class="gp-fac__lv">${u || gs.level(ff.id) > 0 ? `Lv.${gs.level(ff.id)}` : (gs.unlockReason(ff.id)?.area ? `${ff.unlock}구` : "잠김")}</span></button>`;
+      const needCap = choked && u && (ff.capacity ?? 1) >= 1;
+      return `<button class="gp-fac ${ff.id === sel ? "gp-fac--active" : ""} ${u ? "" : "gp-fac--locked"}${needCap ? " gp-fac--need" : ""}" data-action="selectFac" data-id="${ff.id}"><span class="gp-fac__icon" style="${iconStyle(facilityIcon(ff.id), 40)}"></span><span class="gp-fac__role">${ff.role}</span><span class="gp-fac__lv">${u || gs.level(ff.id) > 0 ? `Lv.${gs.level(ff.id)}` : (gs.unlockReason(ff.id)?.area ? `${ff.unlock}구` : "잠김")}</span></button>`;
       }).join("")}</div>
       <div class="gp-region"><span class="gp-region__progress">${gs.data.stage.area}구역 · ${shortNumber(gs.data.stage.progress)} / ${shortNumber(gs.data.stage.target)}${offlineCarry > 0 ? `<small class="gp-carry">미처리 개표 +${shortNumber(offlineCarry)}</small>` : ""}</span>${
         stageDone
@@ -995,6 +997,7 @@ export class DOMBottomPanel {
         <span><b>${gainLabel}</b><small>${advice.detail}</small></span>
         <em>${advice.label}</em>
       </div>
+      ${can && projection.earnedIn1h > preview ? `<div class="gp-prestige-later">지금 감사 <b>+${preview}</b> 인장 · 1시간 더 키우면 <b>+${projection.earnedIn1h}</b></div>` : ""}
       <div class="gp-region"><span>예상 획득 +${preview}${gs.medalPreview() > 0 ? ` · 훈장+${gs.medalPreview()}` : ""}</span><button class="gp-btn gp-btn--sm gp-btn--danger ${can ? "" : "gp-btn--disabled"}" data-action="prestigeReset">감사실행</button></div>`;
 
     // Wire seal + medal selection clicks (re-render with new selection, don't buy immediately)

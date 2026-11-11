@@ -41,7 +41,7 @@ describe("처리 용량과 적체(병목)", () => {
     expect(gs.cpsFor(gs.data)).toBeCloseTo(gs.intakeFor(gs.data), 6);
   });
 
-  it("틱마다 초과 유입은 적체로 쌓이고 믿음을 추가로 깎는다", () => {
+  it("틱마다 초과 유입은 적체로 쌓이고, 1분치 용량 유예 안에서는 믿음을 추가로 깎지 않는다", () => {
     const gs = setup({ desk: 30 });
     const trustBefore = gs.data.trust;
     const decayOnly = gs.trustDecay();
@@ -49,8 +49,33 @@ describe("처리 용량과 적체(병목)", () => {
     gs.tick();
     expect(gs.data.backlog).toBeGreaterThan(0);
     expect(gs.data.backlog).toBeCloseTo(expectedBacklog, 3);
-    // notice 0이므로 회복 없음: 하락폭이 기본 감소보다 커야 한다
-    expect(trustBefore - gs.data.trust).toBeGreaterThan(decayOnly);
+    // 유예 구간: 기본 감소만 적용(notice 0이므로 회복 없음)
+    expect(trustBefore - gs.data.trust).toBeCloseTo(decayOnly, 5);
+  });
+
+  it("1분치 용량을 넘긴 적체부터 믿음을 추가로 깎는다", () => {
+    const gs = setup({ desk: 30 });
+    gs.data.backlog = gs.capacityFor(gs.data) * 60 * 3; // 3분치
+    expect(gs.backlogTrustPenalty()).toBeGreaterThan(0);
+    gs.data.backlog = gs.capacityFor(gs.data) * 30; // 30초치 — 유예
+    expect(gs.backlogTrustPenalty()).toBe(0);
+  });
+
+  it("의미 있게 쌓인 적체를 0까지 소화하면 최대 적체의 30%를 보너스로 준다", () => {
+    const gs = setup({ desk: 2, sorter: 20, archive: 20 });
+    const cap = gs.capacityFor(gs.data);
+    const spare = cap - gs.intakeFor(gs.data);
+    gs.data.backlog = Math.max(cap * 25, 1); // 25초치(해소 기준 20초 이상)
+    gs._backlogPeak = gs.data.backlog;
+    const peak = gs.data.backlog;
+    let floated = null;
+    gs.on("float", (p) => { if (/적체 해소/.test(p.text)) floated = p.text; });
+    for (let i = 0; i < 200 && gs.data.backlog > 0; i += 1) gs.tick();
+    expect(gs.data.backlog).toBe(0);
+    expect(spare).toBeGreaterThan(0);
+    expect(floated).toMatch(/적체 해소/);
+    expect(gs._backlogPeak).toBe(0);
+    expect(Math.round(peak * 0.3)).toBeGreaterThan(0);
   });
 
   it("용량이 생기면 적체가 남는 용량만큼 소화되어 생산에 더해진다", () => {

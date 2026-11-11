@@ -56,6 +56,10 @@ const TRUST_DECAY_PER_AREA = 0.004; // 구역마다 가산(난이도)
 const TRUST_DECAY_MAX = 0.12;
 const BACKLOG_TRUST_RATE = 0.05; // 적체/분당용량 비율당 초당 믿음 추가 하락(상한 0.1)
 const BACKLOG_TRUST_MAX = 0.1;
+const BACKLOG_GRACE_SEC = 60; // 분당 용량만큼의 적체까지는 믿음을 깎지 않는다(병목은 벌칙이 아니라 신호 — 레퍼런스 로드맵 중기 #4)
+const BACKLOG_CLEAR_MIN_SEC = 20; // 이만큼(용량 초) 이상 쌓였던 적체를 0까지 소화하면 '적체 해소' 보너스
+const BACKLOG_CLEAR_BONUS = 0.3; // 해소한 최대 적체의 30%를 보너스 표로
+const SEAL_VOTE_K = 2; // 인장 = 구역·사건 가산 + K×√(이번 런 처리 표 / 1구역 목표) — 더 벌수록 더 받는다(AdCap √ 공식, 중기 #3)
 const BOSS_FAIL_BACKLOG_MIN = 50; // 보스 실패·건너뛰기 적체 페널티 하한
 const STAGE_STEEP_FROM = 7; // 이 구역부터 목표량 지수 상승
 const STAGE_EXP = 1.38;
@@ -1253,6 +1257,7 @@ export class GameState extends Phaser.Events.EventEmitter {
       this.data.backlog = Math.max(0, (this.data.backlog || 0) - drain);
       production = intake + drain;
     }
+    this._trackBacklogClear(capacity);
     this.addVotes(production);
     if (!this.bossUsesPatterns()) this.addBossProgress(production, now);
     this.data.explain += this.explainPerSecond();
@@ -1665,8 +1670,11 @@ export class GameState extends Phaser.Events.EventEmitter {
     const projectedSeal = this.prestigeMultiplierRaw(p.totalSeals + earned, p.runs + 1, this.permanentEffectFor(this.data, "runsMult"));
     const projected = projectedSeal * cpsFactor;
     const gainPct = current > 0 ? Math.max(0, ((projected / current) - 1) * 100) : 0;
+    // 1시간 더 돌리면 받을 인장(지금 초당 생산 × 3600을 이번 런 처리 표에 더해 계산) — "지금 할까, 더 키울까" 판단용
+    const earnedIn1h = earned > 0 ? this.prestigePreview((this.cps ? this.cps() : 0) * 3600) : 0;
     return {
       earned,
+      earnedIn1h,
       current,
       projected,
       gainPct,
@@ -1991,12 +1999,14 @@ export class GameState extends Phaser.Events.EventEmitter {
     return this.data.stage.area >= 4 || this.facilityTotal() >= 55 || this.data.stage.completed >= 3;
   }
 
-  prestigePreview() {
+  prestigePreview(extraVotes = 0) {
     if (!this.canPrestige()) return 0;
     const areaValue = Math.max(0, this.data.stage.area - 3) * 4;
-    const facilityValue = Math.floor(this.facilityTotal() / 12);
+    const facilityValue = Math.floor(this.facilityTotal() / 24);
     const eventValue = Math.floor(this.data.stats.totalEvents / 3);
-    const base = Math.max(4, areaValue + facilityValue + eventValue);
+    const runVotes = Math.max(0, (Number(this.data.stats.totalVotes) || 0) + Math.max(0, extraVotes));
+    const votesValue = Math.floor(SEAL_VOTE_K * Math.sqrt(runVotes / FIRST_RUN_STAGE_BASE));
+    const base = Math.max(4, areaValue + facilityValue + eventValue + votesValue);
     // 정밀 감사반(sealPct, 가산) × 포고령(sealMult, 곱연산) — 두 통화가 인장 수입에 함께 작용
     return Math.floor(base * (1 + this.permanentEffectFor(this.data, "sealPct")) * (1 + this.permanentEffectFor(this.data, "sealMult")));
   }
@@ -2442,8 +2452,24 @@ export class GameState extends Phaser.Events.EventEmitter {
   backlogTrustPenalty(data = this.data) {
     const backlog = Math.max(0, Number(data.backlog) || 0);
     if (backlog <= 0) return 0;
-    const perMinute = this.capacityFor(data) * 60 + 1;
-    return Math.min(BACKLOG_TRUST_MAX, (backlog / perMinute) * BACKLOG_TRUST_RATE);
+    const perMinute = this.capacityFor(data) * BACKLOG_GRACE_SEC + 1;
+    // 1분치 용량까지는 유예 — 그 초과분만 믿음을 깎는다
+    const over = backlog / perMinute - 1;
+    if (over <= 0) return 0;
+    return Math.min(BACKLOG_TRUST_MAX, over * BACKLOG_TRUST_RATE);
+  }
+
+  // 적체 해소 보너스: 의미 있게 쌓였던 적체를 0까지 소화하면 최대 적체의 30%를 보너스로(병목을 '풀면 이득'으로)
+  _trackBacklogClear(capacity) {
+    const b = Math.max(0, Number(this.data.backlog) || 0);
+    if (b > 0) { this._backlogPeak = Math.max(this._backlogPeak || 0, b); return; }
+    const peak = this._backlogPeak || 0;
+    this._backlogPeak = 0;
+    if (peak <= 0 || peak < capacity * BACKLOG_CLEAR_MIN_SEC) return;
+    const bonus = Math.round(peak * BACKLOG_CLEAR_BONUS);
+    this.addVotes(bonus);
+    this.emit("float", { text: `적체 해소! +${shortNumber(bonus)}표`, x: 195, y: 300, color: "#8df0b0" });
+    this.emit("celebrate", { text: "적체 해소" });
   }
 
   // ----- 긴급 브리핑(액티브 트러스트 액션): 해명 소비 → 믿음 회복 + 짧은 생산 버프 -----
