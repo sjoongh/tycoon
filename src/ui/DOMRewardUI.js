@@ -29,6 +29,8 @@ export class DOMRewardUI {
     parent.appendChild(this.toast);
     this._onOffer = (e) => this._offer(e.detail);
     document.addEventListener("gp:reward-offer", this._onOffer);
+    this._onFail = () => this.gameState.emit("float", { text: "광고를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요", x: 195, y: 470, color: "#ff9a8e" });
+    document.addEventListener("gp:reward-failed", this._onFail);
     // 생산 2배 부스트 칩(오늘의 할 일 칩 아래)
     this.boost = document.createElement("button");
     this.boost.className = "gp-boost";

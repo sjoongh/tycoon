@@ -18,6 +18,12 @@ function today(now) { return Math.floor(now / DAY); }
 
 export function rewardMode() { return admobAvailable() ? "ad" : "free"; }
 
+function freeStatus(def, st, now) {
+  if (!Number.isFinite(def.freeCooldownMs)) return { ready: false, waitMs: Infinity };
+  const wait = Math.max(0, (st.freeAt || st.lastAt || 0) + def.freeCooldownMs - now);
+  return { ready: wait <= 0, waitMs: wait };
+}
+
 export function rewardStatus(kind, now = Date.now()) {
   const def = REWARD_KINDS[kind];
   if (!def) return { ready: false, waitMs: Infinity, mode: "free" };
@@ -29,9 +35,8 @@ export function rewardStatus(kind, now = Date.now()) {
     const wait = Math.max(0, (st.lastAt || 0) + def.adCooldownMs - now);
     return { ready: wait <= 0, waitMs: wait, mode, left: def.adDailyCap - count };
   }
-  if (!Number.isFinite(def.freeCooldownMs)) return { ready: false, waitMs: Infinity, mode };
-  const wait = Math.max(0, (st.lastAt || 0) + def.freeCooldownMs - now);
-  return { ready: wait <= 0, waitMs: wait, mode };
+  const fs = freeStatus(def, st, now);
+  return { ...fs, mode };
 }
 
 export function rewardLabel(kind) {
@@ -43,15 +48,23 @@ export function rewardLabel(kind) {
 export async function claimReward(kind, now = Date.now()) {
   const s = rewardStatus(kind, now);
   if (!s.ready) return false;
+  let via = s.mode;
   if (s.mode === "ad") {
-    const ok = await showRewarded();
-    if (!ok) return false;
+    const r = await showRewarded();
+    if (r === "dismissed") return false; // 중도 종료는 보상 없음
+    if (r === "failed") {
+      // 광고를 못 불러온 경우(광고 없음·지역 제한·네트워크): 무료 쿨다운이 찼으면 무료로 대신 지급
+      const fs = freeStatus(REWARD_KINDS[kind], load()[kind] || {}, Date.now());
+      if (!fs.ready) { try { document.dispatchEvent(new CustomEvent("gp:reward-failed", { detail: { kind } })); } catch {} return false; }
+      via = "free-fallback";
+    }
   }
   const all = load();
   const st = all[kind] || {};
   const d = today(Date.now());
-  all[kind] = { lastAt: Date.now(), day: d, count: (st.day === d ? (st.count || 0) : 0) + 1 };
+  const now2 = Date.now();
+  all[kind] = { ...st, lastAt: now2, day: d, count: (st.day === d ? (st.count || 0) : 0) + (via === "ad" ? 1 : 0), ...(via !== "ad" ? { freeAt: now2 } : {}) };
   save(all);
-  try { document.dispatchEvent(new CustomEvent("gp:reward-claimed", { detail: { kind, mode: s.mode } })); } catch {}
+  try { document.dispatchEvent(new CustomEvent("gp:reward-claimed", { detail: { kind, mode: via } })); } catch {}
   return true;
 }

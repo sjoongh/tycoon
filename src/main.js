@@ -10,6 +10,7 @@ import { DOMHud } from "./ui/DOMHud.js";
 import { DOMBottomPanel } from "./ui/DOMBottomPanel.js";
 import { DOMRewardUI } from "./ui/DOMRewardUI.js";
 import { DOMSpecialOffice } from "./ui/DOMSpecialOffice.js";
+import { warmUpAds } from "./ads/admob.js";
 import { DOMModalLayer } from "./ui/DOMModalLayer.js";
 import { DOMMapModal } from "./ui/DOMMapModal.js";
 import { DOMSettings } from "./ui/DOMSettings.js";
@@ -146,6 +147,7 @@ game.events.once("ready", () => {
   new DOMBottomPanel(gameState).mount(uiLayer);
   new DOMRewardUI(gameState).mount(uiLayer);
   new DOMSpecialOffice(gameState).mount(uiLayer);
+  warmUpAds(); // Android: AdMob 초기화 + 유럽 동의 양식(필요 시)
   new DOMModalLayer(gameState, notifications).mount(uiLayer);
   new DOMMapModal(gameState).mount(uiLayer);
   new DOMSettings(gameState, notifications).mount(uiLayer);
