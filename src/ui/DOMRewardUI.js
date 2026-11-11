@@ -74,7 +74,7 @@ export class DOMRewardUI {
     if (left > 0) { html = `<b>생산 2배</b><span>${fmtClock(left)}</span>`; cls += " gp-boost--on"; }
     else {
       const st = rewardStatus("boost");
-      if (st.ready) { html = `<b>${rewardLabel("boost")}</b>`; cls += " gp-boost--ready"; }
+      if (st.ready) { html = `<b>생산 2배</b><span>${st.mode === "ad" ? "▶ 광고 4시간" : "4시간 받기"}</span>`; cls += " gp-boost--ready"; }
       else html = `<b>생산 2배</b><span>${st.capped ? "오늘 끝" : `${fmtWait(st.waitMs)} 후`}</span>`;
     }
     if (this.boost.innerHTML !== html) this.boost.innerHTML = html;

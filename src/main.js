@@ -9,6 +9,7 @@ import { PreloadScene } from "./scenes/PreloadScene.js";
 import { DOMHud } from "./ui/DOMHud.js";
 import { DOMBottomPanel } from "./ui/DOMBottomPanel.js";
 import { DOMRewardUI } from "./ui/DOMRewardUI.js";
+import { DOMSpecialOffice } from "./ui/DOMSpecialOffice.js";
 import { DOMModalLayer } from "./ui/DOMModalLayer.js";
 import { DOMMapModal } from "./ui/DOMMapModal.js";
 import { DOMSettings } from "./ui/DOMSettings.js";
@@ -144,6 +145,7 @@ game.events.once("ready", () => {
   new DOMHud(gameState, notifications).mount(uiLayer);
   new DOMBottomPanel(gameState).mount(uiLayer);
   new DOMRewardUI(gameState).mount(uiLayer);
+  new DOMSpecialOffice(gameState).mount(uiLayer);
   new DOMModalLayer(gameState, notifications).mount(uiLayer);
   new DOMMapModal(gameState).mount(uiLayer);
   new DOMSettings(gameState, notifications).mount(uiLayer);
@@ -173,6 +175,8 @@ game.events.once("ready", () => {
   });
   if (gameState.offlineReward) logEvt("offline_reward", { min: Math.round(gameState.offlineReward.elapsed / 60000), area: gameState.data.stage.area });
   gameState.on("golden", (p) => logEvt("golden_tap", { kind: p?.kind }));
+  gameState.on("special-tier", (p) => logEvt("special_tier", { tier: p?.id }));
+  document.addEventListener("gp:special-open", () => logEvt("special_open", {}));
   document.addEventListener("gp:reward-claimed", (e) => logEvt("reward_claim", { kind: e.detail?.kind, mode: e.detail?.mode }));
   gameState.on("comm-collapse", () => logEvt("communist_collapse", {}));
   gameState.on("dex-milestone", (p) => logEvt("dex_milestone", { n: p?.n }));

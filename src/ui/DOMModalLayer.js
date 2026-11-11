@@ -57,6 +57,8 @@ export class DOMModalLayer {
     this.gameState.on("event-chain-ending", this._onEventChainEnding);
     this._onDexSet = (p) => { this._banner(`도감 세트 완성 · ${p.name} · ${p.effectText}`, { priority: 2, tone: "reward" }); this._flash(); };
     this.gameState.on("dex-set", this._onDexSet);
+    this._onSpecialTier = (p) => { const r = [p.reward?.explain ? `해명 +${p.reward.explain}` : null, p.reward?.seals ? `인장 +${p.reward.seals}` : null].filter(Boolean).join(" · "); this._banner(`특별 개표소 ${p.name} 달성 · ${r}`, { priority: 2, tone: "reward" }); };
+    this.gameState.on("special-tier", this._onSpecialTier);
     document.addEventListener("gp:prestige-confirm", this._onPrestigeConfirm);
     document.addEventListener("gp:gacha-result", this._onGachaResult);
     document.addEventListener("gp:gacha-result10", this._onGachaResult10);

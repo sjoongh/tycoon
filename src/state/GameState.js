@@ -28,6 +28,8 @@ import {
 import { achievementDefinitions } from "../data/achievements.js";
 import { dailyQuestDefinitions } from "../data/dailyQuests.js";
 import { dexSets, dexSetByEvent } from "../data/dexSets.js";
+import { SPECIAL_THEMES, SPECIAL_TIERS } from "../data/specialOffice.js";
+import { SPECIAL_FALLBACK, normalizeSpecial, specialSchedule, stationCost, stationUnlocked, specialPerSecond, specialTapValue, rolloverSpecial, claimNewTiers, addSpecialVotes, specialOfflineGain } from "./specialOffice.js";
 import { weeklyGoalDefinitions } from "../data/weeklyGoals.js";
 import {
   FEVER_FAMILY_PROFILES,
@@ -194,6 +196,9 @@ const fallbackState = {
   // 주간 랭킹: 이번 주 마지막으로 확인한 내 순위(rank/total). 주가 바뀌면 등급 뱃지로 확정해 badges에 쌓인다(최근 8개).
   weeklyRank: { week: 0, rank: 0, total: 0 },
   badges: [],
+  // 특별 개표소(주간 분리 경제 이벤트): 이번 주 상태 + 지난 기록(최근 8개)
+  special: { ...SPECIAL_FALLBACK },
+  specialHistory: [],
   eventReadyAt: 0,
   rushReadyAt: 0,
   rushEndsAt: 0,
@@ -356,6 +361,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     data.weekly.target = Math.max(0, Number(data.weekly.target) || 0);
     data.weekly.claimed = !!data.weekly.claimed;
     data.weeklyRank = { ...fallbackState.weeklyRank, ...(parsed?.weeklyRank && typeof parsed.weeklyRank === "object" ? parsed.weeklyRank : {}) };
+    { const ns = normalizeSpecial(parsed?.special, parsed?.specialHistory); data.special = ns.special; data.specialHistory = ns.history; }
     data.badges = Array.isArray(parsed?.badges) ? parsed.badges.filter((b) => b && Number.isFinite(b.week) && b.tier).slice(-8) : [];
 
     data.operations.lastId = operationById(data.operations.lastId)?.id || null;
@@ -607,6 +613,11 @@ export class GameState extends Phaser.Events.EventEmitter {
     data.explain += explain;
     data.stats.totalVotes += votes;
     data.stats.totalOfflineMs += elapsed;
+    // 특별 개표소: 열려 있는 주에만 50% 속도로 오프라인 적립(최대 8시간)
+    try {
+      const sch = specialSchedule(this._todayIndex());
+      if (sch.open && data.special?.week === sch.week) addSpecialVotes(data.special, specialOfflineGain(data.special, elapsed));
+    } catch {}
 
     return {
       elapsed,
@@ -1273,6 +1284,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     this.data.trust = Phaser.Math.Clamp(this.data.trust - this.trustDecay() - this.backlogTrustPenalty() + this.level("notice") * 0.035 * (1 - this.data.trust / 100), 0, 100);
     this._tickCommunism();
     this._tickAutoAide();
+    this._tickSpecial();
     this.reduceDays();
     this.checkProgression();
     this.emit("changed", { economy: true }); // 매초 숫자만 바뀜 — 패널은 부분 갱신, 구조 변경은 payload 없이 emit
@@ -1315,6 +1327,18 @@ export class GameState extends Phaser.Events.EventEmitter {
     return Phaser.Math.Clamp((this.data.commGauge || 0) / COMM_LIMIT, 0, 1);
   }
 
+  // 감사·전복 리셋에도 유지해야 하는 계정 단위 메타: 첫 도달 기록(계측), 주간 랭킹 순위·뱃지, 특별 개표소(분리 경제), 버프 중 부스트
+  _metaKeptAcrossResets() {
+    return {
+      firsts: this.data.firsts,
+      weeklyRank: this.data.weeklyRank,
+      badges: this.data.badges,
+      special: this.data.special,
+      specialHistory: this.data.specialHistory,
+      buffs: { ...fallbackState.buffs, boostUntil: this.data.buffs?.boostUntil || 0 },
+    };
+  }
+
   // 체제 전복 — 하드 리셋(보상 없음). 표·시설·직원·구역은 초기화, 메타(감사 업그레이드/훈장/도감/칭호/업적)는 유지.
   // 감사(prestigeReset)와 달리 인장/훈장을 새로 주지 않는다 = 진짜 페널티. 단 영구 진척은 보존해 복구 가능.
   communistReset() {
@@ -1333,6 +1357,7 @@ export class GameState extends Phaser.Events.EventEmitter {
       daily: this.data.daily,
       weekly: this.data.weekly,
       lifetime: this.foldLifetime(), // 전복으로 런 통계가 날아가도 평생 통계는 유지
+      ...this._metaKeptAcrossResets(),
     };
     const collapses = (this.data.stats.collapses || 0) + 1;
 
@@ -2065,6 +2090,7 @@ export class GameState extends Phaser.Events.EventEmitter {
       daily: this.data.daily, // 감사(프레스티지)는 진행이지 새 세이브가 아님 — 출석 연속/일일 진행 유지
       weekly: this.data.weekly, // 주간 한정 목표(주차/목표/수령여부) 유지 — 안 그러면 재청구 악용 + 목표 리셋
       lifetime: this.foldLifetime(), // 평생 통계: 이번 런의 stats를 접어 넣고 유지(업적·도감 기준)
+      ...this._metaKeptAcrossResets(),
     };
 
     this.data = this.normalize({
@@ -2345,6 +2371,69 @@ export class GameState extends Phaser.Events.EventEmitter {
   takePendingBadge() { const b = this._pendingBadge; this._pendingBadge = null; return b || null; }
 
   latestBadges(n = 4) { return (this.data.badges || []).slice(-n); }
+
+  // ── 특별 개표소(중기 #7) ──
+  specialSchedule() { return specialSchedule(this._todayIndex()); }
+
+  _ensureSpecial() {
+    const sch = this.specialSchedule();
+    const themeOfWeek = (w) => SPECIAL_THEMES[((w % SPECIAL_THEMES.length) + SPECIAL_THEMES.length) % SPECIAL_THEMES.length];
+    const r = rolloverSpecial(this.data.special, this.data.specialHistory || [], sch.week, themeOfWeek);
+    this.data.special = r.sp;
+    this.data.specialHistory = r.history;
+    if (r.archived) this.emit("special-archived", r.archived);
+    return sch;
+  }
+
+  specialState() {
+    const sch = this._ensureSpecial();
+    const sp = this.data.special;
+    return { ...sch, sp, perSec: specialPerSecond(sp), tapValue: specialTapValue(sp) };
+  }
+
+  _specialAfterGain() {
+    const fresh = claimNewTiers(this.data.special);
+    for (const t of fresh) {
+      this.grantReward(t.reward);
+      this.emit("special-tier", { id: t.id, name: t.name, reward: t.reward });
+      this.addLog(`특별 개표소 ${t.name} 달성`);
+    }
+    if (fresh.length) this.save(false);
+  }
+
+  specialTap() {
+    const sch = this._ensureSpecial();
+    if (!sch.open) return 0;
+    const v = addSpecialVotes(this.data.special, specialTapValue(this.data.special));
+    this.data.special.taps += 1;
+    this._specialAfterGain();
+    return v;
+  }
+
+  specialStationCost(i) { return stationCost(i, this.data.special.stations[i] || 0); }
+  specialStationUnlocked(i) { return stationUnlocked(this.data.special, i); }
+
+  specialUpgrade(i) {
+    const sch = this._ensureSpecial();
+    const sp = this.data.special;
+    if (!sch.open || !stationUnlocked(sp, i)) return false;
+    const cost = stationCost(i, sp.stations[i] || 0);
+    if (sp.votes < cost) return false;
+    sp.votes -= cost;
+    sp.stations[i] = (sp.stations[i] || 0) + 1;
+    this.emit("changed");
+    return true;
+  }
+
+  _tickSpecial() {
+    const sch = specialSchedule(this._todayIndex());
+    if (!sch.open) return;
+    if (this.data.special.week !== sch.week) this._ensureSpecial();
+    const g = specialPerSecond(this.data.special);
+    if (g > 0) { addSpecialVotes(this.data.special, g); this._specialAfterGain(); }
+  }
+
+  specialTiers() { return SPECIAL_TIERS; }
   weeklyTarget() {
     this._ensureWeekly();
     return this.data.weekly.target;

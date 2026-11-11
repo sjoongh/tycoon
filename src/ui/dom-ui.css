@@ -858,3 +858,45 @@ body { background-color: var(--bg-deep); background-image: repeating-linear-grad
 .gp-dexgrp__hd b { font-family: var(--f-bold); font-size: 12px; color: var(--ink); }
 .gp-dexgrp__hd em { margin-left: auto; font-style: normal; color: #8df0b0; }
 .gp-dexgrp .gp-dex { padding: 4px 8px 8px; }
+
+/* ---------- 특별 개표소 (중기 #7) ---------- */
+.gp-special-chip { position: absolute; right: 10px; top: 228px; z-index: 8; pointer-events: auto; display: flex; flex-direction: column; align-items: flex-start; min-width: 112px; max-width: 150px; padding: 6px 9px; border: 2px solid var(--line); border-radius: var(--r-sm); background: linear-gradient(180deg, #7a4bd6 0%, #5a33a8 100%); box-shadow: var(--px-out-sm); color: #fff; text-align: left; cursor: pointer; }
+.gp-special-chip b { font-family: var(--f-bold); font-size: 11px; }
+.gp-special-chip span { font-family: var(--f-small); font-size: 10px; color: #e2d6ff; }
+.gp-special-chip--new { animation: gp-rush-pulse 1.4s ease-in-out infinite; }
+.gp-ui--sheet-full .gp-special-chip { display: none; }
+.gp-special .gp-map__list { padding-bottom: 10px; }
+.gp-special__top { display: flex; flex-direction: column; align-items: center; padding: 10px 0 4px; }
+.gp-special__top b { font-family: var(--f-num); font-size: 30px; color: #e2d6ff; }
+.gp-special__top span { font-family: var(--f-small); font-size: 11px; color: var(--ink-soft); }
+.gp-special__top small { font-family: var(--f-small); font-size: 11px; color: #8df0b0; margin-top: 2px; }
+.gp-special__tap { position: relative; display: block; width: calc(100% - 24px); margin: 6px 12px; min-height: 84px; border: 3px solid var(--line); border-radius: 18px; background: linear-gradient(180deg, #9c6bff 0%, #6b3fd0 100%); color: #fff; font-family: var(--f-bold); font-size: 26px; box-shadow: var(--px-out-sm), 0 6px 0 #3d2380; cursor: pointer; overflow: hidden; }
+.gp-special__tap:active { transform: translateY(4px); box-shadow: var(--px-out-sm), 0 2px 0 #3d2380; }
+.gp-special__tap--hit { animation: gp-special-hit 160ms ease-out; }
+@keyframes gp-special-hit { 0% { transform: scale(1); } 50% { transform: scale(0.96); } 100% { transform: scale(1); } }
+.gp-special__float { position: absolute; top: 18px; font-family: var(--f-bold); font-size: 16px; color: #fff3c4; pointer-events: none; animation: gp-special-float 700ms ease-out forwards; }
+@keyframes gp-special-float { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-36px); } }
+.gp-special__prog { padding: 4px 12px; text-align: center; }
+.gp-special__prog small { font-family: var(--f-small); font-size: 11px; color: var(--ink-soft); }
+.gp-special__tiers { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; padding: 4px 12px 8px; }
+.gp-special__tier { display: flex; flex-direction: column; align-items: center; padding: 5px 2px; border: 2px solid var(--line); border-radius: var(--r-sm); background: var(--panel-sunk); opacity: 0.75; }
+.gp-special__tier b { font-family: var(--f-bold); font-size: 11px; color: var(--ink); }
+.gp-special__tier small { font-family: var(--f-num); font-size: 10px; color: var(--ink-soft); }
+.gp-special__tier em { font-style: normal; font-family: var(--f-small); font-size: 9px; color: #8df0b0; text-align: center; }
+.gp-special__tier--got { opacity: 1; border-color: var(--gold); background: #3a2c12; }
+.gp-special__st { display: flex; align-items: center; gap: 8px; margin: 6px 12px 0; padding: 6px 8px; border: 2px solid var(--line); border-radius: var(--r-sm); background: var(--panel); }
+.gp-special__st--lock { opacity: 0.55; }
+.gp-special__ic { flex: none; }
+.gp-special__stbody { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.gp-special__stbody b { font-family: var(--f-bold); font-size: 13px; color: var(--ink); }
+.gp-special__stbody small { font-family: var(--f-small); font-size: 10px; color: var(--ink-soft); }
+.gp-special__st .gp-btn--sm { min-width: 76px; }
+.gp-special__hist { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; padding: 10px 12px 0; font-family: var(--f-small); font-size: 11px; color: var(--ink-soft); }
+
+/* 오른쪽 HUD 칩 3종 컴팩트 정렬(현판 220px과 겹치지 않게): 폭 80, 상단 128/172/216 */
+.gp-today, .gp-boost, .gp-special-chip { right: 6px; min-width: 0; width: 80px; max-width: 80px; padding: 5px 7px 6px; }
+.gp-today b, .gp-boost b, .gp-special-chip b { font-size: 10px; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gp-today span, .gp-boost span, .gp-special-chip span { font-size: 9.5px; white-space: nowrap; }
+.gp-today { top: 128px; }
+.gp-boost { top: 172px; }
+.gp-special-chip { top: 216px; }
