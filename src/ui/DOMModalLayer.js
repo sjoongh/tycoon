@@ -55,6 +55,8 @@ export class DOMModalLayer {
     this.gameState.on("boss-end", this._onBossEnd);
     this.gameState.on("boss-action", this._onBossAction);
     this.gameState.on("event-chain-ending", this._onEventChainEnding);
+    this._onDexSet = (p) => { this._banner(`도감 세트 완성 · ${p.name} · ${p.effectText}`, { priority: 2, tone: "reward" }); this._flash(); };
+    this.gameState.on("dex-set", this._onDexSet);
     document.addEventListener("gp:prestige-confirm", this._onPrestigeConfirm);
     document.addEventListener("gp:gacha-result", this._onGachaResult);
     document.addEventListener("gp:gacha-result10", this._onGachaResult10);
