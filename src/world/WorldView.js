@@ -381,11 +381,47 @@ export class WorldView {
   }
 
   // 구역이 바뀌면 배경/깃발 전환 + 화면 플래시
+  // 시대 세트(중기 #2): 방 색조 + 벽 현수막 + 시대 방문객(Egg Inc 알 종류별 외형, AdCap 행성별 배경 모델)
+  _eraTint(key) {
+    return { force: 0xf3e9d6, red: 0xffe0dc, demo: 0xe4f1ff, future: 0xe0e9ff, space: 0xeadcff, myth: 0xfff2cc }[key] || 0xffffff;
+  }
+
+  _placeEraBanner() {
+    const key = eraTheme(this._eraArea).key;
+    const tex = `world/decor-era-${key}`;
+    if (!this.scene.textures.exists(tex)) { this._eraBanner?.setVisible(false); return; }
+    // 왼쪽 벽, 뒤 모서리 가까이 높은 곳(문·창문·게시판과 안 겹치는 자리). 벽 밑선에서 벽 높이만큼 위가 벽 윗선.
+    const [tw, th] = ISO.ROOM.tile;
+    const t = tileCenter(0, 0.1 + ISO.ROOM_COLS * 0.06);
+    const x = t.x - (tw * WORLD_SCALE) / 4;
+    const wallBottom = t.y - (th * WORLD_SCALE) / 4;
+    const wallH = ISO.ROOM.wallH * WORLD_SCALE;
+    const y = wallBottom - wallH + wallH * 0.12;
+    if (!this._eraBanner) this._eraBanner = this.scene.add.image(x, y, tex).setOrigin(0.5, 0).setScale(WORLD_SCALE * 0.62).setDepth(6);
+    else this._eraBanner.setTexture(tex).setPosition(x, y).setScale(WORLD_SCALE * 0.62);
+    this._eraBanner.setVisible(true);
+  }
+
   _applyEra(area) {
     if (area === this._eraArea) return;
     const prevKey = eraTheme(this._eraArea).key;
     this._eraArea = area;
     this._drawBackground(area);
+    const key = eraTheme(area).key;
+    this.room?.setTint(this._eraTint(key));
+    const bannerChanged = key !== prevKey || !this._eraBanner;
+    this._placeEraBanner();
+    // 시대가 바뀌면 이전 시대 방문객은 퇴장(페이드)
+    if (key !== prevKey) {
+      (this._visitors || []).forEach((v) => { if (!v.body.active) return; this.scene.tweens.killTweensOf(v.body); this.scene.tweens.add({ targets: v.body, alpha: 0, duration: 250, onComplete: () => v.body.destroy() }); });
+      this._visitors = [];
+    }
+    if (bannerChanged && this._eraBanner && !motionReduced()) {
+      // 현수막 교체: 위에서 툭 떨어지며 걸린다
+      const y0 = this._eraBanner.y;
+      this._eraBanner.setY(y0 - 30).setAlpha(0);
+      this.scene.tweens.add({ targets: this._eraBanner, y: y0, alpha: 1, duration: 380, ease: "Bounce.easeOut" });
+    }
     // 구역 전환 플래시 — 픽셀답게 짧고 옅게(스텝 페이드), 잔상 최소화
     const f = this.scene.add.rectangle(GAME_W / 2, 422, GAME_W, 844, 0xffe9a8, 0.32).setDepth(200);
     this.scene.tweens.add({ targets: f, alpha: 0, duration: 240, ease: "Quad.easeOut", onComplete: () => f.destroy() });
@@ -440,7 +476,9 @@ export class WorldView {
     this.props = [];
     this.propByFacility = {};
     this.propLabels = {};
-    this.room = this.scene.add.image(ISO.ROOM_X, ISO.ROOM_Y, `world/${ISO.ROOM_KEY}`).setOrigin(0, 0).setScale(WORLD_SCALE).setDepth(5);
+    this.room = this.scene.add.image(ISO.ROOM_X, ISO.ROOM_Y, `world/${ISO.ROOM_KEY}`).setOrigin(0, 0).setScale(WORLD_SCALE).setDepth(5)
+      .setTint(this._eraTint(eraTheme(this.gameState.data.stage?.area || 1).key));
+    this._placeEraBanner();
     for (const f of facilities) {
       const pos = facilityPos(f.id) || tileCenter(-2, -2);
       const meta = facilitySpriteMeta(f.id, 1);
@@ -860,7 +898,8 @@ export class WorldView {
     recomputeAnchors();
     const scene = this.scene;
     // 방 이미지
-    this.room.setTexture(`world/${ISO.ROOM_KEY}`).setPosition(ISO.ROOM_X, ISO.ROOM_Y).setScale(WORLD_SCALE);
+    this.room.setTexture(`world/${ISO.ROOM_KEY}`).setPosition(ISO.ROOM_X, ISO.ROOM_Y).setScale(WORLD_SCALE).setTint(this._eraTint(eraTheme(this._eraArea).key));
+    this._placeEraBanner();
     // 시설·라벨
     for (const f of facilities) {
       const obj = this.propByFacility[f.id];
@@ -1034,7 +1073,9 @@ export class WorldView {
     if (Math.random() > chance) return;
     const nVis = WORLD_ATLAS.visitors?.variants || 0;
     const v = (Math.random() * (nVis || WORLD_ATLAS.workers.variants)) | 0;
-    const texKey = nVis ? `world/visitor-${v}` : workerSpriteKey(v, 0);
+    const eraKey = `world/visitor-era-${eraTheme(this._eraArea).key}`;
+    const useEra = Math.random() < 0.45 && this.scene.textures.exists(eraKey);
+    const texKey = useEra ? eraKey : (nVis ? `world/visitor-${v}` : workerSpriteKey(v, 0));
     const door = tileCenter(ISO.DOOR_TILE.i, ISO.DOOR_TILE.j);
     // 대기열: 문과 접수창구 사이(뒤쪽 왼벽 앞)로 한 줄 — 창구 앞 표 뭉치·국장과 겹치지 않게
     const qi = this._visitors.length;
@@ -1069,7 +1110,16 @@ export class WorldView {
   _onVisitorTap(visitor) {
     const { body } = visitor;
     if (!body.active || this._camDragging) return;
-    const LINES = ["투표하러 왔어요", "줄이 기네요…", "믿고 맡깁니다", "빨리 끝내 주세요", "개표 잘 보고 있어요"];
+    const ERA_LINES = {
+      force: ["규정대로 하십시오", "참관 중입니다", "기록 남깁니다"],
+      red: ["인민의 표입니다", "동지, 서두르시오", "위원회가 지켜봅니다"],
+      demo: ["한 컷만 찍을게요", "속보 나갑니다", "시민의 눈입니다"],
+      future: ["삐— 표 접수 완료", "효율 97.3%", "인간 직원 귀여움"],
+      space: ["은하 표심 도착", "중력이 약하네요", "지구 개표는 처음"],
+      myth: ["천상의 표올시다", "신탁은 공정하다", "후광 좀 꺼 주세요"],
+    };
+    const BASE = ["투표하러 왔어요", "줄이 기네요…", "믿고 맡깁니다", "빨리 끝내 주세요", "개표 잘 보고 있어요"];
+    const LINES = body.texture.key.includes("visitor-era-") ? (ERA_LINES[eraTheme(this._eraArea).key] || BASE) : BASE;
     this.effects.float({ text: `"${LINES[(Math.random() * LINES.length) | 0]}"`, x: body.x, y: body.y - 58, color: "#ffe9c0" });
     this.scene.tweens.add({ targets: body, scaleX: WORKER_SCALE * 1.05, scaleY: WORKER_SCALE * 0.8, yoyo: true, duration: 90 });
     if (!visitor.thanked) {
@@ -1417,6 +1467,7 @@ export class WorldView {
     (this._pileSprites || []).forEach((o) => o.destroy());
     this._pileZone?.destroy();
     (this._visitors || []).forEach((v) => { this.scene.tweens.killTweensOf(v.body); v.body.destroy(); });
+    this._eraBanner?.destroy();
     this.scene.input.off("pointermove", this._onCamMove);
     this.scene.input.off("pointerup", this._onCamUp);
     Object.keys(this._propIdle || {}).forEach((id) => { const t = this._propIdle[id]; if (t) { t.stop(); t.remove?.(); } });

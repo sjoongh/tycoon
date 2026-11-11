@@ -216,6 +216,29 @@ def main():
         meta["visitors"].update({"w": img.width, "h": img.height, "ax": ax, "ay": ay})
         previews.append(img)
 
+    # 시대 세트(중기 #2): 벽 현수막 + 시대 전용 방문객. 키는 regions.eraTheme().key 와 같다.
+    ERAS = ["force", "red", "demo", "future", "space", "myth"]
+    meta["eraDecor"] = {"keys": [], "w": 0, "h": 0}
+    for k in ERAS:
+        if not (SRC / f"decor-era-{k}.png").exists():
+            continue
+        img = fit(trim(load(f"decor-era-{k}")), 56, 78)
+        save(img, OUT / f"decor-era-{k}.png")
+        meta["eraDecor"]["keys"].append(k)
+        meta["eraDecor"].update({"w": max(meta["eraDecor"]["w"], img.width), "h": max(meta["eraDecor"]["h"], img.height)})
+        previews.append(img)
+    ev = [k for k in ERAS if (SRC / f"visitor-era-{k}.png").exists()]
+    evs = [character(f"visitor-era-{k}", WORKER_H) for k in ev]
+    if evs:
+        ew = max(w.width for w, _ in evs)
+        eh = max(w.height for w, _ in evs)
+        meta["eraVisitors"] = {"keys": ev, "w": ew, "h": eh}
+        for k in ev:
+            img, (ax, ay) = character(f"visitor-era-{k}", WORKER_H, (ew, eh))
+            save(img, OUT / f"visitor-era-{k}.png")
+            meta["eraVisitors"].update({"ax": ax, "ay": ay})
+            previews.append(img)
+
     # 투표지(적체 더미·비행) + 파티클 + 황금 투표함
     ballot = fit(trim(load("ballot")), 16, 20)
     save(ballot, OUT / "ballot.png")

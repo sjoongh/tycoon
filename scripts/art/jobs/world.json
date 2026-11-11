@@ -340,5 +340,101 @@
     "prompt": "A single voter visiting a vote-counting office: a young student voter with a backpack and headphones around the neck, hoodie, holding a folded ballot paper, facing front-right three-quarter view, standing. Cute chibi character for a cozy cartoon idle-tycoon game: big head, small body, full body visible, simple dot eyes, friendly face. Soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow, no ground shadow. Fully transparent background with no backdrop, no card, no frame; no text; single character centered."
    }
   ]
+ },
+ {
+  "chain": [
+   {
+    "out": "assets/art-src/ai-world/decor-era-force.png",
+    "prompt": "A single a hanging wall banner in khaki and dark green with a stern star emblem and crossed batons, slightly frayed, military-office feel, hanging from a short wooden rod with a cord. Cozy cartoon mobile idle-tycoon game sprite. Soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow. Transparent background, no text, single object centered, front view."
+   }
+  ]
+ },
+ {
+  "chain": [
+   {
+    "out": "assets/art-src/ai-world/decor-era-red.png",
+    "prompt": "A single a hanging wall banner in deep red with a golden wheat-and-gear emblem and a small gold tassel, hanging from a short wooden rod with a cord. Cozy cartoon mobile idle-tycoon game sprite. Soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow. Transparent background, no text, single object centered, front view."
+   }
+  ]
+ },
+ {
+  "chain": [
+   {
+    "out": "assets/art-src/ai-world/decor-era-demo.png",
+    "prompt": "A single a hanging wall banner in sky blue and white with a dove and ballot-box emblem, clean and bright, hanging from a short wooden rod with a cord. Cozy cartoon mobile idle-tycoon game sprite. Soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow. Transparent background, no text, single object centered, front view."
+   }
+  ]
+ },
+ {
+  "chain": [
+   {
+    "out": "assets/art-src/ai-world/decor-era-future.png",
+    "prompt": "A single a hanging wall banner in silver and neon cyan with a hexagon circuit emblem, sleek, hanging from a short wooden rod with a cord. Cozy cartoon mobile idle-tycoon game sprite. Soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow. Transparent background, no text, single object centered, front view."
+   }
+  ]
+ },
+ {
+  "chain": [
+   {
+    "out": "assets/art-src/ai-world/decor-era-space.png",
+    "prompt": "A single a hanging wall banner in deep violet with stars and a small rocket emblem, a crescent moon, hanging from a short wooden rod with a cord. Cozy cartoon mobile idle-tycoon game sprite. Soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow. Transparent background, no text, single object centered, front view."
+   }
+  ]
+ },
+ {
+  "chain": [
+   {
+    "out": "assets/art-src/ai-world/decor-era-myth.png",
+    "prompt": "A single a hanging wall banner in ivory and gold with laurel wreath and a radiant sun emblem, ornate, hanging from a short wooden rod with a cord. Cozy cartoon mobile idle-tycoon game sprite. Soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow. Transparent background, no text, single object centered, front view."
+   }
+  ]
+ },
+ {
+  "chain": [
+   {
+    "out": "assets/art-src/ai-world/visitor-era-force.png",
+    "prompt": "A single visitor to a vote-counting office: a stern election observer wearing an armband and a khaki cap, holding a clipboard. Cute chibi character for a cozy cartoon idle-tycoon game: big head, small body, full body visible, simple dot eyes, friendly face. Soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow, no ground shadow. Fully transparent background, no backdrop, no text; single character centered, facing front-right three-quarter view, standing."
+   }
+  ]
+ },
+ {
+  "chain": [
+   {
+    "out": "assets/art-src/ai-world/visitor-era-red.png",
+    "prompt": "A single visitor to a vote-counting office: a people's committee member in a grey tunic with a red scarf, holding a rolled poster. Cute chibi character for a cozy cartoon idle-tycoon game: big head, small body, full body visible, simple dot eyes, friendly face. Soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow, no ground shadow. Fully transparent background, no backdrop, no text; single character centered, facing front-right three-quarter view, standing."
+   }
+  ]
+ },
+ {
+  "chain": [
+   {
+    "out": "assets/art-src/ai-world/visitor-era-demo.png",
+    "prompt": "A single visitor to a vote-counting office: a young newspaper reporter with a press badge, holding a camera and notepad. Cute chibi character for a cozy cartoon idle-tycoon game: big head, small body, full body visible, simple dot eyes, friendly face. Soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow, no ground shadow. Fully transparent background, no backdrop, no text; single character centered, facing front-right three-quarter view, standing."
+   }
+  ]
+ },
+ {
+  "chain": [
+   {
+    "out": "assets/art-src/ai-world/visitor-era-future.png",
+    "prompt": "A single visitor to a vote-counting office: a sleek round delivery robot with a screen face showing a smiling emoticon, a small antenna, carrying a ballot slot on its chest (robot instead of a person). Cute chibi character for a cozy cartoon idle-tycoon game: big head, small body, full body visible, simple dot eyes, friendly face. Soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow, no ground shadow. Fully transparent background, no backdrop, no text; single character centered, facing front-right three-quarter view, standing."
+   }
+  ]
+ },
+ {
+  "chain": [
+   {
+    "out": "assets/art-src/ai-world/visitor-era-space.png",
+    "prompt": "A single visitor to a vote-counting office: an astronaut voter in a white spacesuit with a clear helmet showing a smiling face, holding a glowing ballot. Cute chibi character for a cozy cartoon idle-tycoon game: big head, small body, full body visible, simple dot eyes, friendly face. Soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow, no ground shadow. Fully transparent background, no backdrop, no text; single character centered, facing front-right three-quarter view, standing."
+   }
+  ]
+ },
+ {
+  "chain": [
+   {
+    "out": "assets/art-src/ai-world/visitor-era-myth.png",
+    "prompt": "A single visitor to a vote-counting office: a tiny winged angel-like clerk with a golden halo, white robe, holding a glowing scroll. Cute chibi character for a cozy cartoon idle-tycoon game: big head, small body, full body visible, simple dot eyes, friendly face. Soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow, no ground shadow. Fully transparent background, no backdrop, no text; single character centered, facing front-right three-quarter view, standing."
+   }
+  ]
  }
 ]
