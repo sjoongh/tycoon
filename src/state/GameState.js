@@ -14,7 +14,7 @@ import {
   eventEndingEffectFor,
   resolveEventChainEnding,
 } from "../data/eventChains.js";
-import { govTitles, titleById, RARITY_ORDER } from "../data/titles.js";
+import { govTitles, gachaTitles, titleById, RARITY_ORDER } from "../data/titles.js";
 import { cosmetics, cosmeticById } from "../data/cosmetics.js";
 import { characters, characterById } from "../data/characters.js";
 import { questDefinitions } from "../data/quests.js";
@@ -31,6 +31,7 @@ import { dexSets, dexSetByEvent } from "../data/dexSets.js";
 import { SPECIAL_THEMES, SPECIAL_TIERS } from "../data/specialOffice.js";
 import { SPECIAL_FALLBACK, normalizeSpecial, specialSchedule, stationCost, stationUnlocked, specialPerSecond, specialTapValue, rolloverSpecial, claimNewTiers, addSpecialVotes, specialOfflineGain } from "./specialOffice.js";
 import { weeklyGoalDefinitions } from "../data/weeklyGoals.js";
+import { SEASON_POINTS, SEASON_TRACK, seasonKeyFor, seasonThemeFor, seasonDaysLeft, seasonMonthOf, seasonStepsReached, seasonStepReward, normalizeSeason, rolloverSeason } from "../data/seasons.js";
 import {
   FEVER_FAMILY_PROFILES,
   OPERATION_MAX_LEVEL,
@@ -199,6 +200,8 @@ const fallbackState = {
   // 특별 개표소(주간 분리 경제 이벤트): 이번 주 상태 + 지난 기록(최근 8개)
   special: { ...SPECIAL_FALLBACK },
   specialHistory: [],
+  // 월간 시즌: 이번 달 키(연×12+월)·포인트·받은 단계 수 + 지난 시즌 기록(최근 6개)
+  season: { key: 0, points: 0, steps: 0, history: [] },
   eventReadyAt: 0,
   rushReadyAt: 0,
   rushEndsAt: 0,
@@ -362,6 +365,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     data.weekly.claimed = !!data.weekly.claimed;
     data.weeklyRank = { ...fallbackState.weeklyRank, ...(parsed?.weeklyRank && typeof parsed.weeklyRank === "object" ? parsed.weeklyRank : {}) };
     { const ns = normalizeSpecial(parsed?.special, parsed?.specialHistory); data.special = ns.special; data.specialHistory = ns.history; }
+    data.season = normalizeSeason(parsed?.season);
     data.badges = Array.isArray(parsed?.badges) ? parsed.badges.filter((b) => b && Number.isFinite(b.week) && b.tier).slice(-8) : [];
 
     data.operations.lastId = operationById(data.operations.lastId)?.id || null;
@@ -1331,7 +1335,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     return Phaser.Math.Clamp((this.data.commGauge || 0) / COMM_LIMIT, 0, 1);
   }
 
-  // 감사·전복 리셋에도 유지해야 하는 계정 단위 메타: 첫 도달 기록(계측), 주간 랭킹 순위·뱃지, 특별 개표소(분리 경제), 버프 중 부스트
+  // 감사·전복 리셋에도 유지해야 하는 계정 단위 메타: 첫 도달 기록(계측), 주간 랭킹 순위·뱃지, 특별 개표소(분리 경제), 월간 시즌, 버프 중 부스트
   _metaKeptAcrossResets() {
     return {
       firsts: this.data.firsts,
@@ -1339,6 +1343,7 @@ export class GameState extends Phaser.Events.EventEmitter {
       badges: this.data.badges,
       special: this.data.special,
       specialHistory: this.data.specialHistory,
+      season: this.data.season,
       buffs: { ...fallbackState.buffs, boostUntil: this.data.buffs?.boostUntil || 0 },
     };
   }
@@ -1545,6 +1550,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     };
     this.grantReward(reward);
     this.addLog(`사건 결말: ${ending.title} · ${ending.effectText}`);
+    this.addSeasonPoints(SEASON_POINTS.chainEnding);
     this.checkProgression();
     const result = {
       ...ending,
@@ -2304,6 +2310,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     this.grantReward(r);
     this.data.daily.claimed[id] = true;
     this.emit("celebrate", { text: `일일 완료 · ${q.title}` });
+    this.addSeasonPoints(SEASON_POINTS.daily);
     this.emit("changed");
     this.save(false);
     return r;
@@ -2421,6 +2428,7 @@ export class GameState extends Phaser.Events.EventEmitter {
       this.grantReward(t.reward);
       this.emit("special-tier", { id: t.id, name: t.name, reward: t.reward });
       this.addLog(`특별 개표소 ${t.name} 달성`);
+      this.addSeasonPoints(SEASON_POINTS.special[t.id] || 0);
     }
     if (fresh.length) this.save(false);
   }
@@ -2482,6 +2490,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     this.data.prestige.seals += def.seals || 0;
     this.data.weekly.claimed = true;
     this.emit("celebrate", { text: `★ ${def.title} 완료 · 인장 +${def.seals}` });
+    this.addSeasonPoints(SEASON_POINTS.weekly);
     this.emit("changed");
     this.save(false);
     return { seals: def.seals };
@@ -2952,9 +2961,10 @@ export class GameState extends Phaser.Events.EventEmitter {
     return govTitles.reduce((sum, t) => sum + (titles[t.id] || 0) * (t.effect[key] || 0), 0);
   }
 
+  // 뽑기 칭호만 센다(시즌 발령은 전수집 업적·보유 수에서 제외).
   ownedTitleCount() {
     const t = this.data.titles;
-    return t && typeof t === "object" ? Object.keys(t).filter((id) => t[id] > 0).length : 0;
+    return t && typeof t === "object" ? gachaTitles.filter((d) => t[d.id] > 0).length : 0;
   }
 
   // ----- 캐릭터 선택 -----
@@ -3003,13 +3013,13 @@ export class GameState extends Phaser.Events.EventEmitter {
   _pickGachaTitle() {
     // 소프트 천장: 30뽑 내 희귀 미출현 시 다음 뽑기는 희귀 확정
     if ((this.data.gachaPity || 0) >= GACHA_PITY - 1) {
-      const rares = govTitles.filter((t) => t.rarity === "rare");
+      const rares = gachaTitles.filter((t) => t.rarity === "rare");
       return rares[(Math.random() * rares.length) | 0];
     }
-    const total = govTitles.reduce((s, t) => s + (t.weight || 1), 0);
+    const total = gachaTitles.reduce((s, t) => s + t.weight, 0);
     let roll = Math.random() * total;
-    for (const t of govTitles) { roll -= (t.weight || 1); if (roll < 0) return t; }
-    return govTitles[govTitles.length - 1];
+    for (const t of gachaTitles) { roll -= t.weight; if (roll < 0) return t; }
+    return gachaTitles[gachaTitles.length - 1];
   }
 
   // 천장까지 남은 뽑기 수(UI 표기용)
@@ -3053,6 +3063,82 @@ export class GameState extends Phaser.Events.EventEmitter {
     this.emit("changed");
     this.save(false);
     return { id: def.id, name: def.name, rarity: def.rarity, per: def.per, icon: def.icon, level, isNew };
+  }
+
+  // ----- 월간 시즌(장기 #1): 테마·포인트·무료 트랙 -----
+  _ensureSeason() {
+    const key = seasonKeyFor(clock.now());
+    const r = rolloverSeason(this.data.season, key);
+    this.data.season = r.season;
+    if (r.archived) {
+      this.addLog(`${seasonMonthOf(r.archived.key)}월 시즌 종료 · ${r.archived.steps}/${SEASON_TRACK.length}단계`);
+      this.emit("season-archived", r.archived);
+    }
+    return this.data.season;
+  }
+
+  seasonState() {
+    const s = this._ensureSeason();
+    const theme = seasonThemeFor(s.key);
+    const next = SEASON_TRACK[s.steps] || null;
+    return { ...s, theme, month: seasonMonthOf(s.key), daysLeft: seasonDaysLeft(clock.now()), track: SEASON_TRACK, next, done: !next };
+  }
+
+  seasonRewardAt(step) {
+    return seasonStepReward(step, seasonThemeFor(this._ensureSeason().key));
+  }
+
+  // 포인트 적립 → 새로 넘은 단계 보상을 즉시 지급(받기 버튼 없음: 달이 넘어가도 놓치는 보상이 없다).
+  addSeasonPoints(n) {
+    const pts = Math.max(0, Math.floor(Number(n) || 0));
+    if (!pts) return [];
+    const s = this._ensureSeason();
+    s.points += pts;
+    this.emit("float", { text: `시즌 +${pts}`, x: 195, y: 470, color: seasonThemeFor(s.key).color });
+    const reached = seasonStepsReached(s.points);
+    const granted = [];
+    while (s.steps < reached) {
+      const step = s.steps;
+      s.steps += 1;
+      const g = this._grantSeasonStep(step, seasonThemeFor(s.key));
+      if (g) granted.push(g);
+    }
+    if (granted.length) {
+      this.emit("changed");
+      this.save(false);
+    }
+    return granted;
+  }
+
+  _grantSeasonStep(step, theme) {
+    const r = seasonStepReward(step, theme);
+    if (!r) return null;
+    let text = "";
+    if (r.kind === "hat") {
+      const def = cosmeticById(r.id);
+      if (!this.data.cosmetics || typeof this.data.cosmetics !== "object") this.data.cosmetics = {};
+      if (!this.data.equippedCos || typeof this.data.equippedCos !== "object") this.data.equippedCos = {};
+      this.data.cosmetics[r.id] = 1;
+      this.data.equippedCos.hat = r.id; // 받은 달엔 바로 씌워 월드에서 보이게(꾸미기에서 바꿀 수 있다)
+      text = `한정 모자 · ${def?.name || r.id}`;
+    } else if (r.kind === "title") {
+      const def = titleById(r.id);
+      if (!this.data.titles || typeof this.data.titles !== "object") this.data.titles = {};
+      const lv = (this.data.titles[r.id] || 0) + 1;
+      this.data.titles[r.id] = lv;
+      this.data.equippedTitle = r.id;
+      text = `시즌 발령 · ${def?.name || r.id}${lv > 1 ? ` Lv.${lv}` : ""}`;
+    } else {
+      this.grantReward(r.reward);
+      const parts = [];
+      if (r.reward.explain) parts.push(`해명 +${r.reward.explain}`);
+      if (r.reward.seals) parts.push(`인장 +${r.reward.seals}`);
+      text = parts.join(" · ");
+    }
+    this.addLog(`${theme.name} ${step + 1}단계 · ${text}`);
+    this.emit("celebrate", { text: `시즌 ${step + 1}단계 · ${text}` });
+    this.emit("season-step", { step, kind: r.kind, id: r.id || null, text, theme: theme.id });
+    return { step, ...r, text };
   }
 
   // ----- 국장 꾸미기(액세서리) -----

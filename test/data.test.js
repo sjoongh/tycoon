@@ -37,13 +37,13 @@ describe("게임 데이터 무결성", () => {
   });
 
   it("칭호 전수집 업적(titlesAll) target은 실제 칭호 수와 일치한다", async () => {
-    const { govTitles } = await import("../src/data/titles.js");
+    const { gachaTitles } = await import("../src/data/titles.js");
     const full = achievementDefinitions.find((a) => a.id === "titlesAll");
     expect(full).toBeTruthy();
     expect(full.metric).toBe("titlesOwned");
-    expect(full.target).toBe(govTitles.length);
+    expect(full.target).toBe(gachaTitles.length); // 시즌 발령(weight 0)은 전수집 대상이 아니다
     // 칭호 가중치 합 = 100(가중 추첨 일관성)
-    expect(govTitles.reduce((s, t) => s + (t.weight || 0), 0)).toBe(100);
+    expect(gachaTitles.reduce((s, t) => s + (t.weight || 0), 0)).toBe(100);
   });
 
   it("모든 일일 퀘스트 metric은 자정 리셋(_ensureDailyQuests)에서 0으로 초기화된다", () => {

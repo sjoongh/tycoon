@@ -12,8 +12,9 @@ import { questDefinitions } from "../data/quests.js";
 import { achievementDefinitions } from "../data/achievements.js";
 import { iconHtml, iconStyle, applyIcon, facilityIcon, staffIcon, tabIcon } from "./icon.js";
 import { dailyQuestDefinitions } from "../data/dailyQuests.js";
-import { govTitles, titleById, RARITY_LABEL, RARITY_COLOR } from "../data/titles.js";
-import { cosmetics, COSMETIC_SLOTS } from "../data/cosmetics.js";
+import { govTitles, gachaTitles, titleById, RARITY_LABEL, RARITY_COLOR } from "../data/titles.js";
+import { cosmetics, cosmeticById, COSMETIC_SLOTS } from "../data/cosmetics.js";
+import { SEASON_POINTS } from "../data/seasons.js";
 import { characters } from "../data/characters.js";
 import { cloudEnabled } from "../firebaseConfig.js";
 import { roomStageFor, nextRoomStageArea, roomStageLabel, ROOM_STAGE_COUNT } from "../world/iso.js";
@@ -793,6 +794,7 @@ export class DOMBottomPanel {
     }
     const active = gs.nextQuest();
     const doneCount = questDefinitions.filter((q) => gs.data.quests[q.id]).length;
+    const seasonCard = this._renderSeasonCard();
 
     const goalRow = (q, state) => {
       // state: "done" | "active" | "locked"
@@ -883,15 +885,55 @@ export class DOMBottomPanel {
     this.panel.innerHTML = `<div class="gp-paneltitle">운영 목표 · ${titleProgress}${rankBtn}</div>
       <div class="gp-goallist-wrap"><div class="gp-stafflist gp-goallist">
       ${dailyRow}
+      ${seasonCard}
       ${weeklyRow ? `<div class="gp-goal__section">&#9733; 주간 한정 · 일요일 종료</div>${weeklyRow}` : ""}
       <div class="gp-goal__section">&#9670; 일일 퀘스트 ${dailyClaimed}/${dailyQuestDefinitions.length} · 자정 초기화</div>${dailyRows}
       <div class="gp-goal__section">운영 목표</div>${questRows}
       <div class="gp-goal__section">업적 · ${gotCount}/${achievementDefinitions.length}</div>${achRows}</div><div class="gp-goallist-fade" aria-hidden="true"></div></div>`;
   }
 
+  // 월간 시즌 — 무료 트랙 8단계. 단계 보상은 도달 즉시 자동 지급(받기 없음).
+  _renderSeasonCard() {
+    const gs = this.gameState;
+    if (!gs.seasonState) return "";
+    const st = gs.seasonState();
+    const last = st.track[st.track.length - 1].need;
+    const chips = st.track.map((t, i) => {
+      const r = gs.seasonRewardAt(i);
+      let ic = "";
+      let label = "";
+      if (r.kind === "hat") {
+        const def = cosmeticById(r.id);
+        ic = `<img class="gp-season__img" src="${def?.img || ""}" alt="">`;
+        label = def?.name || "";
+      } else if (r.kind === "title") {
+        const def = titleById(r.id);
+        ic = iconHtml("ui-star", { size: 32 });
+        label = `발령 ${def?.name || ""}`;
+      } else {
+        ic = iconHtml(r.reward.seals ? "ui-seal" : "res-explain", { size: 32 });
+        label = r.reward.seals ? `인장 +${r.reward.seals}` : `해명 +${shortNumber(r.reward.explain)}`;
+      }
+      const got = i < st.steps;
+      const big = r.kind !== "reward";
+      return `<span class="gp-season__step ${got ? "gp-season__step--got" : ""} ${big ? "gp-season__step--big" : ""}" title="${t.need}P · ${label}">${ic}<b>${got ? "✓" : t.need}</b></span>`;
+    }).join("");
+    const nextLine = st.next ? `다음 ${st.next.need}P` : "트랙 완료";
+    const sp = SEASON_POINTS.special;
+    return `<div class="gp-goal__section">${st.month}월 시즌 · ${st.theme.name}</div>
+      <div class="gp-season" data-goal-kind="season" style="--season:${st.theme.color}">
+        <div class="gp-goal__head"><span class="gp-goal__title">시즌 포인트 ${st.points}P</span><span class="gp-goal__badge gp-goal__badge--week">D-${st.daysLeft}</span></div>
+        <div class="gp-progress gp-goal__bar"><div class="gp-progress__fill" style="transform:scaleX(${Math.min(1, st.points / last)})"></div></div>
+        <div class="gp-season__track">${chips}</div>
+        <div class="gp-goal__foot"><span>${nextLine} · ${st.steps}/${st.track.length}단계</span></div>
+        <div class="gp-season__src">일일 퀘스트 +${SEASON_POINTS.daily} · 주간 목표 +${SEASON_POINTS.weekly} · 사건 결말 +${SEASON_POINTS.chainEnding} · 특별 개표소 등급 +${sp.bronze}~${sp.elite}</div>
+      </div>`;
+  }
+
   _goalsStructureSignature() {
     const gs = this.gameState;
     const daily = gs.dailyStatus?.();
+    const season = gs.seasonState?.();
     const weekly = gs.weeklyDef?.();
     const active = gs.nextQuest();
     return JSON.stringify({
@@ -902,6 +944,7 @@ export class DOMBottomPanel {
       quests: questDefinitions.map((q) => !!gs.data.quests[q.id]),
       achievements: achievementDefinitions.map((a) => !!gs.data.achievements[a.id]),
       rank: cloudEnabled(),
+      season: season ? [season.key, season.points, season.steps, season.daysLeft] : null,
     });
   }
 
@@ -1025,7 +1068,7 @@ export class DOMBottomPanel {
     const gs = this.gameState;
     const cost = gs.gachaDrawCost();
     const can = gs.canDrawGacha();
-    const owned = gs.ownedTitleCount();
+    const owned = gachaTitles.filter((t) => (gs.data.titles[t.id] || 0) > 0).length;
     const eq = gs.equippedTitleDef();
     const eqLv = eq ? (gs.data.titles[eq.id] || 0) : 0;
     const eqLine = eq
@@ -1036,13 +1079,13 @@ export class DOMBottomPanel {
       .map((t) => `<span class="gp-gacha__chip" style="border-color:${RARITY_COLOR[t.rarity]};color:${RARITY_COLOR[t.rarity]}" title="${t.name} · ${t.per}">${iconHtml(t.icon, { size: 32 })}${(gs.data.titles[t.id] || 0)}</span>`)
       .join("");
     // 확률 표기(weight 합산) + 소프트 천장 카운터 — 투명한 뽑기
-    const wSum = (r) => govTitles.filter((t) => t.rarity === r).reduce((a, t) => a + (t.weight || 1), 0);
-    const total = govTitles.reduce((a, t) => a + (t.weight || 1), 0);
+    const wSum = (r) => gachaTitles.filter((t) => t.rarity === r).reduce((a, t) => a + t.weight, 0);
+    const total = gachaTitles.reduce((a, t) => a + t.weight, 0);
     const pct = (r) => Math.round((wSum(r) / total) * 100);
     const pityLeft = gs.gachaPityLeft ? gs.gachaPityLeft() : null;
     const oddsLine = `<div class="gp-gacha__odds">일반 ${pct("common")}% · 고급 ${pct("uncommon")}% · 희귀 ${pct("rare")}%${pityLeft !== null ? ` · 희귀 확정까지 ${pityLeft}회` : ""}</div>`;
     return `<div class="gp-gacha">
-      <div class="gp-gacha__hd">${iconHtml("ui-dice", { size: 32 })}인사 발령 뽑기 <span class="gp-gacha__count">보유 ${owned}/${govTitles.length}</span></div>
+      <div class="gp-gacha__hd">${iconHtml("ui-dice", { size: 32 })}인사 발령 뽑기 <span class="gp-gacha__count">보유 ${owned}/${gachaTitles.length}</span></div>
       <div class="gp-gacha__eq">${eqLine}</div>
       ${chips ? `<div class="gp-gacha__chips">${chips}</div>` : ""}
       ${oddsLine}
@@ -1078,11 +1121,13 @@ export class DOMBottomPanel {
     const slotLabel = { hat: "머리", face: "얼굴" };
     const rows = COSMETIC_SLOTS.map((slot) => {
       const eq = gs.equippedCosmetic(slot);
-      const chips = cosmetics.filter((c) => c.slot === slot).map((c) => {
+      // 시즌 한정 모자는 보유했거나 이번 달 테마일 때만 칩으로 보인다(나머지 5종 잠금 칩으로 줄을 채우지 않는다).
+      const seasonHat = gs.seasonState ? gs.seasonState().theme.hat : null;
+      const chips = cosmetics.filter((c) => c.slot === slot && (c.unlock?.type !== "season" || c.id === seasonHat || gs.ownsCosmetic(c.id))).map((c) => {
         const has = gs.ownsCosmetic(c.id);
         if (!has) return `<span class="gp-cos__chip gp-cos__chip--lock" title="${c.name} · ${c.hint}">${iconHtml("ui-lock", { size: 32 })}</span>`;
         const on = eq === c.id;
-        return `<button class="gp-cos__chip ${on ? "gp-cos__chip--on" : ""}" data-action="equipCos" data-id="${c.id}" title="${c.name}${on ? " (장착중·탭하면 벗기)" : ""}">${iconHtml(c.icon, { size: 32 })}</button>`;
+        return `<button class="gp-cos__chip ${on ? "gp-cos__chip--on" : ""}" data-action="equipCos" data-id="${c.id}" title="${c.name}${on ? " (장착중·탭하면 벗기)" : ""}">${c.img ? `<img class="gp-cos__img" src="${c.img}" alt="${c.name}">` : iconHtml(c.icon, { size: 32 })}</button>`;
       }).join("");
       return `<div class="gp-cos__row"><span class="gp-cos__slot">${slotLabel[slot] || slot}</span><div class="gp-cos__chips">${chips || "—"}</div></div>`;
     }).join("");
