@@ -18,6 +18,8 @@ import { RARITY_COLOR } from "../data/titles.js";
 import { shortNumber } from "../utils/format.js";
 import { vehicleTierFor, visitorCapForStage, freeQueueSlot, activeResidents } from "./ambient.js";
 import { lockedPreviewFor, lotLayout, revealStepCount, tilesInRevealStep, REVEAL_STAGGER_MS } from "./lockedLot.js";
+import { galleryAreas } from "../data/moving.js";
+import { regionIcon } from "../ui/icon.js";
 
 // 거지키우기식 심플 월드: 미니멀 픽셀 배경 + 중앙 도트 국장 + 큰 숫자 + 바닥.
 // (구 버전의 이소 오피스 다이어그램·화분·시계·창문·워커·시설 스테이션은 전부 제거)
@@ -1140,6 +1142,8 @@ export class WorldView {
     Object.keys(this._residents || {}).forEach((k) => this._removeResident(k)); this._residentSig = null; // _refresh 끝의 _syncResidents 가 새 자리로 다시 세운다
     this._despawnVehicle();
     this._badgeSig = null; this._syncBadges();
+    this._gallerySig = null; this._syncGallery();
+    this._cancelMove(); this._clearMoveBoxes(); this._moveBoxSig = null;
     this._drawBackground(this._eraArea);
     if (!animate || motionReduced()) {
       this._destroyLot(oldLot);
@@ -1162,7 +1166,7 @@ export class WorldView {
     const at = (ms, fn) => timers.push(scene.time.delayedCall(ms, fn));
     const facs = facilities.map((f) => this.propByFacility[f.id]).filter((o) => o?.visible);
     const labels = [...Object.values(this.propLabels || {}), this.boardText].filter(Boolean);
-    const govSet = [this.gov, this.titlePlate, this._eraBanner, ...(this._badgeObjs || []), ...Object.values(this._cosSprites || {})].filter(Boolean);
+    const govSet = [this.gov, this.titlePlate, this._eraBanner, ...(this._badgeObjs || []), ...(this._galleryObjs || []), ...Object.values(this._cosSprites || {})].filter(Boolean);
     const crew = Object.values(this._workers).filter((w) => w.body?.active);
     const actors = [...facs, ...labels, ...govSet, ...crew.flatMap((w) => [w.body, w.badge, w.shadow])];
     actors.forEach((o) => o.setAlpha(0));
@@ -1242,6 +1246,7 @@ export class WorldView {
         this._expandState = null;
         this._syncResidents();
         this._syncLot();
+        this._syncMoveBoxes(true);
       });
     };
   }
@@ -1419,6 +1424,139 @@ export class WorldView {
     if (!promoted || motionReduced()) { this.titleTop.setText(name); return; }
     this.scene.tweens.add({ targets: [this.titleTop, this.titleMain], y: "-=6", alpha: 0.2, duration: 140, yoyo: true, ease: "Quad.easeOut" });
     this.scene.time.delayedCall(140, () => { if (this.titleTop?.active) this.titleTop.setText(name); });
+  }
+
+  // ── 지역 이주(레퍼런스 로드맵 장기 #3): 구역 승격 → 짐 싸기 암전 → 새 방에 이삿짐 상자(탭해서 푼다) ──
+  // 방 단계가 바뀌는 승격은 확장 연출이 대신하고, 끝에서 상자를 떨어뜨린다.
+  _playMove(area) {
+    this._cancelMove();
+    this._clearMoveBoxes();
+    if (motionReduced()) return; // _refresh 끝의 _syncMoveBoxes 가 바로 세운다
+    const scene = this.scene;
+    const state = { timers: [], objs: [] };
+    this._moveState = state;
+    const at = (ms, fn) => state.timers.push(scene.time.delayedCall(ms, fn));
+    // 승격 카드가 닫힌 뒤에 시작한다(최대 90초 대기)
+    let waited = 0;
+    const waitModal = () => {
+      if (this._moveState !== state) return;
+      if (waited < 90000 && document.querySelector(".gp-modal-ov")) { waited += 200; at(200, waitModal); return; }
+      at(80, run);
+    };
+    const run = () => {
+      const cy = tileCenter(ISO.ROOM_COLS / 2, ISO.ROOM_COLS / 2).y - 30;
+      const shade = scene.add.rectangle(GAME_W / 2, cy, GAME_W * 6, 3000, 0x0b0a12, 0).setDepth(2450); // 시설·직원(1000+y) 위, 상단 HUD(2500) 아래
+      const name = scene.add.text(GAME_W / 2, cy - 22, regionFor(area).name, { fontFamily: '"Jua", sans-serif', fontSize: "40px", color: "#ffe9c0" }).setOrigin(0.5).setScale(0.5).setDepth(2451).setAlpha(0);
+      const sub = scene.add.text(GAME_W / 2, cy + 2, `${area}구역으로 이사`, { fontFamily: '"Jua", sans-serif', fontSize: "26px", color: "#bcd0e0" }).setOrigin(0.5).setScale(0.5).setDepth(2451).setAlpha(0);
+      const m = WORLD_ATLAS.lot?.boxes;
+      const box = m && scene.textures.exists("world/lot-boxes")
+        ? scene.add.image(-40, cy + 48, "world/lot-boxes").setOrigin(m.ax / m.w, m.ay / m.h).setScale(0.6).setDepth(2451)
+        : null;
+      state.objs.push(shade, name, sub, box);
+      scene.tweens.add({ targets: shade, fillAlpha: 0.88, duration: 260, ease: "Quad.easeOut" });
+      scene.tweens.add({ targets: [name, sub], alpha: 1, duration: 220, delay: 160 });
+      if (box) {
+        scene.tweens.add({ targets: box, x: GAME_W + 40, duration: 1000, delay: 160, ease: "Sine.easeInOut" });
+        scene.tweens.add({ targets: box, y: box.y - 6, duration: 125, delay: 160, yoyo: true, repeat: 3, ease: "Quad.easeOut" });
+      }
+      at(1250, () => scene.tweens.add({ targets: [shade, name, sub].filter((o) => o.active), alpha: 0, duration: 300, ease: "Quad.easeIn" }));
+      at(1580, () => {
+        if (this._moveState !== state) return;
+        this._cancelMove();
+        this._syncMoveBoxes(true);
+      });
+    };
+    at(160, waitModal);
+  }
+
+  _cancelMove() {
+    const st = this._moveState;
+    if (!st) return;
+    st.timers.forEach((t) => t.remove(false));
+    st.objs.forEach((o) => { if (!o?.active) return; this.scene.tweens.killTweensOf(o); o.destroy(); });
+    this._moveState = null;
+  }
+
+  // 이삿짐 상자: 남은 개수만큼 앞쪽 왼편 바닥에 쌓는다. 수집 대상이라 득표 탭은 막는다(passTap 없음).
+  _syncMoveBoxes(drop = false) {
+    const gs = this.gameState;
+    const sig = `${this._roomStage}:${gs.data.stage.area}`;
+    if (sig !== this._moveBoxSig) { this._moveBoxSig = sig; this._clearMoveBoxes(); }
+    if (this._expanding || this._moveState) return;
+    const left = gs.moveBoxesLeft ? gs.moveBoxesLeft() : 0;
+    const boxes = this._moveBoxes || (this._moveBoxes = []);
+    while (boxes.length > left) this._dropMoveBoxObj(boxes.pop());
+    const m = WORLD_ATLAS.lot?.boxes;
+    if (boxes.length || left <= 0 || !m || !this.scene.textures.exists("world/lot-boxes")) return;
+    const scene = this.scene;
+    const still = motionReduced();
+    (ISO.MOVE_BOX_SPOTS || []).slice(0, left).forEach(([i, j], k) => {
+      const p = tileCenter(i, j);
+      const o = scene.add.image(p.x, p.y, "world/lot-boxes").setOrigin(m.ax / m.w, m.ay / m.h).setScale(0.4).setFlipX(k % 2 === 1).setDepth(stationDepth(p.y));
+      o.setInteractive({ useHandCursor: true });
+      o.on("pointerdown", () => this._onMoveBoxTap(o));
+      boxes.push(o);
+      if (still) return;
+      const wobble = () => { if (o.active) scene.tweens.add({ targets: o, angle: 3, duration: 90, yoyo: true, repeat: 1, delay: 1800 + k * 400, loop: -1, loopDelay: 2600 }); };
+      if (!drop) { wobble(); return; }
+      o.setAlpha(0).setY(p.y - 30);
+      scene.tweens.add({ targets: o, y: p.y, alpha: 1, duration: 420, delay: 120 + k * 140, ease: "Bounce.easeOut", onComplete: () => { this.effects.deskPop(p.x, p.y - 10); wobble(); } });
+    });
+  }
+
+  _onMoveBoxTap(o) {
+    if (this._camDragging || !o.active) return;
+    const boxes = this._moveBoxes || [];
+    const k = boxes.indexOf(o);
+    if (k < 0) return;
+    boxes.splice(k, 1); // openMoveBox 가 부르는 _refresh 보다 먼저 빼 둔다
+    o.disableInteractive();
+    const r = this.gameState.openMoveBox ? this.gameState.openMoveBox() : null;
+    if (!r) { o.destroy(); return; }
+    const x = this._safeFloatX(o.x);
+    this.effects.ballots({ x: o.x, y: o.y - 14, count: r.left === 0 ? 14 : 8 });
+    this.effects.float({ text: `${r.item} · 표 +${shortNumber(r.votes)}${r.explain ? ` · 해명 +${shortNumber(r.explain)}` : ""}`, x, y: o.y - 40, color: "#ffd34d" });
+    this._dropMoveBoxObj(o, true);
+  }
+
+  _dropMoveBoxObj(o, pop = false) {
+    if (!o?.active) return;
+    this.scene.tweens.killTweensOf(o);
+    if (!pop || motionReduced()) { o.destroy(); return; }
+    o.setAngle(0);
+    this.scene.tweens.add({ targets: o, scale: o.scale * 1.25, y: o.y - 8, alpha: 0, duration: 240, ease: "Quad.easeOut", onComplete: () => o.destroy() });
+  }
+
+  _clearMoveBoxes() {
+    (this._moveBoxes || []).forEach((o) => this._dropMoveBoxObj(o));
+    this._moveBoxes = [];
+  }
+
+  // 지난 지역 액자: 오른쪽 벽 위쪽에 가까운 구역부터 최대 4개(지역 아이콘)
+  _syncGallery() {
+    const areas = galleryAreas(this.gameState.data.stage.area);
+    const sig = `${this._roomStage}:${areas.join(",")}`;
+    if (sig === this._gallerySig) return;
+    this._gallerySig = sig;
+    (this._galleryObjs || []).forEach((o) => o.destroy());
+    this._galleryObjs = [];
+    const scene = this.scene;
+    const hw = (ISO.ROOM.tile[0] * WORLD_SCALE) / 2;
+    const step = 16 / hw;
+    areas.forEach((a, k) => {
+      const w = rightWallTopPoint(0.2 + k * step);
+      const x = w.x, y = w.y + (ISO.ROOM_COLS <= 5 ? 20 : 11); // 5×5 방은 벽이 높아 조금 내린다
+      if (x + 9 > LOT_RIGHT_X) return;
+      const frame = scene.add.rectangle(x, y, 14, 16, 0x6b4a2c).setStrokeStyle(2, 0x3a2414).setDepth(6);
+      const inner = scene.add.rectangle(x, y, 9, 11, 0xf4ead2).setDepth(6.05);
+      const icon = scene.add.image(x, y, ...iconRef(regionIcon(a))).setDisplaySize(10, 10).setDepth(6.1);
+      frame.setInteractive({ useHandCursor: true }).setData("passTap", true);
+      frame.on("pointerdown", () => {
+        if (this._camDragging) return;
+        this.effects.float({ text: `${a}구역 · ${regionFor(a).name}`, x: this._safeFloatX(x), y: y - 18, color: "#ffe9c0" });
+      });
+      this._galleryObjs.push(frame, inner, icon);
+    });
   }
 
   // 벽 뱃지: 주간 랭킹 등급(브론즈~엘리트)을 왼쪽 벽 액자로 전시(최근 4개)
@@ -1841,7 +1979,9 @@ export class WorldView {
     }
     if (this._prevArea !== d.stage.area) this._syncSign(d.stage.area, this._prevArea != null && d.stage.area > this._prevArea);
     const wantStage = roomStageFor(d.stage.area);
-    if (wantStage !== this._roomStage) this._applyRoomStage(wantStage, this._prevArea != null && wantStage > this._roomStage);
+    const promoted = this._prevArea != null && d.stage.area > this._prevArea;
+    if (wantStage !== this._roomStage) this._applyRoomStage(wantStage, promoted && wantStage > this._roomStage);
+    else if (promoted) this._playMove(d.stage.area);
     this._prevArea = d.stage.area;
     this._applyEra(d.stage.area);
     this._syncBadges();
@@ -1872,6 +2012,8 @@ export class WorldView {
     this._syncProps();
     this._syncResidents();
     this._syncLot();
+    this._syncGallery();
+    this._syncMoveBoxes();
   }
 
   // 장착한 꾸미기 + 선택 캐릭터 시그니처를 국장 위 오버레이로 표시. 위치/스케일은 update에서 국장에 글루.
@@ -1947,6 +2089,8 @@ export class WorldView {
     this._vehicleTimer?.remove();
     this._residentTimer?.remove();
     this._despawnVehicle();
+    this._cancelMove();
+    this._clearMoveBoxes();
     Object.keys(this._residents || {}).forEach((k) => this._removeResident(k));
     (this._pileSprites || []).forEach((o) => o.destroy());
     this._pileZone?.destroy();

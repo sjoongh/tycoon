@@ -1,3 +1,5 @@
+import { AGENCIES } from "./agencies.js";
+
 export const prestigeUpgrades = [
   {
     id: "procedure",
@@ -184,5 +186,12 @@ export const RULE_UPGRADES = [
     desc: "특별 개표소가 휴식일 없이 주 7일 열림", effect: {} },
 ];
 medalUpgrades.push(...RULE_UPGRADES);
+
+// 기관 소집 — 훈장 1회 구매로 기관 사건군이 열린다(src/data/agencies.js). GameState.agencyUnlocked(id)로 확인한다.
+export const AGENCY_UPGRADES = AGENCIES.map((a) => ({
+  id: a.upgradeId, name: `${a.name} 소집`, shortName: a.short, currency: "medal", baseCost: a.cost, costMul: 1, maxLevel: 1,
+  agency: a.id, desc: a.desc, effect: {},
+}));
+medalUpgrades.push(...AGENCY_UPGRADES);
 
 export const allPrestigeUpgrades = [...prestigeUpgrades, ...medalUpgrades];

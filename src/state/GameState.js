@@ -31,6 +31,8 @@ import { dexSets, dexSetByEvent } from "../data/dexSets.js";
 import { SPECIAL_THEMES, SPECIAL_TIERS } from "../data/specialOffice.js";
 import { SPECIAL_FALLBACK, normalizeSpecial, specialSchedule, stationCost, stationUnlocked, specialPerSecond, specialTapValue, rolloverSpecial, claimNewTiers, addSpecialVotes, specialOfflineGain } from "./specialOffice.js";
 import { weeklyGoalDefinitions } from "../data/weeklyGoals.js";
+import { MOVE_BOXES, MOVE_BOX_VOTE_SEC, MOVE_BOX_ITEMS } from "../data/moving.js";
+import { AGENCIES, AGENCY_EVENT_CHANCE, ON_AIR_MULT, CERT_PER_MEDAL, agencyEvents, agencyEventById, agencyDef, normalizeAgencyState } from "../data/agencies.js";
 import { SEASON_POINTS, SEASON_TRACK, seasonKeyFor, seasonThemeFor, seasonDaysLeft, seasonMonthOf, seasonStepsReached, seasonStepReward, normalizeSeason, rolloverSeason } from "../data/seasons.js";
 import {
   FEVER_FAMILY_PROFILES,
@@ -139,6 +141,7 @@ const fallbackState = {
     progress: 0,
     target: FIRST_RUN_STAGE_BASE,
     completed: 0,
+    moveBoxes: 0, // 이주 직후 풀지 않은 이삿짐 상자
   },
   prestige: {
     seals: 0,
@@ -156,6 +159,7 @@ const fallbackState = {
     totalMedals: 0,
     medalBest: 4,
     medalUpgrades: {},
+    agency: { done: {}, seen: {}, cert: 0 }, // 기관 소집: 기관별 해결 수·본 기관 사건·남은 인증 점수(영구)
   },
   stats: {
     totalVotes: 0,
@@ -451,6 +455,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     // 미래값으로 변조되면 2배 보상이 영구 비활성되므로 오늘 인덱스로 상한 클램프
     data.offline2xDay = Phaser.Math.Clamp(Math.floor(Number(data.offline2xDay) || 0), 0, this._todayIndex());
     data.stage.area = Math.max(1, Number(data.stage.area) || 1);
+    data.stage.moveBoxes = Phaser.Math.Clamp(Math.floor(Number(data.stage.moveBoxes) || 0), 0, MOVE_BOXES);
     const savedStageTarget = Math.max(0, Number(data.stage.target) || 0);
     const savedStageProgress = Math.max(0, Number(data.stage.progress) || 0);
     data.stage.target = this.stageTarget(data.stage.area, data.prestige?.runs);
@@ -530,6 +535,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     medalUpgrades.forEach((upgrade) => {
       data.prestige.medalUpgrades[upgrade.id] = Phaser.Math.Clamp(Number(data.prestige.medalUpgrades[upgrade.id]) || 0, 0, upgrade.maxLevel);
     });
+    data.prestige.agency = normalizeAgencyState(data.prestige.agency);
     const capBoost = medalUpgrades.reduce((sum, up) => sum + (data.prestige.medalUpgrades[up.id] || 0) * (up.effect.capBoost || 0), 0);
     data.prestige.upgrades = { ...fallbackState.prestige.upgrades, ...(data.prestige.upgrades || {}) };
     prestigeUpgrades.forEach((upgrade) => {
@@ -1475,6 +1481,12 @@ export class GameState extends Phaser.Events.EventEmitter {
       return eventChainStepEvent(chain, 0);
     }
 
+    const agencyPool = this.agencyEventPool();
+    if (agencyPool.length > 0 && (Number(random()) || 0) < AGENCY_EVENT_CHANCE) {
+      const seen = this.data.prestige.agency.seen;
+      return this._weightedPick(agencyPool, (event) => (event.weight || 1) * (seen[event.id] ? 1 : 2.5), random);
+    }
+
     const available = officeEvents.filter((event) => this.data.stage.area >= (event.minStage || 1));
     return this._weightedPick(
       available,
@@ -1490,6 +1502,9 @@ export class GameState extends Phaser.Events.EventEmitter {
     if (event?.chainId) {
       const current = this.currentEventChainEvent();
       if (current?.id === event.id) resolvedEvent = current;
+    } else if (event?.agency) {
+      const ag = agencyEventById(event.id);
+      resolvedEvent = ag && this.agencyUnlocked(ag.agency) ? ag : null;
     } else {
       resolvedEvent = officeEvents.find((item) => item.id === event?.id) || null;
     }
@@ -1499,7 +1514,13 @@ export class GameState extends Phaser.Events.EventEmitter {
     this.applyEffect(choiceData[1], { fever });
     let firstSeen = false;
     let ending = null;
-    if (resolvedEvent.chainId) {
+    let agency = null;
+    if (resolvedEvent.agency) {
+      agency = this._applyAgencyEffect(resolvedEvent, choiceData[1]);
+      this.data.eventChain.pity = Math.min(EVENT_CHAIN_PITY, (this.data.eventChain.pity || 0) + 1);
+      this.emit("changed");
+      this.save(false);
+    } else if (resolvedEvent.chainId) {
       ending = this._advanceEventChain(resolvedEvent, choiceSide);
     } else {
       firstSeen = this.markEventSeen(resolvedEvent.id);
@@ -1513,7 +1534,85 @@ export class GameState extends Phaser.Events.EventEmitter {
       chain: !!resolvedEvent.chainId,
       firstSeen,
       ending,
+      agency,
     };
+  }
+
+  // 기관 소집 — 훈장으로 연 기관의 사건군. 기관 사건은 사건 도감(seenEvents)에 넣지 않는다.
+  agencyUnlocked(id, data = this.data) {
+    const def = agencyDef(id);
+    return !!def && (data.prestige?.medalUpgrades?.[def.upgradeId] || 0) > 0;
+  }
+
+  agencyEventPool() {
+    return agencyEvents.filter((event) => this.agencyUnlocked(event.agency));
+  }
+
+  agencyStatus() {
+    const st = this.data.prestige.agency;
+    return AGENCIES.map((a) => ({
+      ...a,
+      unlocked: this.agencyUnlocked(a.id),
+      done: st.done[a.id] || 0,
+      seen: agencyEvents.filter((e) => e.agency === a.id && st.seen[e.id]).length,
+      total: agencyEvents.filter((e) => e.agency === a.id).length,
+    }));
+  }
+
+  certProgress() {
+    return { cert: this.data.prestige.agency.cert || 0, per: CERT_PER_MEDAL };
+  }
+
+  // 생중계: 생산 ×ON_AIR_MULT. 더 센 생산 버프(속보 ×7 등)가 켜져 있으면 배율은 그대로 두고 같은 추가 생산만큼 시간만 늘린다.
+  startOnAir(sec, now = clock.now()) {
+    const ms = Math.max(0, Math.round(sec * 1000));
+    if (ms <= 0) return 0;
+    const b = this.data.buffs;
+    const active = now < (b.prodUntil || 0);
+    if (active && (b.prodMult || 1) > ON_AIR_MULT) {
+      const extra = Math.round(ms * (ON_AIR_MULT - 1) / ((b.prodMult || 1) - 1));
+      b.prodUntil += extra;
+      return extra;
+    }
+    b.prodMult = ON_AIR_MULT;
+    b.prodUntil = (active ? b.prodUntil : now) + ms;
+    return ms;
+  }
+
+  _applyAgencyEffect(event, effect) {
+    const st = this.data.prestige.agency;
+    const def = agencyDef(event.agency);
+    st.done[event.agency] = (st.done[event.agency] || 0) + 1;
+    st.seen[event.id] = 1;
+    const out = { id: event.agency, name: def.name, seals: 0, onAirMs: 0, cert: 0, medals: 0 };
+    const seals = Math.max(0, Math.floor(effect.seals || 0));
+    if (seals > 0) {
+      this.data.prestige.seals += seals;
+      out.seals = seals;
+      this.emit("float", { text: `인장 +${seals}`, x: 195, y: 500, color: "#bba2ff" });
+    }
+    if ((effect.onAir || 0) > 0) {
+      out.onAirMs = this.startOnAir(effect.onAir);
+      this.emit("float", { text: `생중계 ${Math.round(out.onAirMs / 1000)}초 · 생산 ×${ON_AIR_MULT}`, x: 195, y: 500, color: "#7fb8ff" });
+    }
+    const cert = Math.max(0, Math.floor(effect.cert || 0));
+    if (cert > 0) {
+      out.cert = cert;
+      const total = (st.cert || 0) + cert;
+      out.medals = Math.floor(total / CERT_PER_MEDAL);
+      st.cert = total % CERT_PER_MEDAL;
+      if (out.medals > 0) {
+        this.data.prestige.medals += out.medals;
+        this.data.prestige.totalMedals += out.medals;
+        this.addLog(`국제 인증 · 훈장 +${out.medals}`);
+        this.emit("celebrate", { text: `국제 인증 · 훈장 +${out.medals}` });
+      } else {
+        this.emit("float", { text: `인증 ${st.cert}/${CERT_PER_MEDAL}`, x: 195, y: 500, color: "#8fd6a0" });
+      }
+    }
+    this.addLog(`${def.name}: ${event.title}`);
+    this.checkProgression();
+    return out;
   }
 
   _advanceEventChain(event, side) {
@@ -1808,6 +1907,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     this.data.stage.progress = 0;
     this.data.stage.target = this.stageTarget(this.data.stage.area);
     this.data.days = 30;
+    this.data.stage.moveBoxes = MOVE_BOXES;
     if (completedArea % 3 === 0) {
       this.data.operations.draft = {
         area: completedArea,
@@ -1823,6 +1923,27 @@ export class GameState extends Phaser.Events.EventEmitter {
     this.emit("changed");
     this.save(false);
     return true;
+  }
+
+  // 지역 이주: 이삿짐 상자 풀기 — 현재 생산 MOVE_BOX_VOTE_SEC초분(마지막 상자는 해명 추가)
+  moveBoxesLeft() {
+    return this.data.stage.moveBoxes || 0;
+  }
+
+  openMoveBox() {
+    const left = this.moveBoxesLeft();
+    if (left <= 0) return null;
+    const area = this.data.stage.area;
+    const votes = Math.max(Math.floor(this.stageCompletionVotes(area) * 0.08), Math.floor(this.cps() * MOVE_BOX_VOTE_SEC));
+    const last = left === 1;
+    const explain = last ? Math.floor(this.stageCompletionExplain(area) / 2) : 0;
+    const item = MOVE_BOX_ITEMS[MOVE_BOXES - left] || MOVE_BOX_ITEMS[0];
+    this.data.stage.moveBoxes = left - 1;
+    this.grantReward({ votes, explain });
+    if (last) this.addLog(`${area}구역 이삿짐 정리 완료`);
+    this.emit("changed");
+    this.save(false);
+    return { item, votes, explain, left: left - 1 };
   }
 
   // 직원 담당 시설(데이터 worksAt, 없으면 시너지 시설)
@@ -2090,6 +2211,7 @@ export class GameState extends Phaser.Events.EventEmitter {
         totalMedals: this.data.prestige.totalMedals + medalEarned,
         medalBest: Math.max(this.data.prestige.medalBest || 4, this.data.stage.area),
         medalUpgrades: this.data.prestige.medalUpgrades,
+        agency: this.data.prestige.agency,
       },
       achievements: this.data.achievements,
       seenEvents: this.data.seenEvents, // 사건 도감은 평생 수집 기록 — 감사(프레스티지)에도 영구 유지

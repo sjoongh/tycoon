@@ -20,6 +20,7 @@ const STAGE_LAYOUT = [
     gov: { i: 0.9, j: 3 }, bigNum: { i: 3.4, j: 3.4 }, pile: { i: 2.9, j: 3.1 }, door: { i: 0.3, j: 1.9 }, queue: { i: 1.3, j: 1.4, di: -0.55, dj: -0.1 }, badgeWall: { i: 0, j: 3.0 }, margin: 0.8,
     queueSlots: [[1.3, 1.4], [0.75, 1.3], [1.25, 2.05], [0.7, 1.95]],
     residents: { sorter: { i: 4, j: 2.3 } },
+    moveBoxes: [[0.2, 3.5], [0.3, 4.2], [1.1, 4.3]],
   },
   { // 7×7 — 주민센터/구청(현행)
     slots: {
@@ -33,6 +34,7 @@ const STAGE_LAYOUT = [
     gov: { i: 2, j: 4 }, bigNum: { i: 5.3, j: 5.3 }, pile: { i: 4.6, j: 4.6 }, door: { i: 0.3, j: 2.6 }, queue: { i: 2.3, j: 2.5, di: -0.7, dj: -0.12 }, badgeWall: { i: 0, j: 4.3 }, margin: 1,
     queueSlots: [[2.3, 2.5], [1.6, 2.38], [0.9, 2.26], [1.6, 1.75], [0.9, 1.65]],
     residents: { sorter: { i: 5.9, j: 4.4 }, archive: { i: 1.25, j: 6.1 }, studio: { i: 6.4, j: 2.1 } },
+    moveBoxes: [[1.0, 6.2], [1.7, 5.7], [2.45, 5.35]],
   },
   { // 9×9 — 시청 대강당/도청
     slots: {
@@ -46,6 +48,7 @@ const STAGE_LAYOUT = [
     gov: { i: 2.8, j: 5.4 }, bigNum: { i: 6.8, j: 6.8 }, pile: { i: 6, j: 6 }, door: { i: 0.3, j: 4 }, queue: { i: 2.2, j: 2.9, di: -0.75, dj: -0.12 }, badgeWall: { i: 0, j: 5.6 }, margin: 1.2,
     queueSlots: [[2.2, 2.9], [1.45, 2.78], [0.7, 2.66], [1.9, 3.65], [1.15, 3.55], [0.5, 3.45]],
     residents: { sorter: { i: 7.9, j: 5.4 }, archive: { i: 1.25, j: 7.6 }, studio: { i: 7.9, j: 2.2 } },
+    moveBoxes: [[2.25, 7.75], [2.75, 7.05], [3.35, 6.85]],
   },
   { // 11×11 — 중앙개표청 이후
     slots: {
@@ -59,6 +62,7 @@ const STAGE_LAYOUT = [
     gov: { i: 3.6, j: 6.6 }, bigNum: { i: 8.4, j: 8.4 }, pile: { i: 7.4, j: 7.4 }, door: { i: 0.3, j: 5.5 }, queue: { i: 2.6, j: 3.6, di: -0.85, dj: -0.12 }, badgeWall: { i: 0, j: 7 }, margin: 1.5,
     queueSlots: [[2.6, 3.6], [1.75, 3.48], [0.9, 3.36], [2.2, 4.4], [1.35, 4.3], [0.6, 4.2]],
     residents: { sorter: { i: 9.9, j: 6.4 }, archive: { i: 1.25, j: 9.1 }, studio: { i: 9.4, j: 2.3 } },
+    moveBoxes: [[2.75, 9.25], [3.35, 8.65], [3.95, 8.05]],
   },
 ];
 
@@ -102,6 +106,7 @@ export let QUEUE = STAGE_LAYOUT[1].queue;
 export let BADGE_WALL = STAGE_LAYOUT[1].badgeWall;
 export let QUEUE_SLOTS = STAGE_LAYOUT[1].queueSlots; // 방문객 대기 자리(창구에 가까운 칸부터, 두 줄)
 export let RESIDENT_SPOTS = STAGE_LAYOUT[1].residents; // 상주 NPC 자리(시설 id → 타일)
+export let MOVE_BOX_SPOTS = STAGE_LAYOUT[1].moveBoxes; // 이주 직후 이삿짐 상자 자리(앞쪽 왼편 빈 바닥)
 let TILE_W = ROOM.tile[0], TILE_H = ROOM.tile[1], TOP_X = ROOM.top[0], TOP_Y = ROOM.top[1], MARGIN = 1;
 
 export function setRoomStage(stage) {
@@ -120,7 +125,7 @@ export function setRoomStage(stage) {
   const L = STAGE_LAYOUT[Math.min(st, STAGE_LAYOUT.length - 1)];
   FACILITY_SLOTS = L.slots;
   GOV_TILE = L.gov; BIG_NUM_TILE = L.bigNum; PILE_TILE = L.pile; DOOR_TILE = L.door; QUEUE = L.queue; BADGE_WALL = L.badgeWall;
-  QUEUE_SLOTS = L.queueSlots; RESIDENT_SPOTS = L.residents;
+  QUEUE_SLOTS = L.queueSlots; RESIDENT_SPOTS = L.residents; MOVE_BOX_SPOTS = L.moveBoxes;
   MARGIN = L.margin;
   [TILE_W, TILE_H] = ROOM.tile;
   [TOP_X, TOP_Y] = ROOM.top;
