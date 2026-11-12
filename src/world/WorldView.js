@@ -7,7 +7,7 @@ import { facilities } from "../data/facilities.js";
 import { facilitySpriteKey, govSpriteKey, workerSpriteKey, WORLD_ATLAS } from "./worldAtlas.js";
 import { stationDepth, workerDepth } from "./depth.js";
 import * as ISO from "./iso.js";
-import { WORLD_SCALE, ROOM_BOTTOM, tileCenter, wallTopPoint, facilityPos, workerPos, randomFloorPoint, facilitySpriteMeta, roomStageFor, setRoomStage, roomStageLabel } from "./iso.js";
+import { WORLD_SCALE, ROOM_BOTTOM, tileCenter, wallTopPoint, rightWallTopPoint, facilityPos, workerPos, randomFloorPoint, facilitySpriteMeta, roomStageFor, setRoomStage, roomStageLabel } from "./iso.js";
 import { staffDefinitions } from "../data/staff.js";
 import { staffRankForLevel } from "../data/staffDeployment.js";
 import { tierForLevel } from "./facilityTiers.js";
@@ -17,10 +17,12 @@ import { pickPress } from "../data/worldPress.js";
 import { RARITY_COLOR } from "../data/titles.js";
 import { shortNumber } from "../utils/format.js";
 import { vehicleTierFor, visitorCapForStage, freeQueueSlot, activeResidents } from "./ambient.js";
+import { lockedPreviewFor, lotLayout, revealStepCount, tilesInRevealStep, REVEAL_STAGGER_MS } from "./lockedLot.js";
 
 // 거지키우기식 심플 월드: 미니멀 픽셀 배경 + 중앙 도트 국장 + 큰 숫자 + 바닥.
 // (구 버전의 이소 오피스 다이어그램·화분·시계·창문·워커·시설 스테이션은 전부 제거)
 const GAME_W = 390;
+const LOT_RIGHT_X = 292; // 잠긴 구획이 넘지 않을 화면 x(오른쪽 위 HUD 칩 왼쪽)
 let GOV_POS = tileCenter(ISO.GOV_TILE.i, ISO.GOV_TILE.j);
 let GROUND_Y = GOV_POS.y;     // 국장 발이 닿는 타일 중앙(방 단계가 바뀌면 _applyRoomStage 가 갱신)
 const GOV_SCALE = WORLD_SCALE;  // 16px 도트 → 48px (월드 전역 3x)
@@ -328,7 +330,7 @@ export class WorldView {
     g.clear();
     // 배경: 시대 색 → 바닥색 세로 그라데이션(카툰 스킨, 별·픽셀 점 없음)
     g.fillGradientStyle(c.sky, c.sky, c.floor, c.floor, 1);
-    g.fillRect(0, 0, GAME_W, ROOM_BOTTOM - 70);
+    g.fillRect(-60, -60, GAME_W + 120, ROOM_BOTTOM - 10); // 확장 연출의 줌 아웃(0.92) 때 가장자리가 비지 않게 화면보다 넓게
     g.fillStyle(0xffffff, 0.06);
     g.fillEllipse(GAME_W / 2, 120, 420, 180);
 
@@ -399,7 +401,7 @@ export class WorldView {
 
     // 방 아래 바닥(방 밖 여백) — 방 이미지(depth 5)가 위에 얹힌다
     g.fillStyle(c.floor, 1);
-    g.fillRect(0, ROOM_BOTTOM - 70, GAME_W, 844 - ROOM_BOTTOM + 70);
+    g.fillRect(-60, ROOM_BOTTOM - 70, GAME_W + 120, 844 - ROOM_BOTTOM + 130);
   }
 
   // 도로 위 점: j 는 왼벽을 따라(0 = 뒤 꼭짓점), back 은 벽에서 바깥(뒤)으로 떨어진 타일 수
@@ -429,7 +431,7 @@ export class WorldView {
   }
 
   _vehicleRun() {
-    if (motionReduced() || this._vehicle) return;
+    if (motionReduced() || this._vehicle || this._expanding) return;
     const t = this._vehicleTierNow();
     const meta = WORLD_ATLAS.vehicles?.[t.tier - 1];
     const key = `world/vehicle-${t.tier}`;
@@ -507,6 +509,7 @@ export class WorldView {
 
   // ── 앰비언트: 상주 NPC — 시설 티어 3(Lv.12)이 되면 담당 시설 옆에 상주 ──
   _syncResidents() {
+    if (this._expanding) return; // 확장 연출이 끝나면 다시 세운다
     const lvl = (id) => (this.gameState.level ? this.gameState.level(id) : 0);
     const list = activeResidents(lvl, (id) => !!ISO.FACILITY_SLOTS[id] && !!ISO.RESIDENT_SPOTS?.[id]).filter((r) => this.scene.textures.exists(`world/res-${r.key}`));
     const sig = `${this._roomStage}:${list.map((r) => r.key).join(",")}`;
@@ -1098,7 +1101,11 @@ export class WorldView {
 
   // ── 개표소 확장(중기 #1): 방 단계 전환 — 방 이미지·모든 앵커 재배치 + 확장 연출 ──
   _applyRoomStage(stage, animate) {
+    this._cancelExpansion();
     const prev = this._roomStage;
+    const old = this.room ? { key: this.room.texture.key, x: this.room.x, y: this.room.y } : null;
+    const oldLot = this._lot;
+    this._lot = null; this._lotSig = null;
     this._roomStage = setRoomStage(stage);
     recomputeAnchors();
     const scene = this.scene;
@@ -1134,18 +1141,275 @@ export class WorldView {
     this._despawnVehicle();
     this._badgeSig = null; this._syncBadges();
     this._drawBackground(this._eraArea);
-    if (!animate) return;
-    // 확장 연출: 방이 0.92 → 1 로 펴지며 플래시, 바닥에서 투표지 분출, 안내 플로팅
-    if (!motionReduced()) {
-      this.room.setScale(WORLD_SCALE * 0.92).setAlpha(0.6);
-      scene.tweens.add({ targets: this.room, scaleX: WORLD_SCALE, scaleY: WORLD_SCALE, alpha: 1, duration: 420, ease: "Back.easeOut" });
-      const f = scene.add.rectangle(GAME_W / 2, 422, GAME_W, 844, 0xfff4cf, 0.45).setDepth(6000);
-      scene.tweens.add({ targets: f, alpha: 0, duration: 380, onComplete: () => f.destroy() });
-      const c = tileCenter(ISO.ROOM_COLS / 2, ISO.ROOM_COLS / 2);
-      this.effects.ballots({ x: c.x, y: c.y - 20, count: 16 });
+    if (!animate || motionReduced()) {
+      this._destroyLot(oldLot);
+      if (animate) {
+        this.effects.float({ text: `개표소 확장! ${roomStageLabel(prev)} → ${roomStageLabel(this._roomStage)}`, x: GAME_W / 2, y: ISO.ROOM_Y + 40, color: "#ffd34d" });
+        this._govReact();
+      }
+      return;
     }
-    this.effects.float({ text: `개표소 확장! ${roomStageLabel(prev)} → ${roomStageLabel(this._roomStage)}`, x: GAME_W / 2, y: ISO.ROOM_Y + 40, color: "#ffd34d" });
-    this._govReact();
+    this._playExpansion(prev, old, oldLot);
+  }
+
+  // 확장 연출(레퍼런스 로드맵 중기 #1): 테이프 끊김 → 타일 행 단위 60ms 스태거 공개 → 줌 0.92 → 시설 자동 배치 → 직원 1명 입장
+  _playExpansion(prev, old, oldLot) {
+    const scene = this.scene;
+    const n = ISO.ROOM_COLS;
+    const R = ISO.ROOM;
+    const th = R.tile[1];
+    const timers = [];
+    const at = (ms, fn) => timers.push(scene.time.delayedCall(ms, fn));
+    const facs = facilities.map((f) => this.propByFacility[f.id]).filter((o) => o?.visible);
+    const labels = [...Object.values(this.propLabels || {}), this.boardText].filter(Boolean);
+    const govSet = [this.gov, this.titlePlate, this._eraBanner, ...(this._badgeObjs || []), ...Object.values(this._cosSprites || {})].filter(Boolean);
+    const crew = Object.values(this._workers).filter((w) => w.body?.active);
+    const actors = [...facs, ...labels, ...govSet, ...crew.flatMap((w) => [w.body, w.badge, w.shadow])];
+    actors.forEach((o) => o.setAlpha(0));
+    this._expanding = true;
+    // 옛 방은 아래에 남겨 두고 새 방을 위에서부터 드러낸다
+    const oldRoom = old && old.key !== this.room.texture.key && scene.textures.exists(old.key)
+      ? scene.add.image(old.x, old.y, old.key).setOrigin(0, 0).setScale(WORLD_SCALE).setDepth(4.9).setTint(this._eraTint(eraTheme(this._eraArea).key))
+      : null;
+    const state = { timers, actors, oldRoom, oldLot };
+    this._expandState = state;
+    this.room.setCrop(0, 0, R.width, 0);
+    // 승격 카드 같은 모달이 떠 있으면 닫힌 뒤에 시작한다(가려진 채 지나가지 않게, 최대 90초 대기)
+    let waited = 0;
+    const waitModal = () => {
+      if (this._expandState !== state) return;
+      if (waited < 90000 && document.querySelector(".gp-modal-ov")) { waited += 200; at(200, waitModal); return; }
+      at(120, run);
+    };
+    at(160, waitModal);
+    const run = () => {
+      // 1) 테이프 끊김
+      this._breakLot(oldLot);
+      state.oldLot = null;
+      // 2) 타일 행 단위 공개(한 단계 = i+j 두 줄). 방 이미지를 위에서부터 잘라 보여 준다.
+      const steps = revealStepCount(n);
+      const T0 = 240;
+      for (let k = 0; k < steps; k += 1) {
+        at(T0 + k * REVEAL_STAGGER_MS, () => {
+          const bottom = k === steps - 1 ? R.height : R.top[1] + ((2 * k + 3) * th) / 2;
+          this.room.setCrop(0, 0, R.width, Math.min(R.height, bottom));
+          this._flashTiles(tilesInRevealStep(n, k));
+        });
+      }
+      // 3) 줌 0.92 + 확장 안내
+      const T1 = T0 + steps * REVEAL_STAGGER_MS + 40;
+      at(T1, () => {
+        this.room.setCrop();
+        if (oldRoom) scene.tweens.add({ targets: oldRoom, alpha: 0, duration: 200, onComplete: () => oldRoom.destroy() });
+        const cam = scene.cameras.main;
+        if ((this._camZoom || 1) <= 1.001) {
+          const base = scene.renderBase?.zoom || 1;
+          scene.tweens.add({ targets: cam, zoom: base * 0.92, duration: 280, hold: 380, yoyo: true, ease: "Sine.easeInOut", onComplete: () => cam.setZoom(base) });
+        }
+        const c = tileCenter(n / 2, n / 2);
+        this.effects.ballots({ x: c.x, y: c.y - 20, count: 16 });
+        this.effects.float({ text: `개표소 확장! ${roomStageLabel(prev)} → ${roomStageLabel(this._roomStage)}`, x: GAME_W / 2, y: ISO.ROOM_Y + 40, color: "#ffd34d" });
+      });
+      // 4) 시설 자동 배치 — 위에서 떨어져 자리 잡는다
+      const T2 = T1 + 320;
+      facs.forEach((o, k) => at(T2 + k * 80, () => {
+        if (!o.active) return;
+        const y = o.y;
+        o.setAlpha(1).setY(y - 22);
+        scene.tweens.add({ targets: o, y, duration: 300, ease: "Bounce.easeOut" });
+        this.effects.deskPop(o.x, y - 16);
+      }));
+      const T3 = T2 + facs.length * 80 + 140;
+      at(T3, () => {
+        scene.tweens.add({ targets: [...labels, ...govSet].filter((o) => o.active), alpha: 1, duration: 220 });
+        this._govReact();
+      });
+      // 5) 직원 1명이 문으로 들어와 자리로 — 나머지는 제자리에서 등장
+      at(T3 + 260, () => {
+        const ws = Object.values(this._workers).filter((w) => w.body?.active);
+        const walker = ws.find((w) => w.facId === "desk") || ws[0];
+        // 직원 트윈은 작업 루프·심부름이 수시로 끊으므로 알파는 트윈 없이 바로 돌려 놓는다
+        ws.forEach((w) => [w.body, w.badge, w.shadow].forEach((o) => o?.setAlpha(1)));
+        ws.filter((w) => w !== walker).forEach((w) => this.effects.deskPop(w.home.x, w.home.y - 30));
+        if (walker) {
+          const door = tileCenter(ISO.DOOR_TILE.i, ISO.DOOR_TILE.j);
+          walker.body.setPosition(door.x, door.y).setDepth(workerDepth(door.y));
+          walker.badge.setPosition(door.x + 14, door.y - 54);
+          walker.shadow.setPosition(door.x, door.y + 1);
+          this._walkWorker(walker, walker.home.x, walker.home.y, () => this._startWorkLoop(walker));
+        }
+        this._expanding = false;
+        this._expandState = null;
+        this._syncResidents();
+        this._syncLot();
+      });
+    };
+  }
+
+  _cancelExpansion() {
+    const st = this._expandState;
+    if (!st) return;
+    st.timers.forEach((t) => t.remove(false));
+    st.oldRoom?.destroy();
+    this._destroyLot(st.oldLot);
+    this.room?.setCrop();
+    st.actors.forEach((o) => { if (o.active) o.setAlpha(1); });
+    this._expanding = false;
+    this._expandState = null;
+  }
+
+  _flashTiles(tiles) {
+    const hw = (ISO.ROOM.tile[0] * WORLD_SCALE) / 2 * 0.9;
+    const hh = (ISO.ROOM.tile[1] * WORLD_SCALE) / 2 * 0.9;
+    const g = this.scene.add.graphics().setDepth(5.5);
+    g.fillStyle(0xfff4cf, 0.6);
+    for (const [i, j] of tiles) {
+      const c = tileCenter(i, j);
+      g.fillPoints([{ x: c.x, y: c.y - hh }, { x: c.x + hw, y: c.y }, { x: c.x, y: c.y + hh }, { x: c.x - hw, y: c.y }], true);
+    }
+    this.scene.tweens.add({ targets: g, alpha: 0, duration: 360, ease: "Quad.easeIn", onComplete: () => g.destroy() });
+  }
+
+  // ── 잠긴 구획 미리보기: 다음 확장 부지(오른벽 뒤) — 회색 바닥·차단봉·테이프·박스·'증설 예정' 입간판 ──
+  _lotPoint(i, back) {
+    const w = rightWallTopPoint(i);
+    const [tw, th] = ISO.ROOM.tile;
+    return { x: w.x + ((tw * WORLD_SCALE) / 2) * back, y: w.y - ((th * WORLD_SCALE) / 2) * back };
+  }
+
+  _syncLot() {
+    if (this._expanding) return;
+    const pv = lockedPreviewFor(this.gameState.data.stage.area);
+    const ok = !!pv && pv.stage === this._roomStage && !!WORLD_ATLAS.lot && this.scene.textures.exists("world/lot-sign");
+    const sig = ok ? `${this._roomStage}:${pv.area}` : "none";
+    if (sig === this._lotSig) return;
+    this._lotSig = sig;
+    this._destroyLot(this._lot);
+    this._lot = ok ? this._buildLot(pv) : null;
+  }
+
+  _buildLot(pv) {
+    const scene = this.scene;
+    // 오른쪽 위 HUD 칩(x≥304) 왼쪽까지만 쓴다 — 가장 먼 차단봉 x ≤ LOT_RIGHT_X
+    const hw = (ISO.ROOM.tile[0] * WORLD_SCALE) / 2;
+    const L = lotLayout((LOT_RIGHT_X - rightWallTopPoint(0).x) / hw);
+    const P = (p) => this._lotPoint(p.i, p.back);
+    const meta = WORLD_ATLAS.lot;
+    const PROP_SCALE = 0.42; // 소스는 2x 렌더 — 좁은 부지에 맞춰 조금 더 줄인다
+    const lot = { pv, tape: [], props: [], timers: [] };
+    // 바닥: 어두운 회색 + 점선 타일 — 밝은 방과 한눈에 구분되게
+    const g = scene.add.graphics().setDepth(1);
+    const poly = L.ground.map(P);
+    g.fillStyle(0x5e5a68, 0.62);
+    g.fillPoints(poly, true);
+    const dash = (a, b) => {
+      const steps = Math.max(2, Math.round(Math.hypot(b.x - a.x, b.y - a.y) / 5));
+      for (let k = 0; k < steps; k += 2) {
+        const t0 = k / steps, t1 = Math.min(1, (k + 1) / steps);
+        g.lineBetween(a.x + (b.x - a.x) * t0, a.y + (b.y - a.y) * t0, a.x + (b.x - a.x) * t1, a.y + (b.y - a.y) * t1);
+      }
+    };
+    const [gA, gB, gC] = L.ground;
+    g.lineStyle(1, 0xffffff, 0.26);
+    for (let i = Math.ceil(gA.i); i < gC.i; i += 1) dash(P({ i, back: gA.back }), P({ i, back: gB.back }));
+    for (let b = 1; b < gB.back; b += 1) dash(P({ i: gA.i, back: b }), P({ i: gC.i, back: b }));
+    lot.ground = g;
+    const img = (key, p, scale = PROP_SCALE) => {
+      const q = P(p);
+      const m = meta[key];
+      return scene.add.image(q.x, q.y, `world/lot-${key}`).setOrigin(m.ax / m.w, m.ay / m.h).setScale(scale).setDepth(2 + q.y / 1000);
+    };
+    // 차단봉 + 테이프(벽 쪽 한 변은 열림). 테이프는 가운데서 끊어질 수 있게 반쪽씩 그린다.
+    L.posts.forEach((p) => lot.props.push(img("post", p)));
+    const TAPE_H = 16;
+    L.tape.forEach(([a, b], k) => {
+      const A = P(a), B = P(b);
+      A.y -= TAPE_H; B.y -= TAPE_H;
+      const M = { x: (A.x + B.x) / 2, y: (A.y + B.y) / 2 + 2 };
+      // 왼쪽·뒤쪽 변은 부지 안 소품 뒤로, 오른쪽(앞) 변은 앞으로
+      const depth = k < 2 ? 2 : 2.9;
+      for (const S of [A, B]) {
+        const h = scene.add.graphics({ x: S.x, y: S.y }).setDepth(depth);
+        this._drawTape(h, M.x - S.x, M.y - S.y);
+        lot.tape.push({ g: h, mid: M, droop: M.x >= S.x ? 1 : -1 });
+      }
+    });
+    L.boxes.forEach((b, k) => lot.props.push(img("boxes", b, PROP_SCALE * b.scale).setFlipX(k > 0)));
+    const sign = img("sign", L.sign);
+    lot.props.push(sign);
+    lot.sign = sign;
+    const pm = meta.sign.panel;
+    if (pm) {
+      const cx = sign.x + (pm.x + pm.w / 2 - meta.sign.ax) * PROP_SCALE;
+      const cy = sign.y + (pm.y + pm.h / 2 - meta.sign.ay) * PROP_SCALE;
+      // 카메라 줌(2배)에서 흐리지 않게 2배 크기로 그려 절반으로 줄인다
+      const t1 = scene.add.text(cx, cy - 5, "증설 예정", { fontFamily: '"Jua", sans-serif', fontSize: "17px", color: "#5a2e0c" }).setOrigin(0.5).setScale(0.5).setDepth(sign.depth + 0.0001);
+      const t2 = scene.add.text(cx, cy + 6, `${pv.area}구역`, { fontFamily: '"Jua", sans-serif', fontSize: "16px", color: "#b0521a" }).setOrigin(0.5).setScale(0.5).setDepth(sign.depth + 0.0001);
+      lot.props.push(t1, t2);
+    }
+    // 입간판 경광등 깜빡임
+    if (!motionReduced()) {
+      const lamp = scene.add.circle(sign.x + (64 - meta.sign.ax) * PROP_SCALE, sign.y - meta.sign.ay * PROP_SCALE + 9, 6, 0xffb02e, 0).setDepth(sign.depth + 0.0002);
+      scene.tweens.add({ targets: lamp, fillAlpha: 0.55, duration: 520, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
+      lot.props.push(lamp);
+    }
+    [sign, ...lot.props.filter((o) => o.texture?.key === "world/lot-boxes")].forEach((o) => {
+      o.setInteractive({ useHandCursor: true }).setData("passTap", true);
+      o.on("pointerdown", () => this._onLotTap());
+    });
+    return lot;
+  }
+
+  // 노랑·검정 공사 테이프(로컬 좌표 0,0 → dx,dy)
+  _drawTape(h, dx, dy) {
+    const len = Math.hypot(dx, dy) || 1;
+    h.lineStyle(4, 0x3a2a14, 0.9);
+    h.lineBetween(0, 0, dx, dy);
+    h.lineStyle(3, 0xffd34d, 1);
+    h.lineBetween(0, 0, dx, dy);
+    h.lineStyle(3, 0x2a2420, 0.9);
+    for (let d = 3; d < len - 2; d += 8) {
+      const t0 = d / len, t1 = Math.min(1, (d + 3) / len);
+      h.lineBetween(dx * t0, dy * t0, dx * t1, dy * t1);
+    }
+  }
+
+  _onLotTap() {
+    const lot = this._lot;
+    if (!lot || this._camDragging) return;
+    const { pv, sign } = lot;
+    this.effects.float({ text: `개표소 ${pv.label} 확장 · ${pv.area}구역부터`, x: this._safeFloatX(sign.x), y: sign.y - sign.displayHeight - 6, color: "#ffe9c0" });
+    if (motionReduced()) return;
+    this.scene.tweens.killTweensOf(sign);
+    sign.setAngle(0);
+    this.scene.tweens.add({ targets: sign, angle: 4, yoyo: true, repeat: 1, duration: 70, onComplete: () => sign.setAngle(0) });
+  }
+
+  // 확장 순간: 테이프가 가운데서 끊겨 늘어지고, 소품·바닥이 사라진다
+  _breakLot(lot) {
+    if (!lot) return;
+    const scene = this.scene;
+    const mids = new Set();
+    lot.tape.forEach(({ g, mid, droop }) => {
+      mids.add(mid);
+      scene.tweens.add({ targets: g, angle: 40 * droop, alpha: 0, duration: 340, ease: "Quad.easeIn" });
+    });
+    mids.forEach((m) => this.effects.deskPop(m.x, m.y));
+    lot.props.forEach((o, k) => {
+      o.disableInteractive?.();
+      scene.tweens.add({ targets: o, y: o.y - 10, alpha: 0, duration: 260, delay: 90 + k * 20, ease: "Quad.easeOut" });
+    });
+    scene.tweens.add({ targets: lot.ground, alpha: 0, duration: 320, delay: 120 });
+    scene.time.delayedCall(800, () => this._destroyLot(lot));
+  }
+
+  _destroyLot(lot) {
+    if (!lot) return;
+    [lot.ground, ...lot.tape.map((t) => t.g), ...lot.props].forEach((o) => {
+      if (!o?.active) return;
+      this.scene.tweens.killTweensOf(o);
+      o.destroy();
+    });
   }
 
   // 현판: 지역명 갱신(승격 시 위로 톡 튀며 교체)
@@ -1275,7 +1539,7 @@ export class WorldView {
 
   // 유권자 NPC: 문(왼쪽 벽) → 창구 앞 대기 → 다시 문으로. 동시 상한은 방 단계별 4/5/6/6명, 수입이 클수록 자주.
   _maybeSpawnVisitor() {
-    if (motionReduced()) return;
+    if (motionReduced() || this._expanding) return;
     this._visitors = (this._visitors || []).filter((v) => v.body.active);
     const cap = visitorCapForStage(this._roomStage);
     if (this._visitors.length >= cap) return;
@@ -1607,6 +1871,7 @@ export class WorldView {
     this._syncWorkers();
     this._syncProps();
     this._syncResidents();
+    this._syncLot();
   }
 
   // 장착한 꾸미기 + 선택 캐릭터 시그니처를 국장 위 오버레이로 표시. 위치/스케일은 update에서 국장에 글루.
@@ -1708,6 +1973,9 @@ export class WorldView {
     this.cpsText?.destroy();
     this.comboText?.destroy();
     this.bg?.destroy();
+    this._cancelExpansion();
+    this._destroyLot(this._lot);
+    this._lot = null;
     this.room?.destroy();
     this.titleBg?.destroy();
     this.titleTop?.destroy();

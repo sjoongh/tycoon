@@ -262,6 +262,27 @@ def main():
             meta["residents"].update({"ax": ax, "ay": ay})
             previews.append(img)
 
+    # 잠긴 구획 미리보기: 증설 부지 소품(박스 더미·입간판·차단봉). 입간판은 빈 패널 영역을 기록해 글자를 얹는다.
+    LOT_BOX = {"boxes": (40, 34), "sign": (64, 62), "post": (13, 26)}
+    if all((SRC / f"lot-{k}.png").exists() for k in LOT_BOX):
+        meta["lot"] = {}
+        for k, (bw, bh) in LOT_BOX.items():
+            img = fit(trim(load(f"lot-{k}")), bw, bh)
+            save(img, OUT / f"lot-{k}.png")
+            ent = {"w": img.width, "h": img.height, "ax": img.width // 2, "ay": img.height - 2}
+            if k == "sign":
+                # 빈 패널: 크림색 픽셀이 행·열 모두에서 다수인 구간(줄무늬 테두리의 흰 칸은 빠진다)
+                px = img.load()
+                cream = [[(lambda c: c[3] > 200 and c[0] > 240 and c[1] > 218 and 175 < c[2] < 215)(px[xx, yy]) for xx in range(img.width)] for yy in range(img.height)]
+                rows = [sum(r) for r in cream]
+                cols = [sum(cream[yy][xx] for yy in range(img.height)) for xx in range(img.width)]
+                ry = [i for i, v in enumerate(rows) if v > max(rows) * 0.6]
+                cx = [i for i, v in enumerate(cols) if v > max(cols) * 0.6]
+                if ry and cx:
+                    ent["panel"] = {"x": cx[0], "y": ry[0], "w": cx[-1] - cx[0], "h": ry[-1] - ry[0]}
+            meta["lot"][k] = ent
+            previews.append(img)
+
     # 투표지(적체 더미·비행) + 파티클 + 황금 투표함
     ballot = fit(trim(load("ballot")), 16, 20)
     save(ballot, OUT / "ballot.png")

@@ -1,0 +1,20 @@
+[
+ {
+  "chain": [
+   {
+    "out": "assets/art-src/ai-world/lot-boxes.png",
+    "prompt": "A small stack of three sealed cardboard moving boxes (two on the bottom, one on top, slightly offset), brown kraft color with tan packing tape strips, one box has a tiny red fragile-arrow sticker with no letters. Cozy cartoon mobile idle-tycoon game prop sprite. Soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow, no drop shadow outside the object. True 2:1 isometric camera from the front, 30 degree elevation. Transparent background, no ground, no floor, no text, no letters, single prop centered."
+   },
+   {
+    "out": "assets/art-src/ai-world/lot-sign.png",
+    "ref": "assets/art-src/ai-world/lot-boxes.png",
+    "prompt": "Replace these boxes with a cute standing A-frame construction notice board: orange-and-white striped wooden frame with two legs, a large blank cream-colored rectangular panel facing the viewer (completely empty, no writing), a small amber warning lamp on top. Keep the identical art style, outline weight and camera angle. Cozy cartoon mobile idle-tycoon game prop sprite. Soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow, no drop shadow outside the object. Front view, slight top-down 30 degree elevation, the blank panel faces the viewer straight on. Transparent background, no ground, no text, no letters, single prop centered."
+   },
+   {
+    "out": "assets/art-src/ai-world/lot-post.png",
+    "ref": "assets/art-src/ai-world/lot-boxes.png",
+    "prompt": "Replace these boxes with a single short construction barrier post: a round orange-and-white striped bollard on a small black rubber base, with a little round cap on top. Keep the identical art style, outline weight and camera angle. Cozy cartoon mobile idle-tycoon game prop sprite. Soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow, no drop shadow outside the object. Transparent background, no ground, no tape, no text, no letters, single prop centered, standing upright."
+   }
+  ]
+ }
+]
