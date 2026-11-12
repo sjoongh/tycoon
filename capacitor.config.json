@@ -15,6 +15,10 @@
       "style": "DARK",
       "backgroundColor": "#14121c",
       "overlaysWebView": false
+    },
+    "LocalNotifications": {
+      "smallIcon": "ic_stat_gaepyo",
+      "iconColor": "#E8B84A"
     }
   }
 }

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 알림 상태바 아이콘: 투표함(단색 — 안드로이드가 흰색 실루엣으로 칠한다) -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- 투표용지 -->
+    <path android:fillColor="#FFFFFFFF" android:pathData="M8,2h8v7h-8z" />
+    <!-- 투입구가 뚫린 상자 -->
+    <path android:fillColor="#FFFFFFFF" android:pathData="M3,9h6.5v2h5v-2h6.5v12h-18z" />
+</vector>
