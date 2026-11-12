@@ -109,7 +109,7 @@ export class Notifications {
         await reg.showNotification(r.title, {
           body: r.body,
           tag: "gp-reengage-" + r.id,
-          icon: "/icon.svg",
+          icon: "/icons/icon-192.png",
           showTrigger: new TimestampTrigger(r.at),
         });
       } catch {}

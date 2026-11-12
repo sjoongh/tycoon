@@ -3,7 +3,6 @@ const CORE_FILES = [
   "/",
   "/index.html",
   "/manifest.webmanifest",
-  "/icon.svg",
   "/icons/icon-192.png",
   "/fonts/fonts.css",
   "/fonts/Galmuri9.woff2",

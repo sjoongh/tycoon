@@ -15,7 +15,7 @@
     "test:pwa": "node scripts/_pwaupdatetest.mjs",
     "test:balance": "node scripts/_balancesim.mjs",
     "test:staff": "node scripts/_staffdeploymenttest.mjs",
-    "icons:generate": "node scripts/_gen_icons.mjs",
+    "icons:generate": "python3 scripts/art/build_app_icon.py",
     "screenshots:generate": "node scripts/_pwascreenshots.mjs",
     "fonts:subset": "node scripts/_subsetfonts.mjs",
     "phaser:build": "node tools/phaser/build-custom-phaser.mjs",
