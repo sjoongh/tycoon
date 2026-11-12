@@ -142,6 +142,12 @@ export function wallTopPoint(j) {
   return { x: t.x - (TILE_W * WORLD_SCALE) / 4, y: t.y - (TILE_H * WORLD_SCALE) / 4 - ROOM.wallH * WORLD_SCALE };
 }
 
+// 뒤쪽 오른벽(j=0) 윗선 위의 점 — i 는 오른벽을 따라 0(뒤 꼭짓점) → ROOM_COLS(오른쪽 끝)
+export function rightWallTopPoint(i) {
+  const t = tileCenter(i, 0);
+  return { x: t.x + (TILE_W * WORLD_SCALE) / 4, y: t.y - (TILE_H * WORLD_SCALE) / 4 - ROOM.wallH * WORLD_SCALE };
+}
+
 export function facilityPos(id) {
   const s = FACILITY_SLOTS[id];
   if (!s) return null;
