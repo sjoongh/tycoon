@@ -33,7 +33,7 @@ describe("사건 체인 저장 정규화", () => {
     const gs = new GameState();
 
     expect(gs.data.version).toBe(10);
-    expect(gs.eventChainStatus()).toMatchObject({ active: false, discovered: 0, totalEndings: 9 });
+    expect(gs.eventChainStatus()).toMatchObject({ active: false, discovered: 0, totalEndings: 18 });
     expect(gs.data.eventChain.effects).toEqual([]);
     expect(gs.data.eventEndings).toEqual({});
   });
@@ -81,6 +81,19 @@ describe("사건 체인 진행과 결말", () => {
     expect(gs.data.eventChain.pity).toBe(0);
   });
 
+  it("후반 체인은 해금 구역부터 후보에 들어오고, 초반 체인을 끝낸 뒤에도 사건이 남는다", () => {
+    const gs = new GameState();
+    const ids = (area) => {
+      gs.data.stage.area = area;
+      return gs.availableEventChains().map((chain) => chain.id);
+    };
+    expect(ids(5)).toEqual(["thirteenth-box", "anonymous-whistle", "ghost-log"]);
+    expect(ids(8)).toEqual(expect.arrayContaining(["exit-poll", "ai-counter"]));
+    expect(ids(8)).not.toContain("blackout");
+    gs.data.eventChain.completed = { "thirteenth-box": true, "anonymous-whistle": true, "ghost-log": true };
+    expect(ids(10)).toEqual(["exit-poll", "ai-counter", "blackout"]);
+  });
+
   it("시작된 체인은 RNG와 무관하게 다음 두 사건으로 이어진다", () => {
     const gs = new GameState();
     prepareChain(gs);
@@ -110,7 +123,7 @@ describe("사건 체인 진행과 결말", () => {
     event = gs.pickNextEvent(() => 0.99);
     const result = gs.resolveEventChoice(event, "left");
 
-    expect(result.ending).toMatchObject({ route: "mixed", firstDiscovery: true, discovered: 1, total: 9 });
+    expect(result.ending).toMatchObject({ route: "mixed", firstDiscovery: true, discovered: 1, total: 18 });
     expect(result.ending.reward.votes).toBeGreaterThan(0);
     expect(gs.data.votes).toBeGreaterThan(beforeVotes);
     expect(gs.data.eventEndings[result.ending.id]).toBe(1);

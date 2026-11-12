@@ -88,8 +88,10 @@ try {
     gameState.on("event-chain-ending", (result) => window.__eventChainResults.push(result));
     gameState.emit("changed");
   });
+  await page.waitForTimeout(300);
+  await closeStartupModals();
 
-  await page.locator('[data-action="getEvent"]').click();
+  await page.locator('[data-action="getEvent"]:visible').first().click();
   await page.locator(".gp-event--chain").waitFor({ state: "visible" });
   const firstCard = await page.evaluate(() => {
     const card = document.querySelector(".gp-event--chain");
@@ -113,9 +115,9 @@ try {
 
   await readyNextEvent();
   await page.waitForFunction(() => document.querySelector(".gp-chainline--active")?.textContent.includes("2/3"));
-  const followupLabel = await page.locator('[data-action="getEvent"]').textContent();
+  const followupLabel = await page.locator('[data-action="getEvent"]:visible').first().textContent();
   if (!followupLabel?.includes("후속 사건 2/3")) throw new Error(`follow-up CTA missing: ${followupLabel}`);
-  await page.locator('[data-action="getEvent"]').click();
+  await page.locator('[data-action="getEvent"]:visible').first().click();
   await page.locator(".gp-event--chain").waitFor({ state: "visible" });
   await page.locator('[data-action="eventChoice"][data-side="right"]').click();
 
@@ -137,7 +139,7 @@ try {
     throw new Error(`chain save restore mismatch: ${JSON.stringify(restored)}`);
   }
 
-  await page.locator('[data-action="getEvent"]').click();
+  await page.locator('[data-action="getEvent"]:visible').first().click();
   await page.locator(".gp-event__chainbadge").waitFor({ state: "visible" });
   if (!await page.locator(".gp-event__chainbadge").textContent().then((text) => text?.includes("3/3"))) {
     throw new Error("final chain step badge missing");
@@ -161,7 +163,7 @@ try {
       overflow: document.documentElement.scrollWidth > window.innerWidth,
     };
   });
-  if (endingCard.title !== "유령 로그 길들이기" || !endingCard.discovery?.includes("새 결말 발견 · 1/9")
+  if (endingCard.title !== "유령 로그 길들이기" || !endingCard.discovery?.includes("새 결말 발견 · 1/18")
     || !endingCard.effect?.includes("초당 생산 +6%") || !endingCard.effect.includes("사건 보상 +12%")
     || !endingCard.reward?.includes("즉시 보상") || endingCard.button.width < 44 || endingCard.button.height < 44
     || endingCard.discovered !== 1 || endingCard.activeEffects[0] !== "ghost-log-tamed"
@@ -183,7 +185,7 @@ try {
       active: gameState.eventChainStatus().active,
     };
   });
-  if (!runStatus.line?.includes("사건 결말 1/9") || !runStatus.effect?.includes("유령 로그 길들이기")
+  if (!runStatus.line?.includes("사건 결말 1/18") || !runStatus.effect?.includes("유령 로그 길들이기")
     || runStatus.cpsPct !== 0.06 || runStatus.eventPct !== 0.12 || runStatus.active) {
     throw new Error(`run status mismatch: ${JSON.stringify(runStatus)}`);
   }
@@ -214,7 +216,7 @@ try {
     };
   });
   if (desktop.discovered !== 1 || desktop.effectId !== "ghost-log-tamed" || desktop.uiWidth > 390
-    || desktop.overflow || !desktop.line?.includes("사건 결말 1/9")) {
+    || desktop.overflow || !desktop.line?.includes("사건 결말 1/18")) {
     throw new Error(`desktop/reload mismatch: ${JSON.stringify(desktop)}`);
   }
   await page.screenshot({ path: `${evidenceDir}/SC-EVC-003-step-6-persist-desktop.png` });
