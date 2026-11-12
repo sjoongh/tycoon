@@ -24,6 +24,7 @@ import { regionIcon } from "../ui/icon.js";
 // 거지키우기식 심플 월드: 미니멀 픽셀 배경 + 중앙 도트 국장 + 큰 숫자 + 바닥.
 // (구 버전의 이소 오피스 다이어그램·화분·시계·창문·워커·시설 스테이션은 전부 제거)
 const GAME_W = 390;
+const OVERLAY_DEPTH = 2460; // 화면 고정 배너·플래시: 시설(1000+y)·이주 암전(2450) 위, HUD(2500) 아래
 const LOT_RIGHT_X = 292; // 잠긴 구획이 넘지 않을 화면 x(오른쪽 위 HUD 칩 왼쪽)
 let GOV_POS = tileCenter(ISO.GOV_TILE.i, ISO.GOV_TILE.j);
 let GROUND_Y = GOV_POS.y;     // 국장 발이 닿는 타일 중앙(방 단계가 바뀌면 _applyRoomStage 가 갱신)
@@ -193,6 +194,13 @@ export class WorldView {
     // 사이다! 정의구현 순간 — 통쾌한 연출
     this._onCider = (p) => this._ciderMoment(p);
     gameState.on("cider", this._onCider);
+    // 헤드라인 스크랩 — 같은 순간 여러 장이 나오면 차례로 띄운다
+    this._scoopQueue = [];
+    this._onHeadline = (h) => {
+      this._scoopQueue.push(h);
+      if (this._scoopQueue.length === 1) this._nextScoop();
+    };
+    gameState.on("headline", this._onHeadline);
     this._onCentralVisual = (event) => {
       this._centralVisualActive = !!event.detail?.active;
       const visible = !this._centralVisualActive && !this._signHiddenByScroll;
@@ -297,7 +305,7 @@ export class WorldView {
     // 외신 반응 — 주기적으로 믿음 상태에 맞는 가상 외신 헤드라인(사이다/블랙코미디)
     this._pressTimer = scene.time.addEvent({
       delay: 32000, loop: true,
-      callback: () => { if (Math.random() < 0.7) this._pressFlash(); },
+      callback: () => { if (!this._scoopQueue?.length && Math.random() < 0.7) this._pressFlash(); },
     });
 
     this._refresh();
@@ -924,6 +932,12 @@ export class WorldView {
     }
   }
 
+  // 화면 고정(scrollFactor 0) 연출 좌표 — 카메라가 뷰포트 중심 기준으로 줌하므로 기본 스크롤만큼 보정해야 화면 (x,y)에 뜬다.
+  _screenPos(x, y) {
+    const rb = this.scene.renderBase;
+    return { x: x - (rb?.baseScrollX || 0), y: y - (rb?.baseScrollY || 0) };
+  }
+
   // 실화 사건 해결 속보 배너 — 상단에서 붉은 띠가 펼쳐지며 사건명을 흘린다
   _newsFlash(title) {
     const y = 150;
@@ -946,10 +960,11 @@ export class WorldView {
   _ciderMoment(p) {
     const cx = GAME_W / 2;
     // 큰 사이다 텍스트(금색, 팝)
-    const big = this.scene.add.text(cx, 262, "사이다!", { fontFamily: '"Jua", "DoHyeon", sans-serif', fontSize: "26px", color: "#ffd34d" }).setOrigin(0.5).setDepth(210).setScale(0.4).setScrollFactor(0);
+    const sp = this._screenPos(cx, 262);
+    const big = this.scene.add.text(sp.x, sp.y, "사이다!", { fontFamily: '"Jua", "DoHyeon", sans-serif', fontSize: "26px", color: "#ffd34d" }).setOrigin(0.5).setDepth(OVERLAY_DEPTH + 10).setScale(0.4).setScrollFactor(0);
     big.setShadow(3, 3, "#b13e53", 0, true, true);
     this.scene.tweens.add({ targets: big, scale: 1, duration: 300, ease: "Back.easeOut" });
-    this.scene.tweens.add({ targets: big, alpha: 0, y: 232, duration: 500, delay: 900, onComplete: () => big.destroy() });
+    this.scene.tweens.add({ targets: big, alpha: 0, y: sp.y - 30, duration: 500, delay: 900, onComplete: () => big.destroy() });
     // 보너스 표시
     if (p?.bonus) this.effects.float({ text: `+${shortNumber(p.bonus)}표`, x: cx, y: 340, color: "#8df0b0" });
     // 국장 반격 대사 + 점프
@@ -961,7 +976,8 @@ export class WorldView {
     this._pressFlash({ outlet: "글로벌 데일리", text: "'통쾌한 정면돌파' 세계가 박수", tone: "praise" });
     document.dispatchEvent(new CustomEvent("gp:sfx", { detail: "achieve" }));
     // 화면 골드 플래시(짧게)
-    const fl = this.scene.add.rectangle(cx, 422, GAME_W, 844, 0xffe9a8, 0.22).setDepth(205).setScrollFactor(0);
+    const fp = this._screenPos(cx, 422);
+    const fl = this.scene.add.rectangle(fp.x, fp.y, GAME_W, 844, 0xffe9a8, 0.22).setDepth(OVERLAY_DEPTH + 5).setScrollFactor(0);
     this.scene.tweens.add({ targets: fl, alpha: 0, duration: 260, ease: "Quad.easeOut", onComplete: () => fl.destroy() });
   }
 
@@ -975,13 +991,13 @@ export class WorldView {
     const state = this.gameState.trustState ? this.gameState.trustState() : "normal";
     const comm = this.gameState.commGaugePct ? this.gameState.commGaugePct() : 0;
     const item = forced || pickPress(state, comm);
-    const y = 176;
-    const col = item.tone === "praise" ? 0x1f9e49 : item.tone === "mock" ? 0x8a2836 : 0x244055;
-    const accent = item.tone === "praise" ? "#8df0b0" : item.tone === "mock" ? "#ff9a8e" : "#9fd0e0";
+    const { x: ox, y } = this._screenPos(0, 176);
+    const col = item.tone === "scoop" ? 0x5a3d0c : item.tone === "praise" ? 0x1f9e49 : item.tone === "mock" ? 0x8a2836 : 0x244055;
+    const accent = item.tone === "scoop" ? "#ffd36b" : item.tone === "praise" ? "#8df0b0" : item.tone === "mock" ? "#ff9a8e" : "#9fd0e0";
     // 2줄 레이아웃 — 위: 📰 외신 · 매체명 / 아래: 헤드라인. 가독성↑
-    const bar = this.scene.add.rectangle(GAME_W / 2, y, GAME_W, 42, col, 0.95).setDepth(200).setScale(1, 0).setScrollFactor(0);
-    const top = this.scene.add.text(12, y - 10, `외신 · ${item.outlet}`, { fontFamily: '"DoHyeon", "Jua", sans-serif', fontSize: "11px", color: accent }).setOrigin(0, 0.5).setDepth(202).setAlpha(0).setScrollFactor(0);
-    const head = this.scene.add.text(12, y + 8, item.text, { fontFamily: '"DoHyeon", "Jua", sans-serif', fontSize: "12px", color: "#ffffff", wordWrap: { width: GAME_W - 24 } }).setOrigin(0, 0.5).setDepth(202).setAlpha(0).setScrollFactor(0);
+    const bar = this.scene.add.rectangle(ox + GAME_W / 2, y, GAME_W, 42, col, 0.95).setDepth(OVERLAY_DEPTH).setScale(1, 0).setScrollFactor(0);
+    const top = this.scene.add.text(ox + 12, y - 10, item.label || `외신 · ${item.outlet}`, { fontFamily: '"DoHyeon", "Jua", sans-serif', fontSize: "11px", color: accent }).setOrigin(0, 0.5).setDepth(OVERLAY_DEPTH + 2).setAlpha(0).setScrollFactor(0);
+    const head = this.scene.add.text(ox + 12, y + 8, item.text, { fontFamily: '"DoHyeon", "Jua", sans-serif', fontSize: "12px", color: "#ffffff", wordWrap: { width: GAME_W - 24 } }).setOrigin(0, 0.5).setDepth(OVERLAY_DEPTH + 2).setAlpha(0).setScrollFactor(0);
     this._pressEls = [bar, top, head];
     this.scene.tweens.add({ targets: bar, scaleY: 1, duration: 140, ease: "Back.easeOut" });
     this.scene.tweens.add({ targets: [top, head], alpha: 1, duration: 200, delay: 80 });
@@ -991,6 +1007,17 @@ export class WorldView {
         targets: [bar, top, head], alpha: 0, duration: 300, ease: "Quad.easeIn",
         onComplete: () => { bar.destroy(); top.destroy(); head.destroy(); },
       });
+    });
+  }
+
+  _nextScoop() {
+    const h = this._scoopQueue?.[0];
+    if (!h) return;
+    const bonus = h.milestone ? ` · 생산 +${Math.round(h.milestone.pct * 100)}%` : "";
+    this._pressFlash({ outlet: h.outlet, text: h.text, tone: "scoop", label: `특종 스크랩 ${h.count}/${h.total} · ${h.outlet}${bonus}` });
+    this._scoopTimer = this.scene.time.delayedCall(3800, () => {
+      this._scoopQueue.shift();
+      this._nextScoop();
     });
   }
 
@@ -2075,6 +2102,8 @@ export class WorldView {
     this.gameState.off("milestone", this._onMilestone);
     this.gameState.off("celebrate", this._onCelebrate);
     this.gameState.off("cider", this._onCider);
+    this.gameState.off("headline", this._onHeadline);
+    this._scoopTimer?.remove();
     document.removeEventListener("gp:sheet-top", this._onSheetTop);
     this.scene.input.off("pointerdown", this._onPointer);
     document.removeEventListener("gp:event-resolved", this._onEventResolved);

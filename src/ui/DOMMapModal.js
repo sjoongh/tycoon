@@ -3,6 +3,13 @@ import { regions, regionFor, eraTheme } from "../data/regions.js";
 import { shortNumber } from "../utils/format.js";
 import { officeEvents, realEventIds } from "../data/events.js";
 import { dexSets } from "../data/dexSets.js";
+import { headlines, headlineById } from "../data/headlines.js";
+import { eventChains, eventEndingById } from "../data/eventChains.js";
+import { shareCard } from "./shareCard.js";
+import { govStageFor } from "../world/dotChar.js";
+
+const esc = (t) => String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+const ymd = (ms) => { const d = new Date(ms); return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`; };
 
 // 전국 개표 지도 모달 — 간판 탭으로 열림("gp:open-map" 이벤트).
 // 정복한 구역(✓)·현재 구역(진행%)·잠긴 구역을 세로 경로로 보여준다.
@@ -15,11 +22,17 @@ export class DOMMapModal {
     this.root.addEventListener("click", (e) => {
       // 도감 상세가 열려 있으면 거기부터 처리(지도 닫힘보다 우선)
       if (this._detailOpen) {
+        const share = e.target.closest(".gp-dexdt__share");
+        if (share) { this._share(share); return; }
         if (e.target.closest(".gp-dexdt__x") || e.target.classList.contains("gp-dexdt")) this._closeDexDetail();
         return;
       }
       const cell = e.target.closest(".gp-dex__cell[data-dexid]");
       if (cell) { this._openDexDetail(cell.dataset.dexid); return; }
+      const hl = e.target.closest("[data-hlid]");
+      if (hl) { this._openHeadlineDetail(hl.dataset.hlid); return; }
+      const end = e.target.closest("[data-endid]");
+      if (end) { this._openEndingDetail(end.dataset.endid); return; }
       if (e.target === this.root || e.target.closest(".gp-map__x")) this.close();
     });
     this._open = () => this.open();
@@ -102,6 +115,30 @@ export class DOMMapModal {
       return `<div class="gp-dexgrp${p.done ? " gp-dexgrp--done" : ""}"><div class="gp-dexgrp__hd"><b>${s.name}</b><span>${p.got}/${p.total}</span><em>${s.effectText}${p.done ? " · 적용 중" : ""}</em></div><div class="gp-dex">${s.events.map((id) => evById[id]).filter(Boolean).map(cell).join("")}</div></div>`;
     }).join("");
 
+    // 헤드라인 스크랩 — 조건부 희귀 헤드라인(장기 #6). 미수집 칸은 조건 힌트를 보여 준다.
+    const gotHl = gs.data.headlines || {};
+    const hlN = gs.headlineCount();
+    const hlPct = Math.round(gs.headlineBonusPct() * 100);
+    const nextHl = gs.nextHeadlineMilestone();
+    const hlBonusLine = nextHl
+      ? `${hlPct ? `현재 생산 +${hlPct}% · ` : ""}${nextHl.n}장 스크랩 시 +${Math.round(nextHl.pct * 100)}%`
+      : `전부 스크랩! 생산 +${hlPct}% 영구`;
+    const hlRows = headlines.map((h) => (gotHl[h.id]
+      ? `<button class="gp-hl" data-hlid="${h.id}"><s>${esc(h.outlet)}</s><b>${esc(h.text)}</b></button>`
+      : `<div class="gp-hl gp-hl--lock"><s>？</s><b>${esc(h.hint)}</b></div>`)).join("");
+
+    // 사건 결말 — 체인마다 세 결말(A 일관·B 일관·혼합)
+    const endN = gs.eventEndingCount();
+    const endT = gs.eventEndingTotal();
+    const endGroups = eventChains.map((chain) => {
+      const ends = Object.values(chain.endings);
+      const got = ends.filter((en) => gs.data.eventEndings?.[en.id]).length;
+      const cells = ends.map((en) => (gs.data.eventEndings?.[en.id]
+        ? `<div class="gp-dex__cell gp-dex__cell--real" data-endid="${en.id}">${esc(en.title)}</div>`
+        : `<div class="gp-dex__cell gp-dex__cell--lock">？</div>`)).join("");
+      return `<div class="gp-dexgrp${got === ends.length ? " gp-dexgrp--done" : ""}"><div class="gp-dexgrp__hd"><b>${esc(chain.title)}</b><span>${got}/${ends.length}</span></div><div class="gp-dex">${cells}</div></div>`;
+    }).join("");
+
     this.root.innerHTML = `<div class="gp-map">
       <div class="gp-map__hd"><span>${iconHtml("ui-map", { size: 32 })}전국 개표 지도</span><button class="gp-map__x" aria-label="닫기">✕</button></div>
       <div class="gp-map__sub">정복 ${done} · 현재 ${area}구역 · 누적 ${shortNumber(gs.data.votes)}표</div>
@@ -111,6 +148,11 @@ export class DOMMapModal {
         <div class="gp-map__era">${iconHtml("ui-book", { size: 32 })}사건 도감 <span class="gp-dex__count">${seenN}/${total}종 · 세트 ${setDone}/${dexSets.length}</span></div>
         <div class="gp-dex__bonus">${dexBonusLine}</div>
         ${dexCells}
+        <div class="gp-map__era">${iconHtml("ui-star", { size: 32 })}헤드라인 스크랩 <span class="gp-dex__count">${hlN}/${headlines.length}</span></div>
+        <div class="gp-dex__bonus">${hlBonusLine}</div>
+        <div class="gp-hls">${hlRows}</div>
+        <div class="gp-map__era">${iconHtml("ui-flag", { size: 32 })}사건 결말 <span class="gp-dex__count">${endN}/${endT}</span></div>
+        ${endGroups}
       </div>
       <div class="gp-map__foot">구역을 정복할수록 더 높은 권위의 개표소로 이동합니다<br><span class="gp-disclaimer">※ 창작 픽션 — 실존 기관·인물·단체와 무관하며 비방 의도가 없습니다</span></div>
     </div>`;
@@ -121,7 +163,6 @@ export class DOMMapModal {
     const ev = officeEvents.find((v) => v.id === id);
     if (!ev || !this.gameState.hasSeenEvent(id)) return;
     const real = realEventIds.has(id);
-    const esc = (t) => String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     const choice = (side, label) => `<div class="gp-dexdt__opt">
       <b>${label}. ${esc(side[0])}</b>
       <s>${esc(side[2])}</s>
@@ -139,8 +180,66 @@ export class DOMMapModal {
     this._detailOpen = el;
   }
 
+  _dateline(ms) {
+    const area = this.gameState.data.stage.area;
+    return `${area}구역 · ${regionFor(area).name} · ${ymd(ms)}`;
+  }
+
+  _photo() {
+    return `/art/world/gov-${govStageFor(this.gameState.data)}.webp`;
+  }
+
+  _openCard({ title, meta, body, extra = "", card }) {
+    const el = document.createElement("div");
+    el.className = "gp-dexdt";
+    el.innerHTML = `<div class="gp-dexdt__card">
+      <div class="gp-dexdt__hd">${esc(title)}<button class="gp-dexdt__x" aria-label="닫기">✕</button></div>
+      <div class="gp-dexdt__meta">${esc(meta)}</div>
+      <div class="gp-dexdt__body">${esc(body)}</div>
+      ${extra}
+      <div class="gp-dexdt__act"><button class="gp-dexdt__share">공유</button></div>
+    </div>`;
+    this.root.appendChild(el);
+    this._detailOpen = el;
+    this._card = card;
+  }
+
+  _openHeadlineDetail(id) {
+    const h = headlineById(id);
+    const at = this.gameState.data.headlines?.[id];
+    if (!h || !at) return;
+    const when = at > 1 ? at : Date.now();
+    this._openCard({
+      title: h.outlet,
+      meta: `${at > 1 ? `${ymd(at)} 스크랩 · ` : ""}${h.hint}`,
+      body: h.text,
+      card: { kicker: "특종", outlet: h.outlet, title: h.text, dateline: this._dateline(when), photo: this._photo() },
+    });
+  }
+
+  _openEndingDetail(id) {
+    const en = eventEndingById(id);
+    if (!en || !this.gameState.data.eventEndings?.[id]) return;
+    this._openCard({
+      title: en.title,
+      meta: en.chainTitle,
+      body: en.body,
+      extra: en.effectText ? `<div class="gp-dexdt__opts"><div class="gp-dexdt__opt"><s>${esc(en.effectText)}</s></div></div>` : "",
+      card: { kicker: "사건 결말", outlet: en.chainTitle, title: en.title, body: en.body, dateline: this._dateline(Date.now()), photo: this._photo() },
+    });
+  }
+
+  async _share(btn) {
+    if (!this._card || btn.disabled) return;
+    btn.disabled = true;
+    btn.textContent = "만드는 중…";
+    const r = await shareCard(this._card);
+    btn.textContent = r === "saved" ? "이미지 저장됨" : r === "failed" ? "공유 실패 · 다시" : "공유";
+    btn.disabled = false;
+  }
+
   _closeDexDetail() {
-    if (this._detailOpen) { this._detailOpen.remove(); this._detailOpen = null; }
+    if (this._detailOpen) { this._detailOpen.remove(); this._detailOpen = null; this._card = null; }
   }
 
   close() {
