@@ -1,0 +1,29 @@
+[
+ {
+  "chain": [
+   {
+    "out": "assets/art-src/icon/fg-a.png",
+    "ref": "assets/art-src/ai-world/gov-3.png",
+    "prompt": "Redraw this character: big confident grin, giving a thumbs-up with one hand while hugging a white ballot box (gold slot, red check-mark emblem on the front) with the other arm. Keep this exact character's face, mustache, hair, navy suit and red tie; same cozy cartoon style: soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading. Mobile game app icon artwork: upper body only (cut at the waist), head large and chibi, facing the viewer, composition compact and centered so it reads clearly at 48 pixels. Transparent background, no text, no letters, no border, no drop shadow outside the subject."
+   }
+  ]
+ },
+ {
+  "chain": [
+   {
+    "out": "assets/art-src/icon/fg-b.png",
+    "ref": "assets/art-src/ai-world/gov-3.png",
+    "prompt": "Redraw this character: earnest pleading 'trust me' expression, one hand on his heart, a single small sweat drop on his forehead, a white ballot box with a gold slot tucked under the other arm. Keep this exact character's face, mustache, hair, navy suit and red tie; same cozy cartoon style: soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading. Mobile game app icon artwork: upper body only (cut at the waist), head large and chibi, facing the viewer, composition compact and centered so it reads clearly at 48 pixels. Transparent background, no text, no letters, no border, no drop shadow outside the subject."
+   }
+  ]
+ },
+ {
+  "chain": [
+   {
+    "out": "assets/art-src/icon/fg-c.png",
+    "ref": "assets/art-src/ai-world/gov-3.png",
+    "prompt": "Redraw this character: cheerful wink, holding up a single folded ballot paper with a red stamp mark in one raised hand, about to drop it into a white ballot box with a gold slot in front of his chest. Keep this exact character's face, mustache, hair, navy suit and red tie; same cozy cartoon style: soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading. Mobile game app icon artwork: upper body only (cut at the waist), head large and chibi, facing the viewer, composition compact and centered so it reads clearly at 48 pixels. Transparent background, no text, no letters, no border, no drop shadow outside the subject."
+   }
+  ]
+ }
+]
