@@ -8,8 +8,8 @@ import {
 } from "./eventChains.js";
 
 describe("사건 체인 데이터", () => {
-  it("3개 체인이 각각 3단계와 세 갈래 결말을 갖는다", () => {
-    expect(eventChains).toHaveLength(3);
+  it("6개 체인이 각각 3단계와 세 갈래 결말을 갖는다", () => {
+    expect(eventChains).toHaveLength(6);
     for (const chain of eventChains) {
       expect(chain.steps).toHaveLength(3);
       expect(Object.keys(chain.endings).sort()).toEqual(["left", "mixed", "right"]);
