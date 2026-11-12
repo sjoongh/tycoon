@@ -3,6 +3,7 @@
 import { FIREBASE_CONFIG, cloudEnabled } from "./firebaseConfig.js";
 import { iconHtml } from "./ui/icon.js";
 import { clock, offsetFromRoundTrip } from "./state/clock.js";
+import { NATIONAL_EVENTS_CAP } from "./data/nationalGoal.js";
 
 const NICK_KEY = "gp-nick";
 let _fb = null;       // { app, auth, db }
@@ -131,6 +132,7 @@ function myScore() {
     votes: Math.floor(d.stats?.totalVotes || 0),
     week: _gs._weekIndex ? _gs._weekIndex() : 0,
     weekVotes: Math.floor(_gs.weeklyProgress ? _gs.weeklyProgress() : 0),
+    weekEvents: Math.min(NATIONAL_EVENTS_CAP, Math.floor(_gs.weeklyEvents ? _gs.weeklyEvents() : 0)),
   };
 }
 
@@ -141,7 +143,7 @@ export async function submitScore() {
   try {
     const { db, fs } = await fb();
     const s = myScore();
-    await fs.setDoc(fs.doc(db, "scores", _uid), { nick, area: s.area, votes: s.votes, week: s.week, weekVotes: s.weekVotes, updatedAt: Date.now() });
+    await fs.setDoc(fs.doc(db, "scores", _uid), { nick, area: s.area, votes: s.votes, week: s.week, weekVotes: s.weekVotes, weekEvents: s.weekEvents, updatedAt: Date.now() });
   } catch {}
 }
 
@@ -171,6 +173,40 @@ export async function refreshWeeklyRank() {
     const rows = await fetchWeekly(100);
     return recordMyRank(rows);
   } catch { return null; }
+}
+
+// 전국 합산: 그 주 점수 문서의 weekEvents 합. 서버 집계(복합 색인 week+weekEvents, 색인에 없는 문서는 빠짐)를 쓰고,
+// 집계가 실패하거나 1인 상한을 넘는 기록이 섞였으면 문서를 받아 1인 상한으로 잘라 다시 더한다.
+async function fetchNational(wk) {
+  const { db, fs } = await fb();
+  const q = fs.query(fs.collection(db, "scores"), fs.where("week", "==", wk));
+  try {
+    const snap = await fs.getAggregateFromServer(q, { events: fs.sum("weekEvents"), players: fs.count() });
+    const { events = 0, players = 0 } = snap.data();
+    if (events <= players * NATIONAL_EVENTS_CAP) return { events, players };
+  } catch {}
+  const res = await fs.getDocs(q);
+  let events = 0;
+  let players = 0; // 서버 집계(색인)와 같게 weekEvents가 있는 문서만 센다 — 이전 버전 앱 기록은 빠진다
+  res.forEach((doc) => {
+    const v = doc.data().weekEvents;
+    if (typeof v !== "number") return;
+    players += 1;
+    events += Math.min(NATIONAL_EVENTS_CAP, Math.max(0, Math.floor(v)));
+  });
+  return { events, players };
+}
+
+// 이번 주 합산 반영 + 지난주 정산 대기분이 있으면 그 주 합산으로 정산. 닉네임이 없어도 조회·보상은 된다(합산 기여만 없음).
+export async function refreshNational() {
+  if (!_ready || !_gs?.nationalState) return;
+  try {
+    const pending = _gs.nationalPendingWeek();
+    if (pending) { const p = await fetchNational(pending); _gs.setNationalTotal(pending, p.events, p.players); }
+    const wk = _gs.nationalState().week;
+    const t = await fetchNational(wk);
+    _gs.setNationalTotal(wk, t.events, t.players);
+  } catch {}
 }
 
 async function fetchTop(n = 50) {
@@ -204,7 +240,7 @@ export async function openLeaderboard(readyPromise = null) {
   renderLeaderboard("불러오는 중…", null);
   try {
     await submitScore(); // 최신 점수 반영 후 조회
-    const [rows, weekly] = await Promise.all([fetchTop(50), fetchWeekly(100)]);
+    const [rows, weekly] = await Promise.all([fetchTop(50), fetchWeekly(100), refreshNational()]);
     recordMyRank(weekly);
     renderLeaderboard(null, rows, weekly);
   } catch (e) {
@@ -235,6 +271,25 @@ function promptNickname() {
   });
 }
 
+function nationalHtml() {
+  const st = _gs?.nationalState ? _gs.nationalState() : null;
+  if (!st) return "";
+  if (!st.known) return `<div class="gp-nat"><div class="gp-nat__hd"><span>전국 합산 사건 대응</span><b>-</b></div><div class="gp-nat__me">합산을 불러오지 못했어요</div></div>`;
+  const next = st.tiers[st.reached];
+  const pct = next ? Math.max(0, Math.min(100, (st.total / next.need) * 100)) : 100;
+  const tiers = st.tiers.map((t, i) => {
+    const cls = i < st.claimed ? " gp-nat__tier--got" : i < st.reached ? " gp-nat__tier--done" : "";
+    return `<span class="gp-nat__tier${cls}"><b>${fmtNum(t.need)}</b><small>${t.reward.explain ? `해명 +${t.reward.explain}` : ""}${t.reward.seals ? `<br>인장 +${t.reward.seals}` : ""}</small></span>`;
+  }).join("");
+  const me = st.eligible ? `내 사건 ${st.mine}건` : `내 사건 ${st.mine}/${st.min}건 · ${st.min}건부터 보상`;
+  return `<div class="gp-nat">
+    <div class="gp-nat__hd"><span>전국 합산 사건 대응</span><b>${fmtNum(st.total)}${next ? ` / ${fmtNum(next.need)}` : ""}</b></div>
+    <div class="gp-nat__bar"><i style="width:${pct.toFixed(1)}%"></i></div>
+    <div class="gp-nat__tiers">${tiers}</div>
+    <div class="gp-nat__me"><span>참여 ${st.players}명 · ${me}</span>${st.claimable ? `<button class="gp-btn gp-btn--gold gp-nat__claim" data-nat-claim>받기</button>` : ""}</div>
+  </div>`;
+}
+
 const TIER_LABEL = { elite: "엘리트", gold: "골드", silver: "실버", bronze: "브론즈" };
 
 function renderLeaderboard(message, rows, weekly = null) {
@@ -263,9 +318,11 @@ function renderLeaderboard(message, rows, weekly = null) {
     <div class="gp-rank__tabs"><button class="gp-rank__tab${mode === "weekly" ? " gp-rank__tab--on" : ""}" data-mode="weekly">이번 주 개표${daysLeft != null ? ` · ${daysLeft}일 남음` : ""}</button><button class="gp-rank__tab${mode === "all" ? " gp-rank__tab--on" : ""}" data-mode="all">도달 구역</button></div>
     <div class="gp-map__sub">내 닉네임: ${escapeHtml(getNick() || "(미설정)")} · 탭으로 변경${myRank > 0 && mode === "weekly" ? ` · 현재 ${myRank}위${tierNow ? ` → ${TIER_LABEL[tierNow]} 예정` : ""}` : ""}</div>
     ${badges ? `<div class="gp-rank__badges">${badges}</div>` : ""}
+    ${mode === "weekly" && !message ? nationalHtml() : ""}
     <div class="gp-map__list gp-rank__list">${body}</div>
     <div class="gp-map__foot">${mode === "weekly" ? "주가 끝나면 순위에 따라 브론즈~엘리트 뱃지와 해명·인장을 받습니다. 뱃지는 개표소 벽에 걸립니다." : "구역을 더 정복할수록 순위가 오릅니다"}</div>
   </div>`;
+  ov.querySelector("[data-nat-claim]")?.addEventListener("click", () => { _gs.claimNational(); renderLeaderboard(null, rows, weekly); });
   ov.querySelectorAll("[data-mode]").forEach((b) => b.addEventListener("click", () => { ov.dataset.mode = b.dataset.mode; renderLeaderboard(null, rows, weekly); }));
   // 닉네임 변경
   ov.querySelector(".gp-map__sub")?.addEventListener("click", async () => {
@@ -283,3 +340,6 @@ function fmtNum(v) {
 function escapeHtml(t) {
   return String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
+
+// 개발 서버 QA용(배포 빌드에서는 제거): 네트워크 없이 랭킹 화면을 그려 본다
+if (import.meta.env.DEV) window.__gpCloud = { renderLeaderboard, setGameState: (gs) => { _gs = gs; } };
