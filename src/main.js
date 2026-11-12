@@ -19,7 +19,7 @@ import { ServiceWorkerUpdateController } from "./pwa/ServiceWorkerUpdateControll
 import { Sfx } from "./audio/sfx.js";
 import { Notifications } from "./notifications.js";
 import { initNative } from "./native.js";
-import { initCloud, openLeaderboard, saveCloud, submitScore, logEvt, refreshWeeklyRank } from "./cloud.js";
+import { initCloud, openLeaderboard, saveCloud, submitScore, logEvt, refreshWeeklyRank, refreshNational } from "./cloud.js";
 import { mirrorNativeSave, restoreNativeSave, seedLocalStorageFromDurableSave } from "./state/persistence.js";
 import { createDebounced } from "./state/saveWinner.js";
 
@@ -172,7 +172,8 @@ game.events.once("ready", () => {
   // 계측(레퍼런스 로드맵 단기 #1): 첫 직원·첫 감사·온보딩 완료까지 걸린 초, 세션 길이, 오프라인 정산 노출
   gameState.on("first", (p) => logEvt(`first_${p?.key}`, { sec: p?.sec }));
   // 주간 랭킹: 클라우드 준비 후 1회 내 순위 기록(주가 바뀌면 뱃지 확정 근거), 이후 5분마다 점수 갱신
-  const _weeklyKick = () => { refreshWeeklyRank(); setInterval(() => submitScore(), 5 * 60 * 1000); };
+  // 전국 합산 목표: 같은 주기로 합산을 다시 읽는다(새 단계 달성 알림·지난주 정산)
+  const _weeklyKick = () => { refreshWeeklyRank().then(refreshNational); setInterval(() => submitScore().then(refreshNational), 5 * 60 * 1000); };
   if (cloudInitPromise) cloudInitPromise.then(_weeklyKick); else document.addEventListener("gp:cloud-ready", _weeklyKick, { once: true });
   let _sessionStartAt = Date.now();
   document.addEventListener("visibilitychange", () => {
@@ -186,6 +187,7 @@ game.events.once("ready", () => {
   gameState.on("rule-bought", (p) => logEvt("rule_buy", { id: p?.id }));
   gameState.on("dex-set", (p) => logEvt("dex_set", { id: p?.id }));
   gameState.on("weekly-badge", (p) => logEvt("weekly_badge", { tier: p?.tier, rank: p?.rank }));
+  gameState.on("national-claim", (p) => logEvt("national_claim", { step: p?.step }));
   document.addEventListener("gp:special-open", () => logEvt("special_open", {}));
   document.addEventListener("gp:reward-claimed", (e) => logEvt("reward_claim", { kind: e.detail?.kind, mode: e.detail?.mode }));
   gameState.on("comm-collapse", () => logEvt("communist_collapse", {}));

@@ -53,6 +53,7 @@ import {
 import { shortNumber } from "../utils/format.js";
 import { clock, clockRolledBack } from "./clock.js";
 import { saveBeats } from "./saveWinner.js";
+import { NATIONAL_TIERS, NATIONAL_MIN_EVENTS, nationalReached, nationalRewardBetween, normalizeNational } from "../data/nationalGoal.js";
 import { headlines, headlineById, normalizeHeadlines, headlineBonusFor, HEADLINE_MILESTONES, HEADLINE_TRIGGERS, HEADLINE_CHECK_TICKS } from "../data/headlines.js";
 
 const DAY_MS = 86400000;
@@ -199,7 +200,9 @@ const fallbackState = {
   selectedChar: "classic", // 선택한 국장 캐릭터 id — 정체성(모든 리셋에도 유지)
   endless: 0,
   daily: { day: 0, streak: 0, qday: 0, clicks: 0, events: 0, upgrades: 0, items: 0, newdex: 0, claimed: {} },
-  weekly: { week: 0, baseVotes: 0, target: 0, claimed: false },
+  weekly: { week: 0, baseVotes: 0, target: 0, claimed: false, baseEvents: 0 },
+  // 전국 합산 목표: 이번 주 받은 단계·알림 본 단계 + 주가 넘어갈 때 정산할 지난주 기록(pending)
+  national: { week: 0, claimed: 0, seen: 0, pending: null },
   // 주간 랭킹: 이번 주 마지막으로 확인한 내 순위(rank/total). 주가 바뀌면 등급 뱃지로 확정해 badges에 쌓인다(최근 8개).
   weeklyRank: { week: 0, rank: 0, total: 0 },
   badges: [],
@@ -372,6 +375,10 @@ export class GameState extends Phaser.Events.EventEmitter {
     data.weekly.baseVotes = Math.max(0, Number(data.weekly.baseVotes) || 0);
     data.weekly.target = Math.max(0, Number(data.weekly.target) || 0);
     data.weekly.claimed = !!data.weekly.claimed;
+    // 주간 사건 기준점은 평생 사건 수. 이 필드가 없던 세이브는 지금부터 센다(이전 사건을 이번 주로 몰아 세지 않게).
+    const be = Number(parsed?.weekly?.baseEvents);
+    data.weekly.baseEvents = Number.isFinite(be) && be >= 0 ? be : this.lifetimeStat("totalEvents", data);
+    data.national = normalizeNational(parsed?.national);
     data.weeklyRank = { ...fallbackState.weeklyRank, ...(parsed?.weeklyRank && typeof parsed.weeklyRank === "object" ? parsed.weeklyRank : {}) };
     { const ns = normalizeSpecial(parsed?.special, parsed?.specialHistory); data.special = ns.special; data.specialHistory = ns.history; }
     data.season = normalizeSeason(parsed?.season);
@@ -1359,6 +1366,7 @@ export class GameState extends Phaser.Events.EventEmitter {
       special: this.data.special,
       specialHistory: this.data.specialHistory,
       season: this.data.season,
+      national: this.data.national,
       buffs: { ...fallbackState.buffs, boostUntil: this.data.buffs?.boostUntil || 0 },
     };
   }
@@ -2514,18 +2522,102 @@ export class GameState extends Phaser.Events.EventEmitter {
   _ensureWeekly() {
     const wk = this._weekIndex();
     if (this.data.weekly.week !== wk) {
+      const prevWeek = this.data.weekly.week;
+      const prevEvents = this._weekEventsRaw();
       this._finalizeWeeklyBadge(wk);
       const def = weeklyGoalDefinitions[wk % weeklyGoalDefinitions.length];
       this.data.weekly.week = wk;
       this.data.weekly.baseVotes = this.data.stats.totalVotes;
+      this.data.weekly.baseEvents = this.lifetimeStat("totalEvents");
       // 목표량은 주 시작 시점의 기본 생산(버프 제외) × hours로 동적 산정
       this.data.weekly.target = Math.max(def.minTarget, Math.round(this.cpsFor(this.data) * def.hours * 3600));
       this.data.weekly.claimed = false;
+      this._rollNational(wk, prevWeek, prevEvents);
+    } else if (this.data.national.week !== wk) {
+      this._rollNational(wk, 0, 0);
     }
   }
   weeklyProgress() {
     this._ensureWeekly();
     return Math.max(0, this.data.stats.totalVotes - this.data.weekly.baseVotes);
+  }
+
+  // ── 전국 합산 목표(장기 #5) ──
+  // 이번 주 내 사건 대응 수 = 평생 사건 수 − 주 시작 기준점. 감사·전복에도 평생 통계가 유지되므로 끊기지 않는다.
+  _weekEventsRaw() {
+    return Math.max(0, this.lifetimeStat("totalEvents") - (this.data.weekly.baseEvents || 0));
+  }
+  weeklyEvents() {
+    this._ensureWeekly();
+    return this._weekEventsRaw();
+  }
+  // 주가 넘어가면 지난주 받을 자격이 있고 덜 받은 단계가 남았을 때 pending으로 넘겨, 클라우드가 지난주 합산을 가져오면 정산한다.
+  _rollNational(wk, prevWeek, prevEvents) {
+    const n = this.data.national;
+    const fresh = prevWeek > 0 && n.week === prevWeek && prevEvents >= NATIONAL_MIN_EVENTS && n.claimed < NATIONAL_TIERS.length
+      ? { week: prevWeek, mine: prevEvents, claimed: n.claimed }
+      : null;
+    this.data.national = { week: wk, claimed: 0, seen: 0, pending: fresh || (n.pending && n.pending.week < wk ? n.pending : null) };
+  }
+  nationalPendingWeek() {
+    this._ensureWeekly();
+    return this.data.national.pending?.week || 0;
+  }
+  static nationalRewardText(r) {
+    return [r.explain ? `해명 +${r.explain}` : "", r.seals ? `인장 +${r.seals}` : ""].filter(Boolean).join(" · ");
+  }
+  // 클라우드가 가져온 합산을 반영한다. 이번 주 합산은 메모리에만 두고, 지난주 합산이면 덜 받은 단계를 자동 지급한다.
+  setNationalTotal(week, events, players = 0) {
+    this._ensureWeekly();
+    const n = this.data.national;
+    const total = Math.max(0, Math.floor(Number(events) || 0));
+    if (n.pending && week === n.pending.week) {
+      const p = n.pending;
+      const to = nationalReached(total);
+      n.pending = null;
+      if (to > p.claimed && !this.clockSuspicious()) {
+        const r = nationalRewardBetween(p.claimed, to);
+        this.grantReward(r);
+        this.addSeasonPoints(SEASON_POINTS.national * (to - p.claimed));
+        this.emit("celebrate", { text: `지난주 전국 목표 ${to}단계 · ${GameState.nationalRewardText(r)}` });
+        this.emit("changed");
+      }
+      this.save(false);
+      return;
+    }
+    if (week !== n.week) return;
+    this._nationalTotal = { week, events: total, players: Math.max(0, Math.floor(Number(players) || 0)) };
+    const reached = nationalReached(total);
+    if (reached > n.seen) {
+      n.seen = reached;
+      if (this._weekEventsRaw() >= NATIONAL_MIN_EVENTS && reached > n.claimed) this.emit("celebrate", { text: `전국 목표 ${reached}단계 달성 · 랭킹에서 받기` });
+    }
+  }
+  nationalState() {
+    this._ensureWeekly();
+    const n = this.data.national;
+    const t = this._nationalTotal?.week === n.week ? this._nationalTotal : null;
+    const reached = t ? nationalReached(t.events) : 0;
+    const mine = this._weekEventsRaw();
+    const eligible = mine >= NATIONAL_MIN_EVENTS;
+    return {
+      week: n.week, known: !!t, total: t?.events || 0, players: t?.players || 0,
+      tiers: NATIONAL_TIERS, reached, claimed: n.claimed, mine, min: NATIONAL_MIN_EVENTS, eligible,
+      claimable: eligible && reached > n.claimed && !this.clockSuspicious(),
+    };
+  }
+  claimNational() {
+    const st = this.nationalState();
+    if (!st.claimable) return null;
+    const r = nationalRewardBetween(st.claimed, st.reached);
+    this.grantReward(r);
+    this.data.national.claimed = st.reached;
+    this.addSeasonPoints(SEASON_POINTS.national * (st.reached - st.claimed));
+    this.emit("celebrate", { text: `★ 전국 목표 ${st.reached}단계 · ${GameState.nationalRewardText(r)}` });
+    this.emit("national-claim", { step: st.reached });
+    this.emit("changed");
+    this.save(false);
+    return r;
   }
 
   // ── 주간 랭킹 뱃지(레퍼런스 로드맵 단기 #6: Codigames Carnival 주간 랭킹 + IMT 5단계 뱃지) ──

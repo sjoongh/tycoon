@@ -829,6 +829,19 @@ body { background-color: var(--bg-deep); background-image: repeating-linear-grad
 .gp-rank__tab { flex: 1; min-height: 40px; border: 2px solid var(--line); border-radius: var(--r-sm); background: var(--panel2); color: var(--ink-soft); font-family: var(--f-small); font-size: 12px; cursor: pointer; }
 .gp-rank__tab--on { background: var(--gold); color: #4a2600; }
 .gp-rank__badges { display: flex; gap: 6px; padding: 6px 12px 0; flex-wrap: wrap; }
+.gp-nat { margin: 8px 12px 0; padding: 8px 10px; border: 2px solid var(--line); border-radius: var(--r-sm); background: rgba(10, 14, 32, 0.45); font-family: var(--f-small); }
+.gp-nat__hd { display: flex; justify-content: space-between; align-items: baseline; font-size: 12px; color: var(--ink-soft); }
+.gp-nat__hd b { font-size: 15px; color: var(--gold); font-weight: normal; }
+.gp-nat__bar { height: 8px; margin: 6px 0; border-radius: 999px; background: rgba(255, 255, 255, 0.12); overflow: hidden; }
+.gp-nat__bar i { display: block; height: 100%; background: var(--gold); border-radius: inherit; }
+.gp-nat__tiers { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+.gp-nat__tier { display: flex; flex-direction: column; align-items: center; padding: 3px 2px; border: 2px solid var(--line); border-radius: 6px; background: rgba(255, 255, 255, 0.06); color: var(--ink-soft); line-height: 1.2; }
+.gp-nat__tier b { font-size: 12px; font-weight: normal; }
+.gp-nat__tier small { font-size: 9px; text-align: center; }
+.gp-nat__tier--done { background: rgba(255, 197, 61, 0.22); color: #ffe7a6; border-color: #b8720f; }
+.gp-nat__tier--got { background: rgba(137, 217, 139, 0.18); color: var(--green-hi, #89d98b); }
+.gp-nat__me { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 6px; min-height: 28px; font-size: 11px; color: var(--ink-soft); }
+.gp-nat__claim { min-height: 30px; padding: 0 14px; font-size: 13px; }
 .gp-badge { display: inline-block; padding: 2px 8px; border-radius: 999px; border: 2px solid var(--line); font-family: var(--f-small); font-size: 11px; color: #1a1408; }
 .gp-badge--bronze { background: #c98a4b; }
 .gp-badge--silver { background: #c9d3e0; }

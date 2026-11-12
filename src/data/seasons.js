@@ -17,6 +17,7 @@ export const SEASON_POINTS = {
   weekly: 60, // 주간 목표 받기
   chainEnding: 30, // 사건 체인 결말
   special: { bronze: 15, silver: 25, gold: 40, elite: 60 }, // 특별 개표소 등급 달성
+  national: 20, // 전국 합산 목표 1단계 받기
 };
 
 // 무료 트랙 8단계. kind: reward(해명·인장) / hat(이 달 한정 모자) / title(이 달 시즌 발령).
