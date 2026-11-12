@@ -2399,6 +2399,14 @@ export class GameState extends Phaser.Events.EventEmitter {
     }
   }
 
+  // 서버 시계 보정으로 시각원이 shift(ms)만큼 움직이면 부재 정산 기준(lastSeenAt)도 같이 옮긴다.
+  // 안 옮기면 다음 복귀 정산이 보정량만큼 부재 시간을 더 주거나 뺀다. lastSavedAt은 되감김 판정 기준이라 두고, 다음 저장 때 새 시각으로 찍힌다.
+  rebaseClock(shift) {
+    const d = Number(shift);
+    if (!Number.isFinite(d) || d === 0 || !(this.data?.lastSeenAt > 0)) return;
+    this.data.lastSeenAt += d;
+  }
+
   // ----- 일일 출석 보상 -----
   // 로컬 시계가 마지막 저장보다 1시간 넘게 과거면(시계 되감김) 출석·주간·오프라인 보상을 보류한다
   clockSuspicious() {

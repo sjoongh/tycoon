@@ -71,6 +71,41 @@ describe("GameState 시계 되감김 가드", () => {
   });
 });
 
+describe("서버 시계 오프셋 저장·복원", () => {
+  it("측정한 오프셋을 저장하고 다음 실행에서 세이브 로드 전에 되살린다", () => {
+    expect(clock.setOffset(7200_000)).toBe(7200_000);
+    expect(clock.setOffset(7000_000)).toBe(-200_000);
+    clock.persist();
+    clock.reset();
+    clock.restore();
+    expect(clock.offset).toBe(7000_000);
+    expect(clock.calibrated()).toBe(false); // 이번 실행에서 잰 값은 아니다
+  });
+
+  it("저장값이 없거나 깨졌으면 로컬 시계(0)를 쓴다", () => {
+    clock.restore();
+    expect(clock.offset).toBe(0);
+    store.set("gaepyo-clock-offset", "{broken");
+    clock.restore();
+    expect(clock.offset).toBe(0);
+  });
+
+  it("보정으로 시각원이 옮겨지면 부재 정산 기준도 같이 옮겨 시간이 튀지 않는다", () => {
+    vi.useFakeTimers();
+    const t0 = new Date("2026-11-12T12:00:00Z").getTime();
+    vi.setSystemTime(t0); // 기기 시계가 서버보다 3시간 늦은 상황
+    const gs = new GameState();
+    gs.save(false);
+    const shift = clock.setOffset(3 * 3600_000);
+    gs.rebaseClock(shift);
+    vi.setSystemTime(t0 + 60_000); // 실제로는 1분 자리 비움
+    const before = gs.data.stats.totalOfflineMs || 0;
+    gs.resumeOfflineProgress();
+    expect((gs.data.stats.totalOfflineMs || 0) - before).toBe(60_000);
+    expect(gs.data.lastSavedAt).toBe(t0); // 되감김 판정 기준은 그대로
+  });
+});
+
 describe("세이브 승자 규칙", () => {
   it("최신 lastSavedAt이 이기고, 2초 이내 동률이면 누적 표가 큰 쪽이 이긴다", () => {
     const a = { lastSavedAt: 10_000, stats: { totalVotes: 100 } };
