@@ -38,6 +38,10 @@ export async function initNative() {
       App.minimizeApp(); // 모달 없으면 백그라운드(종료 대신)
     });
     // 앱이 백그라운드↔포그라운드 전환 시 세이브 보장(데이터 손실 방지)
-    App.addListener("pause", () => { try { window.__gpSave && window.__gpSave(); } catch {} });
+    App.addListener("pause", () => {
+      try { window.__gpSave && window.__gpSave(); } catch {}
+      document.dispatchEvent(new CustomEvent("gp:app-pause")); // 소리 즉시 멈춤
+    });
+    App.addListener("resume", () => document.dispatchEvent(new CustomEvent("gp:app-resume")));
   } catch {}
 }

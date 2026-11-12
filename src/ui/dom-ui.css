@@ -726,6 +726,10 @@ body { background-color: var(--bg-deep); background-image: repeating-linear-grad
 .gp-set__row b { font-family: var(--f-bold); font-size: 14px; color: var(--gold); }
 .gp-set__ok { color: #6fe89a !important; font-size: 11px !important; font-family: var(--f-body) !important; }
 .gp-set__danger { background: var(--red); color: #fff; }
+.gp-set__row--vol > span { flex: 0 0 auto; min-width: 52px; }
+.gp-set__vol { flex: 1 1 auto; min-width: 0; height: 32px; accent-color: var(--gold); }
+.gp-set__vol:disabled { opacity: 0.35; }
+.gp-set__row .gp-btn--sm { flex: 0 0 auto; min-width: 58px; min-height: 36px; }
 .gp-set__note { font-family: var(--f-small); font-size: var(--type-label); line-height: 1.6; color: var(--ink-soft); margin-top: 2px; }
 
 /* 사건 선택지 효과 미리보기 칩 */
@@ -957,3 +961,12 @@ body { background-color: var(--bg-deep); background-image: repeating-linear-grad
 
 /* UI 레이어 안의 hidden 은 어떤 display 규칙보다 우선 */
 .gp-ui [hidden] { display: none !important; }
+
+/* 월드 팬·줌 후 개표소로 돌아오기(브리핑·긴급 개표 FAB 사이) */
+.gp-camhome { position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(var(--panel-h, 300px) + 14px); z-index: 9; pointer-events: auto;
+  border: 2px solid var(--line); border-radius: var(--r); padding: 7px 14px; background: var(--panel); color: var(--ink); font-family: var(--f-bold); font-size: 12px; box-shadow: var(--px-drop); cursor: pointer; }
+.gp-camhome[hidden] { display: none; }
+.gp-camhome:active { transform: translateX(-50%) translateY(3px); box-shadow: none; }
+.gp-ui--sheet-full .gp-camhome { display: none; }
+/* 설정 토글: 꺼짐은 회색(켜짐 초록과 한눈에 구분) */
+.gp-set__row .gp-btn[aria-pressed="false"] { background: var(--panel2); color: var(--ink-soft); text-shadow: none; box-shadow: var(--px-out), 0 4px 0 #262d48, 0 8px 14px rgba(0,0,0,0.3); }

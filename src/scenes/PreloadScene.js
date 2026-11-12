@@ -48,6 +48,7 @@ export class PreloadScene extends Phaser.Scene {
     for (const k of (WORLD_ATLAS.eraVisitors?.keys || [])) this.load.image(`world/visitor-era-${k}`, `/art/world/visitor-era-${k}.webp`);
     for (let t = 1; t <= (WORLD_ATLAS.vehicles?.length || 0); t += 1) this.load.image(`world/vehicle-${t}`, `/art/world/vehicle-${t}.webp`);
     for (const k of Object.keys(WORLD_ATLAS.lot || {})) this.load.image(`world/lot-${k}`, `/art/world/lot-${k}.webp`);
+    for (const k of Object.keys(WORLD_ATLAS.outdoor || {})) this.load.image(`world/out-${k}`, `/art/world/out-${k}.webp`);
     for (const k of (WORLD_ATLAS.residents?.keys || [])) this.load.image(`world/res-${k}`, `/art/world/res-${k}.webp`);
     for (const cid of Object.keys(WORLD_ATLAS.cosmetics || {})) this.load.image(`world/${cid}`, `/art/world/${cid}.webp`);
   }

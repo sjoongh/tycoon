@@ -20,6 +20,7 @@ import { ServiceWorkerUpdateController } from "./pwa/ServiceWorkerUpdateControll
 import { Sfx } from "./audio/sfx.js";
 import { Notifications } from "./notifications.js";
 import { initNative } from "./native.js";
+import { bindGame } from "./ui/devicePrefs.js";
 import { initCloud, openLeaderboard, saveCloud, submitScore, logEvt, refreshWeeklyRank, refreshNational } from "./cloud.js";
 import { mirrorNativeSave, restoreNativeSave, seedLocalStorageFromDurableSave } from "./state/persistence.js";
 import { createDebounced } from "./state/saveWinner.js";
@@ -135,6 +136,7 @@ const game = new Phaser.Game(config);
 if (import.meta.env.DEV) {
   window.__game = game;
   window.__phaserBuild = __GAEPYO_PHASER_BUILD__;
+  window.__sfx = sfx;
 }
 
 const uiLayer = document.createElement("div");
@@ -160,6 +162,7 @@ game.events.once("ready", () => {
   new DOMSettings(gameState, notifications).mount(uiLayer);
   new DOMUpdatePrompt(gameState, pwaUpdates).mount(uiLayer);
   sfx.mount();
+  bindGame(game); // 절전 모드(fps)·화면 켜두기
   // 네이티브(안드로이드) 통합 — 웹에서는 no-op
   initNative();
   // 구역이 오를 때 랭킹 점수 갱신 + 분석

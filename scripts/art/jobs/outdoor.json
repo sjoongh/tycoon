@@ -1,0 +1,110 @@
+[
+ {
+  "chain": [
+   {
+    "out": "assets/art-src/ai-world/out-tree.png",
+    "ref": "assets/art-src/ai-world/lot-boxes.png",
+    "prompt": "Replace these boxes with: A round fluffy deciduous street tree with a short brown trunk and a big bubbly bright-green canopy made of three soft lumps, a few lighter highlight leaves. Keep the identical art style, outline weight and camera angle. Cozy cartoon mobile idle-tycoon game prop sprite. Soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow, no drop shadow outside the object. True 2:1 isometric camera from the front, 30 degree elevation. Transparent background, no ground, no floor, no text, no letters, single prop centered."
+   }
+  ]
+ },
+ {
+  "chain": [
+   {
+    "out": "assets/art-src/ai-world/out-pine.png",
+    "ref": "assets/art-src/ai-world/lot-boxes.png",
+    "prompt": "Replace these boxes with: A small conical evergreen pine tree, layered dark-green tiers, short brown trunk. Keep the identical art style, outline weight and camera angle. Cozy cartoon mobile idle-tycoon game prop sprite. Soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow, no drop shadow outside the object. True 2:1 isometric camera from the front, 30 degree elevation. Transparent background, no ground, no floor, no text, no letters, single prop centered."
+   }
+  ]
+ },
+ {
+  "chain": [
+   {
+    "out": "assets/art-src/ai-world/out-bush.png",
+    "ref": "assets/art-src/ai-world/lot-boxes.png",
+    "prompt": "Replace these boxes with: A low rounded hedge bush with small pink and yellow flowers dotted on top, compact oval shape. Keep the identical art style, outline weight and camera angle. Cozy cartoon mobile idle-tycoon game prop sprite. Soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow, no drop shadow outside the object. True 2:1 isometric camera from the front, 30 degree elevation. Transparent background, no ground, no floor, no text, no letters, single prop centered."
+   }
+  ]
+ },
+ {
+  "chain": [
+   {
+    "out": "assets/art-src/ai-world/out-lamp.png",
+    "ref": "assets/art-src/ai-world/lot-boxes.png",
+    "prompt": "Replace these boxes with: A tall slim old-fashioned park street lamp: dark teal metal pole with a round warm-yellow glowing lamp head on top and a small ornate base. Keep the identical art style, outline weight and camera angle. Cozy cartoon mobile idle-tycoon game prop sprite. Soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow, no drop shadow outside the object. True 2:1 isometric camera from the front, 30 degree elevation. Transparent background, no ground, no floor, no text, no letters, single prop centered."
+   }
+  ]
+ },
+ {
+  "chain": [
+   {
+    "out": "assets/art-src/ai-world/out-bench.png",
+    "ref": "assets/art-src/ai-world/lot-boxes.png",
+    "prompt": "Replace these boxes with: A wooden park bench with warm brown slats and dark green cast-iron legs and armrests, seen diagonally. Keep the identical art style, outline weight and camera angle. Cozy cartoon mobile idle-tycoon game prop sprite. Soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow, no drop shadow outside the object. True 2:1 isometric camera from the front, 30 degree elevation. Transparent background, no ground, no floor, no text, no letters, single prop centered."
+   }
+  ]
+ },
+ {
+  "chain": [
+   {
+    "out": "assets/art-src/ai-world/out-flag.png",
+    "ref": "assets/art-src/ai-world/lot-boxes.png",
+    "prompt": "Replace these boxes with: A tall white flagpole on a small round stone base with a plain sky-blue rectangular flag waving to the right, completely blank flag with no emblem. Keep the identical art style, outline weight and camera angle. Cozy cartoon mobile idle-tycoon game prop sprite. Soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow, no drop shadow outside the object. True 2:1 isometric camera from the front, 30 degree elevation. Transparent background, no ground, no floor, no text, no letters, single prop centered."
+   }
+  ]
+ },
+ {
+  "chain": [
+   {
+    "out": "assets/art-src/ai-world/out-tent.png",
+    "ref": "assets/art-src/ai-world/lot-boxes.png",
+    "prompt": "Replace these boxes with: A small white-and-sky-blue striped pop-up canopy tent (square gazebo) with a folding table under it holding a few white paper stacks and a small ballot box, seen diagonally. Keep the identical art style, outline weight and camera angle. Cozy cartoon mobile idle-tycoon game prop sprite. Soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow, no drop shadow outside the object. True 2:1 isometric camera from the front, 30 degree elevation. Transparent background, no ground, no floor, no text, no letters, single prop centered."
+   }
+  ]
+ },
+ {
+  "chain": [
+   {
+    "out": "assets/art-src/ai-world/out-fountain.png",
+    "ref": "assets/art-src/ai-world/lot-boxes.png",
+    "prompt": "Replace these boxes with: A small round stone plaza fountain with two tiers, light blue water splashing gently, cream stone rim. Keep the identical art style, outline weight and camera angle. Cozy cartoon mobile idle-tycoon game prop sprite. Soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow, no drop shadow outside the object. True 2:1 isometric camera from the front, 30 degree elevation. Transparent background, no ground, no floor, no text, no letters, single prop centered."
+   }
+  ]
+ },
+ {
+  "chain": [
+   {
+    "out": "assets/art-src/ai-world/out-billboard.png",
+    "ref": "assets/art-src/ai-world/lot-boxes.png",
+    "prompt": "Replace these boxes with: A roadside billboard on two wooden posts with a large completely blank cream-colored rectangular panel facing the viewer with a thin orange frame, small lamps on top. The panel is empty with no writing. Keep the identical art style, outline weight and camera angle. Cozy cartoon mobile idle-tycoon game prop sprite. Soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow, no drop shadow outside the object. True 2:1 isometric camera from the front, 30 degree elevation. Transparent background, no ground, no floor, no text, no letters, single prop centered."
+   }
+  ]
+ },
+ {
+  "chain": [
+   {
+    "out": "assets/art-src/ai-world/out-busstop.png",
+    "ref": "assets/art-src/ai-world/lot-boxes.png",
+    "prompt": "Replace these boxes with: A small bus stop shelter with a curved sky-blue roof, glass side panel, and a short wooden bench inside, seen diagonally, no signage text. Keep the identical art style, outline weight and camera angle. Cozy cartoon mobile idle-tycoon game prop sprite. Soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow, no drop shadow outside the object. True 2:1 isometric camera from the front, 30 degree elevation. Transparent background, no ground, no floor, no text, no letters, single prop centered."
+   }
+  ]
+ },
+ {
+  "chain": [
+   {
+    "out": "assets/art-src/ai-world/out-van.png",
+    "ref": "assets/art-src/ai-world/lot-boxes.png",
+    "prompt": "Replace these boxes with: A cute boxy white TV broadcast news van with a satellite dish on the roof and an orange stripe, seen diagonally from the front-left, no logo, no text. Keep the identical art style, outline weight and camera angle. Cozy cartoon mobile idle-tycoon game prop sprite. Soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow, no drop shadow outside the object. True 2:1 isometric camera from the front, 30 degree elevation. Transparent background, no ground, no floor, no text, no letters, single prop centered."
+   }
+  ]
+ },
+ {
+  "chain": [
+   {
+    "out": "assets/art-src/ai-world/out-planter.png",
+    "ref": "assets/art-src/ai-world/lot-boxes.png",
+    "prompt": "Replace these boxes with: A rectangular wooden planter box full of red and yellow tulips, seen diagonally. Keep the identical art style, outline weight and camera angle. Cozy cartoon mobile idle-tycoon game prop sprite. Soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow, no drop shadow outside the object. True 2:1 isometric camera from the front, 30 degree elevation. Transparent background, no ground, no floor, no text, no letters, single prop centered."
+   }
+  ]
+ }
+]
