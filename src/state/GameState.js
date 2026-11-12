@@ -53,6 +53,7 @@ import {
 import { shortNumber } from "../utils/format.js";
 import { clock, clockRolledBack } from "./clock.js";
 import { saveBeats } from "./saveWinner.js";
+import { headlines, headlineById, normalizeHeadlines, headlineBonusFor, HEADLINE_MILESTONES, HEADLINE_TRIGGERS, HEADLINE_CHECK_TICKS } from "../data/headlines.js";
 
 const DAY_MS = 86400000;
 const DAILY_STREAK_CAP = 7;
@@ -181,6 +182,7 @@ const fallbackState = {
   quests: {},
   seenEvents: {}, // 사건 도감 — 겪은(해결한) 사건 id 기록(영구, 프레스티지에도 유지)
   eventEndings: {}, // 사건 체인 결말 도감 — 발견한 결말 id 기록(감사·전복에도 영구 유지)
+  headlines: {}, // 헤드라인 스크랩 — 희귀 헤드라인 id → 첫 스크랩 시각(ms). 감사·전복에도 영구 유지
   eventChain: {
     activeId: null,
     step: 0,
@@ -252,6 +254,8 @@ export class GameState extends Phaser.Events.EventEmitter {
     this.offlineReward = loaded.offlineReward;
     this.saveTimer = 0;
     this.bindLifecycleSave();
+    this._sessionOfflineMs = loaded.offlineReward?.elapsed || 0; // 이번 접속 직전 부재 시간(헤드라인 조건)
+    this._bindHeadlines();
   }
 
   load() {
@@ -286,6 +290,7 @@ export class GameState extends Phaser.Events.EventEmitter {
       quests: { ...fallbackState.quests, ...(parsed?.quests || {}) },
       seenEvents: (parsed?.seenEvents && typeof parsed.seenEvents === "object") ? { ...parsed.seenEvents } : {},
       eventEndings: (parsed?.eventEndings && typeof parsed.eventEndings === "object") ? { ...parsed.eventEndings } : {},
+      headlines: normalizeHeadlines(parsed?.headlines),
       eventChain: {
         ...fallbackState.eventChain,
         ...(parsed?.eventChain || {}),
@@ -812,6 +817,7 @@ export class GameState extends Phaser.Events.EventEmitter {
       if (!this.bossUsesPatterns()) this.addBossProgress(bonus);
       this.emit("celebrate", { text: `${this._clickCombo} 콤보! +${shortNumber(bonus)}표!` });
       this.emit("float", { text: `+${shortNumber(bonus)}`, x, y: y - 62, color: "#ff7a3c" });
+      this.checkHeadlines("combo", { combo: this._clickCombo });
       // 콤보 축하음은 celebrate 이벤트(achieve)로 처리됨 — 중복 디스패치 제거
     }
     this.checkProgression();
@@ -1301,6 +1307,8 @@ export class GameState extends Phaser.Events.EventEmitter {
     this._tickSpecial();
     this.reduceDays();
     this.checkProgression();
+    this._headlineTicks = (this._headlineTicks || 0) + 1;
+    if (this._headlineTicks >= HEADLINE_CHECK_TICKS) { this._headlineTicks = 0; this.checkHeadlines("clock"); }
     this.emit("changed", { economy: true }); // 매초 숫자만 바뀜 — 패널은 부분 갱신, 구조 변경은 payload 없이 emit
   }
 
@@ -1345,6 +1353,7 @@ export class GameState extends Phaser.Events.EventEmitter {
   _metaKeptAcrossResets() {
     return {
       firsts: this.data.firsts,
+      headlines: this.data.headlines,
       weeklyRank: this.data.weeklyRank,
       badges: this.data.badges,
       special: this.data.special,
@@ -1791,6 +1800,47 @@ export class GameState extends Phaser.Events.EventEmitter {
     return DEX_MILESTONES.find((m) => n < m.n) || null;
   }
 
+  // 헤드라인 스크랩(장기 #6) — 이벤트 순간마다 해당 조건을 판정한다. clock 은 tick 에서 주기적으로.
+  _bindHeadlines() {
+    for (const trigger of HEADLINE_TRIGGERS) this.on(trigger, (payload) => this.checkHeadlines(trigger, payload || {}));
+  }
+
+  // 조건을 만족한 아직 못 본 헤드라인 하나를 스크랩한다(한 번에 하나 — 나머지는 다음 판정에서).
+  checkHeadlines(trigger, ctx = {}, now = clock.now()) {
+    const got = this.data.headlines || (this.data.headlines = {});
+    const date = new Date(now);
+    const totals = { dexEvents: officeEvents.length, seasonSteps: SEASON_TRACK.length };
+    const def = headlines.find((h) => {
+      if (h.on !== trigger || got[h.id]) return false;
+      try { return !!h.test(this, ctx, date, totals); } catch { return false; }
+    });
+    if (!def) return null;
+    got[def.id] = now;
+    const count = this.headlineCount();
+    const milestone = HEADLINE_MILESTONES.find((m) => m.n === count) || null;
+    const result = { id: def.id, outlet: def.outlet, text: def.text, count, total: headlines.length, milestone };
+    this.emit("headline", result);
+    return result;
+  }
+
+  headlineBonusPct(data = this.data) {
+    const h = data?.headlines;
+    return headlineBonusFor(h && typeof h === "object" ? Object.keys(h).filter((id) => headlineById(id)).length : 0);
+  }
+
+  nextHeadlineMilestone() {
+    const n = this.headlineCount();
+    return HEADLINE_MILESTONES.find((m) => n < m.n) || null;
+  }
+
+  headlineCount() {
+    return Object.keys(this.data.headlines || {}).filter((id) => headlineById(id)).length;
+  }
+
+  headlineTotal() {
+    return headlines.length;
+  }
+
   seenEventCount() {
     const s = this.data.seenEvents;
     return s && typeof s === "object" ? Object.keys(s).length : 0;
@@ -1941,6 +1991,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     this.data.stage.moveBoxes = left - 1;
     this.grantReward({ votes, explain });
     if (last) this.addLog(`${area}구역 이삿짐 정리 완료`);
+    if (last) this.checkHeadlines("move-done");
     this.emit("changed");
     this.save(false);
     return { item, votes, explain, left: left - 1 };
@@ -2851,7 +2902,7 @@ export class GameState extends Phaser.Events.EventEmitter {
 
   // 전역 생산 배율(믿음·직원·감사·칭호·캐릭터·작전·결말·배치·도감) — 유입과 용량에 공통 적용
   _globalProductionMultiplier(data) {
-    return (0.9 + data.trust / 230) * this.trustModifier(data.trust) * this.staffMultiplierFor(data) * this.prestigeMultiplierFor(data) * (1 + this.permanentEffectFor(data, "cpsPct") + this.titleEffectFor(data, "cpsPct") + this.charEffectFor("cpsPct", data) + this.operationEffectFor(data, "cpsPct") + this.eventChainEffectFor(data, "cpsPct") + this.staffDeploymentEffectFor(data, "cpsPct")) * (1 + this.dexBonusPct(data));
+    return (0.9 + data.trust / 230) * this.trustModifier(data.trust) * this.staffMultiplierFor(data) * this.prestigeMultiplierFor(data) * (1 + this.permanentEffectFor(data, "cpsPct") + this.titleEffectFor(data, "cpsPct") + this.charEffectFor("cpsPct", data) + this.operationEffectFor(data, "cpsPct") + this.eventChainEffectFor(data, "cpsPct") + this.staffDeploymentEffectFor(data, "cpsPct")) * (1 + this.dexBonusPct(data)) * (1 + this.headlineBonusPct(data));
   }
 
   // 유입: 시설이 초당 끌어오는 표
