@@ -31,6 +31,7 @@ import { dexSets, dexSetByEvent } from "../data/dexSets.js";
 import { SPECIAL_THEMES, SPECIAL_TIERS } from "../data/specialOffice.js";
 import { SPECIAL_FALLBACK, normalizeSpecial, specialSchedule, stationCost, stationUnlocked, specialPerSecond, specialTapValue, rolloverSpecial, claimNewTiers, addSpecialVotes, specialOfflineGain } from "./specialOffice.js";
 import { weeklyGoalDefinitions } from "../data/weeklyGoals.js";
+import { MOVE_BOXES, MOVE_BOX_VOTE_SEC, MOVE_BOX_ITEMS } from "../data/moving.js";
 import { AGENCIES, AGENCY_EVENT_CHANCE, ON_AIR_MULT, CERT_PER_MEDAL, agencyEvents, agencyEventById, agencyDef, normalizeAgencyState } from "../data/agencies.js";
 import { SEASON_POINTS, SEASON_TRACK, seasonKeyFor, seasonThemeFor, seasonDaysLeft, seasonMonthOf, seasonStepsReached, seasonStepReward, normalizeSeason, rolloverSeason } from "../data/seasons.js";
 import {
@@ -140,6 +141,7 @@ const fallbackState = {
     progress: 0,
     target: FIRST_RUN_STAGE_BASE,
     completed: 0,
+    moveBoxes: 0, // 이주 직후 풀지 않은 이삿짐 상자
   },
   prestige: {
     seals: 0,
@@ -453,6 +455,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     // 미래값으로 변조되면 2배 보상이 영구 비활성되므로 오늘 인덱스로 상한 클램프
     data.offline2xDay = Phaser.Math.Clamp(Math.floor(Number(data.offline2xDay) || 0), 0, this._todayIndex());
     data.stage.area = Math.max(1, Number(data.stage.area) || 1);
+    data.stage.moveBoxes = Phaser.Math.Clamp(Math.floor(Number(data.stage.moveBoxes) || 0), 0, MOVE_BOXES);
     const savedStageTarget = Math.max(0, Number(data.stage.target) || 0);
     const savedStageProgress = Math.max(0, Number(data.stage.progress) || 0);
     data.stage.target = this.stageTarget(data.stage.area, data.prestige?.runs);
@@ -1904,6 +1907,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     this.data.stage.progress = 0;
     this.data.stage.target = this.stageTarget(this.data.stage.area);
     this.data.days = 30;
+    this.data.stage.moveBoxes = MOVE_BOXES;
     if (completedArea % 3 === 0) {
       this.data.operations.draft = {
         area: completedArea,
@@ -1919,6 +1923,27 @@ export class GameState extends Phaser.Events.EventEmitter {
     this.emit("changed");
     this.save(false);
     return true;
+  }
+
+  // 지역 이주: 이삿짐 상자 풀기 — 현재 생산 MOVE_BOX_VOTE_SEC초분(마지막 상자는 해명 추가)
+  moveBoxesLeft() {
+    return this.data.stage.moveBoxes || 0;
+  }
+
+  openMoveBox() {
+    const left = this.moveBoxesLeft();
+    if (left <= 0) return null;
+    const area = this.data.stage.area;
+    const votes = Math.max(Math.floor(this.stageCompletionVotes(area) * 0.08), Math.floor(this.cps() * MOVE_BOX_VOTE_SEC));
+    const last = left === 1;
+    const explain = last ? Math.floor(this.stageCompletionExplain(area) / 2) : 0;
+    const item = MOVE_BOX_ITEMS[MOVE_BOXES - left] || MOVE_BOX_ITEMS[0];
+    this.data.stage.moveBoxes = left - 1;
+    this.grantReward({ votes, explain });
+    if (last) this.addLog(`${area}구역 이삿짐 정리 완료`);
+    this.emit("changed");
+    this.save(false);
+    return { item, votes, explain, left: left - 1 };
   }
 
   // 직원 담당 시설(데이터 worksAt, 없으면 시너지 시설)
