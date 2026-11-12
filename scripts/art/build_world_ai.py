@@ -239,6 +239,29 @@ def main():
             meta["eraVisitors"].update({"ax": ax, "ay": ay})
             previews.append(img)
 
+    # 앰비언트: 투표함 반입 차량 3단계(리어카→1톤 트럭→호송차, 정면이 좌하단) + 상주 NPC 3종(시설 티어 3)
+    VEH_BOX = [(62, 34), (78, 44), (82, 46)]
+    meta["vehicles"] = []
+    for t, (bw, bh) in enumerate(VEH_BOX, start=1):
+        if not (SRC / f"vehicle-{t}.png").exists():
+            break
+        img = fit(trim(load(f"vehicle-{t}")), bw, bh)
+        save(img, OUT / f"vehicle-{t}.png")
+        ax, ay = iso_anchor(img)
+        meta["vehicles"].append({"w": img.width, "h": img.height, "ax": ax, "ay": ay})
+        previews.append(img)
+    RES = [k for k in ("observer", "police", "reporter") if (SRC / f"res-{k}.png").exists()]
+    rs = [character(f"res-{k}", WORKER_H) for k in RES]
+    if rs:
+        rw = max(w.width for w, _ in rs)
+        rh = max(w.height for w, _ in rs)
+        meta["residents"] = {"keys": RES, "w": rw, "h": rh}
+        for k in RES:
+            img, (ax, ay) = character(f"res-{k}", WORKER_H, (rw, rh))
+            save(img, OUT / f"res-{k}.png")
+            meta["residents"].update({"ax": ax, "ay": ay})
+            previews.append(img)
+
     # 투표지(적체 더미·비행) + 파티클 + 황금 투표함
     ballot = fit(trim(load("ballot")), 16, 20)
     save(ballot, OUT / "ballot.png")

@@ -7,7 +7,7 @@ import { facilities } from "../data/facilities.js";
 import { facilitySpriteKey, govSpriteKey, workerSpriteKey, WORLD_ATLAS } from "./worldAtlas.js";
 import { stationDepth, workerDepth } from "./depth.js";
 import * as ISO from "./iso.js";
-import { WORLD_SCALE, ROOM_BOTTOM, tileCenter, facilityPos, workerPos, randomFloorPoint, facilitySpriteMeta, roomStageFor, setRoomStage, roomStageLabel } from "./iso.js";
+import { WORLD_SCALE, ROOM_BOTTOM, tileCenter, wallTopPoint, facilityPos, workerPos, randomFloorPoint, facilitySpriteMeta, roomStageFor, setRoomStage, roomStageLabel } from "./iso.js";
 import { staffDefinitions } from "../data/staff.js";
 import { staffRankForLevel } from "../data/staffDeployment.js";
 import { tierForLevel } from "./facilityTiers.js";
@@ -16,6 +16,7 @@ import { pickRandomItem } from "../data/items.js";
 import { pickPress } from "../data/worldPress.js";
 import { RARITY_COLOR } from "../data/titles.js";
 import { shortNumber } from "../utils/format.js";
+import { vehicleTierFor, visitorCapForStage, freeQueueSlot, activeResidents } from "./ambient.js";
 
 // 거지키우기식 심플 월드: 미니멀 픽셀 배경 + 중앙 도트 국장 + 큰 숫자 + 바닥.
 // (구 버전의 이소 오피스 다이어그램·화분·시계·창문·워커·시설 스테이션은 전부 제거)
@@ -274,7 +275,11 @@ export class WorldView {
     // 창구 앞 표 뭉치: 수입이 쌓이면 뭉치가 늘고, 탭하면 보너스와 함께 수금(Idle Supermarket의 현금 더미)
     this._pileTimer = scene.time.addEvent({ delay: 1000, loop: true, callback: () => this._accruePile() });
     // 유권자 방문: 문으로 들어와 창구 앞에 줄 섰다가 나간다(수입이 클수록 자주)
-    this._visitorTimer = scene.time.addEvent({ delay: 2500, loop: true, callback: () => this._maybeSpawnVisitor() });
+    this._visitorTimer = scene.time.addEvent({ delay: 1600, loop: true, callback: () => this._maybeSpawnVisitor() });
+    // 투표함 반입 차량: 벽 뒤 도로로 40~60초마다 도착해 문 앞에 투표함을 내린다(시간당 득표로 차종 3단계)
+    this._scheduleVehicle(9000 + Math.random() * 6000);
+    // 상주 NPC(참관인·경찰·기자): 가끔 두리번거리거나 플래시를 터뜨린다
+    this._residentTimer = scene.time.addEvent({ delay: 5200, loop: true, callback: () => this._residentIdle() });
     // 브리핑룸 카메라 플래시
     this._studioTimer = scene.time.addEvent({
       delay: 3800, loop: true,
@@ -378,9 +383,201 @@ export class WorldView {
       g.fillStyle(0xffcd75, 0.9); [[300, 130], [320, 220], [60, 250]].forEach(([x, y]) => g.fillCircle(x, y, 5));
     }
 
+    // 반입 도로: 뒤쪽 왼벽 너머로 벽을 따라 내려가는 띠(차량이 이 위를 달린다)
+    const a0 = this._roadPoint(-0.8, 0.08), a1 = this._roadPoint(ISO.ROOM_COLS + 3, 0.08);
+    const b0 = this._roadPoint(-0.8, 1.05), b1 = this._roadPoint(ISO.ROOM_COLS + 3, 1.05);
+    g.fillStyle(0x2c2830, 0.92);
+    g.fillPoints([a0, a1, b1, b0], true);
+    g.lineStyle(2, 0xffffff, 0.14);
+    g.lineBetween(a0.x, a0.y, a1.x, a1.y);
+    g.lineBetween(b0.x, b0.y, b1.x, b1.y);
+    g.lineStyle(2, 0xffd34d, 0.45);
+    for (let j = -0.5; j < ISO.ROOM_COLS + 3; j += 0.9) {
+      const p = this._roadPoint(j, 0.56), q = this._roadPoint(j + 0.45, 0.56);
+      g.lineBetween(p.x, p.y, q.x, q.y);
+    }
+
     // 방 아래 바닥(방 밖 여백) — 방 이미지(depth 5)가 위에 얹힌다
     g.fillStyle(c.floor, 1);
     g.fillRect(0, ROOM_BOTTOM - 70, GAME_W, 844 - ROOM_BOTTOM + 70);
+  }
+
+  // 도로 위 점: j 는 왼벽을 따라(0 = 뒤 꼭짓점), back 은 벽에서 바깥(뒤)으로 떨어진 타일 수
+  _roadPoint(j, back) {
+    const w = wallTopPoint(j);
+    const [tw, th] = ISO.ROOM.tile;
+    return { x: w.x - (tw * WORLD_SCALE) / 2 * back, y: w.y - (th * WORLD_SCALE) / 2 * back };
+  }
+
+  // 화면 가장자리 오브젝트의 말풍선 글자가 잘리지 않게
+  _safeFloatX(x) {
+    return Math.max(110, Math.min(GAME_W - 110, x));
+  }
+
+  // ── 앰비언트: 투표함 반입 차량 ──
+  _scheduleVehicle(delay) {
+    this._vehicleTimer?.remove();
+    this._vehicleTimer = this.scene.time.delayedCall(delay, () => {
+      this._vehicleRun();
+      this._scheduleVehicle(40000 + Math.random() * 20000);
+    });
+  }
+
+  _vehicleTierNow() {
+    const cps = this.gameState.cps ? this.gameState.cps() : 0;
+    return { ...vehicleTierFor(cps * 3600), perHour: cps * 3600 }; // perHour 는 단계 임계가 아닌 실제 시간당 득표
+  }
+
+  _vehicleRun() {
+    if (motionReduced() || this._vehicle) return;
+    const t = this._vehicleTierNow();
+    const meta = WORLD_ATLAS.vehicles?.[t.tier - 1];
+    const key = `world/vehicle-${t.tier}`;
+    if (!meta || !this.scene.textures.exists(key)) return;
+    const scene = this.scene;
+    const start = this._roadPoint(-0.8, 0.56);
+    const stop = this._roadPoint(ISO.DOOR_TILE.j + 0.9, 0.56); // 문보다 살짝 아래 — 벽 위 구역 배지와 겹치지 않게
+    const end = this._roadPoint(ISO.ROOM_COLS + 3, 0.56);
+    const car = scene.add.image(start.x, start.y, key).setOrigin(meta.ax / meta.w, meta.ay / meta.h).setScale(WORLD_SCALE).setDepth(3).setAlpha(0);
+    car.setInteractive({ useHandCursor: true }).setData("passTap", true);
+    car.on("pointerdown", () => this._onVehicleTap(car));
+    this._vehicle = car;
+    const upgraded = this._vehicleTierSeen != null && t.tier > this._vehicleTierSeen;
+    this._vehicleTierSeen = Math.max(this._vehicleTierSeen || 0, t.tier);
+    const rumble = scene.tweens.add({ targets: car, scaleY: WORLD_SCALE * 0.97, yoyo: true, repeat: -1, duration: 110 });
+    scene.tweens.add({ targets: car, alpha: 1, duration: 350 });
+    const ms = (a, b) => Math.max(1200, (Math.hypot(b.x - a.x, b.y - a.y) / 48) * 1000);
+    scene.tweens.add({
+      targets: car, x: stop.x, y: stop.y, duration: ms(start, stop), ease: "Sine.easeOut",
+      onComplete: () => {
+        if (!car.active) return;
+        rumble.pause();
+        car.setScale(WORLD_SCALE);
+        if (upgraded) this.effects.float({ text: `반입 차량 교체 · ${t.name}`, x: this._safeFloatX(car.x), y: car.y - car.displayHeight - 8, color: "#ffd34d" });
+        this._unloadVehicle(car, t.tier, () => {
+          if (!car.active) return;
+          rumble.resume();
+          const d = ms(stop, end);
+          scene.tweens.add({ targets: car, x: end.x, y: end.y, duration: d, ease: "Sine.easeIn", onComplete: () => this._despawnVehicle() });
+          scene.tweens.add({ targets: car, alpha: 0, delay: d - 350, duration: 300 });
+        });
+      },
+    });
+  }
+
+  // 하역: 차에서 투표지 뭉치가 벽을 넘어 문 앞으로 포물선 → 창구 투표함으로 이어진다
+  _unloadVehicle(car, tier, done) {
+    const scene = this.scene;
+    const door = tileCenter(ISO.DOOR_TILE.i, ISO.DOOR_TILE.j);
+    const n = 1 + tier;
+    for (let k = 0; k < n; k += 1) {
+      scene.time.delayedCall(260 * k, () => {
+        if (!car.active) return;
+        const b = this._acquireFlyBallot(car.x + (Math.random() * 16 - 8), car.y - car.displayHeight * 0.55);
+        const tx = door.x + 6 + Math.random() * 14;
+        const ty = door.y - 18;
+        scene.tweens.add({ targets: b, scale: 0.55, duration: 120, ease: "Back.easeOut" });
+        scene.tweens.add({ targets: b, x: tx, angle: 200, duration: 520, ease: "Sine.easeInOut" });
+        scene.tweens.add({
+          targets: b, y: Math.min(b.y, ty) - 40, duration: 260, ease: "Sine.easeOut",
+          onComplete: () => scene.tweens.add({
+            targets: b, y: ty, duration: 260, ease: "Sine.easeIn",
+            onComplete: () => { this._releaseFlyBallot(b); this.effects.deskPop(tx, ty - 10); this._flyBallotToBox(); },
+          }),
+        });
+      });
+    }
+    scene.time.delayedCall(260 * n + 900, done);
+  }
+
+  _onVehicleTap(car) {
+    if (!car.active || this._camDragging) return;
+    const t = this._vehicleTierNow();
+    this.effects.float({ text: `${t.name} · 시간당 ${shortNumber(t.perHour)}표`, x: this._safeFloatX(car.x), y: car.y - car.displayHeight - 8, color: "#ffe9c0" });
+    if (t.next) this.effects.float({ text: `${t.next.name}: 시간당 ${shortNumber(t.next.perHour)}표부터`, x: this._safeFloatX(car.x), y: car.y - car.displayHeight + 10, color: "#bcd0e0" });
+    this.scene.tweens.add({ targets: car, scaleX: WORLD_SCALE * 1.06, scaleY: WORLD_SCALE * 0.9, yoyo: true, duration: 90 });
+  }
+
+  _despawnVehicle() {
+    if (!this._vehicle) return;
+    this.scene.tweens.killTweensOf(this._vehicle);
+    this._vehicle.destroy();
+    this._vehicle = null;
+  }
+
+  // ── 앰비언트: 상주 NPC — 시설 티어 3(Lv.12)이 되면 담당 시설 옆에 상주 ──
+  _syncResidents() {
+    const lvl = (id) => (this.gameState.level ? this.gameState.level(id) : 0);
+    const list = activeResidents(lvl, (id) => !!ISO.FACILITY_SLOTS[id] && !!ISO.RESIDENT_SPOTS?.[id]).filter((r) => this.scene.textures.exists(`world/res-${r.key}`));
+    const sig = `${this._roomStage}:${list.map((r) => r.key).join(",")}`;
+    if (sig === this._residentSig) return;
+    const announce = this._residentSig != null && this._residentSig.split(":")[0] === String(this._roomStage);
+    this._residentSig = sig;
+    if (!this._residents) this._residents = {};
+    const want = new Set(list.map((r) => r.key));
+    Object.keys(this._residents).forEach((k) => { if (!want.has(k)) this._removeResident(k); });
+    const meta = WORLD_ATLAS.residents;
+    for (const r of list) {
+      if (this._residents[r.key]) continue;
+      const spot = ISO.RESIDENT_SPOTS[r.facility];
+      const pos = tileCenter(spot.i, spot.j);
+      const body = this.scene.add.image(pos.x, pos.y, `world/res-${r.key}`).setOrigin(meta.ax / meta.w, meta.ay / meta.h).setDepth(workerDepth(pos.y));
+      body.setFlipX(pos.x > GAME_W / 2); // 원화는 오른쪽을 본다 — 방 안쪽을 보게
+      body.setInteractive({ useHandCursor: true }).setData("passTap", true);
+      const res = { def: r, body, home: pos };
+      body.on("pointerdown", () => this._onResidentTap(res));
+      this._residents[r.key] = res;
+      if (announce && !motionReduced()) {
+        body.setScale(0);
+        this.scene.tweens.add({ targets: body, scaleX: WORKER_SCALE, scaleY: WORKER_SCALE, duration: 300, ease: "Back.easeOut", onComplete: () => this._residentBreathe(res) });
+        this.effects.deskPop(pos.x, pos.y - 30);
+      } else {
+        this._residentBreathe(res);
+      }
+      if (announce) this.effects.float({ text: `${r.name} 상주 시작`, x: this._safeFloatX(pos.x), y: pos.y - 64, color: "#ffd34d" });
+    }
+  }
+
+  _residentBreathe(res) {
+    const { body } = res;
+    if (!body.active) return;
+    this.scene.tweens.killTweensOf(body);
+    body.setScale(WORKER_SCALE).setPosition(res.home.x, res.home.y);
+    if (motionReduced()) return;
+    this.scene.tweens.add({ targets: body, scaleY: WORKER_SCALE * 0.965, scaleX: WORKER_SCALE * 1.03, yoyo: true, repeat: -1, duration: 520, delay: Math.random() * 400, ease: "Sine.easeInOut" });
+  }
+
+  _residentIdle() {
+    if (motionReduced()) return;
+    const all = Object.values(this._residents || {}).filter((r) => r.body.active);
+    if (!all.length || Math.random() < 0.35) return;
+    const res = all[(Math.random() * all.length) | 0];
+    const { body } = res;
+    const flip = body.flipX;
+    body.setFlipX(!flip); // 두리번
+    this.scene.time.delayedCall(1100, () => { if (body.active) body.setFlipX(flip); });
+    if (res.def.key === "reporter") {
+      const fx = body.x + (flip ? -10 : 10), fy = body.y - body.displayHeight * 0.62;
+      const dot = this.scene.add.circle(fx, fy, 4, 0xffffff, 0.95).setDepth(body.depth + 1);
+      this.scene.tweens.add({ targets: dot, scale: 3.2, alpha: 0, duration: 260, ease: "Quad.easeOut", onComplete: () => dot.destroy() });
+    }
+  }
+
+  _onResidentTap(res) {
+    const { body, def } = res;
+    if (!body.active || this._camDragging) return;
+    this.effects.float({ text: `"${def.lines[(Math.random() * def.lines.length) | 0]}"`, x: this._safeFloatX(body.x), y: body.y - 62, color: "#ffe9c0" });
+    this.scene.tweens.killTweensOf(body);
+    body.setScale(WORKER_SCALE);
+    this.scene.tweens.add({ targets: body, scaleX: WORKER_SCALE * 1.06, scaleY: WORKER_SCALE * 0.82, yoyo: true, duration: 90, onComplete: () => this._residentBreathe(res) });
+  }
+
+  _removeResident(key) {
+    const res = this._residents?.[key];
+    if (!res) return;
+    this.scene.tweens.killTweensOf(res.body);
+    res.body.destroy();
+    delete this._residents[key];
   }
 
   // 구역이 바뀌면 배경/깃발 전환 + 화면 플래시
@@ -933,6 +1130,8 @@ export class WorldView {
     // 표 뭉치·유권자·뱃지: 재생성
     (this._pileSprites || []).forEach((o) => o.destroy()); this._pileSprites = null; this._pileZone?.destroy(); this._pileZone = null; this._pileCount = 0;
     (this._visitors || []).forEach((v) => { scene.tweens.killTweensOf(v.body); v.body.destroy(); }); this._visitors = [];
+    Object.keys(this._residents || {}).forEach((k) => this._removeResident(k)); this._residentSig = null; // _refresh 끝의 _syncResidents 가 새 자리로 다시 세운다
+    this._despawnVehicle();
     this._badgeSig = null; this._syncBadges();
     this._drawBackground(this._eraArea);
     if (!animate) return;
@@ -1074,11 +1273,14 @@ export class WorldView {
     this._squishGov();
   }
 
-  // 유권자 NPC: 문(왼쪽 벽) → 창구 앞 대기 → 다시 문으로. 동시에 최대 3명, 수입이 클수록 자주.
+  // 유권자 NPC: 문(왼쪽 벽) → 창구 앞 대기 → 다시 문으로. 동시 상한은 방 단계별 4/5/6/6명, 수입이 클수록 자주.
   _maybeSpawnVisitor() {
     if (motionReduced()) return;
     this._visitors = (this._visitors || []).filter((v) => v.body.active);
-    if (this._visitors.length >= 3) return;
+    const cap = visitorCapForStage(this._roomStage);
+    if (this._visitors.length >= cap) return;
+    const slot = freeQueueSlot(this._visitors.map((v) => v.slot), Math.min(cap, ISO.QUEUE_SLOTS?.length || cap));
+    if (slot < 0) return;
     const cps = this.gameState.cps ? this.gameState.cps() : 0;
     const chance = cps <= 0 ? 0.15 : Math.min(0.75, 0.25 + Math.log10(1 + cps) * 0.1);
     if (Math.random() > chance) return;
@@ -1089,11 +1291,11 @@ export class WorldView {
     const texKey = useEra ? eraKey : (nVis ? `world/visitor-${v}` : workerSpriteKey(v, 0));
     const door = tileCenter(ISO.DOOR_TILE.i, ISO.DOOR_TILE.j);
     // 대기열: 문과 접수창구 사이(뒤쪽 왼벽 앞)로 한 줄 — 창구 앞 표 뭉치·국장과 겹치지 않게
-    const qi = this._visitors.length;
-    const spot = tileCenter(ISO.QUEUE.i + qi * ISO.QUEUE.di + Math.random() * 0.15, ISO.QUEUE.j + qi * ISO.QUEUE.dj);
+    const q = ISO.QUEUE_SLOTS?.[slot];
+    const spot = q ? tileCenter(q[0] + Math.random() * 0.12, q[1]) : tileCenter(ISO.QUEUE.i + slot * ISO.QUEUE.di, ISO.QUEUE.j + slot * ISO.QUEUE.dj);
     const body = this.scene.add.sprite(door.x, door.y, texKey).setOrigin(0.5, 1).setScale(WORKER_SCALE * 0.92).setDepth(workerDepth(door.y)).setAlpha(0);
     body.setInteractive({ useHandCursor: true }).setData("passTap", true);
-    const visitor = { body, thanked: false };
+    const visitor = { body, thanked: false, slot };
     body.on("pointerdown", () => this._onVisitorTap(visitor));
     this._visitors.push(visitor);
     const walk = (tx, ty, done) => {
@@ -1107,8 +1309,9 @@ export class WorldView {
     this.scene.tweens.add({ targets: body, alpha: 1, duration: 200 });
     walk(spot.x, spot.y, () => {
       // 창구 앞에서 잠깐 기다리며 표를 낸다
-      this.scene.time.delayedCall(1800 + Math.random() * 1500, () => {
+      this.scene.time.delayedCall(2500 + Math.random() * 2500, () => {
         if (!body.active) return;
+        visitor.slot = -1; // 나가는 중에는 자리를 비워 다음 방문객이 선다
         this._flyBallotToBox();
         this.effects.deskPop(body.x, body.y - 48);
         walk(door.x, door.y, () => {
@@ -1403,6 +1606,7 @@ export class WorldView {
     this._syncCosmetics(d);
     this._syncWorkers();
     this._syncProps();
+    this._syncResidents();
   }
 
   // 장착한 꾸미기 + 선택 캐릭터 시그니처를 국장 위 오버레이로 표시. 위치/스케일은 update에서 국장에 글루.
@@ -1475,6 +1679,10 @@ export class WorldView {
     this._studioTimer?.remove();
     this._pileTimer?.remove();
     this._visitorTimer?.remove();
+    this._vehicleTimer?.remove();
+    this._residentTimer?.remove();
+    this._despawnVehicle();
+    Object.keys(this._residents || {}).forEach((k) => this._removeResident(k));
     (this._pileSprites || []).forEach((o) => o.destroy());
     this._pileZone?.destroy();
     (this._visitors || []).forEach((v) => { this.scene.tweens.killTweensOf(v.body); v.body.destroy(); });
