@@ -1,0 +1,56 @@
+[
+ {
+  "chain": [
+   {
+    "out": "assets/art-src/ai-world/cos-s-lamp.png",
+    "ref": "assets/art-src/ai-world/cos-cap.png",
+    "prompt": "Replace this cap with a single accessory item for a chibi character: a yellow miner-style safety helmet with a bright round headlamp on the front. Keep the identical art style, outline weight and color treatment as the reference. Cozy cartoon style, soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow. Front view. Transparent background, no text, no letters, no numbers, no logos, item only, centered, large."
+   }
+  ]
+ },
+ {
+  "chain": [
+   {
+    "out": "assets/art-src/ai-world/cos-s-boxhat.png",
+    "ref": "assets/art-src/ai-world/cos-cap.png",
+    "prompt": "Replace this cap with a single accessory item for a chibi character: a small cute paper ballot-box shaped hat: a white cube box with a dark slot on top and a blue band, worn as a hat. Keep the identical art style, outline weight and color treatment as the reference. Cozy cartoon style, soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow. Front view. Transparent background, no text, no letters, no numbers, no logos, item only, centered, large."
+   }
+  ]
+ },
+ {
+  "chain": [
+   {
+    "out": "assets/art-src/ai-world/cos-s-deer.png",
+    "ref": "assets/art-src/ai-world/cos-cap.png",
+    "prompt": "Replace this cap with a single accessory item for a chibi character: a brown plaid deerstalker detective hat with two small ear flaps tied up. Keep the identical art style, outline weight and color treatment as the reference. Cozy cartoon style, soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow. Front view. Transparent background, no text, no letters, no numbers, no logos, item only, centered, large."
+   }
+  ]
+ },
+ {
+  "chain": [
+   {
+    "out": "assets/art-src/ai-world/cos-s-laurel.png",
+    "ref": "assets/art-src/ai-world/cos-cap.png",
+    "prompt": "Replace this cap with a single accessory item for a chibi character: a golden-green laurel leaf wreath crown, ring shaped, slightly tilted so the full ring is visible. Keep the identical art style, outline weight and color treatment as the reference. Cozy cartoon style, soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow. Front view. Transparent background, no text, no letters, no numbers, no logos, item only, centered, large."
+   }
+  ]
+ },
+ {
+  "chain": [
+   {
+    "out": "assets/art-src/ai-world/cos-s-press.png",
+    "ref": "assets/art-src/ai-world/cos-cap.png",
+    "prompt": "Replace this cap with a single accessory item for a chibi character: a grey felt fedora hat with a black band and a small blank white card tucked into the band. Keep the identical art style, outline weight and color treatment as the reference. Cozy cartoon style, soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow. Front view. Transparent background, no text, no letters, no numbers, no logos, item only, centered, large."
+   }
+  ]
+ },
+ {
+  "chain": [
+   {
+    "out": "assets/art-src/ai-world/cos-s-party.png",
+    "ref": "assets/art-src/ai-world/cos-cap.png",
+    "prompt": "Replace this cap with a single accessory item for a chibi character: a striped party cone hat in pink and mint with a fluffy pom-pom on the tip and a few confetti dots. Keep the identical art style, outline weight and color treatment as the reference. Cozy cartoon style, soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow. Front view. Transparent background, no text, no letters, no numbers, no logos, item only, centered, large."
+   }
+  ]
+ }
+]

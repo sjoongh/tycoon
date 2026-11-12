@@ -37,6 +37,7 @@ FAC_BOX = {
     "archive": [(48, 52), (54, 66), (72, 72), (84, 84), (94, 96)],
     "studio":  [(46, 50), (56, 58), (68, 64), (80, 76), (92, 90)],
 }
+SEASON_HATS = ["cos-s-lamp", "cos-s-boxhat", "cos-s-deer", "cos-s-laurel", "cos-s-press", "cos-s-party"]
 WORKER_H = 46   # 표시 높이
 GOV_H = 60
 HEAD_PAD = 0.34  # 캐릭터 캔버스 상단 여유(모자·후광용) = 높이 비율
@@ -144,10 +145,17 @@ def cosmetic(cid: str, canvas: tuple[int, int], hb: dict):
         "cos-mask":    (0.80, None, hb["top"] + hb["h"] * 0.86, "center"),
         "sig-band":    (1.06, None, hb["top"] + hb["h"] * 0.30, "center"),
         "sig-glasses": (0.90, None, hb["eye"], "center"),
+        # 시즌 한정 모자(월간 시즌). 두 번째 값 = 세로 눌림(정면 화환을 머리 위 원근으로)
+        "cos-s-lamp":   (1.02, None, hb["top"] + hb["h"] * 0.30, "bottom"),
+        "cos-s-boxhat": (0.80, None, hb["top"] + hb["h"] * 0.31, "bottom"),
+        "cos-s-deer":   (1.04, None, hb["top"] + hb["h"] * 0.32, "bottom"),
+        "cos-s-laurel": (1.04, 0.42, hb["top"] + hb["h"] * 0.23, "center"),
+        "cos-s-press":  (1.08, None, hb["top"] + hb["h"] * 0.31, "bottom"),
+        "cos-s-party":  (0.58, None, hb["top"] + hb["h"] * 0.20, "bottom"),
     }[cid]
-    rel_w, _, y_ref, mode = place
+    rel_w, squash, y_ref, mode = place
     w = max(1, round(hb["w"] * rel_w))
-    h = max(1, round(item.height * w / item.width))
+    h = max(1, round(item.height * w / item.width * (squash or 1)))
     item = item.resize((w, h), Image.LANCZOS)
     x = round(hb["cx"] - w / 2)
     y = round(y_ref if mode == "top" else y_ref - h if mode == "bottom" else y_ref - h / 2)
@@ -297,6 +305,20 @@ def main():
         img = cosmetic(cid, (gw, gh), hb)
         save(img, OUT / f"{cid}.png")
         meta["cosmetics"][cid] = {"w": gw, "h": gh, "ax": gw // 2, "ay": gh - 3}
+        comp = gov_imgs[0].copy()
+        comp.alpha_composite(img)
+        previews.append(comp)
+    # 시즌 한정 모자: 월드 오버레이 + 꾸미기 칩용 단독 아이콘(아이콘 아틀라스 밖, 64px 정사각)
+    for cid in SEASON_HATS:
+        if not (SRC / f"{cid}.png").exists():
+            continue
+        img = cosmetic(cid, (gw, gh), hb)
+        save(img, OUT / f"{cid}.png")
+        meta["cosmetics"][cid] = {"w": gw, "h": gh, "ax": gw // 2, "ay": gh - 3}
+        icon = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
+        it = fit(trim(load(cid)), 58 * SCALE, 58 * SCALE)
+        icon.alpha_composite(it, ((64 - it.width) // 2, (64 - it.height) // 2))
+        save(icon, OUT / f"{cid}-icon.png")
         comp = gov_imgs[0].copy()
         comp.alpha_composite(img)
         previews.append(comp)

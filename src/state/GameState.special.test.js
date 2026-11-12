@@ -44,6 +44,7 @@ describe("특별 개표소(중기 #7)", () => {
     const gs = openGs();
     gs.specialState();
     const e0 = gs.data.explain;
+    gs.data.season = { ...gs._ensureSeason(), steps: 8, points: 820 }; // 시즌 트랙 보상(해명)이 끼지 않게 완료 상태로
     gs.data.special.total = SPECIAL_TIERS[1].need;
     gs._specialAfterGain();
     expect(gs.data.special.tiers.bronze).toBe(1);
