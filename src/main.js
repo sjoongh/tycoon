@@ -88,10 +88,16 @@ if ("serviceWorker" in navigator && import.meta.env.PROD) {
   });
 }
 
-// 앱이 백그라운드/종료될 때 재방문 알림 예약(권한·Triggers 지원 시에만, 아니면 안전 무동작)
-const scheduleReengage = () => { notifications.schedule().catch(() => {}); };
-window.addEventListener("pagehide", scheduleReengage);
-document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") scheduleReengage(); });
+// 재방문 알림: Android 는 앱 pause/resume 리스너(init), 웹은 화면 이탈 시 예약·복귀 시 정리(Triggers 지원 시에만)
+notifications.init().catch(() => {});
+if (!notifications.native) {
+  const scheduleReengage = () => { notifications.schedule().catch(() => {}); };
+  window.addEventListener("pagehide", scheduleReengage);
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") scheduleReengage();
+    else notifications.onResume().catch(() => {});
+  });
+}
 // 웹에서도 클라우드 저장이 실제로 올라가도록 — 화면 이탈 시 + 5분 주기(스로틀)
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") { try { saveCloud(); } catch {} } });
 window.addEventListener("pagehide", () => { try { saveCloud(); } catch {} });

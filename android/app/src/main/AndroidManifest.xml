@@ -35,4 +35,6 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- 광고 없음: 어떤 라이브러리도 광고 ID 권한을 병합하지 못하게 막는다(Play 광고 ID 신고 = 아니요) -->
     <uses-permission android:name="com.google.android.gms.permission.AD_ID" tools:node="remove"/>
+    <!-- 재방문 알림은 비정확 예약으로 충분 — 로컬 알림 플러그인의 정확 알람 권한을 병합하지 않는다(Play 정확 알람 정책 회피) -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" tools:node="remove"/>
 </manifest>

@@ -744,7 +744,7 @@ export class DOMModalLayer {
     this._openModal(`
       <div class="gp-modal__badge">${iconHtml("ui-bell", { size: 72 })}</div>
       <div class="gp-mtitle">알림을 켤까요?</div>
-      <div class="gp-msub">출석 보상·오프라인 정산이 준비되면 알려드려요. 언제든 끌 수 있어요.</div>
+      <div class="gp-msub">투표함이 가득 차거나 출석 연속·주간 마감이 다가올 때만 알려드려요. 주 3회 이하, 설정에서 끌 수 있어요.</div>
       <div class="gp-confirm-row">
         <button class="gp-btn gp-btn--disabled" data-close>나중에</button>
         <button class="gp-btn gp-btn--gold" data-confirm>알림 켜기</button>

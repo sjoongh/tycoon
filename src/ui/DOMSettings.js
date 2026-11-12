@@ -36,9 +36,12 @@ export class DOMSettings {
 
   _render() {
     const n = this.notifications;
+    const bellLabel = `<span>${iconHtml("ui-bell", { size: 32 })}알림</span>`;
     const bellRow = n && n.supported && n.supported() && n.granted()
-      ? `<div class="gp-set__row"><span>${iconHtml("ui-bell", { size: 32 })}알림</span><button class="gp-btn gp-btn--sm" data-set="bell">${n.muted() ? "꺼짐" : "켜짐"}</button></div>`
-      : "";
+      ? `<div class="gp-set__row">${bellLabel}<button class="gp-btn gp-btn--sm" data-set="bell">${n.muted() ? "꺼짐" : "켜짐"}</button></div>`
+      : n && n.canAsk && n.canAsk()
+        ? `<div class="gp-set__row">${bellLabel}<button class="gp-btn gp-btn--sm" data-set="bell-ask">켜기</button></div>`
+        : "";
     const a11y = a11yPrefs();
     const cloudRow = cloudEnabled()
       ? `<div class="gp-set__row"><span>클라우드 저장</span><b class="gp-set__ok">자동 동기화 중</b></div>`
@@ -77,6 +80,9 @@ export class DOMSettings {
     } else if (act === "bell") {
       const n = this.notifications;
       if (n) { n.setMuted(!n.muted()); this._render(); }
+    } else if (act === "bell-ask") {
+      const n = this.notifications;
+      if (n) n.requestPermission().catch(() => {}).finally(() => { if (!this.root.hidden) this._render(); });
     } else if (act === "bigtext") {
       setA11yPref("bigText", !a11yPrefs().bigText);
       this._render();
