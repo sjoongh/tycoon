@@ -2,7 +2,7 @@
 // 설정(firebaseConfig)이 비어 있으면 전부 안전하게 no-op. Firebase는 동적 import로 코드 분리.
 import { FIREBASE_CONFIG, cloudEnabled } from "./firebaseConfig.js";
 import { iconHtml } from "./ui/icon.js";
-import { clock, offsetFromRoundTrip } from "./state/clock.js";
+import { clock, offsetFromRoundTrip, CLOCK_OFFSET_MIN_SHIFT_MS } from "./state/clock.js";
 import { NATIONAL_EVENTS_CAP } from "./data/nationalGoal.js";
 
 const NICK_KEY = "gp-nick";
@@ -90,7 +90,11 @@ async function calibrateClock() {
     const receivedAt = Date.now();
     const serverMs = snap.data()?.t?.toMillis?.();
     if (typeof serverMs === "number" && Number.isFinite(serverMs)) {
-      clock.setOffset(offsetFromRoundTrip(serverMs, sentAt, receivedAt));
+      const next = offsetFromRoundTrip(serverMs, sentAt, receivedAt);
+      if (Math.abs(next - clock.offset) < CLOCK_OFFSET_MIN_SHIFT_MS) { clock.measuredAt = Date.now(); return; }
+      const shift = clock.setOffset(next);
+      clock.persist();
+      _gs?.rebaseClock(shift);
     }
   } catch {}
 }
