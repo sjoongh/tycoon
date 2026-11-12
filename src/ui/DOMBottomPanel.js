@@ -8,6 +8,7 @@ import {
 } from "../data/staffDeployment.js";
 import { officeEvents, realEventIds } from "../data/events.js";
 import { prestigeUpgrades, medalUpgrades } from "../data/prestige.js";
+import { agencyDef, ON_AIR_MULT, AGENCY_EVENT_CHANCE } from "../data/agencies.js";
 import { questDefinitions } from "../data/quests.js";
 import { achievementDefinitions } from "../data/achievements.js";
 import { iconHtml, iconStyle, applyIcon, facilityIcon, staffIcon, tabIcon } from "./icon.js";
@@ -723,6 +724,8 @@ export class DOMBottomPanel {
       const chainBadge = ev.chainId
         ? `<div class="gp-event__chainbadge">연쇄 사건 · ${ev.chainStep + 1}/${ev.chainStepCount}<b>${ev.chainTitle}</b></div>`
         : "";
+      const agency = ev.agency ? agencyDef(ev.agency) : null;
+      const agencyBadge = agency ? `<div class="gp-event__agency" style="--ag:${agency.color}">${agency.name}</div>` : "";
       // 선택 결과 수치 미리보기 — 신규 유저도 결과 예측 가능(사이다 예고 포함)
       const fx = (eff) => {
         const scale = gs.eventRewardScale ? gs.eventRewardScale() : 1;
@@ -735,9 +738,12 @@ export class DOMBottomPanel {
           parts.push(`<i class="${trust > 0 ? "gp-fx--up" : "gp-fx--dn"}">믿음 ${trust > 0 ? "+" : ""}${shown}</i>`);
         }
         if ((eff.trust || 0) >= 12) parts.push(`<i class="gp-fx--cider">사이다!</i>`);
+        if (eff.seals) parts.push(`<i class="gp-fx--agency">인장 +${eff.seals}</i>`);
+        if (eff.onAir) parts.push(`<i class="gp-fx--agency">생중계 ${eff.onAir}초 ×${ON_AIR_MULT}</i>`);
+        if (eff.cert) parts.push(`<i class="gp-fx--agency">인증 +${eff.cert}</i>`);
         return `<span class="gp-event__fx">${parts.join("")}</span>`;
       };
-      this.panel.innerHTML = `<div class="gp-event${real ? " gp-event--real" : ""}${ev.chainId ? " gp-event--chain" : ""}">${realBadge}${chainBadge}<div class="gp-event__title">${ev.title}</div><div class="gp-event__body">${ev.body}</div>
+      this.panel.innerHTML = `<div class="gp-event${real ? " gp-event--real" : ""}${ev.chainId ? " gp-event--chain" : ""}${agency ? " gp-event--agency" : ""}"${agency ? ` style="--ag:${agency.color}"` : ""}>${realBadge}${chainBadge}${agencyBadge}<div class="gp-event__title">${ev.title}</div><div class="gp-event__body">${ev.body}</div>
         <div class="gp-event__choices">
           <button class="gp-btn gp-event__c" data-action="eventChoice" data-id="${ev.id}" data-side="left">${ev.left[0]}<small>${ev.left[2]}</small>${fx(ev.left[1])}</button>
           <button class="gp-btn gp-event__c" data-action="eventChoice" data-id="${ev.id}" data-side="right">${ev.right[0]}<small>${ev.right[2]}</small>${fx(ev.right[1])}</button>
@@ -770,7 +776,7 @@ export class DOMBottomPanel {
       const effectLine = chainStatus?.effects?.length
         ? `<div class="gp-chainfx"><b>이번 런 효과</b>${chainStatus.effects.map((ending) => `<span>${ending.title} · ${ending.effectText.replace("이번 런 ", "")}</span>`).join("")}</div>`
         : "";
-      this.panel.innerHTML = `<div class="gp-paneltitle">${iconHtml("ui-clipboard", { size: 32 })}사건 대응실 · 처리 ${gs.data.stats.totalEvents}건</div><div class="gp-card__sub">보상 x${gs.eventRewardScale().toFixed(1)}</div>${btn}${chainLine}${effectLine}<div class="gp-dexline">${dexLine}</div>${this._dexSetLine()}<div class="gp-log">${log}</div>`;
+      this.panel.innerHTML = `<div class="gp-paneltitle">${iconHtml("ui-clipboard", { size: 32 })}사건 대응실 · 처리 ${gs.data.stats.totalEvents}건</div><div class="gp-card__sub">보상 x${gs.eventRewardScale().toFixed(1)}</div>${btn}${chainLine}${effectLine}${this._agencyLine()}<div class="gp-dexline">${dexLine}</div>${this._dexSetLine()}<div class="gp-log">${log}</div>`;
       // transform 기반 쿨다운 스윕으로 레이아웃 재계산을 피한다.
       if (!ready && totalMs > 0) {
         const btnEl = this.panel.querySelector(".gp-btn--event");
@@ -1147,6 +1153,7 @@ export class DOMBottomPanel {
         <div class="gp-card__sub" style="padding:2px 4px 0;opacity:.78">새 구역을 처음 돌파하면 <b>훈장</b>을 얻어 영구 메타 강화를 해금합니다.</div>`;
     }
     const medalFirst = medalUpgrades.find((u) => {
+      if (u.rule || u.agency) return false;
       const lv = gs.prestigeUpgradeLevel(u.id);
       return gs.data.prestige.medals >= gs.prestigeUpgradeCost(u.id) && lv < u.maxLevel;
     });
@@ -1157,7 +1164,7 @@ export class DOMBottomPanel {
     const selCost = selDef ? gs.prestigeUpgradeCost(sel) : 0;
     const selCanBuy = selDef && gs.data.prestige.medals >= selCost && selLv < selDef.maxLevel;
 
-    const grid = medalUpgrades.filter((u) => !u.rule).map((u) => {
+    const grid = medalUpgrades.filter((u) => !u.rule && !u.agency).map((u) => {
       const lv = gs.prestigeUpgradeLevel(u.id);
       const cost = gs.prestigeUpgradeCost(u.id);
       const isActive = u.id === sel;
@@ -1186,6 +1193,37 @@ export class DOMBottomPanel {
       <div class="gp-sealgrid">${grid}</div>
       ${detail}
       <div class="gp-goal__section" style="margin-top:10px">조례 · 새 규칙</div>
-      <div class="gp-rules">${rules}</div>`;
+      <div class="gp-rules">${rules}</div>
+      <div class="gp-goal__section" style="margin-top:10px">기관 소집 · 새 사건</div>
+      <div class="gp-rules">${this._agencyRows()}</div>`;
+  }
+
+  // 기관 소집 — 1회 구매로 그 기관 사건이 일반 사건 사이에 섞인다(AGENCY_EVENT_CHANCE).
+  _agencyRows() {
+    const gs = this.gameState;
+    const cert = gs.certProgress();
+    return gs.agencyStatus().map((a) => {
+      const cost = gs.prestigeUpgradeCost(a.upgradeId);
+      const can = !a.unlocked && gs.data.prestige.medals >= cost;
+      const extra = a.id === "monitor" && a.unlocked ? ` · 인증 ${cert.cert}/${cert.per}` : "";
+      const right = a.unlocked
+        ? `<em>처리 ${a.done}건</em>`
+        : `<button class="gp-btn gp-btn--sm gp-btn--gold ${can ? "gp-btn--ready" : "gp-btn--disabled"}" data-action="buyPrestige" data-id="${a.upgradeId}">훈장 ${cost}</button>`;
+      return `<div class="gp-rule gp-agency${a.unlocked ? " gp-rule--on" : ""}" style="--ag:${a.color}"><span class="gp-rule__body"><b>${a.name}</b><small>${a.desc}</small>${a.unlocked ? `<small>사건 ${a.seen}/${a.total}종${extra}</small>` : ""}</span>${right}</div>`;
+    }).join("");
+  }
+
+  // 사건 탭: 소집한 기관이 있으면 기관 사건 확률·생중계 남은 시간·인증 점수를 한 줄로.
+  _agencyLine() {
+    const gs = this.gameState;
+    const on = gs.agencyStatus().filter((a) => a.unlocked);
+    if (!on.length) return "";
+    const parts = [`<b>기관 ${on.map((a) => a.short).join("·")}</b>`];
+    if (on.some((a) => a.id === "monitor")) { const c = gs.certProgress(); parts.push(`<span>인증 ${c.cert}/${c.per}</span>`); }
+    const b = gs.data.buffs || {};
+    const left = gs.goldenBuffRemainingMs();
+    if (left > 0 && b.prodMult === ON_AIR_MULT) parts.push(`<span>생중계 ×${ON_AIR_MULT} ${Math.ceil(left / 1000)}초</span>`);
+    else parts.push(`<span>사건 ${Math.round(AGENCY_EVENT_CHANCE * 100)}%가 기관 사건</span>`);
+    return `<div class="gp-chainline gp-agencyline">${parts.join("")}</div>`;
   }
 }
