@@ -1,0 +1,44 @@
+[
+ {
+  "chain": [
+   {
+    "out": "assets/art-src/ai-world/vehicle-1.png",
+    "prompt": "A small two-wheeled wooden hand cart (Korean rear-cart style, long pull handles at the front) loaded with three sealed white ballot boxes tied with rope. No person. Cozy cartoon mobile idle-tycoon game sprite. Soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow, no drop shadow outside the object. True 2:1 isometric camera from the front-left, 30 degree elevation; the vehicle's front faces the viewer's lower-left and its long left side is visible. Transparent background, no ground, no road, no text, no letters, single vehicle centered."
+   },
+   {
+    "out": "assets/art-src/ai-world/vehicle-2.png",
+    "ref": "assets/art-src/ai-world/vehicle-1.png",
+    "prompt": "Replace this cart with a small cute 1-ton cab-over pickup truck (Korean compact delivery truck style), sky-blue cab, open cargo bed stacked with sealed white ballot boxes tied with rope. Keep the identical art style, outline weight, camera angle and orientation: front faces the viewer's lower-left, long left side visible. No text, no letters, no license plate characters. Cozy cartoon mobile idle-tycoon game sprite. Soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow, no drop shadow outside the object. True 2:1 isometric camera from the front-left, 30 degree elevation; the vehicle's front faces the viewer's lower-left and its long left side is visible. Transparent background, no ground, no road, no text, no letters, single vehicle centered."
+   },
+   {
+    "out": "assets/art-src/ai-world/vehicle-3.png",
+    "ref": "assets/art-src/ai-world/vehicle-2.png",
+    "prompt": "Replace this truck with a cute armored security transport van (cash-in-transit style), navy blue body with a gold stripe and a small golden ballot-box emblem on the side, tiny barred windows, sturdy round wheels, a small amber roof light. Keep the identical art style, outline weight, camera angle and orientation: front faces the viewer's lower-left, long left side visible. No text, no letters. Cozy cartoon mobile idle-tycoon game sprite. Soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow, no drop shadow outside the object. True 2:1 isometric camera from the front-left, 30 degree elevation; the vehicle's front faces the viewer's lower-left and its long left side is visible. Transparent background, no ground, no road, no text, no letters, single vehicle centered."
+   }
+  ]
+ },
+ {
+  "chain": [
+   {
+    "out": "assets/art-src/ai-world/res-observer.png",
+    "prompt": "A single resident election observer at a vote-counting office: a calm middle-aged woman in a beige cardigan with a bright yellow armband, an ID lanyard and a clipboard with a pen. Cute chibi character for a cozy cartoon idle-tycoon game: big head, small body, full body visible, simple dot eyes, friendly face. Soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow, no ground shadow. Fully transparent background, no backdrop, no text, no letters; single character centered, facing front-right three-quarter view, standing."
+   }
+  ]
+ },
+ {
+  "chain": [
+   {
+    "out": "assets/art-src/ai-world/res-police.png",
+    "prompt": "A single friendly police officer guarding a vote-counting office: navy blue uniform with a fluorescent yellow-green safety vest, police cap with a small gold badge, hands behind the back. Cute chibi character for a cozy cartoon idle-tycoon game: big head, small body, full body visible, simple dot eyes, friendly face. Soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow, no ground shadow. Fully transparent background, no backdrop, no text, no letters; single character centered, facing front-right three-quarter view, standing."
+   }
+  ]
+ },
+ {
+  "chain": [
+   {
+    "out": "assets/art-src/ai-world/res-reporter.png",
+    "prompt": "A single TV news reporter covering a vote-counting office: a young reporter in a smart red blazer holding a handheld microphone with a blank mic flag, press badge lanyard. Cute chibi character for a cozy cartoon idle-tycoon game: big head, small body, full body visible, simple dot eyes, friendly face. Soft rounded shapes, thick clean dark-brown outlines, warm pastel palette, gentle gradient shading, no outer glow, no ground shadow. Fully transparent background, no backdrop, no text, no letters; single character centered, facing front-right three-quarter view, standing."
+   }
+  ]
+ }
+]
