@@ -1,6 +1,9 @@
 #!/usr/bin/env node
-// Play 스토어 등록 정보의 앱 아이콘(icon)·그래픽 이미지(featureGraphic)를 교체한다. 인증·패키지 규칙은 upload-aab.mjs 와 같다.
+// Play 스토어 등록 정보의 앱 아이콘(icon)·그래픽 이미지(featureGraphic)·휴대전화 스크린샷(phoneScreenshots)을 교체한다.
+// 인증·패키지 규칙은 upload-aab.mjs 와 같다.
 // 사용: node tools/play/upload-listing-images.mjs [--icon store/icon-512.png] [--feature store/feature-graphic.png] [--dry-run]
+//       node tools/play/upload-listing-images.mjs --screenshots a.png,b.png,...   (기존 스크린샷 전부 삭제 후 순서대로 올림)
+// --screenshots 만 주면 아이콘·그래픽은 건드리지 않는다.
 import { readFileSync } from "node:fs";
 import { createSign, createHash } from "node:crypto";
 import { homedir } from "node:os";
@@ -9,7 +12,11 @@ import { resolve } from "node:path";
 const args = process.argv.slice(2);
 const opt = (k, d) => (args.includes(k) ? args[args.indexOf(k) + 1] : d);
 const dry = args.includes("--dry-run");
-const files = { icon: opt("--icon", "store/icon-512.png"), featureGraphic: opt("--feature", "store/feature-graphic.png") };
+const shots = opt("--screenshots", "");
+const files = {};
+if (!shots || args.includes("--icon")) files.icon = [opt("--icon", "store/icon-512.png")];
+if (!shots || args.includes("--feature")) files.featureGraphic = [opt("--feature", "store/feature-graphic.png")];
+if (shots) files.phoneScreenshots = shots.split(",").filter(Boolean);
 
 const saPath = process.env.PLAY_SA_JSON || resolve(homedir(), ".config/gaepyo/play-publisher-gaepyo-play-release.json");
 const sa = JSON.parse(readFileSync(saPath, "utf8"));
@@ -51,12 +58,16 @@ if (dry) { await api(tok, "DELETE", `/edits/${edit.id}`); console.log("dry-run: 
 
 const want = {};
 for (const lang of langs) {
-  for (const [type, path] of Object.entries(files)) {
-    const bytes = readFileSync(path);
-    want[type] = createHash("sha256").update(bytes).digest("hex");
+  for (const [type, paths] of Object.entries(files)) {
     await api(tok, "DELETE", `/edits/${edit.id}/listings/${lang}/${type}`);
-    const up = await api(tok, "POST", `https://androidpublisher.googleapis.com/upload/androidpublisher/v3/applications/${pkg}/edits/${edit.id}/listings/${lang}/${type}?uploadType=media`, bytes, "image/png");
-    console.log(`  uploaded ${lang} ${type} sha256 ${up.image?.sha256?.slice(0, 12)} (local ${want[type].slice(0, 12)})`);
+    want[type] = [];
+    for (const path of paths) {
+      const bytes = readFileSync(path);
+      const sha = createHash("sha256").update(bytes).digest("hex");
+      want[type].push(sha);
+      const up = await api(tok, "POST", `https://androidpublisher.googleapis.com/upload/androidpublisher/v3/applications/${pkg}/edits/${edit.id}/listings/${lang}/${type}?uploadType=media`, bytes, "image/png");
+      console.log(`  uploaded ${lang} ${type} ${path} sha256 ${up.image?.sha256?.slice(0, 12)} (local ${sha.slice(0, 12)})`);
+    }
   }
 }
 await api(tok, "POST", `/edits/${edit.id}:validate`);
@@ -70,7 +81,9 @@ let ok = true;
 for (const lang of langs) {
   for (const type of Object.keys(files)) {
     const cur = await api(tok, "GET", `/edits/${v.id}/listings/${lang}/${type}`);
-    const match = (cur.images || []).some((i) => i.sha256 === want[type]);
+    // 아이콘·그래픽은 1장, 스크린샷은 올린 순서·개수까지 같아야 한다
+    const got = (cur.images || []).map((i) => i.sha256);
+    const match = got.length === want[type].length && want[type].every((sha, k) => got[k] === sha);
     ok &&= match;
     console.log(`  post ${lang} ${type}: match ${match}`);
   }

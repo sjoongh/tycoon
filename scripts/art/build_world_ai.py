@@ -73,12 +73,13 @@ def iso_anchor(im: Image.Image):
     return im.width // 2, im.height - round(im.width * 0.12)
 
 
-# 방 4단계(개표소 확장): 원본 키, 타일 수, 표시 폭. 캐릭터·시설 배율은 고정이고 방만 바뀌므로 타일이 커지면(5×5) 비좁게, 작아지면(11×11) 넓게 보인다.
+# 방 4단계(개표소 확장): 원본 키, 타일 수, 표시 폭. 캐릭터·시설 배율은 고정이고 방이 단계마다 실제로 커진다.
+# 9×9 부터는 화면(390)보다 넓어 양옆이 화면 밖으로 나간다 — 월드를 끌어 둘러본다(WorldView 카메라 팬).
 ROOM_STAGES = [
-    {"key": "room-s", "cols": 5, "displayW": 330},
-    {"key": "room", "cols": 7, "displayW": 404},
-    {"key": "room-l", "cols": 9, "displayW": 404},
-    {"key": "room-xl", "cols": 11, "displayW": 404},
+    {"key": "room-s", "cols": 5, "displayW": 350},
+    {"key": "room", "cols": 7, "displayW": 440},
+    {"key": "room-l", "cols": 9, "displayW": 520},
+    {"key": "room-xl", "cols": 11, "displayW": 600},
 ]
 
 
@@ -289,6 +290,20 @@ def main():
                 if ry and cx:
                     ent["panel"] = {"x": cx[0], "y": ry[0], "w": cx[-1] - cx[0], "h": ry[-1] - ry[0]}
             meta["lot"][k] = ent
+            previews.append(img)
+
+    # 야외 캠퍼스 소품(방 밖 마당·광장). 박스는 fit() 기준, trim 임계는 외곽 글로우가 남는 원본만 높인다.
+    OUT_BOX = {
+        "tree": (60, 78), "pine": (44, 72), "bush": (40, 28), "lamp": (16, 60), "bench": (44, 30), "flag": (26, 60),
+        "tent": (76, 66), "fountain": (90, 70), "billboard": (78, 62), "busstop": (72, 62), "van": (84, 56), "planter": (40, 30),
+    }
+    OUT_TRIM = {"pine": 140}
+    if all((SRC / f"out-{k}.png").exists() for k in OUT_BOX):
+        meta["outdoor"] = {}
+        for k, (bw, bh) in OUT_BOX.items():
+            img = fit(trim(load(f"out-{k}"), OUT_TRIM.get(k, ALPHA_T)), bw, bh)
+            save(img, OUT / f"out-{k}.png")
+            meta["outdoor"][k] = {"w": img.width, "h": img.height, "ax": img.width // 2, "ay": img.height - 2}
             previews.append(img)
 
     # 투표지(적체 더미·비행) + 파티클 + 황금 투표함

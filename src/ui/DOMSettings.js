@@ -3,24 +3,32 @@ import pkg from "../../package.json";
 import { cloudEnabled } from "../firebaseConfig.js";
 import { mirrorNativeSave, clearNativeSave } from "../state/persistence.js";
 import { a11yPrefs, setA11yPref } from "./a11y.js";
+import { devicePrefs, setDevicePref } from "./devicePrefs.js";
+import { loadPrefs } from "../audio/audioPrefs.js";
 
 const SAVE_KEY = "trust-office-phaser-v2";
 const PRIVACY_URL = "https://gaepyo-tycoon.web.app/privacy.html";
 
+const toggle = (act, label, on) =>
+  `<div class="gp-set__row"><span>${label}</span><button class="gp-btn gp-btn--sm" data-set="${act}" aria-pressed="${on}">${on ? "켜짐" : "꺼짐"}</button></div>`;
+
 // 설정 모달 — HUD ⚙️ 버튼("gp:open-settings")으로 열림.
-// 사운드/알림 토글, 세이브 백업/복원, 데이터 초기화, 버전·크레딧·개인정보·면책 고지를 한곳에.
+// 배경음·효과음(음량)·진동, 알림, 절전·화면 켜두기, 세이브 백업/복원, 데이터 초기화, 버전·크레딧·개인정보·면책 고지를 한곳에.
 export class DOMSettings {
   constructor(gameState, notifications) {
     this.gameState = gameState;
     this.notifications = notifications;
-    this._muted = false;
-    this._onMute = (e) => { this._muted = e.detail; this._syncRows(); };
-    document.addEventListener("gp:mute-changed", this._onMute);
+    this._audio = loadPrefs();
+    // 슬라이더를 끄는 중 다시 그리면 드래그가 끊기므로 값만 받아 둔다
+    this._onAudio = (e) => { this._audio = e.detail; };
+    document.addEventListener("gp:audio-changed", this._onAudio);
 
     this.root = document.createElement("div");
     this.root.className = "gp-map-ov gp-settings-ov";
     this.root.hidden = true;
     this.root.addEventListener("click", (e) => this._onClick(e));
+    this.root.addEventListener("input", (e) => this._onVol(e, "input"));
+    this.root.addEventListener("change", (e) => this._onVol(e, "change"));
     this._open = () => this.open();
     document.addEventListener("gp:open-settings", this._open);
   }
@@ -43,18 +51,28 @@ export class DOMSettings {
         ? `<div class="gp-set__row">${bellLabel}<button class="gp-btn gp-btn--sm" data-set="bell-ask">켜기</button></div>`
         : "";
     const a11y = a11yPrefs();
+    const dev = devicePrefs();
+    const vibrateRow = typeof navigator !== "undefined" && navigator.vibrate ? toggle("vibrate", "진동", this._audio.vibrate) : "";
+    const keepRow = globalThis.GaepyoScreenBridge || (typeof navigator !== "undefined" && navigator.wakeLock)
+      ? toggle("keepawake", "화면 켜두기", dev.keepAwake) : "";
     const cloudRow = cloudEnabled()
       ? `<div class="gp-set__row"><span>클라우드 저장</span><b class="gp-set__ok">자동 동기화 중</b></div>`
       : "";
     this.root.innerHTML = `<div class="gp-map gp-settings">
       <div class="gp-map__hd"><span>${iconHtml("ui-gear", { size: 32 })}설정</span><button class="gp-map__x" aria-label="닫기">✕</button></div>
       <div class="gp-map__list gp-set__list">
-        <div class="gp-set__row"><span>소리</span><button class="gp-btn gp-btn--sm" data-set="mute">${this._muted ? "꺼짐" : "켜짐"}</button></div>
+        <div class="gp-map__era">소리</div>
+        ${this._audioRow("bgm", "배경음")}
+        ${this._audioRow("sfx", "효과음")}
+        ${vibrateRow}
         ${bellRow}
         ${cloudRow}
+        <div class="gp-map__era">기기</div>
+        ${toggle("saver", "절전 모드 (30fps)", dev.saver)}
+        ${keepRow}
         <div class="gp-map__era">보기</div>
-        <div class="gp-set__row"><span>큰 글씨</span><button class="gp-btn gp-btn--sm" data-set="bigtext" aria-pressed="${a11y.bigText}">${a11y.bigText ? "켜짐" : "꺼짐"}</button></div>
-        <div class="gp-set__row"><span>움직임 줄이기</span><button class="gp-btn gp-btn--sm" data-set="reducemotion" aria-pressed="${a11y.reduceMotion}">${a11y.reduceMotion ? "켜짐" : "꺼짐"}</button></div>
+        ${toggle("bigtext", "큰 글씨", a11y.bigText)}
+        ${toggle("reducemotion", "움직임 줄이기", a11y.reduceMotion)}
         <div class="gp-map__era">데이터</div>
         <div class="gp-set__row"><span>세이브 내보내기</span><button class="gp-btn gp-btn--sm" data-set="export">복사</button></div>
         <div class="gp-set__row"><span>세이브 가져오기</span><button class="gp-btn gp-btn--sm" data-set="import">붙여넣기</button></div>
@@ -74,8 +92,15 @@ export class DOMSettings {
     const btn = e.target.closest("[data-set]");
     if (!btn) return;
     const act = btn.dataset.set;
-    if (act === "mute") {
-      document.dispatchEvent(new CustomEvent("gp:toggle-mute"));
+    if (act === "bgm" || act === "sfx" || act === "vibrate") {
+      this._audio = { ...this._audio, [act]: !this._audio[act] };
+      document.dispatchEvent(new CustomEvent("gp:audio-set", { detail: { [act]: this._audio[act] } }));
+      this._render();
+    } else if (act === "saver") {
+      setDevicePref("saver", !devicePrefs().saver);
+      this._render();
+    } else if (act === "keepawake") {
+      setDevicePref("keepAwake", !devicePrefs().keepAwake);
       this._render();
     } else if (act === "bell") {
       const n = this.notifications;
@@ -133,11 +158,28 @@ export class DOMSettings {
     }
   }
 
-  _syncRows() { if (!this.root.hidden) this._render(); }
+  _audioRow(key, label) {
+    const on = this._audio[key];
+    const vol = Math.round((this._audio[`${key}Vol`] ?? 0) * 100);
+    return `<div class="gp-set__row gp-set__row--vol"><span>${label}</span>
+      <input class="gp-set__vol" type="range" min="0" max="100" step="5" value="${vol}" data-vol="${key}Vol" aria-label="${label} 음량"${on ? "" : " disabled"}>
+      <button class="gp-btn gp-btn--sm" data-set="${key}" aria-pressed="${on}">${on ? "켜짐" : "꺼짐"}</button></div>`;
+  }
+
+  // 배경음은 끄는 동안 바로 반영, 효과음은 손을 뗄 때 한 번 미리 들려준다
+  _onVol(e, type) {
+    const el = e.target.closest?.("[data-vol]");
+    if (!el) return;
+    const key = el.dataset.vol;
+    if (key === "sfxVol" && type === "input") return;
+    const v = Math.min(1, Math.max(0, Number(el.value) / 100));
+    this._audio = { ...this._audio, [key]: v };
+    document.dispatchEvent(new CustomEvent("gp:audio-set", { detail: { [key]: v } }));
+  }
 
   destroy() {
     document.removeEventListener("gp:open-settings", this._open);
-    document.removeEventListener("gp:mute-changed", this._onMute);
+    document.removeEventListener("gp:audio-changed", this._onAudio);
     this.root.remove();
   }
 }

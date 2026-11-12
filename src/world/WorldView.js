@@ -217,10 +217,15 @@ export class WorldView {
       // 전체 시트는 월드를 덮으므로 밀어 올리지 않는다(HUD 뒤로 방이 삐져나오는 것 방지)
       const full = e.detail.state === "full";
       const target = full ? 0 : Math.max(0, WORLD_BOTTOM - e.detail.topGame + 6);
-      if (Math.abs((this._camTarget ?? -1) - target) < 1) return;
+      this._sheetTop = full ? 844 : e.detail.topGame;
+      if (Math.abs((this._camTarget ?? -1) - target) < 1) { this._applyCam(); return; }
       this._camTarget = target;
-      const baseY = scene.renderBase?.baseScrollY || 0;
-      scene.tweens.add({ targets: scene.cameras.main, scrollY: baseY + target, duration: 220, ease: "Quad.easeOut" });
+      this._camOffsetTween?.remove();
+      const proxy = { v: this._camOffset || 0 };
+      this._camOffsetTween = scene.tweens.add({
+        targets: proxy, v: target, duration: 220, ease: "Quad.easeOut",
+        onUpdate: () => { this._camOffset = proxy.v; this._applyCam(); },
+      });
       // 밀려 올라가 HUD와 겹치는 간판은 숨긴다
       const signVisible = target < 40;
       this._signHiddenByScroll = !signVisible;
@@ -318,13 +323,14 @@ export class WorldView {
   // 체제 시대별 색 팔레트 — 무력(군부 카키) → 적색(공산 적색) → 민주(청명) → 미래(우주)
   _eraColors(area) {
     const k = eraTheme(area).key;
-    if (k === "force") return { sky: 0x262216, floor: 0x302a1a, star: 0x6a5a2a, line: 0x3a3420, accent: 0xb13e53 };
-    if (k === "red") return { sky: 0x3a1418, floor: 0x3e1a1e, star: 0xd14a5e, line: 0x4a1e24, accent: 0xff4d4d };
-    if (k === "demo") return { sky: 0x14283a, floor: 0x1c3348, star: 0x6ad0e0, line: 0x244055, accent: 0x73eff7 };
-    if (k === "future") return { sky: 0x0a0a16, floor: 0x12122a, star: 0x5a5aaa, line: 0x1a1a3a, accent: 0xffd34d };
-    if (k === "space") return { sky: 0x140a2a, floor: 0x1a1030, star: 0xb18cff, line: 0x281a44, accent: 0xb18cff };
-    if (k === "myth") return { sky: 0x1a1206, floor: 0x241a0a, star: 0xffd479, line: 0x3a2a12, accent: 0xffd479 };
-    return { sky: 0x0a0a16, floor: 0x12122a, star: 0x5a5aaa, line: 0x1a1a3a, accent: 0xffd34d }; // fallback
+    // ground·plaza: 방 밖 야외 캠퍼스(잔디·광장) 색
+    if (k === "force") return { sky: 0x262216, floor: 0x302a1a, star: 0x6a5a2a, line: 0x3a3420, accent: 0xb13e53, ground: 0x5d6a3c, plaza: 0xb9ab8a };
+    if (k === "red") return { sky: 0x3a1418, floor: 0x3e1a1e, star: 0xd14a5e, line: 0x4a1e24, accent: 0xff4d4d, ground: 0x6e6040, plaza: 0xc2a892 };
+    if (k === "demo") return { sky: 0x14283a, floor: 0x1c3348, star: 0x6ad0e0, line: 0x244055, accent: 0x73eff7, ground: 0x4f8650, plaza: 0xcbc4b2 };
+    if (k === "future") return { sky: 0x0a0a16, floor: 0x12122a, star: 0x5a5aaa, line: 0x1a1a3a, accent: 0xffd34d, ground: 0x3a5a66, plaza: 0x96a8ba };
+    if (k === "space") return { sky: 0x140a2a, floor: 0x1a1030, star: 0xb18cff, line: 0x281a44, accent: 0xb18cff, ground: 0x433b66, plaza: 0x9088b6 };
+    if (k === "myth") return { sky: 0x1a1206, floor: 0x241a0a, star: 0xffd479, line: 0x3a2a12, accent: 0xffd479, ground: 0x707c3c, plaza: 0xdac78e };
+    return { sky: 0x0a0a16, floor: 0x12122a, star: 0x5a5aaa, line: 0x1a1a3a, accent: 0xffd34d, ground: 0x3a5a66, plaza: 0x96a8ba }; // fallback
   }
 
   _buildBackground() {
@@ -338,11 +344,17 @@ export class WorldView {
     const key = eraTheme(area).key;
     const g = this.bg;
     g.clear();
-    // 배경: 시대 색 → 바닥색 세로 그라데이션(카툰 스킨, 별·픽셀 점 없음)
-    g.fillGradientStyle(c.sky, c.sky, c.floor, c.floor, 1);
-    g.fillRect(-60, -60, GAME_W + 120, ROOM_BOTTOM - 10); // 확장 연출의 줌 아웃(0.92) 때 가장자리가 비지 않게 화면보다 넓게
-    g.fillStyle(0xffffff, 0.06);
-    g.fillEllipse(GAME_W / 2, 120, 420, 180);
+    // 월드는 화면보다 넓다(카메라 팬): 방 둘레로 잔디 마당·광장·도로가 이어진 캠퍼스
+    const B = (this._bounds = this._worldBounds());
+    const PAD = 260; // 줌 아웃·확장 연출(0.92) 때도 가장자리가 비지 않게
+    g.fillStyle(c.ground, 1);
+    g.fillRect(B.x - PAD, B.y - PAD, B.w + PAD * 2, B.h + PAD * 2);
+    this._drawGroundGrid(g, B);
+    this._drawPlaza(g, c);
+    // 위쪽은 시대 색으로 물들인다(HUD 글자 대비 + 시대 분위기)
+    const hazeBottom = ISO.ROOM_Y + ISO.ROOM.wallH * WORLD_SCALE * 0.6;
+    g.fillGradientStyle(c.sky, c.sky, c.sky, c.sky, 1, 1, 0, 0);
+    g.fillRect(B.x - PAD, B.y - PAD, B.w + PAD * 2, hazeBottom - (B.y - PAD));
 
     // ── 체제 상징물 — 카툰 스킨에서는 그리지 않는다(배경은 시대 색 그라데이션만) ──
     const DRAW_ERA_SYMBOLS = false;
@@ -395,23 +407,140 @@ export class WorldView {
       g.fillStyle(0xffcd75, 0.9); [[300, 130], [320, 220], [60, 250]].forEach(([x, y]) => g.fillCircle(x, y, 5));
     }
 
-    // 반입 도로: 뒤쪽 왼벽 너머로 벽을 따라 내려가는 띠(차량이 이 위를 달린다)
-    const a0 = this._roadPoint(-0.8, 0.08), a1 = this._roadPoint(ISO.ROOM_COLS + 3, 0.08);
-    const b0 = this._roadPoint(-0.8, 1.05), b1 = this._roadPoint(ISO.ROOM_COLS + 3, 1.05);
+    // 반입 도로: 뒤쪽 왼벽 너머로 벽을 따라 내려가는 띠(차량이 이 위를 달린다). 월드 끝까지 이어진다.
+    const [r0, r1] = this._roadSpan();
+    const a0 = this._roadPoint(r0, 0.08), a1 = this._roadPoint(r1, 0.08);
+    const b0 = this._roadPoint(r0, 1.05), b1 = this._roadPoint(r1, 1.05);
     g.fillStyle(0x2c2830, 0.92);
     g.fillPoints([a0, a1, b1, b0], true);
     g.lineStyle(2, 0xffffff, 0.14);
     g.lineBetween(a0.x, a0.y, a1.x, a1.y);
     g.lineBetween(b0.x, b0.y, b1.x, b1.y);
     g.lineStyle(2, 0xffd34d, 0.45);
-    for (let j = -0.5; j < ISO.ROOM_COLS + 3; j += 0.9) {
+    for (let j = r0; j < r1; j += 0.9) {
       const p = this._roadPoint(j, 0.56), q = this._roadPoint(j + 0.45, 0.56);
       g.lineBetween(p.x, p.y, q.x, q.y);
     }
+    this._placeOutdoor();
+    this._applyCam(); // 방 단계가 바뀌면 경계도 바뀐다
+  }
 
-    // 방 아래 바닥(방 밖 여백) — 방 이미지(depth 5)가 위에 얹힌다
-    g.fillStyle(c.floor, 1);
-    g.fillRect(-60, ROOM_BOTTOM - 70, GAME_W + 120, 844 - ROOM_BOTTOM + 130);
+  // 월드 경계(카메라가 보여 줄 수 있는 범위): 방 좌우 꼭짓점 바깥으로 마당, 아래로 광장
+  _worldBounds() {
+    const n = ISO.ROOM_COLS;
+    const left = Math.min(-150, tileCenter(-0.5, n - 0.5).x - 230);
+    const right = Math.max(GAME_W + 150, tileCenter(n - 0.5, -0.5).x + 230);
+    const top = Math.min(-80, ISO.ROOM_Y - 240);
+    const bottom = ISO.FLOOR_BOTTOM_Y + 470;
+    return { x: left, y: top, w: right - left, h: bottom - top };
+  }
+
+  // 도로가 월드 경계 밖까지 닿는 j 구간
+  _roadSpan() {
+    const B = this._bounds || this._worldBounds();
+    const [tw, th] = ISO.ROOM.tile;
+    const sx = (tw * WORLD_SCALE) / 2, sy = (th * WORLD_SCALE) / 2;
+    const w0 = wallTopPoint(0), wn = wallTopPoint(ISO.ROOM_COLS);
+    const PAD = 300; // 줌 아웃 여유
+    const lo = Math.min((w0.y - (B.y - PAD)) / sy, (B.x + B.w + PAD - w0.x) / sx);
+    const hi = (wn.x - (B.x - PAD)) / sx;
+    return [-Math.ceil(lo) - 1, ISO.ROOM_COLS + Math.ceil(hi) + 1];
+  }
+
+  // 방 타일과 같은 격자를 마당 전체에 옅게 — 방 밖도 같은 바닥 위라는 느낌
+  _drawGroundGrid(g, B) {
+    const n = ISO.ROOM_COLS;
+    const tw = ISO.ROOM.tile[0] * WORLD_SCALE, th = ISO.ROOM.tile[1] * WORLD_SCALE;
+    const K = Math.ceil(Math.max(B.w / tw, B.h / th)) + 4;
+    const cor = (a, b) => tileCenter(a - 0.5, b - 0.5);
+    g.lineStyle(1, 0xffffff, 0.06);
+    for (let a = -K; a <= n + K; a += 1) { const p = cor(a, -K), q = cor(a, n + K); g.lineBetween(p.x, p.y, q.x, q.y); }
+    for (let b = -K; b <= n + K; b += 1) { const p = cor(-K, b), q = cor(n + K, b); g.lineBetween(p.x, p.y, q.x, q.y); }
+  }
+
+  // 방 앞 광장: 정문 앞 보도 + 타원 광장(분수 자리)
+  _plazaCenter() {
+    return { x: GAME_W / 2, y: ISO.FLOOR_BOTTOM_Y + 128 };
+  }
+
+  _drawPlaza(g, c) {
+    const p = this._plazaCenter();
+    const front = tileCenter(ISO.ROOM_COLS - 0.5, ISO.ROOM_COLS - 0.5);
+    g.fillStyle(c.plaza, 0.9);
+    g.fillRect(front.x - 26, front.y - 8, 52, p.y - front.y);
+    g.fillStyle(0x000000, 0.12);
+    g.fillEllipse(p.x, p.y + 6, 372, 172);
+    g.fillStyle(c.plaza, 1);
+    g.fillEllipse(p.x, p.y, 364, 164);
+    g.lineStyle(3, 0xffffff, 0.22);
+    g.strokeEllipse(p.x, p.y, 336, 146);
+    g.lineStyle(1, 0x000000, 0.08);
+    for (let r = 0.25; r < 1; r += 0.25) g.strokeEllipse(p.x, p.y, 336 * r, 146 * r);
+  }
+
+  // 야외 소품 배치. 위치는 방 타일 좌표(방 밖 포함)·도로·광장 기준이라 방 단계가 바뀌어도 따라간다.
+  _outdoorSpots() {
+    const n = ISO.ROOM_COLS;
+    const p = this._plazaCenter();
+    const out = [];
+    const at = (key, x, y, opts = {}) => out.push({ key, x, y, ...opts });
+    const tile = (key, i, j, opts) => { const t = tileCenter(i, j); at(key, t.x, t.y, opts); };
+    const road = (key, j, back, opts) => { const t = this._roadPoint(j, back); at(key, t.x, t.y, { behind: true, ...opts }); };
+    // 도로 바깥쪽 가로수(침엽수) 줄
+    for (let j = -1; j <= n + 6; j += 2.2) road("pine", j, 1.9);
+    road("busstop", n + 1.4, 1.75);
+    road("lamp", n * 0.45, 1.45);
+    // 오른쪽 벽 뒤: 큰 나무(증설 부지보다 바깥)
+    tile("tree", n + 0.4, -2.6, { behind: true });
+    tile("tree", n + 2.4, -1.2, { behind: true });
+    tile("pine", n - 1.2, -3.4, { behind: true });
+    // 오른쪽 마당: 선거 홍보 천막·깃발·광고판
+    tile("tent", n + 1.7, 1.3);
+    tile("flag", n + 0.9, 3.2);
+    tile("flag", n + 0.9, 4.6);
+    tile("billboard", n + 2.6, n - 1.6);
+    tile("bush", n + 0.5, 0.4);
+    tile("planter", n + 3.6, 2.4);
+    tile("tree", n + 4.6, 4.2);
+    tile("pine", n + 5.2, -0.4);
+    tile("bush", n + 3.4, 5.8);
+    tile("lamp", n + 3.2, 0.2);
+    // 왼쪽 마당: 중계차·벤치·나무
+    tile("van", 1.4, n + 1.9);
+    tile("bench", 3.4, n + 1.1);
+    tile("tree", -0.6, n + 3.2);
+    tile("bush", n - 0.6, n + 0.6);
+    tile("bush", 0.6, n + 0.6);
+    // 광장: 분수 + 가로등 + 화단 + 벤치
+    at("fountain", p.x, p.y + 10);
+    at("lamp", p.x - 150, p.y - 12);
+    at("lamp", p.x + 150, p.y - 12);
+    at("planter", p.x - 118, p.y + 52);
+    at("planter", p.x + 118, p.y + 52);
+    at("bench", p.x - 70, p.y + 70);
+    at("bench", p.x + 70, p.y + 70, { flip: true });
+    at("tree", p.x - 236, p.y + 40);
+    at("tree", p.x + 240, p.y + 20);
+    at("pine", p.x - 200, p.y + 150);
+    at("pine", p.x + 210, p.y + 160);
+    at("bush", p.x, p.y + 132);
+    return out;
+  }
+
+  _placeOutdoor() {
+    (this._outdoor || []).forEach((o) => o.destroy());
+    this._outdoor = [];
+    const meta = WORLD_ATLAS.outdoor;
+    if (!meta) return;
+    for (const s of this._outdoorSpots()) {
+      const m = meta[s.key];
+      const key = `world/out-${s.key}`;
+      if (!m || !this.scene.textures.exists(key)) continue;
+      const img = this.scene.add.image(s.x, s.y, key).setOrigin(m.ax / m.w, m.ay / m.h).setScale(WORLD_SCALE).setFlipX(!!s.flip);
+      // 벽 뒤(도로 쪽) 소품은 방 아래, 앞마당 소품은 y 순서로 시설과 섞인다
+      img.setDepth(s.behind ? 2 : stationDepth(s.y));
+      this._outdoor.push(img);
+    }
   }
 
   // 도로 위 점: j 는 왼벽을 따라(0 = 뒤 꼭짓점), back 은 벽에서 바깥(뒤)으로 떨어진 타일 수
@@ -1232,11 +1361,14 @@ export class WorldView {
       at(T1, () => {
         this.room.setCrop();
         if (oldRoom) scene.tweens.add({ targets: oldRoom, alpha: 0, duration: 200, onComplete: () => oldRoom.destroy() });
-        const cam = scene.cameras.main;
-        if ((this._camZoom || 1) <= 1.001) {
-          const base = scene.renderBase?.zoom || 1;
-          scene.tweens.add({ targets: cam, zoom: base * 0.92, duration: 280, hold: 380, yoyo: true, ease: "Sine.easeInOut", onComplete: () => cam.setZoom(base) });
-        }
+        // 넓어진 방을 한눈에: 팬·줌을 개표소 기준으로 되돌린 뒤 잠깐 줌 아웃
+        this.resetCamera(200);
+        const zp = { z: 1 };
+        scene.tweens.add({
+          targets: zp, z: 0.92, delay: 220, duration: 280, hold: 380, yoyo: true, ease: "Sine.easeInOut",
+          onUpdate: () => { this._camZoom = zp.z; this._applyCam(); },
+          onComplete: () => { this._camZoom = 1; this._applyCam(); },
+        });
         const c = tileCenter(n / 2, n / 2);
         this.effects.ballots({ x: c.x, y: c.y - 20, count: 16 });
         this.effects.float({ text: `개표소 확장! ${roomStageLabel(prev)} → ${roomStageLabel(this._roomStage)}`, x: GAME_W / 2, y: ISO.ROOM_Y + 40, color: "#ffd34d" });
@@ -1772,65 +1904,124 @@ export class WorldView {
     }
   }
 
-  // 카메라: 핀치로 1.0~1.6배 확대, 확대 상태에서 드래그로 이동. 탭은 pointerdown에서 이미 처리되므로 드래그 임계(12px)로 구분한다.
+  // 카메라: 월드(캠퍼스)는 화면보다 넓다 — 한 손가락 드래그로 둘러보고(관성), 핀치로 0.8~1.6배.
+  // 탭(득표)은 pointerdown 에서 이미 처리되므로 드래그는 임계 거리로 구분하고, 드래그 직후 수집 대상 탭만 막는다.
+  // 카메라 중심 = 기본 중심(195,422) + 시트 보정(_camOffset) + 팬(_pan). _applyCam 이 월드 경계 안으로 고정한다.
   _setupCameraGestures() {
     const scene = this.scene;
-    const cam = scene.cameras.main;
     if (scene.input.pointer2 === undefined || !scene.input.pointer2) scene.input.addPointer(1);
+    this._pan = { x: 0, y: 0 };
     this._camZoom = 1;
     this._camDragging = false;
-    let dragStart = null;
-    let pinchStart = null;
-    const baseZoom = () => scene.renderBase?.zoom || 1;
-    const clampScroll = () => {
-      const z = this._camZoom;
-      const maxX = (GAME_W * (1 - 1 / z)) / 2 * 1.0;
-      const maxY = (844 * (1 - 1 / z)) / 2;
-      const bx = scene.renderBase?.baseScrollX || 0, by = (scene.renderBase?.baseScrollY || 0) + (this._camTarget || 0);
-      cam.scrollX = Phaser.Math.Clamp(cam.scrollX, bx - maxX, bx + maxX);
-      cam.scrollY = Phaser.Math.Clamp(cam.scrollY, by - maxY, by + maxY);
-    };
+    this._camVel = { x: 0, y: 0 };
+    let drag = null;
+    let pinch = null;
+    const base = () => scene.renderBase?.zoom || 1;
     this._onCamMove = (pointer) => {
       const p1 = scene.input.pointer1, p2 = scene.input.pointer2;
       if (p1?.isDown && p2?.isDown) {
-        const d = Math.hypot(p2.x - p1.x, p2.y - p1.y);
-        if (!pinchStart) pinchStart = { d, zoom: this._camZoom };
-        else {
-          this._camZoom = Phaser.Math.Clamp(pinchStart.zoom * (d / pinchStart.d), 1, 1.6);
-          cam.setZoom(baseZoom() * this._camZoom);
-          clampScroll();
-          this._camDragging = true;
-        }
+        drag = null;
+        const b = base();
+        const d = Math.hypot(p2.x - p1.x, p2.y - p1.y) / b;
+        const mid = { x: (p1.x + p2.x) / 2 / b, y: (p1.y + p2.y) / 2 / b };
+        if (!pinch) { pinch = { d, zoom: this._camZoom }; return; }
+        const z0 = this._camZoom;
+        const z1 = Phaser.Math.Clamp(pinch.zoom * (d / pinch.d), 0.8, 1.6);
+        // 두 손가락 가운데의 월드 점이 제자리에 남도록 팬을 보정
+        this._pan.x += (mid.x - 195) * (1 / z0 - 1 / z1);
+        this._pan.y += (mid.y - 422) * (1 / z0 - 1 / z1);
+        this._camZoom = z1;
+        this._camDragging = true;
+        this._applyCam();
         return;
       }
-      pinchStart = null;
-      if (!pointer.isDown || this._camZoom <= 1.001) return;
-      if (!dragStart) { dragStart = { x: pointer.x, y: pointer.y, sx: cam.scrollX, sy: cam.scrollY }; return; }
-      const dx = pointer.x - dragStart.x, dy = pointer.y - dragStart.y;
-      if (!this._camDragging && Math.hypot(dx, dy) < 12) return;
+      pinch = null;
+      if (!pointer.isDown) return;
+      const b = base();
+      const px = pointer.x / b, py = pointer.y / b;
+      if (!drag) {
+        // 누른 지점부터 잰다(첫 move 이벤트가 늦게 와도 끈 거리를 잃지 않게)
+        const ox = pointer.downX / b, oy = pointer.downY / b;
+        drag = { x: ox, y: oy, lx: ox, ly: oy, t: scene.time.now };
+        this._camVel = { x: 0, y: 0 };
+      }
+      if (!this._camDragging && Math.hypot(px - drag.x, py - drag.y) < 9) return;
       this._camDragging = true;
-      cam.scrollX = dragStart.sx - dx / cam.zoom;
-      cam.scrollY = dragStart.sy - dy / cam.zoom;
-      clampScroll();
+      const dx = (px - drag.lx) / this._camZoom, dy = (py - drag.ly) / this._camZoom;
+      const dt = Math.max(1, scene.time.now - drag.t);
+      this._pan.x -= dx;
+      this._pan.y -= dy;
+      this._camVel = { x: (-dx / dt) * 11, y: (-dy / dt) * 11 };
+      drag.lx = px; drag.ly = py; drag.t = scene.time.now;
+      this._applyCam();
     };
     this._onCamUp = () => {
-      dragStart = null;
-      if (!scene.input.pointer1?.isDown && !scene.input.pointer2?.isDown) pinchStart = null;
-      // 드래그 직후의 pointerup이 탭으로 오인되지 않게 한 프레임 뒤 해제
+      drag = null;
+      if (!scene.input.pointer1?.isDown && !scene.input.pointer2?.isDown) pinch = null;
+      // 드래그 직후의 pointerup 이 탭으로 오인되지 않게 한 프레임 뒤 해제
       if (this._camDragging) scene.time.delayedCall(60, () => { this._camDragging = false; });
-      if (this._camZoom <= 1.001) { this._camZoom = 1; cam.setZoom(baseZoom()); cam.scrollX = scene.renderBase?.baseScrollX || 0; }
+    };
+    // 손을 뗀 뒤 관성으로 미끄러지다 멈춘다
+    this._onCamUpdate = () => {
+      if (drag || pinch) return;
+      const v = this._camVel;
+      if (Math.abs(v.x) < 0.05 && Math.abs(v.y) < 0.05) return;
+      if (motionReduced()) { this._camVel = { x: 0, y: 0 }; return; }
+      this._pan.x += v.x; this._pan.y += v.y;
+      v.x *= 0.9; v.y *= 0.9;
+      this._applyCam();
     };
     scene.input.on("pointermove", this._onCamMove);
     scene.input.on("pointerup", this._onCamUp);
-    // 더블탭: 줌 리셋
-    let lastTap = 0;
-    scene.input.on("pointerdown", (pointer, over) => {
-      const now = scene.time.now;
-      if (now - lastTap < 280 && this._camZoom > 1.001 && !(over && over.length)) {
-        this._camZoom = 1; cam.setZoom(baseZoom()); cam.scrollX = scene.renderBase?.baseScrollX || 0; cam.scrollY = (scene.renderBase?.baseScrollY || 0) + (this._camTarget || 0);
-      }
-      lastTap = now;
+    scene.events.on("update", this._onCamUpdate);
+    // 개표소로 돌아오기
+    const ui = document.querySelector(".gp-ui");
+    if (ui) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "gp-camhome";
+      btn.textContent = "개표소로";
+      btn.hidden = true;
+      btn.addEventListener("click", () => this.resetCamera());
+      ui.appendChild(btn);
+      this._camHomeBtn = btn;
+    }
+    this._applyCam();
+  }
+
+  resetCamera(duration = 320) {
+    this._camVel = { x: 0, y: 0 };
+    const from = { x: this._pan.x, y: this._pan.y, z: this._camZoom };
+    const proxy = { t: 0 };
+    this.scene.tweens.add({
+      targets: proxy, t: 1, duration, ease: "Cubic.easeOut",
+      onUpdate: () => {
+        this._pan.x = from.x * (1 - proxy.t);
+        this._pan.y = from.y * (1 - proxy.t);
+        this._camZoom = from.z + (1 - from.z) * proxy.t;
+        this._applyCam();
+      },
     });
+  }
+
+  _applyCam() {
+    const cam = this.scene.cameras.main;
+    if (!cam || !this._pan) return;
+    const zr = this._camZoom || 1;
+    const B = this._bounds || this._worldBounds();
+    const sheetTop = Math.min(844, this._sheetTop ?? 844);
+    const clamp = (v, lo, hi) => (lo > hi ? (lo + hi) / 2 : Phaser.Math.Clamp(v, lo, hi));
+    const off = this._camOffset || 0;
+    const cx = clamp(195 + this._pan.x, B.x + 195 / zr, B.x + B.w - 195 / zr);
+    // 아래쪽 한계는 시트 위로 보이는 부분 기준(시트에 가려진 곳까지 끌어올 필요 없음)
+    const cy = clamp(422 + off + this._pan.y, Math.min(422 + off, B.y + 422 / zr), B.y + B.h - (sheetTop - 422) / zr);
+    this._pan.x = cx - 195;
+    this._pan.y = cy - 422 - off;
+    if (this._pan.x === 0 && this._pan.y === 0 && zr === 1) this._camVel = { x: 0, y: 0 };
+    cam.setZoom((this.scene.renderBase?.zoom || 1) * zr);
+    cam.centerOn(cx, cy);
+    const away = Math.hypot(this._pan.x, this._pan.y) > 24 || Math.abs(zr - 1) > 0.02;
+    if (this._camHomeBtn && this._camHomeBtn.hidden === away) this._camHomeBtn.hidden = !away;
   }
 
   // ── 직원 모션 ──
@@ -2106,6 +2297,10 @@ export class WorldView {
     this._scoopTimer?.remove();
     document.removeEventListener("gp:sheet-top", this._onSheetTop);
     this.scene.input.off("pointerdown", this._onPointer);
+    this.scene.input.off("pointermove", this._onCamMove);
+    this.scene.input.off("pointerup", this._onCamUp);
+    this.scene.events.off("update", this._onCamUpdate);
+    this._camHomeBtn?.remove();
     document.removeEventListener("gp:event-resolved", this._onEventResolved);
     document.removeEventListener("gp:central-visual", this._onCentralVisual);
     this._incomeTimer?.remove();
