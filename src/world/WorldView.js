@@ -777,7 +777,7 @@ export class WorldView {
   // 상단 간판: "믿어주세요 / 개표국"
   _buildTitle() {
     const cx = GAME_W / 2;
-    const w = 220, h = 40, top = 175, x = cx - w / 2; // 오른쪽 HUD 칩(할 일·부스트·특별 개표소)과 겹치지 않는 폭
+    const w = 200, h = 40, top = 175, x = cx - w / 2; // 오른쪽 HUD 칩(할 일·부스트·특별 개표소)과 겹치지 않는 폭
     const g = this.scene.add.graphics().setDepth(110);
     // 현수막 끈
     g.fillStyle(0x14121c, 1);
@@ -794,7 +794,7 @@ export class WorldView {
     g.fillRoundedRect(x + 3, top + 3, w - 6, h / 2, 10);
     this.titleBg = g;
     this.titleTop = this.scene.add
-      .text(cx, top + 12, regionFor(this.gameState.data.stage?.area || 1).name, { fontFamily: '"DoHyeon", "Jua", sans-serif', fontSize: "10px", color: "#94b0c2" })
+      .text(cx, top + 12, regionFor(this.gameState.data.stage?.area || 1).name, { fontFamily: '"DoHyeon", "Jua", sans-serif', fontSize: "10px", color: "#c9d8ea" })
       .setOrigin(0.5)
       .setDepth(111);
     this.titleMain = this.scene.add
@@ -803,10 +803,10 @@ export class WorldView {
       .setDepth(111);
     // 간판 아래 "지도" 힌트 + 클릭 영역(탭하면 전국 지도 모달)
     this.titleHint = this.scene.add
-      .text(cx, top + h + 9, "전국 지도", { fontFamily: '"DoHyeon", "Jua", sans-serif', fontSize: "10px", color: "#9fb8d0" })
+      .text(cx, top + h + 9, "전국 지도", { fontFamily: '"DoHyeon", "Jua", sans-serif', fontSize: "10px", color: "#ffffff", backgroundColor: "rgba(20,26,51,0.78)", padding: { x: 6, y: 2 } })
       .setOrigin(0.5)
       .setDepth(111);
-    this.scene.tweens.add({ targets: this.titleHint, alpha: 0.5, yoyo: true, repeat: -1, duration: 900, ease: "Sine.easeInOut" });
+    this.scene.tweens.add({ targets: this.titleHint, alpha: 0.7, yoyo: true, repeat: -1, duration: 900, ease: "Sine.easeInOut" });
     this.titleZone = this.scene.add
       .zone(cx, top + (h + 22) / 2, w, h + 26)
       .setInteractive({ useHandCursor: true });
@@ -834,8 +834,8 @@ export class WorldView {
       this.propByFacility[f.id] = s;
       this.propLabels[f.id] = this.scene.add
         .text(pos.x, pos.y + 6, "", {
-          fontFamily: '"DoHyeon", "Jua", sans-serif', fontSize: "8px", color: "#c0cbdc",
-          backgroundColor: "rgba(20,18,28,0.72)", padding: { x: 3, y: 1 },
+          fontFamily: '"DoHyeon", "Jua", sans-serif', fontSize: "9px", color: "#ffffff",
+          backgroundColor: "rgba(20,26,51,0.8)", padding: { x: 4, y: 1 },
         })
         .setOrigin(0.5, 0)
         .setDepth(stationDepth(pos.y) + 1);
@@ -857,7 +857,7 @@ export class WorldView {
       .setVisible(false);
     // 서버실 위 LED 개표 현황
     this.boardText = this.scene.add
-      .text(this.board.x - 46, this.board.y - 58, "", { fontFamily: '"DoHyeon", "Jua", sans-serif', fontSize: "8px", color: "#2ce8f5", align: "center", backgroundColor: "rgba(20,18,28,0.6)", padding: { x: 3, y: 2 } })
+      .text(this.board.x - 46, this.board.y - 58, "", { fontFamily: '"DoHyeon", "Jua", sans-serif', fontSize: "9px", color: "#7ff3fb", align: "center", backgroundColor: "rgba(20,26,51,0.82)", padding: { x: 4, y: 2 } })
       .setOrigin(0.5)
       .setDepth(stationDepth(this.board.y) + 2);
   }
@@ -2216,7 +2216,7 @@ export class WorldView {
     this.bigNum.setColor(fever ? "#ffd34d" : "#ffffff");
     this.bigNum.setShadow(3, 3, fever ? "#ef7d57" : "#b13e53", 0, true, true);
     this.cpsText
-      .setText(`${fever ? `${finisher ? "막판 총력" : feverProfile.name}` : "▶"} · 초당 ${cps < 10000 ? cps.toFixed(0) : shortNumber(cps)}표`)
+      .setText(`${fever ? `${finisher ? "막판 총력" : feverProfile.name} · ` : ""}초당 ${cps < 10000 ? cps.toFixed(0) : shortNumber(cps)}표`)
       .setColor(fever ? "#ffe3a8" : "#bcd0e0");
     if (fever && !this._feverWasActive) {
       this.scene.tweens.killTweensOf(this.bigNum);

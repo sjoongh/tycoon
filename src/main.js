@@ -141,7 +141,16 @@ if (import.meta.env.DEV) {
 
 const uiLayer = document.createElement("div");
 uiLayer.className = "gp-ui";
-document.getElementById("game").appendChild(uiLayer);
+const gameFrame = document.getElementById("game");
+gameFrame.appendChild(uiLayer);
+// 넓은 화면(≥430px)에서 UI 레이어는 390×844 설계 크기 고정이다. 프레임 높이에 맞춰 배율을 줘
+// 캔버스와 어긋나거나(큰 화면) 탭 바가 잘리는(낮은 화면) 일을 막는다. 폰 폭에서는 CSS가 이 값을 쓰지 않는다.
+const syncUiScale = () => {
+  const h = gameFrame.clientHeight;
+  if (h) uiLayer.style.setProperty("--ui-scale", (h / 844).toFixed(4));
+};
+new ResizeObserver(syncUiScale).observe(gameFrame);
+syncUiScale();
 
 // 안드로이드 앱 백그라운드 전환 시 세이브 보장용 훅(로컬 + 클라우드)
 window.__gpSave = () => { try { gameState.save(false); saveCloud(); } catch {} };

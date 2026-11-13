@@ -14,7 +14,7 @@ export class DOMHud {
         <div class="gp-chip gp-chip--trust"><span class="gp-chip__ic" style="${iconStyle("res-trust", 36)}"></span><span><div class="gp-chip__label">믿음</div><div class="gp-chip__val" data-k="trust">0%</div></span></div>
       </div>
       <div class="gp-progress"><div class="gp-progress__fill" data-k="progress"></div></div>
-      <div class="gp-stage" data-k="stage"></div>
+      <button type="button" class="gp-stage" data-k="stage"></button>
       <button type="button" class="gp-fever" data-k="fever" hidden>
         <div class="gp-fever__fill" data-k="fever-fill"></div>
         <div class="gp-fever__text"><span data-k="fever-label">작전 열기</span><b data-k="fever-value">0%</b></div>
@@ -46,6 +46,13 @@ export class DOMHud {
     this._briefMarkupKey = "";
     this._rushMarkupKey = "";
     this._refresh = () => this.refresh();
+    // 구역 목표를 채우면 단계 칩이 곧바로 다음 구역 버튼이 된다(시설 탭 맨 아래 버튼과 같은 동작)
+    this._els.stage.addEventListener("click", () => {
+      const gs = this.gameState;
+      if (!this._stageReady) return;
+      if (gs.bossRequired?.()) gs.startBoss();
+      else gs.advanceStage();
+    });
     this._els.fever.addEventListener("click", () => {
       document.dispatchEvent(new CustomEvent("gp:open-operations"));
     });
@@ -144,10 +151,18 @@ export class DOMHud {
       ? ` · <span style="color:#8df0b0">▲ 신뢰보너스</span>`
       : "";
     // 초당 생산은 월드 하단에 상시 노출되므로 HUD에는 진행 맥락만 남긴다.
-    const stageMarkup = `${d.stage.area}구역 · D-${d.days}${stateSuffix}`;
+    const stageDone = d.stage.progress >= d.stage.target && !this.gameState.bossActive?.();
+    const bossNext = stageDone && !!this.gameState.bossRequired?.();
+    const stageMarkup = stageDone
+      ? (bossNext ? `${d.stage.area}구역 · 최종 검증 시작` : `${d.stage.area}구역 완료 · 다음 구역으로`)
+      : `${d.stage.area}구역 · D-${d.days}${stateSuffix}`;
     if (stageMarkup !== this._stageMarkup) {
       this._stageMarkup = stageMarkup;
+      this._stageReady = stageDone;
       stageEl.innerHTML = stageMarkup;
+      stageEl.classList.toggle("gp-stage--ready", stageDone);
+      stageEl.classList.toggle("gp-stage--boss", bossNext);
+      stageEl.tabIndex = stageDone ? 0 : -1;
     }
 
     // 적체 경고 — 유입이 용량을 넘겨 미처리 표가 쌓이면 노출
