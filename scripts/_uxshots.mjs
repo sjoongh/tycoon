@@ -78,9 +78,8 @@ for (const tab of ["facilities", "crew", "events", "goals", "prestige"]) {
   if (!want(tab)) continue;
   await page.evaluate((t) => window.__game.registry.get("gameState").setTab(t), tab);
   await page.waitForTimeout(300);
-  await setSheet("half"); await page.waitForTimeout(400);
-  await shot(page, `tab-${tab}-half`);
-  await setSheet("full"); await page.waitForTimeout(400);
+  await setSheet("peek");
+  await page.locator(`.gp-tab[data-tab="${tab}"]`).click(); await page.waitForTimeout(500); // 메뉴 탭 → 전체 화면
   await shot(page, `tab-${tab}-full`);
   // 스크롤 끝
   await page.evaluate(() => { const p = document.querySelector(".gp-panel"); p.scrollTop = p.scrollHeight; });

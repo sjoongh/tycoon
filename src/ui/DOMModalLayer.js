@@ -97,8 +97,7 @@ export class DOMModalLayer {
     this._openModal(`
       <div class="gp-modal__badge">${iconHtml("ui-gift", { size: 72 })}</div>
       <div class="gp-mtitle">출석 보상 · ${st.streak}일 연속</div>
-      <div class="gp-msub">매일 들러 개표국을 챙기세요${st.streak >= 7 ? " (최대 연속!)" : ""}</div>
-      <div class="gp-mbig">+${shortNumber(r.votes)}표<br><span>+${shortNumber(r.explain)} 해명</span>${sealLine}</div>
+${st.streak >= 7 ? '      <div class="gp-msub">최대 연속</div>\n' : ""}      <div class="gp-mbig">+${shortNumber(r.votes)}표<br><span>+${shortNumber(r.explain)} 해명</span>${sealLine}</div>
       <button class="gp-btn gp-btn--gold" data-confirm>받기</button>`, () => gs.claimDaily());
   }
 
@@ -628,7 +627,7 @@ export class DOMModalLayer {
     this._openModal(`
       <div class="gp-modal__badge">${iconHtml("op-moon", { size: 72 })}</div>
       <div class="gp-mtitle">오프라인 정산</div>
-      <div class="gp-msub">${timeStr} 동안 개표가 계속됐어요${near ? `<br><span style="color:#ffcd75">최대 ${capH}시간까지 적립돼요 — 자주 들러요!</span>` : ""}</div>
+      <div class="gp-msub">${timeStr} 동안 개표가 계속됐어요${near ? `<br><span style="color:#ffcd75">최대 ${capH}시간까지 적립</span>` : ""}</div>
       <div class="gp-mbig">+${shortNumber(r.votes)}표<br><span>+${shortNumber(r.explain)} 해명</span></div>
       <div class="gp-offline-split" aria-label="오프라인 구역 진행 배분">
         <div><small>현재 구역 반영</small><b>+${shortNumber(progressApplied)}</b></div>
@@ -755,7 +754,9 @@ export class DOMModalLayer {
     this._clearActiveBanner({ requeue: true });
     const ov = document.createElement("div");
     ov.className = "gp-modal-ov";
-    ov.innerHTML = `<div class="gp-modal">${html}</div>`;
+    // 닫을 수 있는 창(data-close 가 있는 창)에는 오른쪽 위 X 를 함께 둔다. 보상 수령처럼 확인만 있는 창은 그대로.
+    const closeX = html.includes("data-close") ? `<button type="button" class="gp-modal__x" data-close aria-label="닫기">✕</button>` : "";
+    ov.innerHTML = `<div class="gp-modal">${closeX}${html}</div>`;
     ov.addEventListener("click", (e) => {
       if (e.target.closest("[data-confirm]")) {
         if (onConfirm) onConfirm();

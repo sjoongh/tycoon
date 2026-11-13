@@ -37,9 +37,9 @@ const TABS = [
 const hex = (c) => "#" + Number(c).toString(16).padStart(6, "0");
 const PANEL_REFRESH_BUDGET_MS = 100;
 
-// 하단 시트 3단: peek(한 줄 요약) < half(패널 스크롤) < full(HUD 아래까지). 탭별 마지막 펼침 상태를 기억한다.
+// 하단 시트: peek(한 줄 요약) / full(HUD 아래까지 꽉 채운 메뉴 화면). 메뉴(탭·요약 줄)는 항상 full 로 열고 X 로 닫는다.
+// half(패널 일부)는 월드의 시설·직원을 눌렀을 때만 쓴다 — 방금 누른 대상이 가려지지 않게.
 const SHEET_STATES = ["peek", "half", "full"];
-const SHEET_DEFAULT = { facilities: "half", crew: "half", events: "half", goals: "full", prestige: "full" };
 const SHEET_STORE_KEY = "gp-sheet-v1";
 
 const nowMs = () => globalThis.performance?.now?.() ?? Date.now();
@@ -51,7 +51,7 @@ export class DOMBottomPanel {
     this.buyQty = 1; // 일괄구매 수량: 1 | 10 | "max" (시설/직원 공유)
     this.root = document.createElement("div");
     this.root.className = "gp-bottom";
-    this.root.innerHTML = `<div class="gp-handle" data-k="handle"><button class="gp-handle__chev" data-k="chev" aria-label="접기/펼치기"></button></div><div class="gp-peek" data-k="peek"></div><div class="gp-panel" data-k="panel"></div><div class="gp-tabs" data-k="tabs"></div>`;
+    this.root.innerHTML = `<div class="gp-handle" data-k="handle"><button class="gp-handle__chev" data-k="chev" aria-label="펼치기"></button></div><div class="gp-peek" data-k="peek"></div><div class="gp-panel" data-k="panel"></div><div class="gp-tabs" data-k="tabs"></div>`;
     this._sheet = this._loadSheet();
 
     const tabsEl = this.root.querySelector('[data-k="tabs"]');
@@ -69,7 +69,7 @@ export class DOMBottomPanel {
     this.peek = this.root.querySelector('[data-k="peek"]');
     this.peek.addEventListener("click", (e) => {
       if (e.target.closest("[data-action]")) { this._onClick(e); return; }
-      this._setSheet(this._sheet.perTab[this._activeTab()] || "half");
+      this._setSheet("full");
     });
     this.root.querySelector('[data-k="chev"]').addEventListener("click", (e) => { e.stopPropagation(); this._toggleSheet(); });
     this._bindDrag(this.root.querySelector('[data-k="handle"]'));
@@ -118,7 +118,7 @@ export class DOMBottomPanel {
     this._onSheetOpen = (e) => {
       const tab = e.detail?.tab;
       if (tab && tab !== this._activeTab() && !this.gameState.tabLocked?.(tab)) this.gameState.setTab(tab);
-      if (this._sheet.state === "peek") this._setSheet("half", { remember: false });
+      if (this._sheet.state === "peek") this._setSheet("half");
       else this.refresh();
     };
     document.addEventListener("gp:sheet-open", this._onSheetOpen);
@@ -210,8 +210,8 @@ export class DOMBottomPanel {
       case "deployStaff": gs.deployStaff(id); this.refresh(); break;
       case "undeployStaff": gs.undeployStaff(id); this.refresh(); break;
       case "setBuyQty": this.buyQty = (id === "max" ? "max" : Number(id)); this.refresh(); break;
-      case "getEvent": if (gs.eventReady()) { this.currentEvent = this._pickEvent(); gs.uiEventOpen = true; if (this._sheet.state === "peek") this._setSheet("half"); this.refresh(); } break;
-      case "expandSheet": this._setSheet(this._sheet.perTab[this._activeTab()] === "full" ? "full" : "half"); break;
+      case "getEvent": if (gs.eventReady()) { this.currentEvent = this._pickEvent(); gs.uiEventOpen = true; if (this._sheet.state === "peek") this._setSheet("full"); this.refresh(); } break;
+      case "expandSheet": this._setSheet("full"); break;
       case "eventChoice": {
         const ev = this.currentEvent?.id === id ? this.currentEvent : null;
         const result = gs.resolveEventChoice?.(ev, el.dataset.side);
@@ -304,44 +304,41 @@ export class DOMBottomPanel {
   _loadSheet() {
     let saved = null;
     try { saved = JSON.parse(localStorage.getItem(SHEET_STORE_KEY) || "null"); } catch {}
-    const perTab = { ...SHEET_DEFAULT, ...(saved?.perTab || {}) };
-    // 첫 플레이(온보딩 전)는 월드를 크게 — 접힘에서 시작해 "화면을 탭하세요" 안내와 손가락이 시트에 가리지 않게
-    const fresh = !saved && !this.gameState.data.tutorial?.done;
-    const state = SHEET_STATES.includes(saved?.state) ? saved.state : (fresh ? "peek" : (perTab[this.gameState.data.activeTab] || "half"));
-    return { state, perTab };
+    // 저장된 상태가 없으면 접힘에서 시작해 월드가 먼저 보이게 한다
+    const state = SHEET_STATES.includes(saved?.state) ? saved.state : "peek";
+    return { state };
   }
 
   _saveSheet() {
-    try { localStorage.setItem(SHEET_STORE_KEY, JSON.stringify({ state: this._sheet.state, perTab: this._sheet.perTab })); } catch {}
+    try { localStorage.setItem(SHEET_STORE_KEY, JSON.stringify({ state: this._sheet.state })); } catch {}
   }
 
-  _setSheet(state, { remember = true } = {}) {
+  _setSheet(state) {
     if (!SHEET_STATES.includes(state)) return;
     const prev = this._sheet.state;
     this._sheet.state = state;
-    if (remember && state !== "peek") this._sheet.perTab[this._activeTab()] = state;
     this._applySheetClass();
     this._saveSheet();
     if (prev === "peek" && state !== "peek") this.refresh(); // 접힘 동안 멈춘 패널을 현재 상태로
   }
 
   _toggleSheet() {
-    if (this._sheet.state === "peek") this._setSheet(this._sheet.perTab[this._activeTab()] || "half");
-    else this._setSheet("peek");
+    this._setSheet(this._sheet.state === "peek" ? "full" : "peek");
   }
 
+  // 핸들 드래그·월드 빈 곳 탭: 위로 → 전체, 아래로 → 접힘
   _stepSheet(dir) {
-    const i = SHEET_STATES.indexOf(this._sheet.state) + dir;
-    this._setSheet(SHEET_STATES[Math.max(0, Math.min(SHEET_STATES.length - 1, i))]);
+    this._setSheet(dir > 0 ? "full" : "peek");
   }
 
   _applySheetClass() {
     SHEET_STATES.forEach((st) => this.root.classList.toggle(`gp-bottom--${st}`, this._sheet.state === st));
+    this.root.querySelector('[data-k="chev"]')?.setAttribute("aria-label", this._sheet.state === "peek" ? "펼치기" : "닫기");
     // 전체 상태면 월드 위 플로팅 버튼(브리핑·러시)을 숨긴다 — 시트가 덮은 영역이라 누를 대상이 없다
     this._panelParent?.classList.toggle("gp-ui--sheet-full", this._sheet.state === "full");
   }
 
-  // 다른 탭: 그 탭의 기억된 상태로 펼침. 같은 탭: 접힘 ↔ 펼침 토글.
+  // 다른 탭: 전체 화면으로 연다. 같은 탭: 접힘 ↔ 전체 토글.
   _onTabClick(id) {
     if (this.gameState.tabLocked?.(id)) {
       this.gameState.emit("float", { text: this.gameState.tabLockHint(id), x: 195, y: 470, color: "#ffd479" });
@@ -349,7 +346,7 @@ export class DOMBottomPanel {
     }
     if (id === this._activeTab()) { this._toggleSheet(); return; }
     this.gameState.setTab(id);
-    this._setSheet(this._sheet.perTab[id] || "half", { remember: false });
+    this._setSheet("full");
   }
 
   // 반펼침·전체 높이를 UI 레이어 실측으로 계산(FIT 스케일·기기 높이 대응). 전체는 HUD 바로 아래까지.
@@ -434,7 +431,7 @@ export class DOMBottomPanel {
       const weekly = gs.weeklyClaimable ? gs.weeklyClaimable() : false;
       const q = gs.nextQuest ? gs.nextQuest() : null;
       if (st?.available) html = `<div class="gp-peek__icon" style="${iconStyle(tabIcon("goals", true), 36)}"></div><div class="gp-peek__body"><div class="gp-peek__title">출석 보상 ${st.streak}일차</div><div class="gp-peek__sub">해명 +${st.reward.explain} · 표 +${shortNumber(st.reward.votes)}</div></div><button class="gp-btn gp-btn--sm gp-btn--gold gp-btn--ready" data-action="claimAttendance">받기</button>`;
-      else if (weekly) html = `<div class="gp-peek__icon" style="${iconStyle(tabIcon("goals", true), 36)}"></div><div class="gp-peek__body"><div class="gp-peek__title">주간 목표 달성</div><div class="gp-peek__sub">보상을 받을 수 있습니다</div></div><button class="gp-btn gp-btn--sm gp-btn--gold gp-btn--ready" data-action="claimWeekly">받기</button>`;
+      else if (weekly) html = `<div class="gp-peek__icon" style="${iconStyle(tabIcon("goals", true), 36)}"></div><div class="gp-peek__body"><div class="gp-peek__title">주간 목표 달성</div></div><button class="gp-btn gp-btn--sm gp-btn--gold gp-btn--ready" data-action="claimWeekly">받기</button>`;
       else if (q) { const pr = gs.questProgress(q); html = `<div class="gp-peek__icon" style="${iconStyle(tabIcon("goals", true), 36)}"></div><div class="gp-peek__body"><div class="gp-peek__title">${q.title}</div><div class="gp-peek__sub"><b>${shortNumber(Math.min(pr, q.target))}</b> / ${shortNumber(q.target)} · ${rewardLabel(q.reward)}</div></div>`; }
       else html = `<div class="gp-peek__icon" style="${iconStyle(tabIcon("goals", true), 36)}"></div><div class="gp-peek__body"><div class="gp-peek__title">운영 목표</div><div class="gp-peek__sub">정규 목표 완료 · 끝없는 목표 진행 중</div></div>`;
     } else if (tab === "prestige") {
@@ -708,7 +705,7 @@ export class DOMBottomPanel {
     const deployedSlots = gs.staffSlots();
     const slotCards = Array.from({ length: STAFF_SLOT_LIMIT }, (_, index) => {
       const id = deployedSlots[index];
-      if (!id) return `<div class="gp-fieldslot gp-fieldslot--empty"><span>${index + 1}</span><b>빈 자리</b><small>직원을 배치하세요</small></div>`;
+      if (!id) return `<div class="gp-fieldslot gp-fieldslot--empty"><span>${index + 1}</span><b>빈 자리</b></div>`;
       const staff = staffDefinitions.find((item) => item.id === id);
       const rank = staffRankForLevel(gs.staffLevel(id));
       return `<button class="gp-fieldslot gp-fieldslot--filled" data-action="undeployStaff" data-id="${id}" aria-label="${staff.role} ${rank.name} 현장 해제 · 대기 전환" style="--staff-color:${hex(staff.color)}"><span>${index + 1}</span><b>${staff.role} · ${rank.name}</b><small>${staffDeploymentEffectText(id, gs.staffLevel(id))}</small></button>`;
@@ -1081,7 +1078,7 @@ export class DOMBottomPanel {
     const eqLv = eq ? (gs.data.titles[eq.id] || 0) : 0;
     const eqLine = eq
       ? `<span class="gp-gacha__eqname" style="color:${RARITY_COLOR[eq.rarity]}">${iconHtml(eq.icon, { size: 32 })}${eq.name} Lv.${eqLv}</span> · ${eq.per}`
-      : `<span class="gp-card__sub">아직 발령 없음 — 첫 뽑기로 칭호를 받으세요</span>`;
+      : `<span class="gp-card__sub">아직 발령 없음</span>`;
     // 보유 칭호 미니 칩(보유한 것만, 등급색)
     const chips = govTitles.filter((t) => (gs.data.titles[t.id] || 0) > 0)
       .map((t) => `<span class="gp-gacha__chip" style="border-color:${RARITY_COLOR[t.rarity]};color:${RARITY_COLOR[t.rarity]}" title="${t.name} · ${t.per}">${iconHtml(t.icon, { size: 32 })}${(gs.data.titles[t.id] || 0)}</span>`)
@@ -1142,7 +1139,6 @@ export class DOMBottomPanel {
     return `<div class="gp-gacha gp-cos">
       <div class="gp-gacha__hd">${iconHtml("cos-tophat", { size: 32 })}국장 꾸미기 <span class="gp-gacha__count">보유 ${owned}/${cosmetics.length}</span></div>
       ${rows}
-      <div class="gp-cos__tip">진행하면 더 해금돼요 · 탭해서 장착/해제</div>
     </div>`;
   }
 

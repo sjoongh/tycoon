@@ -258,7 +258,7 @@ function promptNickname() {
     ov.className = "gp-map-ov";
     ov.innerHTML = `<div class="gp-modal" style="text-align:center">
       <div class="gp-mtitle">랭킹 닉네임</div>
-      <div class="gp-msub">랭킹에 표시될 이름을 정하세요(최대 12자)</div>
+      <div class="gp-msub">최대 12자</div>
       <input class="gp-nickinput" maxlength="12" placeholder="예: 정직한개표원" />
       <div class="gp-confirm-row" style="margin-top:10px">
         <button class="gp-btn gp-btn--disabled" data-cancel>취소</button>
@@ -309,9 +309,9 @@ function renderLeaderboard(message, rows, weekly = null) {
   const rowHtml = (r, i, valueHtml) => `<div class="gp-rank__row${r.id === _uid ? " gp-rank__row--me" : ""}"><span class="gp-rank__no">${i + 1}</span><span class="gp-rank__nick">${escapeHtml(r.nick || "익명")}</span><span class="gp-rank__area">${valueHtml}</span></div>`;
   if (message) body = `<div class="gp-rank__msg">${message}</div>`;
   else if (mode === "weekly") {
-    body = (weekly || []).map((r, i) => rowHtml(r, i, `${fmtNum(r.weekVotes || 0)}표`)).join("") || `<div class="gp-rank__msg">이번 주 기록이 아직 없어요. 첫 주자가 되세요!</div>`;
+    body = (weekly || []).map((r, i) => rowHtml(r, i, `${fmtNum(r.weekVotes || 0)}표`)).join("") || `<div class="gp-rank__msg">이번 주 기록 없음</div>`;
   } else {
-    body = rows.map((r, i) => rowHtml(r, i, `${r.area}구역`)).join("") || `<div class="gp-rank__msg">아직 기록이 없어요. 1등 하세요!</div>`;
+    body = rows.map((r, i) => rowHtml(r, i, `${r.area}구역`)).join("") || `<div class="gp-rank__msg">기록 없음</div>`;
   }
   const myRank = weekly ? weekly.findIndex((r) => r.id === _uid) + 1 : 0;
   const daysLeft = _gs?.weeklyDaysLeft ? _gs.weeklyDaysLeft() : (_gs?.weeklyRemainingDays ? _gs.weeklyRemainingDays() : null);
@@ -324,7 +324,7 @@ function renderLeaderboard(message, rows, weekly = null) {
     ${badges ? `<div class="gp-rank__badges">${badges}</div>` : ""}
     ${mode === "weekly" && !message ? nationalHtml() : ""}
     <div class="gp-map__list gp-rank__list">${body}</div>
-    <div class="gp-map__foot">${mode === "weekly" ? "주가 끝나면 순위에 따라 브론즈~엘리트 뱃지와 해명·인장을 받습니다. 뱃지는 개표소 벽에 걸립니다." : "구역을 더 정복할수록 순위가 오릅니다"}</div>
+    ${mode === "weekly" ? `<div class="gp-map__foot">주가 끝나면 순위에 따라 브론즈~엘리트 뱃지와 해명·인장을 받습니다. 뱃지는 개표소 벽에 걸립니다.</div>` : ""}
   </div>`;
   ov.querySelector("[data-nat-claim]")?.addEventListener("click", () => { _gs.claimNational(); renderLeaderboard(null, rows, weekly); });
   ov.querySelectorAll("[data-mode]").forEach((b) => b.addEventListener("click", () => { ov.dataset.mode = b.dataset.mode; renderLeaderboard(null, rows, weekly); }));
