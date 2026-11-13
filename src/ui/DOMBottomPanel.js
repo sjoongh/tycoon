@@ -134,7 +134,8 @@ export class DOMBottomPanel {
       const t = this.root.getBoundingClientRect().top;
       const topGame = (t - ui.top) * (844 / ui.height); // FIT 스케일 대응
       // FAB(러시/브리핑) 동적 앵커용 — 패널 실높이를 CSS 변수로 기록
-      this._panelParent.style.setProperty("--panel-h", `${Math.round(ui.bottom - t)}px`);
+      const k = ui.height / (this._panelParent.offsetHeight || ui.height); // UI 레이어 배율(데스크톱·태블릿)
+      this._panelParent.style.setProperty("--panel-h", `${Math.round((ui.bottom - t) / k)}px`);
       this.gameState.uiSheetTopGame = topGame; // 늦게 생성되는 WorldView가 초기값을 읽어가도록 기록
       this.gameState.uiSheetState = this._sheet.state;
       document.dispatchEvent(new CustomEvent("gp:sheet-top", { detail: { topGame, state: this._sheet.state } }));
@@ -353,14 +354,15 @@ export class DOMBottomPanel {
 
   // 반펼침·전체 높이를 UI 레이어 실측으로 계산(FIT 스케일·기기 높이 대응). 전체는 HUD 바로 아래까지.
   _measureSheet() {
-    const ui = this._panelParent?.getBoundingClientRect();
-    if (!ui || !ui.height) return;
-    const hud = this._panelParent.querySelector(".gp-hud")?.getBoundingClientRect();
-    const hudBottom = hud ? hud.bottom - ui.top : ui.height * 0.16;
-    const tabs = this.root.querySelector('[data-k="tabs"]')?.getBoundingClientRect().height || 54;
+    // offset* 은 transform 배율과 무관한 CSS px — UI 레이어가 scale 돼도 변수 값이 어긋나지 않는다
+    const uiH = this._panelParent?.offsetHeight;
+    if (!uiH) return;
+    const hud = this._panelParent.querySelector(".gp-hud");
+    const hudBottom = hud ? hud.offsetTop + hud.offsetHeight : uiH * 0.16;
+    const tabs = this.root.querySelector('[data-k="tabs"]')?.offsetHeight || 54;
     const chrome = 22 + tabs + 14; // 핸들 + 탭바 + 패딩
-    const half = Math.round(ui.height * 0.46 - chrome);
-    const full = Math.round(ui.height - hudBottom - chrome);
+    const half = Math.round(uiH * 0.46 - chrome);
+    const full = Math.round(uiH - hudBottom - chrome);
     this.root.style.setProperty("--sheet-half", `${Math.max(200, half)}px`);
     this.root.style.setProperty("--sheet-full", `${Math.max(half, full)}px`);
   }
@@ -888,7 +890,7 @@ export class DOMBottomPanel {
     // 랭킹 버튼 — 클라우드(Firebase) 설정됐을 때만 노출(웹·앱 공통). 미설정 시 숨김.
     const rankBtn = cloudEnabled()
       ? `<button class="gp-btn gp-btn--sm gp-rankbtn" data-action="openRank">${iconHtml("ui-trophy", { size: 32 })}랭킹</button>` : "";
-    this.panel.innerHTML = `<div class="gp-paneltitle">운영 목표 · ${titleProgress}${rankBtn}</div>
+    this.panel.innerHTML = `<div class="gp-paneltitle gp-paneltitle--row"><span>운영 목표 · ${titleProgress}</span>${rankBtn}</div>
       <div class="gp-goallist-wrap"><div class="gp-stafflist gp-goallist">
       ${dailyRow}
       ${seasonCard}

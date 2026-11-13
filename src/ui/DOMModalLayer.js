@@ -95,7 +95,7 @@ export class DOMModalLayer {
     const r = st.reward;
     const sealLine = r.seals ? `<br><span>+${r.seals} 제도인장</span>` : "";
     this._openModal(`
-      <div class="gp-modal__badge">${iconHtml("ui-calendar", { size: 72 })}</div>
+      <div class="gp-modal__badge">${iconHtml("ui-gift", { size: 72 })}</div>
       <div class="gp-mtitle">출석 보상 · ${st.streak}일 연속</div>
       <div class="gp-msub">매일 들러 개표국을 챙기세요${st.streak >= 7 ? " (최대 연속!)" : ""}</div>
       <div class="gp-mbig">+${shortNumber(r.votes)}표<br><span>+${shortNumber(r.explain)} 해명</span>${sealLine}</div>

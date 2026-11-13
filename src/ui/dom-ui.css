@@ -970,3 +970,52 @@ body { background-color: var(--bg-deep); background-image: repeating-linear-grad
 .gp-ui--sheet-full .gp-camhome { display: none; }
 /* 설정 토글: 꺼짐은 회색(켜짐 초록과 한눈에 구분) */
 .gp-set__row .gp-btn[aria-pressed="false"] { background: var(--panel2); color: var(--ink-soft); text-shadow: none; box-shadow: var(--px-out), 0 4px 0 #262d48, 0 8px 14px rgba(0,0,0,0.3); }
+
+/* ---------- 2026-11-13 UI/UX 정리 ---------- */
+/* 한글 줄바꿈: 낱말 중간에서 끊지 않는다("밑바/닥", "격리/합니다") */
+.gp-ui { word-break: keep-all; overflow-wrap: break-word; }
+
+/* 넓은 화면: UI 레이어를 게임 프레임 배율에 맞춘다(--ui-scale 은 main.js 가 프레임 높이로 계산) */
+@media (min-width: 430px) {
+  .gp-ui { top: 0; bottom: auto; transform-origin: top center; transform: translateX(-50%) scale(var(--ui-scale, 1)); box-shadow: none; }
+  .gp-modal { max-height: 760px; }
+  .gp-map { max-height: 692px; }
+}
+
+/* HUD: 설정 버튼 폭만큼만 비워 표 숫자가 잘리지 않게 한다 */
+@media (min-width: 376px) {
+  .gp-hud__row { padding-right: 56px; }
+  .gp-chip--votes { flex-grow: 1.7; }
+  .gp-chip--explain { flex-grow: 1.2; }
+  .gp-chip--trust { flex-grow: 1; }
+}
+.gp-chip__val { font-size: 15px; }
+
+/* 단계 칩: 구역 목표를 채우면 다음 구역 버튼 */
+.gp-stage { appearance: none; margin: 0; cursor: default; }
+.gp-stage--ready { pointer-events: auto; cursor: pointer; min-height: 36px; padding: 6px 16px; font-family: var(--f-bold); font-size: 14px; color: #04220f; background: linear-gradient(180deg, #8ae57a, #5ed05a 55%, #3fae44); border-radius: 999px; box-shadow: var(--px-out-sm), 0 3px 0 var(--buy-edge), 0 6px 12px rgba(0,0,0,0.3); animation: gp-ready-glow 1.2s ease-in-out infinite; }
+.gp-stage--ready.gp-stage--boss { color: #4a2600; background: linear-gradient(180deg, #ffe28a, #ffc53d 60%, #e39a16); box-shadow: var(--px-out-sm), 0 3px 0 #b8720f, 0 6px 12px rgba(0,0,0,0.3); }
+.gp-stage--ready:active { transform: translateY(2px); animation: none; }
+.gp-stage--ready:focus-visible { outline: 3px solid var(--gem); outline-offset: 2px; }
+
+/* 알림 배너: 단계 칩 자리를 잠깐 덮는 한 줄 — 오른쪽 칩·펼친 시트 제목을 가리지 않는다 */
+.gp-banner { top: calc(max(9px, env(safe-area-inset-top)) + 66px); min-height: 48px; display: flex; align-items: center; justify-content: center; padding: 6px 16px; font-size: 14px; border-radius: 999px; box-shadow: var(--px-out-sm), 0 4px 10px rgba(0,0,0,0.45); }
+.gp-banner--stage { font-size: 16px; }
+.gp-banner--danger { font-size: 14px; }
+
+/* 목표 탭 제목 줄 */
+.gp-paneltitle--row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.gp-paneltitle--row > span { min-width: 0; }
+.gp-paneltitle--row .gp-rankbtn { float: none; flex: none; margin: 0; }
+
+/* 사건 제목 표식: 사각 픽셀 박스 → 둥근 표식(연쇄 사건의 화살표 글리프는 폰트에 없어 깨졌다) */
+.gp-event__title::before { width: 20px; height: 20px; line-height: 20px; border: 0; border-radius: 50%; }
+.gp-event--chain .gp-event__title::before { content: "!"; }
+
+/* 면책 문구 대비 */
+.gp-disclaimer { font-size: 9.5px; color: #9aa7cb; opacity: 1; }
+
+/* 직원 카드 배치 버튼: 구매 버튼과 같은 높이·입체감 */
+.gp-staff__deploy { min-height: 44px; box-shadow: var(--px-out-sm), 0 3px 0 rgba(0,0,0,0.35); }
+.gp-staff__deploy--locked { box-shadow: none; }
+@media (max-width: 375px) { .gp-banner { left: 56px; right: 56px; } } /* 좁은 화면: 진행바 줄로 내려온 설정 버튼을 가리지 않는다 */
