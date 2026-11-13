@@ -154,7 +154,7 @@ export class DOMMapModal {
         <div class="gp-map__era">${iconHtml("ui-flag", { size: 32 })}사건 결말 <span class="gp-dex__count">${endN}/${endT}</span></div>
         ${endGroups}
       </div>
-      <div class="gp-map__foot">구역을 정복할수록 더 높은 권위의 개표소로 이동합니다<br><span class="gp-disclaimer">※ 창작 픽션 — 실존 기관·인물·단체와 무관하며 비방 의도가 없습니다</span></div>
+
     </div>`;
   }
 

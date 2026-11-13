@@ -83,7 +83,6 @@ export class DOMSettings {
         <div class="gp-set__note">폰트: Jua·Do Hyeon(우아한형제들), Galmuri(quiple) — SIL OFL · 아트 출처: /art/CREDITS.md · 엔진: Phaser 3</div>
         <div class="gp-set__note">※ 본 게임은 창작 픽션입니다. 등장하는 기관·사건·인물은 실존과 무관하며 특정 대상을 비방할 의도가 없습니다.</div>
       </div>
-      <div class="gp-map__foot">믿어주세요, 개표국</div>
     </div>`;
   }
 
