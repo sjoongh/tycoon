@@ -748,7 +748,6 @@ export class DOMBottomPanel {
           <button class="gp-btn gp-event__c" data-action="eventChoice" data-id="${ev.id}" data-side="right">${ev.right[0]}<small>${ev.right[2]}</small>${fx(ev.right[1])}</button>
         </div></div>`;
     } else {
-      const log = (gs.data.log || []).slice(0, 3).map((l) => `<div class="gp-logline">${l}</div>`).join("");
       const ready = gs.eventReady();
       this._eventsReadyRendered = ready;
       const chainStatus = gs.eventChainStatus?.();
@@ -775,7 +774,7 @@ export class DOMBottomPanel {
       const effectLine = chainStatus?.effects?.length
         ? `<div class="gp-chainfx"><b>이번 런 효과</b>${chainStatus.effects.map((ending) => `<span>${ending.title} · ${ending.effectText.replace("이번 런 ", "")}</span>`).join("")}</div>`
         : "";
-      this.panel.innerHTML = `<div class="gp-paneltitle">${iconHtml("ui-clipboard", { size: 32 })}사건 대응실 · 처리 ${gs.data.stats.totalEvents}건</div><div class="gp-card__sub">보상 x${gs.eventRewardScale().toFixed(1)}</div>${btn}${chainLine}${effectLine}${this._agencyLine()}<div class="gp-dexline">${dexLine}</div>${this._dexSetLine()}<div class="gp-log">${log}</div>`;
+      this.panel.innerHTML = `<div class="gp-paneltitle">${iconHtml("ui-clipboard", { size: 32 })}사건 대응실 · 처리 ${gs.data.stats.totalEvents}건</div><div class="gp-card__sub">보상 x${gs.eventRewardScale().toFixed(1)}</div>${btn}${chainLine}${effectLine}${this._agencyLine()}<div class="gp-dexline">${dexLine}</div>${this._dexSetLine()}`;
       // transform 기반 쿨다운 스윕으로 레이아웃 재계산을 피한다.
       if (!ready && totalMs > 0) {
         const btnEl = this.panel.querySelector(".gp-btn--event");
@@ -860,8 +859,9 @@ export class DOMBottomPanel {
     }).join("");
     const dailyClaimed = dailyQuestDefinitions.filter((q) => gs.dailyQuestClaimed(q.id)).length;
 
-    let questRows = questDefinitions.map((q) =>
-      goalRow(q, gs.data.quests[q.id] ? "done" : (active && q.id === active.id ? "active" : "locked"))
+    // 이미 끝낸 목표는 목록에서 뺀다(완료 수는 제목의 N/M 으로 충분) — 진행 중·예정만 남긴다
+    let questRows = questDefinitions.filter((q) => !gs.data.quests[q.id]).map((q) =>
+      goalRow(q, active && q.id === active.id ? "active" : "locked")
     ).join("");
     // 정의된 목표를 모두 완료하면 끝없는 누적-표 목표를 현재 진행 목표로 노출
     if (active && active.generated) questRows += goalRow(active, "active");

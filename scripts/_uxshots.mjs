@@ -80,7 +80,9 @@ for (const tab of ["facilities", "crew", "events", "goals", "prestige"]) {
   await page.waitForTimeout(300);
   await setSheet("peek");
   await page.locator(`.gp-tab[data-tab="${tab}"]`).click(); await page.waitForTimeout(500); // 메뉴 탭 → 전체 화면
+  if (process.env.HIDEBANNER) await page.addStyleTag({ content: ".gp-banner,.gp-flash{display:none!important}" });
   await shot(page, `tab-${tab}-full`);
+  if (process.env.MID) { await page.evaluate(() => { const p = document.querySelector(".gp-panel"); p.scrollTop = p.clientHeight * 0.9; }); await page.waitForTimeout(250); await shot(page, `tab-${tab}-full-mid`); }
   // 스크롤 끝
   await page.evaluate(() => { const p = document.querySelector(".gp-panel"); p.scrollTop = p.scrollHeight; });
   await page.waitForTimeout(250);
