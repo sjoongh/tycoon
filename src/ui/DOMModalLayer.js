@@ -513,7 +513,7 @@ ${st.streak >= 7 ? '      <div class="gp-msub">최대 연속</div>\n' : ""}     
       <div class="gp-msub">표·시설·직원은 초기화되지만, <b>제도인장 +${proj.earned}</b>${medalLine}을 받아 <b>영구 생산 배율</b>이 영원히 오릅니다. (감사 업그레이드·업적은 유지)</div>
       <div class="gp-mbig">영구 x${proj.current.toFixed(2)} → <span style="color:#8df0b0">x${proj.projected.toFixed(2)}</span></div>
       <div class="gp-prestige-advice gp-prestige-advice--${advice.key}">
-        <span><b>현재보다 +${proj.gainPct.toFixed(1)}%</b><small>${advice.detail}</small></span>
+        <span><b>현재보다 +${proj.gainPct.toFixed(1)}%</b>${advice.key === "wait" ? `<small>${advice.detail}</small>` : ""}</span>
         <em>${advice.label}</em>
       </div>
       <div class="gp-confirm-row">
