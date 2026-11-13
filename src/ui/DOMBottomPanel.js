@@ -774,7 +774,7 @@ export class DOMBottomPanel {
       const effectLine = chainStatus?.effects?.length
         ? `<div class="gp-chainfx"><b>이번 런 효과</b>${chainStatus.effects.map((ending) => `<span>${ending.title} · ${ending.effectText.replace("이번 런 ", "")}</span>`).join("")}</div>`
         : "";
-      this.panel.innerHTML = `<div class="gp-paneltitle">${iconHtml("ui-clipboard", { size: 32 })}사건 대응실 · 처리 ${gs.data.stats.totalEvents}건</div><div class="gp-card__sub">보상 x${gs.eventRewardScale().toFixed(1)}</div>${btn}${chainLine}${effectLine}${this._agencyLine()}<div class="gp-dexline">${dexLine}</div>${this._dexSetLine()}`;
+      this.panel.innerHTML = `<div class="gp-paneltitle">${iconHtml("ui-clipboard", { size: 32 })}사건 대응실</div>${btn}${chainLine}${effectLine}${this._agencyLine()}<div class="gp-dexline">${dexLine}</div>${this._dexSetLine()}`;
       // transform 기반 쿨다운 스윕으로 레이아웃 재계산을 피한다.
       if (!ready && totalMs > 0) {
         const btnEl = this.panel.querySelector(".gp-btn--event");
@@ -866,8 +866,9 @@ export class DOMBottomPanel {
     // 정의된 목표를 모두 완료하면 끝없는 누적-표 목표를 현재 진행 목표로 노출
     if (active && active.generated) questRows += goalRow(active, "active");
 
-    const achRows = achievementDefinitions.map((a) => {
-      const got = !!gs.data.achievements[a.id];
+    // 달성한 업적은 목록에서 뺀다(달성 수는 섹션 제목의 N/M) — 남은 업적의 진행률만 보여 준다
+    const achRows = achievementDefinitions.filter((a) => !gs.data.achievements[a.id]).map((a) => {
+      const got = false;
       const cur = gs.achievementProgress(a.metric);
       const ratio = Math.max(0, Math.min(1, cur / a.target));
       // P2 fix: replace emoji medals with reliable monochrome unicode (no WebView font-fallback risk)
@@ -1007,6 +1008,8 @@ export class DOMBottomPanel {
     const can = preview > 0;
     const advice = projection.advice || { key: "locked", label: "준비 중", detail: "감사 조건을 달성하세요" };
     const gainLabel = can ? `영구 생산 +${projection.gainPct.toFixed(1)}%` : "영구 상승 계산 중";
+    // 조건(잠김)·행동 안내(조금 더)만 문장으로 남긴다. 적기·추천은 라벨과 상승폭 수치로 충분하다.
+    const adviceDetail = advice.key === "locked" || advice.key === "wait" ? `<small>${advice.detail}</small>` : "";
     // FIX #8: prestige upgrades use .gp-seal (gem-blue) not .gp-fac (gold) — distinct economy, distinct look
     // FIX P1: track _selectedSeal — default to first affordable, or first upgradeable; apply gp-seal--active
     const firstAffordable = prestigeUpgrades.find((u) => {
@@ -1051,7 +1054,7 @@ export class DOMBottomPanel {
       ${detailCard}
       ${medalSection}
       <div class="gp-prestige-advice gp-prestige-advice--${advice.key}">
-        <span><b>${gainLabel}</b><small>${advice.detail}</small></span>
+        <span><b>${gainLabel}</b>${adviceDetail}</span>
         <em>${advice.label}</em>
       </div>
       ${can && projection.earnedIn1h > preview ? `<div class="gp-prestige-later">지금 감사 <b>+${preview}</b> 인장 · 1시간 더 키우면 <b>+${projection.earnedIn1h}</b></div>` : ""}
