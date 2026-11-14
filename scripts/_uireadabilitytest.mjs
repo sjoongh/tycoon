@@ -109,9 +109,10 @@ try {
   await page.locator("[data-operation]").first().click();
   await page.locator("[data-operation-confirm]").click();
   await page.waitForTimeout(120);
-  const stageAnnouncement = await page.locator(".gp-banner").textContent();
-  if (!stageAnnouncement?.includes("4구역 진입")) {
-    throw new Error(`stage announcement did not resume first: ${stageAnnouncement}`);
+  // 구역 진입 알림은 승격 통지 카드로 바뀌었다(위에서 닫음). 팝업이 모두 닫힌 뒤 밀린 알림이 하나씩만 재개되는지 본다.
+  const resumed = { banners: await page.locator(".gp-banner").count(), modals: await page.locator(".gp-modal-ov").count() };
+  if (resumed.banners > 1 || resumed.modals !== 0) {
+    throw new Error(`announcement did not resume cleanly after modals: ${JSON.stringify(resumed)}`);
   }
 
   await page.evaluate(() => {

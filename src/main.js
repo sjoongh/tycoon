@@ -137,6 +137,7 @@ if (import.meta.env.DEV) {
   window.__game = game;
   window.__phaserBuild = __GAEPYO_PHASER_BUILD__;
   window.__sfx = sfx;
+  window.__pwaUpdates = pwaUpdates; // QA: 갱신 제안 표시 조건 확인용
 }
 
 const uiLayer = document.createElement("div");
