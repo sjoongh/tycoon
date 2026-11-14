@@ -20,6 +20,33 @@ const browser = await chromium.launch({
   ],
 });
 const page = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1 });
+
+// 시설 메뉴가 접혀 있으면 먼저 연다 — 구역 완료·최종 검증 버튼은 메뉴 안에 있다
+// 승격 통지·검증 결과 카드가 작전 회의보다 먼저 뜬다 — 작전 회의가 아닌 카드는 닫고 기다린다
+const closeUntilOperation = async () => {
+  for (let k = 0; k < 16; k += 1) {
+    if (await page.locator(".gp-modal--operation").count()) return;
+    const m = page.locator(".gp-modal:not(.gp-modal--operation) [data-close], .gp-modal:not(.gp-modal--operation) [data-confirm]");
+    if (await m.count()) await m.first().click().catch(() => {});
+    // 작전 회의는 상태 변경 때 열린다 — 일시정지로 틱이 멈춘 시나리오에서도 열리게 알린다
+    else await page.evaluate(() => window.__game.registry.get("gameState").emit("changed"));
+    await page.waitForTimeout(250);
+  }
+};
+const openFacilities = async () => {
+  // 출석·복귀 등 보상 팝업이 버튼을 가리면 먼저 닫는다
+  for (let k = 0; k < 4; k += 1) {
+    const m = page.locator(".gp-modal [data-skip], .gp-modal [data-close], .gp-modal [data-confirm]");
+    if (!(await m.count())) break;
+    await m.first().click().catch(() => {});
+    await page.waitForTimeout(120);
+  }
+  if (await page.locator(".gp-bottom--peek").count()) {
+    // 보상 팝업이 떠 있어도 열 수 있게 DOM 클릭을 쓴다
+    await page.evaluate(() => document.querySelector('.gp-tab[data-tab="facilities"]').click());
+    await page.waitForTimeout(250);
+  }
+};
 page.setDefaultTimeout(5000);
 const errors = [];
 page.on("pageerror", (error) => errors.push(`PAGEERR ${error.message}`));
@@ -58,12 +85,14 @@ try {
   });
   await page.waitForTimeout(60);
   await page.locator(".gp-banner").waitFor({ state: "detached", timeout: 5000 });
+  await openFacilities();
   await page.locator('[data-action="advanceStage"]').click();
   await page.locator(".gp-boss--active").waitFor({ state: "visible" });
   await page.evaluate(() => {
     const gameState = window.__game.registry.get("gameState");
     gameState.skipBoss();
   });
+  await closeUntilOperation();
   await page.locator(".gp-modal--operation").waitFor({ state: "visible", timeout: 3000 });
 
   const modalCollision = {

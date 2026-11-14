@@ -627,9 +627,6 @@ html.gp-reduce-motion #game.gp-game--fever canvas { filter: brightness(1.05); }
 
 /* desktop gutters */
 body { background-color: var(--bg-deep); background-image: repeating-linear-gradient(45deg, rgba(120,140,200,0.04) 0px, rgba(120,140,200,0.04) 1px, transparent 1px, transparent 8px); }
-@media (min-width: 430px) {
-  .gp-ui { width: 390px; height: 844px; overflow: hidden; position: absolute; left: 50%; transform: translateX(-50%); box-shadow: 0 0 0 3px #000, 0 24px 80px rgba(0,0,0,0.7); }
-}
 .gp-sealgrid + .gp-region { margin-top: 12px; }
 
 /* ---------- 전국 개표 지도 모달 ---------- */
@@ -704,18 +701,6 @@ body { background-color: var(--bg-deep); background-image: repeating-linear-grad
 /* 창작 픽션 면책 문구 */
 .gp-disclaimer { display: block; margin-top: 8px; font-family: var(--f-small); font-size: 8px; line-height: 1.5; color: var(--ink-faint, #6b5d52); opacity: 0.85; }
 
-/* 좁은 화면(360w 이하급) — HUD 칩 값 잘림 방지 */
-@media (max-width: 375px) {
-  /* 좁은 화면: 설정 버튼을 진행바 줄로 내려 칩 3개가 전체 폭을 쓰게 한다 */
-  .gp-hud__row { padding-right: 0; gap: 4px; }
-  .gp-chip { padding: 3px 5px 3px 3px; gap: 3px; }
-  .gp-chip__ic { width: 28px !important; height: 28px !important; margin: -3px 0; }
-  .gp-chip__label { display: none; }
-  .gp-chip__val { font-size: 13px; }
-  .gp-progress { margin-right: 44px; }
-  .gp-mute { top: calc(max(9px, env(safe-area-inset-top)) + 46px); width: 44px; height: 44px; } /* 터치 영역 44px 유지(로드맵 #15) */
-  .gp-mute .gp-ic { width: 24px !important; height: 24px !important; }
-}
 
 /* ---------- 설정 모달 ---------- */
 .gp-set__list { display: flex; flex-direction: column; gap: 8px; }
@@ -972,20 +957,16 @@ body { background-color: var(--bg-deep); background-image: repeating-linear-grad
 /* 한글 줄바꿈: 낱말 중간에서 끊지 않는다("밑바/닥", "격리/합니다") */
 .gp-ui { word-break: keep-all; overflow-wrap: break-word; }
 
-/* 넓은 화면: UI 레이어를 게임 프레임 배율에 맞춘다(--ui-scale 은 main.js 가 프레임 높이로 계산) */
-@media (min-width: 430px) {
-  .gp-ui { top: 0; bottom: auto; transform-origin: top center; transform: translateX(-50%) scale(var(--ui-scale, 1)); box-shadow: none; }
-  .gp-modal { max-height: 760px; }
-  .gp-map { max-height: 692px; }
-}
+/* UI 레이어는 항상 390×844 설계 크기로 그리고 게임 프레임 배율에 맞춘다(--ui-scale 은 main.js 가 프레임 높이로 계산).
+   미디어쿼리는 뷰포트 폭을 보는데 프레임은 높이에 맞춰 더 좁아질 수 있어(예: 393×770 → 프레임 폭 356) 폭 기준 분기로는 칩 숫자가 잘렸다. */
+.gp-ui { inset: auto; top: 0; left: 50%; width: 390px; height: 844px; overflow: hidden; transform-origin: top center; transform: translateX(-50%) scale(var(--ui-scale, 1)); }
+.gp-modal { max-height: 760px; }
 
 /* HUD: 설정 버튼 폭만큼만 비워 표 숫자가 잘리지 않게 한다 */
-@media (min-width: 376px) {
-  .gp-hud__row { padding-right: 56px; }
-  .gp-chip--votes { flex-grow: 1.7; }
-  .gp-chip--explain { flex-grow: 1.2; }
-  .gp-chip--trust { flex-grow: 1; }
-}
+.gp-hud__row { padding-right: 56px; }
+.gp-chip--votes { flex-grow: 1.7; }
+.gp-chip--explain { flex-grow: 1.2; }
+.gp-chip--trust { flex-grow: 1; }
 .gp-chip__val { font-size: 15px; }
 
 /* 단계 칩: 구역 목표를 채우면 다음 구역 버튼 */
@@ -1015,7 +996,6 @@ body { background-color: var(--bg-deep); background-image: repeating-linear-grad
 /* 직원 카드 배치 버튼: 구매 버튼과 같은 높이·입체감 */
 .gp-staff__deploy { min-height: 44px; box-shadow: var(--px-out-sm), 0 3px 0 rgba(0,0,0,0.35); }
 .gp-staff__deploy--locked { box-shadow: none; }
-@media (max-width: 375px) { .gp-banner { left: 56px; right: 56px; } } /* 좁은 화면: 진행바 줄로 내려온 설정 버튼을 가리지 않는다 */
 
 /* ---------- 2026-11-13 메뉴 전체 화면 + 닫기 X ---------- */
 /* 하단 메뉴가 열리면(전체·일부) 핸들 줄 오른쪽에 닫기 X */
@@ -1030,10 +1010,12 @@ body { background-color: var(--bg-deep); background-image: repeating-linear-grad
 .gp-map { width: 100%; max-width: none; height: 100%; max-height: none; border: 0; border-radius: 0; box-shadow: none; }
 .gp-map__hd { border-radius: 0; padding-top: max(10px, env(safe-area-inset-top)); }
 .gp-map__list { padding-bottom: max(12px, env(safe-area-inset-bottom)); }
-@media (min-width: 430px) { .gp-map { max-height: none; } }
 
 /* 닫을 수 있는 팝업의 X */
 .gp-modal { position: relative; }
 .gp-modal__x { position: absolute; top: 6px; right: 6px; z-index: 2; width: 44px; height: 44px; padding: 0; border: 0; background: transparent; cursor: pointer; pointer-events: auto; font-size: 0; }
 .gp-modal__x::after { content: "✕"; display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; margin: auto; border: 2px solid var(--line); border-radius: 50%; font-family: var(--f-bold); font-size: 14px; color: #fff; background: linear-gradient(180deg, #ff8d9c, #e4455a); box-shadow: var(--px-out-sm), 0 3px 0 #8a1f30; }
 .gp-modal__x:focus-visible { outline: 3px solid var(--gem); outline-offset: -4px; }
+
+/* 설정 토글·동작 버튼: 터치 영역 44px */
+.gp-set__row .gp-btn { min-height: 44px; }
