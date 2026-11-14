@@ -13,7 +13,6 @@ await page.evaluate(() => {
   d.tutorial = { step: 5, done: true, openingSeen: true };
   d.stage.area = 2; d.stage.target = gs.stageTarget(2); d.stage.progress = 0;
   Object.keys(d.facilities).forEach((id) => { d.facilities[id] = 6; });
-  localStorage.removeItem("gp-sheet-v1");
   gs.save(false);
   const key = "trust-office-phaser-v2";
   const saved = JSON.parse(localStorage.getItem(key));

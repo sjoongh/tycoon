@@ -14,7 +14,6 @@ await page.evaluate(() => {
   d.votes = 5e7; d.explain = 5e4;
   Object.keys(d.facilities).forEach((id) => { d.facilities[id] = 20; });
   Object.keys(d.staff).forEach((id) => { d.staff[id] = 3; });
-  localStorage.removeItem("gp-sheet-v1");
   gs.save(false);
 });
 await page.reload({ waitUntil: "domcontentloaded" });
@@ -81,9 +80,17 @@ if (process.env.SHOT) await page.screenshot({ path: process.env.SHOT });
 if (res.popupX) await page.locator(".gp-modal .gp-modal__x").click();
 await page.waitForTimeout(250);
 res.popupClosed = (await page.locator(".gp-modal-ov").count()) === 0;
+// 메뉴를 열어 둔 채 다시 켜도 접힘에서 시작한다
+await page.locator('.gp-tab[data-tab="goals"]').click(); await page.waitForTimeout(250);
+res.beforeReload = await state();
+await page.evaluate(() => window.__game.registry.get("gameState").save(false));
+await page.reload({ waitUntil: "domcontentloaded" });
+await page.waitForFunction(() => window.__game?.registry.get("gameState") && document.querySelector(".gp-bottom"));
+await page.waitForTimeout(800);
+res.afterReload = await state();
 const tabsOk = Object.values(res.tabs).every((t) => t.opened === "full" && t.closed === "peek" && t.label === "닫기" && t.xSize[0] >= 44 && t.xSize[1] >= 44);
 const ovOk = [res.settings, res.map, res.special].every((o) => o && o.fill && o.hasX && o.closed);
-const ok = res.boot === "peek" && tabsOk && res.sameTabOpen === "full" && res.sameTabClose === "peek" && res.worldOpen === "half" && res.worldClosed === "peek" && res.backClosed === "peek" && ovOk && res.popupX === 1 && res.popupClosed;
+const ok = res.boot === "peek" && res.beforeReload === "full" && res.afterReload === "peek" && tabsOk && res.sameTabOpen === "full" && res.sameTabClose === "peek" && res.worldOpen === "half" && res.worldClosed === "peek" && res.backClosed === "peek" && ovOk && res.popupX === 1 && res.popupClosed;
 console.log(JSON.stringify({ ok, ...res }));
 await browser.close();
 process.exit(ok ? 0 : 1);

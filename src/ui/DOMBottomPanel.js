@@ -40,7 +40,6 @@ const PANEL_REFRESH_BUDGET_MS = 100;
 // 하단 시트: peek(한 줄 요약) / full(HUD 아래까지 꽉 채운 메뉴 화면). 메뉴(탭·요약 줄)는 항상 full 로 열고 X 로 닫는다.
 // half(패널 일부)는 월드의 시설·직원을 눌렀을 때만 쓴다 — 방금 누른 대상이 가려지지 않게.
 const SHEET_STATES = ["peek", "half", "full"];
-const SHEET_STORE_KEY = "gp-sheet-v1";
 
 const nowMs = () => globalThis.performance?.now?.() ?? Date.now();
 
@@ -52,7 +51,8 @@ export class DOMBottomPanel {
     this.root = document.createElement("div");
     this.root.className = "gp-bottom";
     this.root.innerHTML = `<div class="gp-handle" data-k="handle"><button class="gp-handle__chev" data-k="chev" aria-label="펼치기"></button></div><div class="gp-peek" data-k="peek"></div><div class="gp-panel" data-k="panel"></div><div class="gp-tabs" data-k="tabs"></div>`;
-    this._sheet = this._loadSheet();
+    // 앱을 켜면 항상 접힘에서 시작해 월드가 먼저 보인다(마지막에 열어 둔 메뉴를 복원하지 않는다)
+    this._sheet = { state: "peek" };
 
     const tabsEl = this.root.querySelector('[data-k="tabs"]');
     TABS.forEach(([id, label]) => {
@@ -302,24 +302,11 @@ export class DOMBottomPanel {
   // ── 시트 상태 ──
   _activeTab() { return this.gameState.data.activeTab || "facilities"; }
 
-  _loadSheet() {
-    let saved = null;
-    try { saved = JSON.parse(localStorage.getItem(SHEET_STORE_KEY) || "null"); } catch {}
-    // 저장된 상태가 없으면 접힘에서 시작해 월드가 먼저 보이게 한다
-    const state = SHEET_STATES.includes(saved?.state) ? saved.state : "peek";
-    return { state };
-  }
-
-  _saveSheet() {
-    try { localStorage.setItem(SHEET_STORE_KEY, JSON.stringify({ state: this._sheet.state })); } catch {}
-  }
-
   _setSheet(state) {
     if (!SHEET_STATES.includes(state)) return;
     const prev = this._sheet.state;
     this._sheet.state = state;
     this._applySheetClass();
-    this._saveSheet();
     if (prev === "peek" && state !== "peek") this.refresh(); // 접힘 동안 멈춘 패널을 현재 상태로
   }
 
