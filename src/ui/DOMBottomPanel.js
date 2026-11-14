@@ -203,7 +203,8 @@ export class DOMBottomPanel {
       case "selectFac": gs.select(id); break;
       case "upgradeFac": gs.bulkUpgrade(gs.data.selected, this.buyQty); break;
       case "advanceStage":
-        if (gs.bossRequired?.()) gs.startBoss();
+        // 최종 검증은 월드를 탭해 치른다 — 전체 화면 메뉴가 월드를 가리지 않게 접는다
+        if (gs.bossRequired?.()) { gs.startBoss(); this._setSheet("peek"); }
         else gs.advanceStage();
         break;
       case "hire": gs.bulkHire(id, this.buyQty); break;

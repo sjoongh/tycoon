@@ -10,6 +10,15 @@ if (!["localhost", "127.0.0.1"].includes(parsedUrl.hostname)) {
 
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+
+// 시설 메뉴가 접혀 있으면 먼저 연다 — 구역 완료·최종 검증 버튼은 메뉴 안에 있다
+const openFacilities = async () => {
+  if (await page.locator(".gp-bottom--peek").count()) {
+    // 보상 팝업이 떠 있어도 열 수 있게 DOM 클릭을 쓴다
+    await page.evaluate(() => document.querySelector('.gp-tab[data-tab="facilities"]').click());
+    await page.waitForTimeout(250);
+  }
+};
 const errors = [];
 page.on("pageerror", (e) => errors.push(String(e)));
 page.on("console", (m) => { if (m.type() === "error") errors.push(m.text()); });
@@ -23,6 +32,7 @@ try {
   const px = (sel) => page.evaluate((s) => Number.parseFloat(getComputedStyle(document.querySelector(s)).fontSize), sel);
   const rect = (sel) => page.evaluate((s) => { const r = document.querySelector(s).getBoundingClientRect(); return [Math.round(r.width), Math.round(r.height)]; }, sel);
 
+  await openFacilities();
   const before = { tab: await px(".gp-tab"), cardSub: await px(".gp-card__sub"), tabRect: await rect(".gp-tab"), qty: await rect(".gp-qtybtn") };
   await page.locator(".gp-mute").click();
   const settingsBtn = await rect('[data-set="bigtext"]');
