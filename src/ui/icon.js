@@ -38,7 +38,9 @@ export function applyIcon(el, name, size = ICON_DEFAULT_PX) {
 
 export const facilityIcon = (id) => `fac-${id}`;
 export const staffIcon = (id) => `staff-${id}`;
-export const tabIcon = (id, active = false) => (active ? `tab-${id}--on` : `tab-${id}`);
+// 하단 탭 아이콘: 게임의 다른 아이콘과 같은 광택 컬러 아이콘. 선택 여부는 CSS(밝기·크기)로 구분한다.
+const TAB_ICONS = { facilities: "fac-desk", crew: "ui-people", events: "ui-warning", goals: "ui-flag", prestige: "ui-seal" };
+export const tabIcon = (id) => TAB_ICONS[id] || `tab-${id}`;
 export const regionIcon = (area) => `region-${Math.max(1, Math.min(12, Number(area) || 1))}`;
 export const bossIcon = (id) => `boss-${id}`;
 export const titleIcon = (id) => `title-${id}`;
