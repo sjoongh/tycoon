@@ -1031,3 +1031,27 @@ body { background-color: var(--bg-deep); background-image: repeating-linear-grad
 .gp-bottom:not(.gp-bottom--peek) .gp-handle__chev { top: 1px; width: 52px; height: 52px; }
 .gp-modal__x { width: 52px; height: 52px; top: 2px; right: 2px; }
 .gp-btn--sm, .gp-qtybtn, .gp-set__row .gp-btn, .gp-staff__deploy { min-height: 50px; }
+
+/* ---------- 2026-11-16 탭 아이콘·시설 카드 목록·감사 비용 표기 ---------- */
+/* 하단 탭: 컬러 아이콘. 선택 안 된 탭은 살짝 낮춰 선택 탭이 먼저 보이게 */
+.gp-tab .gp-tab__ic { opacity: 0.72; filter: saturate(0.75) drop-shadow(0 2px 2px rgba(0,0,0,0.3)); transition: opacity .15s ease, transform .15s ease; }
+.gp-tab--active .gp-tab__ic { opacity: 1; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.35)); transform: scale(1.08); }
+.gp-tab--locked .gp-tab__ic { opacity: 0.45; }
+
+/* 시설 카드 목록 */
+.gp-faclist { display: flex; flex-direction: column; gap: 7px; margin-top: 8px; }
+.gp-faccard { pointer-events: auto; cursor: pointer; padding: 8px 10px; gap: 10px; }
+.gp-faccard .gp-card__icon { width: 52px !important; height: 52px !important; }
+.gp-faccard .gp-card__title { font-size: 15px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.gp-faccard__lv { font-family: var(--f-num); font-size: 13px; color: var(--gold-hi); }
+.gp-faccard__need { font-family: var(--f-small); font-size: 10px; padding: 1px 6px; border-radius: 999px; color: #fff; background: var(--red); }
+.gp-faccard .gp-card__sub { font-size: var(--type-label); }
+.gp-faccard .gp-btn--upgrade { min-width: 96px; align-self: center; }
+.gp-faccard--sel { box-shadow: var(--px-out-sm), 0 0 0 3px var(--gold), 0 4px 10px rgba(0,0,0,0.3); }
+.gp-faccard--locked { cursor: default; opacity: 0.62; }
+.gp-faccard--locked .gp-card__icon { filter: grayscale(1) brightness(0.7); }
+
+/* 감사·훈장 칸: 레벨과 비용을 나눠 표기 */
+.gp-seal { gap: 1px; }
+.gp-seal__cost { font-family: var(--f-small); font-size: 10px; color: #a8ecf6; }
+.gp-seal__cost--medal { color: #ffd479; }

@@ -201,7 +201,12 @@ export class DOMBottomPanel {
     const id = el.dataset.id;
     switch (el.dataset.action) {
       case "selectFac": gs.select(id); break;
-      case "upgradeFac": gs.bulkUpgrade(gs.data.selected, this.buyQty); break;
+      case "upgradeFac": {
+        const target = id || gs.data.selected;
+        if (id && gs.data.selected !== id) gs.select(id); // 산 시설을 선택 상태로(월드 표시·요약 줄과 일치)
+        gs.bulkUpgrade(target, this.buyQty);
+        break;
+      }
       case "advanceStage":
         // 최종 검증은 월드를 탭해 치른다 — 전체 화면 메뉴가 월드를 가리지 않게 접는다
         if (gs.bossRequired?.()) { gs.startBoss(); this._setSheet("peek"); }
@@ -477,23 +482,34 @@ export class DOMBottomPanel {
     btn.classList.toggle("gp-btn--disabled", !ready);
   }
 
+  // 시설 카드 목록의 구조 서명 — 해금·레벨·선택·구역 완료·보스·수량이 바뀌면 전체 렌더, 아니면 버튼·숫자만 패치
+  _facStructureSignature() {
+    const gs = this.gameState;
+    const unlocked = facilities.map((f) => (gs.isUnlocked(f.id) ? 1 : 0)).join("");
+    const levels = facilities.map((f) => gs.level(f.id)).join(",");
+    const stageDone = gs.data.stage.progress >= gs.data.stage.target;
+    return `${unlocked}|${levels}|${gs.data.selected}|${stageDone}|${gs.bossActive?.() || false}|${gs.bossRequired?.() || false}|${this.buyQty}`;
+  }
+
+  // 카드 하나의 업그레이드 버튼 문구·가능 여부
+  _facUpgradeState(id) {
+    const gs = this.gameState;
+    const plan = gs.facilityBulkPlan(id, this.buyQty);
+    const canBuy = plan.levels > 0 && gs.data.votes >= plan.voteCost && gs.data.explain >= plan.explainCost;
+    const qtyTag = this.buyQty === "max" ? (plan.levels > 0 ? `+${plan.levels}Lv` : "MAX") : `×${plan.levels || this.buyQty}`;
+    const text = `${plan.levels > 0 ? `${shortNumber(plan.voteCost)}표` : "부족"}${this.buyQty !== 1 ? ` · ${qtyTag}` : ""}`;
+    return { canBuy, text };
+  }
+
   _patchFacilities() {
     const gs = this.gameState;
-    const sel = gs.data.selected;
-    const unlocked = gs.isUnlocked(sel);
-    const stageDone = gs.data.stage.progress >= gs.data.stage.target;
-    const sig = `${sel}|${unlocked}|${stageDone}|${gs.bossActive?.() || false}|${gs.bossRequired?.() || false}|${this.buyQty}`;
-    if (sig !== this._facSignature) return false; // 구조가 바뀌면 전체 렌더
-    if (unlocked) {
-      const plan = gs.facilityBulkPlan(sel, this.buyQty);
-      const canBuy = plan.levels > 0 && gs.data.votes >= plan.voteCost && gs.data.explain >= plan.explainCost;
-      const btn = this.panel.querySelector('[data-action="upgradeFac"]');
-      this._setBtnState(btn, canBuy);
-      const small = btn?.querySelector("small");
-      const qtyTag = this.buyQty === "max" ? (plan.levels > 0 ? `+${plan.levels}Lv` : "MAX") : `×${plan.levels || this.buyQty}`;
-      const text = `${plan.levels > 0 ? `${shortNumber(plan.voteCost)}표` : "부족"}${this.buyQty !== 1 ? ` · ${qtyTag}` : ""}`;
-      if (small && small.textContent !== text) small.textContent = text;
-    }
+    if (this._facStructureSignature() !== this._facSignature) return false; // 구조가 바뀌면 전체 렌더
+    this.panel.querySelectorAll('[data-action="upgradeFac"][data-id]').forEach((btn) => {
+      const st = this._facUpgradeState(btn.dataset.id);
+      this._setBtnState(btn, st.canBuy);
+      const small = btn.querySelector("small");
+      if (small && small.textContent !== st.text) small.textContent = st.text;
+    });
     const prog = this.panel.querySelector(".gp-region__progress");
     if (prog) {
       const offlineCarry = Math.max(0, Number(gs.data.offlineCarryVotes) || 0);
@@ -544,66 +560,66 @@ export class DOMBottomPanel {
     return true;
   }
 
+  // 시설 탭: 시설 6개를 카드로 펼쳐 각 카드에서 바로 업그레이드한다(고르고 → 위 카드에서 사는 2단계 제거)
   _renderFacilities() {
     const gs = this.gameState;
     const sel = gs.facility(gs.data.selected) ? gs.data.selected : "desk";
-    const f = gs.facility(sel);
-    const unlocked = gs.isUnlocked(sel);
-    const cost = gs.cost(sel);
-    const ex = gs.explainCost(sel);
     const stageDone = gs.data.stage.progress >= gs.data.stage.target;
     const offlineCarry = Math.max(0, Number(gs.data.offlineCarryVotes) || 0);
     const bossActive = gs.bossActive?.() || false;
     const bossRequired = gs.bossRequired?.() || false;
-    this._facSignature = `${sel}|${unlocked}|${stageDone}|${bossActive}|${bossRequired}|${this.buyQty}`;
+    this._facSignature = this._facStructureSignature();
     const stageAction = bossActive
       ? `<button class="gp-btn gp-btn--sm gp-btn--disabled" aria-disabled="true">검증 진행 중</button>`
       : bossRequired
         ? `<button class="gp-btn gp-btn--sm gp-btn--gold gp-btn--boss" data-action="advanceStage">최종 검증!</button>`
         : `<button class="gp-btn gp-btn--sm" data-action="advanceStage">지역완료 ✓</button>`;
-    // 일괄구매 플랜(현재 수량 기준)
-    const plan = unlocked ? gs.facilityBulkPlan(sel, this.buyQty) : { levels: 0, voteCost: 0, explainCost: 0 };
-    const canBuy = unlocked && plan.levels > 0 && gs.data.votes >= plan.voteCost && gs.data.explain >= plan.explainCost;
-    const qtyTag = this.buyQty === "max" ? (plan.levels > 0 ? `+${plan.levels}Lv` : "MAX") : `×${plan.levels || this.buyQty}`;
-    const costStr = plan.levels > 0 ? `${shortNumber(plan.voteCost)}표` : "부족";
-    // FIX #4: two-line upgrade button — verb on top, cost below — prevents truncation at any number length
-    const upgradeBtn = unlocked
-      ? `<button class="gp-btn gp-btn--gold gp-btn--upgrade ${canBuy ? "gp-btn--ready" : "gp-btn--disabled"}" data-action="upgradeFac">업그레이드<small>${costStr}${this.buyQty !== 1 ? ` · ${qtyTag}` : ""}</small></button>`
-      : `<button class="gp-btn gp-btn--upgrade gp-btn--disabled" data-action="upgradeFac">잠김</button>`;
-    // 로드맵 #6: 다음 레벨 비용을 되찾는 시간 — '지금 사면 몇 분 뒤 본전'을 바로 보여준다
-    const payback = unlocked ? gs.upgradePaybackSeconds(sel) : null;
-    const paybackText = payback === null ? "" : `<div class="gp-card__gain gp-card__payback">⏱ 비용 회수 ${formatDuration(payback)}</div>`;
-    this.panel.innerHTML = `
-      <div class="gp-card">
-        <div class="gp-card__icon" style="${iconStyle(facilityIcon(sel), 64)}"></div>
+    const choked = gs.intakeFor && gs.capacityFor ? gs.intakeFor(gs.data) > gs.capacityFor(gs.data) * 1.0001 : false;
+    const cards = facilities.map((f) => {
+      const id = f.id;
+      const unlocked = gs.isUnlocked(id);
+      const lv = gs.level(id);
+      const cls = `gp-card gp-faccard${id === sel ? " gp-faccard--sel" : ""}${unlocked ? "" : " gp-faccard--locked"}`;
+      if (!unlocked) {
+        return `<div class="${cls}" data-fac="${id}">
+          <div class="gp-card__icon" style="${iconStyle(facilityIcon(id), 52)}"></div>
+          <div class="gp-card__body"><div class="gp-card__title">${f.name}${lv > 0 ? ` <span class="gp-faccard__lv">Lv.${lv}</span>` : ""}</div><div class="gp-card__sub">${this._lockText(id)}</div></div>
+        </div>`;
+      }
+      const st = this._facUpgradeState(id);
+      const ex = gs.explainCost(id);
+      const payback = gs.upgradePaybackSeconds(id);
+      const milestone = gs.nextFacilityMilestone(lv, id);
+      const needCap = choked && (f.capacity ?? 1) >= 1;
+      const meta = [payback === null ? "" : `⏱ 회수 ${formatDuration(payback)}`, ex > 0 ? `해명 ${shortNumber(ex)}` : ""].filter(Boolean).join(" · ");
+      return `<div class="${cls}" data-fac="${id}" data-action="selectFac" data-id="${id}">
+        <div class="gp-card__icon" style="${iconStyle(facilityIcon(id), 52)}"></div>
         <div class="gp-card__body">
-          <div class="gp-card__title">${f.name} Lv.${gs.level(sel)}</div>
-          <div class="gp-card__sub">${unlocked ? `${shortNumber(cost)}표 · 해명 ${shortNumber(ex)}` : this._lockText(sel)}</div>
-          ${unlocked ? `<div class="gp-card__gain">▲ 업그레이드 시 초당 +${rateNumber(gs.upgradeGain(sel) ?? f.cps)}표</div>${paybackText}` : ""}
-          ${unlocked && gs.nextFacilityMilestone(gs.level(sel), sel) != null
-            ? `<div class="gp-card__milestone">★ Lv.${gs.nextFacilityMilestone(gs.level(sel), sel)} 달성 시 생산 ×2</div>`
-            : ""}
+          <div class="gp-card__title">${f.name} <span class="gp-faccard__lv">Lv.${lv}</span>${needCap ? `<span class="gp-faccard__need">용량</span>` : ""}</div>
+          <div class="gp-card__gain">▲ 초당 +${rateNumber(gs.upgradeGain(id) ?? f.cps)}표</div>
+          ${meta ? `<div class="gp-card__sub">${meta}</div>` : ""}
+          ${milestone != null ? `<div class="gp-card__milestone">★ Lv.${milestone} 생산 ×2</div>` : ""}
         </div>
-        ${upgradeBtn}
-      </div>
-      ${unlocked ? this._qtyToggle() : ""}
+        <button class="gp-btn gp-btn--gold gp-btn--upgrade ${st.canBuy ? "gp-btn--ready" : "gp-btn--disabled"}" data-action="upgradeFac" data-id="${id}" aria-label="${f.name} 업그레이드">업그레이드<small>${st.text}</small></button>
+      </div>`;
+    }).join("");
+    this.panel.innerHTML = `
+      ${this._qtyToggle()}
       ${this._capacityLine()}
-      <div class="gp-facsel">${facilities.map((ff) => {
-        const choked = gs.intakeFor && gs.capacityFor ? gs.intakeFor(gs.data) > gs.capacityFor(gs.data) * 1.0001 : false;
-        const u = gs.isUnlocked(ff.id);
-        // P1 fix: facility picker icon — use webp asset as background-image, color as fallback
-      const needCap = choked && u && (ff.capacity ?? 1) >= 1;
-      return `<button class="gp-fac ${ff.id === sel ? "gp-fac--active" : ""} ${u ? "" : "gp-fac--locked"}${needCap ? " gp-fac--need" : ""}" data-action="selectFac" data-id="${ff.id}"><span class="gp-fac__icon" style="${iconStyle(facilityIcon(ff.id), 40)}"></span><span class="gp-fac__role">${ff.role}</span><span class="gp-fac__lv">${u || gs.level(ff.id) > 0 ? `Lv.${gs.level(ff.id)}` : (gs.unlockReason(ff.id)?.area ? `${ff.unlock}구` : "잠김")}</span></button>`;
-      }).join("")}</div>
+      <div class="gp-faclist">${cards}</div>
       <div class="gp-region"><span class="gp-region__progress">${gs.data.stage.area}구역 · ${shortNumber(gs.data.stage.progress)} / ${shortNumber(gs.data.stage.target)}${offlineCarry > 0 ? `<small class="gp-carry">미처리 개표 +${shortNumber(offlineCarry)}</small>` : ""}</span>${
         stageDone
           ? stageAction
           : `<span class="gp-stage-frac">${Math.floor((gs.data.stage.progress / gs.data.stage.target) * 100)}%</span>`
       }</div>
       ${this._nextUnlockTeaser()}`;
+    // 월드에서 시설을 눌러 선택이 바뀌면 그 카드가 보이게 스크롤한다
+    if (this._facScrolledSel !== sel) {
+      if (this._facScrolledSel !== undefined) this.panel.querySelector(`.gp-faccard[data-fac="${sel}"]`)?.scrollIntoView({ block: "nearest" });
+      this._facScrolledSel = sel;
+    }
   }
 
-  // 잠금 사유 문구: 구역 또는 선행 시설 레벨
   _lockText(id) {
     const r = this.gameState.unlockReason ? this.gameState.unlockReason(id) : null;
     if (!r) return "";
@@ -635,16 +651,12 @@ export class DOMBottomPanel {
 
   // 다음 해금 티저: 아직 잠긴 시설 중 가장 먼저 열리는 것을 한 줄 안내(진행 동기 부여)
   // FIX P1: emoji 🔒 replaced with CSS-safe unicode square to avoid Android WebView glyph fallback failure
+  // 개표소 확장 예고(잠긴 시설은 시설 카드에 해금 조건이 보이므로 여기서는 확장만)
   _nextUnlockTeaser() {
-    const gs = this.gameState;
-    const locked = gs.lockedFacilities ? gs.lockedFacilities() : [];
-    const area = gs.data.stage.area;
+    const area = this.gameState.data.stage.area;
     const st = roomStageFor(area);
     const nextArea = nextRoomStageArea(area);
-    const room = `개표소 ${roomStageLabel(st)} (${st + 1}/${ROOM_STAGE_COUNT})${nextArea ? ` · <b>${nextArea}구역</b>에서 ${roomStageLabel(st + 1)} 확장` : ""}`;
-    if (!locked.length) return `<div class="gp-nextunlock">${room}</div>`;
-    const next = locked.reduce((a, b) => ((b.unlock || 1) < (a.unlock || 1) ? b : a));
-    return `<div class="gp-nextunlock"><span style="font-size:9px;color:var(--ink-soft);vertical-align:middle">&#9632;</span> 다음 해금: <b>${next.name}</b> · ${this._lockText(next.id)}<br>${room}</div>`;
+    return `<div class="gp-nextunlock">개표소 ${roomStageLabel(st)} (${st + 1}/${ROOM_STAGE_COUNT})${nextArea ? ` · <b>${nextArea}구역</b>에서 ${roomStageLabel(st + 1)} 확장` : ""}</div>`;
   }
 
   _renderCrew() {
@@ -1018,7 +1030,7 @@ export class DOMBottomPanel {
       const isActive = u.id === sel;
       // FIX P1: gp-seal--locked only for max-level seals; unaffordable seals stay visible (not dimmed)
       const maxed = lv >= gs.effectiveMaxLevel(u);
-      return `<button class="gp-seal ${isActive ? "gp-seal--active" : ""} ${maxed ? "gp-seal--locked" : ""}" data-action="buyPrestige" data-id="${u.id}"><span class="gp-seal__role">${u.shortName}</span><span class="gp-seal__lv">${maxed ? `완료` : `Lv.${lv} · ${cost}`}</span></button>`;
+      return `<button class="gp-seal ${isActive ? "gp-seal--active" : ""} ${maxed ? "gp-seal--locked" : ""}" data-action="buyPrestige" data-id="${u.id}"><span class="gp-seal__role">${u.shortName}</span><span class="gp-seal__lv">${maxed ? `완료` : `Lv.${lv}`}</span>${maxed ? "" : `<span class="gp-seal__cost">인장 ${cost}</span>`}</button>`;
     }).join("");
 
     const fullMult = gs.prestigeMultiplierFor(gs.data) * (1 + (gs.permanentEffectFor ? gs.permanentEffectFor(gs.data, "cpsPct") : 0));
@@ -1159,7 +1171,7 @@ export class DOMBottomPanel {
       const isActive = u.id === sel;
       const maxed = lv >= u.maxLevel;
       // 금색 강조로 인장(gem-blue)과 경제 구분
-      return `<button class="gp-seal gp-seal--medal ${isActive ? "gp-seal--active" : ""} ${maxed ? "gp-seal--locked" : ""}" data-action="buyPrestige" data-id="${u.id}" data-medal="1" style="border-color:${isActive ? "#ffd479" : "rgba(255,212,121,.35)"}"><span class="gp-seal__role">${u.shortName}</span><span class="gp-seal__lv">${maxed ? `완료` : `Lv.${lv} · ${cost}`}</span></button>`;
+      return `<button class="gp-seal gp-seal--medal ${isActive ? "gp-seal--active" : ""} ${maxed ? "gp-seal--locked" : ""}" data-action="buyPrestige" data-id="${u.id}" data-medal="1" style="border-color:${isActive ? "#ffd479" : "rgba(255,212,121,.35)"}"><span class="gp-seal__role">${u.shortName}</span><span class="gp-seal__lv">${maxed ? `완료` : `Lv.${lv}`}</span>${maxed ? "" : `<span class="gp-seal__cost gp-seal__cost--medal">훈장 ${cost}</span>`}</button>`;
     }).join("");
 
     const detail = selDef ? `<div class="gp-card" style="margin-top:8px;border-color:rgba(255,212,121,.3)">
